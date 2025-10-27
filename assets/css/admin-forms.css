@@ -1,0 +1,336 @@
+/**
+ * Admin Forms - 폼 확장 스타일
+ *
+ * admin-common.css의 기본 폼 스타일(.form-input, .form-select)을 확장합니다.
+ *
+ * 이 파일의 역할:
+ * - Form input/select 크기 변형 (xs, sm, md, lg, xl, wide, full)
+ * - Table input (테이블 셀 내부 입력)
+ * - Info-group 패턴 (transport/register 스타일)
+ * - Form field modifiers (inline, span, full)
+ * - Input group (input + button 조합)
+ * - Date/time inputs
+ * - Help text
+ * - Total/Summary display
+ *
+ * 주의: 기본 스타일(padding, border, focus 등)은 admin-common.css에 정의됩니다.
+ * 이 파일은 크기 변형과 특화 패턴만 정의합니다.
+ */
+
+/* ========== Form Input Sizing Utilities ========== */
+/**
+ * 기본 스타일은 admin-common.css의 .form-input에서 상속됩니다.
+ * 이 파일은 width 크기 변형만 정의합니다.
+ *
+ * 사용법:
+ * - .form-input-xs ~ .form-input-xl: 고정 너비 (60px ~ 400px)
+ * - .form-input-wide, .form-input-full: 100% 너비
+ *
+ * padding, border, focus 등 기본 스타일은 admin-common.css 참조
+ */
+
+/* Size variants - width만 정의 */
+.form-input-xs { width: 60px; }
+.form-input-sm { width: 120px; }
+.form-input-md { width: 200px; }
+.form-input-lg { width: 300px; }
+.form-input-xl { width: 400px; }
+.form-input-wide { width: 100%; }
+.form-input-full { width: 100%; }
+
+/* Table Input - For inputs inside table cells */
+.table-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.375rem 0.5rem;
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--gray-900);
+  transition: all 0.2s ease;
+}
+
+.table-input:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 2px var(--primary-100);
+}
+
+.table-input:read-only {
+  background: var(--gray-50);
+  color: var(--gray-600);
+  cursor: default;
+  border-color: var(--gray-200);
+}
+
+/* ========== Form Select Sizing Utilities ========== */
+/**
+ * 기본 스타일은 admin-common.css의 .form-select에서 상속됩니다.
+ * 이 파일은 width 크기 변형만 정의합니다.
+ */
+
+/* Size variants - width만 정의 */
+.form-select-xs { width: 60px; }
+.form-select-sm { width: 120px; }
+.form-select-md { width: 200px; }
+.form-select-lg { width: 300px; }
+
+/* ========== Info Group Pattern ========== */
+
+.info-group {
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.info-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(to right, var(--primary-50), var(--primary-100));
+  border-bottom: 1px solid var(--primary-500);
+  font-weight: 600;
+  color: var(--primary-700);
+  font-size: var(--font-size-sm);
+}
+
+.info-grid {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.9rem;
+}
+
+/* Grid Layout Variants */
+.info-grid.grid-1 {
+  grid-template-columns: 1fr;
+}
+
+.info-grid.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.info-grid.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.info-grid.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.info-grid.grid-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+/* ========== Form Field Modifiers ========== */
+
+/* Inline Form Field (레이블이 input 왼쪽에 붙음) */
+.form-field--inline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.form-label-inline {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--gray-700);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Grid Column Span Variants */
+.form-field--span-2 {
+  grid-column: span 2;
+}
+
+.form-field--span-3 {
+  grid-column: span 3;
+}
+
+.form-field--full {
+  grid-column: 1 / -1;
+}
+
+/* Info Grid 내에서 form-field가 column 방향이 되지 않도록 */
+.info-grid :deep(.form-field:not(.form-field--inline)) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-grid :deep(.form-label) {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--gray-700);
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.info-grid :deep(.required-mark) {
+  color: var(--danger-500);
+  font-size: 1rem;
+}
+
+/* ========== Search Group (Input + Button) ========== */
+
+.search-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ========== Input Group (Input + Search Button) ========== */
+
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.input-group .form-input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ========== Help Text ========== */
+
+.input-with-help {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.help-text {
+  font-size: var(--font-size-xs);
+  color: var(--gray-500);
+  margin-top: -0.25rem;
+}
+
+/*
+ * Search Button - 조회/검색 버튼
+ * .btn-search는 search-group 내부에서 사용되며, primary 버튼 스타일 적용
+ */
+
+/* ========== Search/Lookup Button ========== */
+/* 조회/검색 버튼 - search-group 내부에서 사용 */
+
+.search-group .btn-search {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  white-space: nowrap;
+}
+
+.search-group .btn-search:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.search-group .btn-search:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+.search-group .btn-search:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.search-group .btn-search i {
+  font-size: var(--font-size-xs);
+}
+
+/* ========== Date/Time Inputs ========== */
+
+.date-time-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.time-inputs {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.time-select {
+  width: 70px;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  background: white;
+  cursor: pointer;
+}
+
+.time-colon {
+  color: var(--gray-500);
+  font-weight: 500;
+  padding: 0 0.125rem;
+}
+
+/* ========== Total/Summary Display ========== */
+
+.total-quantity-display {
+  background: var(--primary-50);
+  color: var(--primary-700);
+  font-weight: 600;
+  border-color: var(--primary-500);
+}
+
+.total-amount-display {
+  background: var(--success-50);
+  color: var(--success-600);
+  font-weight: 600;
+  border-color: var(--success-500);
+}
+
+/* ========== Responsive Design ========== */
+
+@media (max-width: 1024px) {
+  .info-grid.grid-3,
+  .info-grid.grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .info-grid.grid-2,
+  .info-grid.grid-3,
+  .info-grid.grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .form-input-md,
+  .form-input-lg,
+  .form-input-xl {
+    width: 100%;
+  }
+
+  .form-select-md,
+  .form-select-lg {
+    width: 100%;
+  }
+
+  .search-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

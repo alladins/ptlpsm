@@ -1,0 +1,1016 @@
+/**
+ * Admin 페이지 공통 스타일
+ * 20년 경력 웹 디자이너의 업무 시스템 최적화 디자인
+ *
+ * 디자인 철학:
+ * - 명확한 시각적 계층구조
+ * - 업무 효율성 극대화
+ * - 전문적이고 세련된 기업용 UI
+ * - 일관된 사용자 경험
+ *
+ * ========== CSS 변수 (Design Tokens) ==========
+ * 모든 CSS 변수는 global.css에서 정의됩니다 (단일 소스).
+ * 이 파일은 global.css의 변수를 사용합니다.
+ *
+ * 사용 가능한 변수:
+ * - Colors: --primary-*, --gray-*, --success-*, --warning-*, --danger-*
+ * - Spacing: --spacing-xs ~ --spacing-2xl
+ * - Border Radius: --radius-sm, --radius-md, --radius-lg, --radius-full
+ * - Shadows: --shadow-sm, --shadow-md, --shadow-lg
+ * - Typography: --font-size-xs ~ --font-size-3xl
+ */
+
+/* ========== 버튼 스타일 ========== */
+/*
+ * 모든 버튼 스타일은 admin-buttons.css로 이동되었습니다.
+ *
+ * 사용 가능한 버튼:
+ * - 주요 버튼: .btn-primary, .btn-secondary, .btn-danger, .btn-success
+ * - 액션 버튼: .btn-edit, .btn-delete, .btn-view
+ * - Compact 버튼: .btn-action (PageHeader용)
+ * - 특화 버튼: .btn-add-item, .btn-remove-item, .btn-search-sm,
+ *              .btn-select-item, .btn-upload, .btn-download, .btn-print
+ *
+ * 사용법:
+ * <style scoped>
+ * @import '@/assets/css/admin-buttons.css';
+ * </style>
+ */
+
+
+/* ========== 폼 스타일 (전문적인 입력 필드) ========== */
+.form-input,
+.form-select,
+.form-textarea {
+  padding: 0.625rem 0.875rem;
+  border: 1.5px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  transition: all 0.2s ease;
+  width: 80%;
+  font-family: inherit;
+  background: white;
+  color: var(--gray-900);
+  line-height: 1.5;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px var(--primary-100);
+  background: var(--primary-50);
+}
+
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled {
+  background-color: var(--gray-100);
+  color: var(--gray-500);
+  cursor: not-allowed;
+  border-color: var(--gray-200);
+}
+
+.form-input.readonly,
+.form-input[readonly] {
+  background-color: var(--gray-50);
+  cursor: default;
+  border-color: var(--gray-200);
+}
+
+.form-input.error,
+.form-select.error,
+.form-textarea.error {
+  border-color: var(--danger-500);
+  background-color: var(--danger-50);
+}
+
+.form-textarea {
+  min-height: 20px;
+  resize: vertical;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.form-group label.required::after {
+  content: ' *';
+  color: var(--danger-500);
+  font-weight: 700;
+}
+
+.error-message {
+  color: var(--danger-600);
+  font-size: var(--font-size-xs);
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
+.form-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.form-grid .full-width {
+  grid-column: span 3;
+}
+
+.form-grid .half-width {
+  grid-column: span 2;
+}
+
+/*
+ * 입력 그룹 (버튼과 함께)
+ * .input-with-button는 admin-forms.css의 .input-group 사용
+ * admin-forms.css에서 .input-group, .search-group으로 통합 관리
+ */
+
+/* ========== 테이블 스타일 (데이터 가독성 최적화) ========== */
+/*
+ * .table-container는 admin-tables.css에 정의됨
+ * 테이블 섹션 관련 스타일은 admin-tables.css에서 통합 관리
+ */
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--font-size-sm);
+}
+
+.data-table th {
+  background: linear-gradient(180deg, #fafbfc 0%, #f3f4f6 100%);
+  padding: 0.875rem 1rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--gray-700);
+  border-bottom: 2px solid var(--gray-300);
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.data-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--gray-200);
+  color: var(--gray-800);
+  vertical-align: middle;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.data-table tbody tr {
+  transition: all 0.15s ease;
+  background: white;
+}
+
+.data-table tbody tr:hover {
+  background-color: var(--primary-50);
+  box-shadow: inset 0 0 0 1px var(--primary-200);
+}
+
+.data-table tbody tr.selected {
+  background-color: var(--primary-100);
+  box-shadow: inset 0 0 0 2px var(--primary-500);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table td.text-right {
+  text-align: right;
+}
+
+.data-table td.text-center {
+  text-align: center;
+}
+
+/* ========== Items Table (품목 테이블 공통 베이스) ========== */
+/**
+ * 품목 테이블 공통 스타일 - 모든 items-table의 기본 스타일
+ *
+ * 사용처:
+ * - admin-detail.css: 상세 페이지 (readonly)
+ * - admin-edit-register.css: 등록/수정 페이지 (editable)
+ *
+ * 확장 방법:
+ * - readonly: admin-detail.css에서 .items-table input[readonly] 스타일 정의
+ * - editable: admin-edit-register.css에서 .items-table input:focus 스타일 정의
+ */
+
+.items-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.items-table thead {
+  background: var(--gray-50);
+}
+
+.items-table th {
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--gray-700);
+  border-bottom: 2px solid var(--gray-200);
+  white-space: nowrap;
+}
+
+.items-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: middle;
+  text-align: center;
+}
+
+.items-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.items-table tbody tr:hover {
+  background: var(--gray-50);
+}
+
+.items-table .empty-row {
+  padding: 2rem;
+  text-align: center;
+  color: var(--gray-400);
+}
+
+.items-table input,
+.items-table select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  background: white;
+  color: var(--gray-900);
+  transition: all 0.2s ease;
+}
+
+.items-table input:focus,
+.items-table select:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+.items-table input[readonly] {
+  background: var(--gray-50);
+  color: var(--gray-600);
+  cursor: default;
+  border-color: var(--gray-200);
+}
+
+/*
+ * 테이블 섹션 및 헤더 스타일은 admin-tables.css로 이동되었습니다 (삭제됨)
+ * - table-section: 테이블 래퍼
+ * - table-header: 테이블 헤더 영역
+ * - table-info: 데이터 개수 표시
+ * - table-actions: 액션 버튼 영역
+ * - page-size-select: 페이지 크기 선택
+ */
+
+/* ========== 빈 상태 / 로딩 ========== */
+/**
+ * 로딩 및 빈 상태 표시
+ *
+ * 사용 예시:
+ * <div class="no-data-message">
+ *   <i class="fas fa-inbox"></i>
+ *   <p>데이터가 없습니다</p>
+ * </div>
+ *
+ * <div class="loading-message">
+ *   <i class="fas fa-spinner fa-spin"></i>
+ *   <p>로딩 중...</p>
+ * </div>
+ *
+ * <div class="loading">  <!-- 팝업 내부 로딩 -->
+ *   <i class="fas fa-spinner fa-spin"></i>
+ *   <span>데이터를 불러오는 중...</span>
+ * </div>
+ *
+ * <div class="no-items">  <!-- 팝업 내부 빈 상태 -->
+ *   <i class="fas fa-box"></i>
+ *   <span>검색된 항목이 없습니다</span>
+ * </div>
+ */
+
+/* 빈 데이터 메시지 - 테이블/목록 영역용 */
+.no-data-message {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--gray-500);
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  margin: var(--spacing-lg) 0;
+}
+
+.no-data-message i {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.3;
+  display: block;
+  color: var(--gray-400);
+}
+
+.no-data-message p {
+  margin: 0.5rem 0 0 0;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+}
+
+/* 로딩 메시지 - 전체 영역 로딩 */
+.loading-message {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--gray-500);
+}
+
+.loading-message i {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-md);
+  animation: spin 1s linear infinite;
+  display: block;
+  color: var(--primary-500);
+}
+
+/* 팝업 내부용 로딩 - 콤팩트 버전 */
+.loading,
+.no-items {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--gray-500);
+  gap: 0.5rem;
+}
+
+.loading i {
+  font-size: 1.5rem;
+  color: var(--primary-500);
+  animation: spin 1s linear infinite;
+}
+
+.no-items i {
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ========== 검색 섹션 ========== */
+/*
+ * 구버전 검색 스타일 - 미사용 (삭제됨)
+ * 검색 관련 스타일은 admin-search.css로 통합 관리
+ * - search-section-compact: 한 줄 검색 폼
+ * - search-row-single, search-item: 검색 필드 레이아웃
+ * - date-input, text-input, keyword-input: 입력 필드
+ * - btn-search-inline: 인라인 검색 버튼
+ */
+
+/* ========== 콘텐츠 섹션 ========== */
+.content-section {
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+}
+
+.form-section {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.form-section:last-child {
+  border-bottom: none;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--gray-200);
+}
+
+.form-header h2,
+.form-header h3 {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.form-container {
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--gray-200);
+}
+
+.bottom-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  background: var(--gray-50);
+  border-top: 2px solid var(--gray-200);
+}
+
+/* ========== 상태 뱃지 (명확한 시각적 구분) ========== */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.status-badge.primary {
+  background: var(--primary-100);
+  color: var(--primary-700);
+  border: 1px solid var(--primary-200);
+}
+
+.status-badge.success {
+  background: var(--success-50);
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.status-badge.warning {
+  background: var(--warning-50);
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.status-badge.danger {
+  background: var(--danger-50);
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.status-badge.info {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.use-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+.use-badge.use-yes {
+  background: var(--success-50);
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.use-badge.use-no {
+  background: var(--danger-50);
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* ========== 모달/팝업 스타일 (전문적인 다이얼로그) ========== */
+/**
+ * 팝업/모달 공통 스타일 가이드
+ *
+ * 사용 예시:
+ * <div class="popup-overlay" @click="close">
+ *   <div class="popup-content" @click.stop>  <!-- 기본 600px -->
+ *   <div class="popup-content large">       <!-- 900px -->
+ *   <div class="popup-content xlarge">      <!-- 1200px -->
+ *     <div class="popup-header">
+ *       <h3>제목</h3>
+ *       <button class="popup-close"><i class="fas fa-times"></i></button>
+ *     </div>
+ *     <div class="popup-body">
+ *       <!-- 콘텐츠 -->
+ *     </div>
+ *     <div class="popup-footer">
+ *       <button class="btn-secondary">취소</button>
+ *       <button class="btn-primary">확인</button>
+ *     </div>
+ *   </div>
+ * </div>
+ *
+ * 참고:
+ * - .modal-* 클래스는 .popup-* 클래스와 동일 (레거시 호환)
+ * - 오버레이 클릭 시 닫기: @click="close" (부모), @click.stop (자식)
+ * - 반응형: 모바일에서 자동으로 95% width 적용
+ */
+
+/* 팝업 오버레이 - 전체 화면 반투명 배경 */
+.modal-overlay,
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--spacing-md);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 팝업 컨테이너 - 실제 팝업 박스 */
+.modal,
+.popup-content {
+  background: white;
+  border-radius: var(--radius-lg);
+  max-width: 600px;  /* 기본: 중간 크기 팝업 */
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s ease;
+  border: 1px solid var(--gray-200);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 팝업 크기 변형 */
+.modal.large,
+.popup-content.large {
+  max-width: 900px;  /* 큰 팝업: 테이블/목록용 */
+}
+
+.modal.xlarge,
+.popup-content.xlarge {
+  max-width: 1200px;  /* 매우 큰 팝업: 복잡한 폼/상세 정보 */
+}
+
+/* 팝업 헤더 - 제목 및 닫기 버튼 */
+.modal-header,
+.popup-header {
+  padding: var(--spacing-lg);
+  border-bottom: 2px solid var(--gray-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(180deg, white 0%, var(--gray-50) 100%);
+}
+
+/* 팝업 제목 */
+.modal-title,
+.popup-header h3,
+.popup-header h2 {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+/* 닫기 버튼 - 우측 상단 X 아이콘 */
+.modal-close,
+.popup-close,
+.close-button,
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--gray-400);
+  cursor: pointer;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover,
+.popup-close:hover,
+.close-button:hover,
+.close-btn:hover {
+  background-color: var(--gray-100);
+  color: var(--gray-700);
+}
+
+/* 팝업 본문 - 스크롤 가능한 콘텐츠 영역 */
+.modal-body,
+.popup-body {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;  /* 남은 공간 모두 사용 */
+}
+
+/* 팝업 푸터 - 액션 버튼 영역 */
+.modal-footer,
+.popup-footer {
+  padding: var(--spacing-lg);
+  border-top: 2px solid var(--gray-200);
+  display: flex;
+  justify-content: flex-end;  /* 버튼 우측 정렬 */
+  gap: 0.75rem;
+  background: var(--gray-50);
+}
+
+/* ========== 액션 버튼 그룹 ========== */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/*
+ * 액션 버튼 (.btn-edit, .btn-delete, .btn-view)은
+ * admin-buttons.css로 이동되었습니다.
+ */
+
+/* ========== 반응형 디자인 ========== */
+@media (max-width: 1024px) {
+  .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-grid .full-width,
+  .form-grid .half-width {
+    grid-column: span 2;
+  }
+
+  .search-section {
+    padding: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .form-grid .full-width,
+  .form-grid .half-width {
+    grid-column: span 1;
+  }
+
+  .search-section,
+  .form-section {
+    padding: var(--spacing-md);
+  }
+
+  .modal,
+  .popup-content {
+    max-height: 95vh;
+    margin: var(--spacing-sm);
+  }
+
+  .modal-header,
+  .popup-header,
+  .modal-body,
+  .popup-body,
+  .modal-footer,
+  .popup-footer {
+    padding: var(--spacing-md);
+  }
+
+  .bottom-actions {
+    flex-wrap: wrap;
+  }
+
+  .button-group {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .button-group button {
+    width: 100%;
+  }
+}
+
+/* ========== 페이지네이션 (공통) ========== */
+/**
+ * 페이지네이션 공통 스타일
+ *
+ * 사용 예시:
+ * <div class="pagination">
+ *   <button @click="prevPage" :disabled="currentPage === 1">
+ *     <i class="fas fa-chevron-left"></i>
+ *     이전
+ *   </button>
+ *   <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+ *   <button @click="nextPage" :disabled="currentPage === totalPages">
+ *     다음
+ *     <i class="fas fa-chevron-right"></i>
+ *   </button>
+ * </div>
+ *
+ * 참고:
+ * - 팝업 하단에 주로 사용
+ * - 버튼 disabled 상태 자동 스타일링
+ * - .page-info는 현재/전체 페이지 표시
+ */
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+
+.pagination button,
+.page-btn {
+  background: white;
+  border: 1px solid var(--gray-300);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.pagination button:hover:not(:disabled),
+.page-btn:hover:not(:disabled) {
+  background: var(--gray-100);
+  border-color: var(--gray-400);
+  box-shadow: var(--shadow-sm);
+}
+
+.pagination button:disabled,
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--gray-50);
+}
+
+.pagination .page-info {
+  font-size: var(--font-size-sm);
+  color: var(--gray-600);
+  font-weight: 500;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* ========== 검색 영역 (팝업용) ========== */
+/**
+ * 팝업 내부 검색 섹션
+ *
+ * 사용 예시:
+ * <div class="search-section">
+ *   <div class="search-input-group">
+ *     <input type="text" v-model="keyword" class="search-input" placeholder="검색어">
+ *     <button class="btn-primary" @click="search">
+ *       <i class="fas fa-search"></i>
+ *       조회
+ *     </button>
+ *     <button class="btn-secondary" @click="close">
+ *       <i class="fas fa-times"></i>
+ *       닫기
+ *     </button>
+ *   </div>
+ * </div>
+ *
+ * 참고:
+ * - 팝업 상단, 헤더 아래에 위치
+ * - .search-input-group으로 입력창과 버튼 그룹화
+ * - btn-primary, btn-secondary 클래스 활용
+ */
+
+.search-section {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--gray-200);
+  background: white;
+}
+
+.search-input-group,
+.search-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+.search-input::placeholder {
+  color: var(--gray-400);
+}
+
+/* 검색 행 레이아웃 (레이블 + 입력) */
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.search-row label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--gray-700);
+  min-width: 80px;
+}
+
+/* ========== 유틸리티 클래스 ========== */
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.text-muted {
+  color: var(--gray-500);
+}
+
+.mt-1 { margin-top: var(--spacing-sm); }
+.mt-2 { margin-top: var(--spacing-md); }
+.mt-3 { margin-top: var(--spacing-lg); }
+.mt-4 { margin-top: var(--spacing-xl); }
+
+.mb-1 { margin-bottom: var(--spacing-sm); }
+.mb-2 { margin-bottom: var(--spacing-md); }
+.mb-3 { margin-bottom: var(--spacing-lg); }
+.mb-4 { margin-bottom: var(--spacing-xl); }
+
+.loading-indicator {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--gray-500);
+}
+
+/* ============================================
+   Compact 버튼 스타일 (PageHeader용)
+   ============================================ */
+/*
+ * .btn-action (Compact 버튼)은 admin-buttons.css로 이동되었습니다.
+ */
+
+/* ============================================
+   Compact 검색 영역 - admin-search.css로 이동됨 (삭제됨)
+   ============================================ */
+/*
+ * 모든 검색 관련 스타일은 admin-search.css로 통합 관리
+ * - search-section-compact: 검색 폼 래퍼
+ * - search-row-single: 한 줄 레이아웃
+ * - search-item: 개별 검색 필드
+ * - date-input, text-input, keyword-input: 입력 필드 크기별
+ * - status-select, sort-select, condition-select: select 필드
+ * - btn-search-inline: 인라인 검색 버튼
+ * - separator: 날짜 구분자
+ */
+
+/* ============================================
+   Admin 페이지 래퍼 공통 스타일
+   ============================================ */
+/*
+  모든 admin 리스트 페이지의 래퍼 클래스
+  - layouts/admin.vue의 .page-content가 기본 padding (18px 30px) 제공
+  - 각 페이지 래퍼는 padding 없이 기본 설정만 유지
+  - 페이지별 특화 스타일은 각 페이지 scoped CSS에서 관리
+*/
+.sales-list,
+.order-list,
+.shipping-list,
+.transport-list,
+.delivery-list,
+.access-log,
+.menu-auth,
+.statistics-sales,
+.statistics-region,
+.user-management,
+.organization-management,
+.item-management,
+.item-management-container,
+.code-management,
+.company-info,
+.system-config,
+.sales-edit,
+.order-register,
+.shipping-edit,
+.transport-edit {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/*
+ * ============================================
+ * Edit/Form 페이지 공통 스타일
+ * ============================================
+ *
+ * 이 섹션의 모든 스타일은 admin-edit-components.css로 이동되었습니다.
+ *
+ * Edit/Register 페이지에서 사용 시:
+ * @import '@/assets/css/admin-edit-components.css';
+ *
+ * 포함된 컴포넌트:
+ * - loading-section, error-section
+ * - section-title
+ * - items-section, items-header, item-card, item-form
+ * - file-upload-section, file-upload-area, upload-content
+ * - alert-popup, upload-status
+ */
+
+/* Edit/Register 페이지 컴포넌트는 admin-edit-components.css에 정의됨 */

@@ -1,0 +1,349 @@
+/**
+ * Admin Tables - 테이블 UI 전용 스타일
+ *
+ * 모든 테이블 관련 스타일을 통합 관리합니다 (admin-common.css에서 통합됨).
+ *
+ * 이 파일의 역할:
+ * - Table section & container (기본 + 반응형 통합)
+ * - Table header (info + actions)
+ * - Page size select
+ * - Address truncation & tooltip
+ * - Organization info display
+ * - Stats cards (order/list 페이지)
+ * - Table row enhancements
+ * - Empty state & Loading
+ *
+ * CSS 변수: global.css의 디자인 토큰 100% 사용
+ *
+ * 참고: .data-table, .items-table은 admin-common.css에 정의됨 (범용 테이블)
+ */
+
+/* ========== Table Section Container ========== */
+
+.table-section {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.table-container {
+  overflow-x: auto;
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ========== Table Header (Info + Actions) ========== */
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+  gap: 1rem;
+}
+
+.table-info {
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.table-info strong {
+  color: var(--primary-500);
+  font-weight: 700;
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.table-actions label {
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+  white-space: nowrap;
+}
+
+/* ========== Page Size Select ========== */
+
+.page-size-select {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  background: white;
+  cursor: pointer;
+  min-width: 80px;
+}
+
+.page-size-select:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+/* ========== Address Text with Truncation ========== */
+
+.address-text {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+  position: relative;
+}
+
+.address-text:hover {
+  color: var(--primary-500);
+}
+
+/* Tooltip on hover (optional) */
+.address-text[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: var(--gray-800);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  white-space: normal;
+  max-width: 300px;
+  z-index: 10;
+  box-shadow: var(--shadow-md);
+}
+
+/* ========== Organization Info Display (sales/list) ========== */
+
+.organization-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.organization-name {
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.organization-code {
+  font-size: var(--font-size-xs);
+  color: var(--gray-400);
+  background: var(--gray-100);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-xs);
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+/* ========== Stats Cards (order/list) ========== */
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+/* Stat Icon Color Variants */
+.stat-icon.stat-icon--blue {
+  background: var(--primary-50);
+  color: var(--primary-500);
+}
+
+.stat-icon.stat-icon--green {
+  background: var(--success-50);
+  color: var(--success-500);
+}
+
+.stat-icon.stat-icon--yellow {
+  background: var(--warning-50);
+  color: var(--warning-500);
+}
+
+.stat-icon.stat-icon--red {
+  background: var(--danger-50);
+  color: var(--danger-500);
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-content h3 {
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+  margin: 0 0 0.25rem 0;
+  font-weight: 500;
+}
+
+.stat-content p {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--gray-800);
+}
+
+.stat-content .stat-subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--gray-400);
+  margin-top: 0.25rem;
+}
+
+/* ========== Table Row Enhancements ========== */
+
+.table-row {
+  transition: background-color 0.15s ease;
+}
+
+.table-row:hover {
+  background: var(--gray-50);
+  cursor: pointer;
+}
+
+.table-row.table-row--clickable {
+  cursor: pointer;
+}
+
+.table-row.table-row--selected {
+  background: var(--primary-50);
+}
+
+/* ========== Empty State & Loading ========== */
+
+.no-data-row {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--gray-400);
+}
+
+.no-data-row i {
+  font-size: 3rem;
+  color: var(--gray-300);
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.no-data-row p {
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.loading-row {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--gray-500);
+}
+
+.loading-row .spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--primary-500);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========== Responsive Design ========== */
+
+@media (max-width: 1024px) {
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .address-text {
+    max-width: 150px;
+  }
+
+  /* admin-common.css에서 이동 */
+  .table-section {
+    padding: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 768px) {
+  /* admin-common.css에서 이동 */
+  .table-section {
+    padding: var(--spacing-md);
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+
+  .table-info {
+    justify-content: center;
+  }
+
+  .table-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 0.875rem;
+  }
+
+  .stat-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.25rem;
+  }
+
+  .stat-content p {
+    font-size: 1.25rem;
+  }
+
+  .page-size-select {
+    width: 100%;
+  }
+}

@@ -1,0 +1,461 @@
+/**
+ * Admin Receipts - 영수증/인수증 출력 스타일
+ *
+ * 이 파일은 영수증, 인수증 등 출력용 문서 스타일을 정의합니다.
+ * - Receipt popup and preview
+ * - Receipt document layout
+ * - Info tables
+ * - Product tables
+ * - Signature sections
+ * - Print media queries
+ */
+
+/* ========== Receipt Popup ========== */
+
+.receipt-popup {
+  max-width: 1000px;
+}
+
+.receipt-preview {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* ========== Receipt Document ========== */
+
+.receipt-document {
+  font-family: 'Arial', 'Malgun Gothic', sans-serif;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #000;
+}
+
+/* ========== Receipt Header ========== */
+
+.receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #000;
+}
+
+.company-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.company-name {
+  font-weight: bold;
+  font-size: 12px;
+  color: #000;
+}
+
+.receipt-title {
+  font-size: 30px;
+  font-weight: bold;
+  text-align: center;
+  color: #000;
+}
+
+.receipt-info {
+  text-align: right;
+}
+
+.retention-type {
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+  color: #000;
+}
+
+.receipt-date {
+  font-size: 12px;
+  color: #000;
+}
+
+/* ========== Receipt Content ========== */
+
+.receipt-content {
+  margin-bottom: 0.75rem;
+}
+
+/* ========== Info Table ========== */
+
+.info-table {
+  margin-bottom: 0.75rem;
+}
+
+.info-table table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d1d5db;
+}
+
+.info-table tr {
+  border-bottom: 1px solid #d1d5db;
+}
+
+.info-table tr:last-child {
+  border-bottom: none;
+}
+
+.info-table th {
+  width: 120px;
+  padding: 0.25rem 0.4rem;
+  background: #f9fafb;
+  font-weight: bold;
+  border-right: 1px solid #d1d5db;
+  color: #000;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.info-table td {
+  padding: 0.25rem 0.4rem;
+  border-right: 1px solid #d1d5db;
+  color: #000;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.info-table td:last-child {
+  border-right: none;
+}
+
+/* ========== Product Table ========== */
+
+.product-table {
+  margin-bottom: 0.75rem;
+}
+
+.product-table table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d1d5db;
+}
+
+.product-table th,
+.product-table td {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid #d1d5db;
+  text-align: center;
+  color: #000;
+}
+
+.product-table th {
+  background: #f9fafb;
+  font-weight: bold;
+}
+
+.product-table td.text-left {
+  text-align: left;
+}
+
+.product-table td.text-right {
+  text-align: right;
+}
+
+/* ========== Confirmation Text ========== */
+
+.confirmation-text {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 0.75rem;
+  color: #000;
+  font-size: 12px;
+}
+
+/* ========== Signature Section ========== */
+
+.signature-section {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.signature-field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.signature-label {
+  font-weight: bold;
+  color: #000;
+}
+
+.signature-box {
+  border: 1px solid #000;
+  padding: 0.4rem 1.5rem;
+  min-width: 70px;
+  text-align: center;
+  background: white;
+}
+
+/* ========== Driver Note ========== */
+
+.driver-note {
+  text-align: center;
+  font-size: 9px;
+  color: #ef4444;
+  font-weight: bold;
+  margin-top: 0.5rem;
+}
+
+/* ========== Print Styles ========== */
+
+@media print {
+  /* A4 페이지 설정 */
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  /* 1단계: html, body 초기화 */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* 2단계: 메인 페이지 요소만 선택적으로 숨김 */
+  .transport-edit > *:not(.popup-overlay) {
+    display: none !important;
+  }
+
+  /* 3단계: 팝업 컨테이너 스타일 초기화 */
+  .popup-overlay {
+    position: static !important;
+    background: none !important;
+    display: block !important;
+    z-index: auto !important;
+  }
+
+  .popup-content {
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+  }
+
+  .popup-body {
+    overflow: visible !important;
+    max-height: none !important;
+    padding: 0 !important;
+  }
+
+  /* 4단계: 팝업 헤더/푸터 숨김 */
+  .popup-header,
+  .popup-footer {
+    display: none !important;
+  }
+
+  /* 5단계: receipt-preview 최적화 */
+  .receipt-preview {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 6단계: 테이블 요소는 올바른 display 값으로 복원 */
+  .receipt-preview table {
+    display: table !important;
+  }
+
+  .receipt-preview tbody {
+    display: table-row-group !important;
+  }
+
+  .receipt-preview thead {
+    display: table-header-group !important;
+  }
+
+  .receipt-preview tfoot {
+    display: table-footer-group !important;
+  }
+
+  .receipt-preview tr {
+    display: table-row !important;
+  }
+
+  .receipt-preview th,
+  .receipt-preview td {
+    display: table-cell !important;
+  }
+
+  /* receipt-document 기본 설정 */
+  .receipt-document {
+    position: relative;
+    width: 100%;
+    max-width: none !important;
+    height: auto !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure black text for print */
+  .receipt-document,
+  .receipt-document * {
+    color: #000 !important;
+  }
+
+  /* Receipt Header 인쇄 최적화 - Table 레이아웃 */
+  .receipt-header {
+    display: table !important;
+    width: 100%;
+    margin-bottom: 0.4rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid #000;
+  }
+
+  .company-logo,
+  .receipt-title,
+  .receipt-info {
+    display: table-cell !important;
+    vertical-align: middle;
+  }
+
+  .company-logo {
+    width: 30%;
+    text-align: left;
+  }
+
+  .receipt-title {
+    width: 40%;
+    text-align: center;
+  }
+
+  .receipt-info {
+    width: 30%;
+    text-align: right;
+  }
+
+  /* Signature Section 인쇄 최적화 */
+  .signature-section {
+    display: block !important;
+    text-align: right;
+    margin-bottom: 0.4rem;
+  }
+
+  .signature-field {
+    display: inline-block !important;
+  }
+
+  /* page-break 최소화 - 브라우저에 최대한 위임 */
+  .receipt-document:first-child {
+    break-after: avoid;
+    margin-bottom: 0;
+  }
+
+  .receipt-separator {
+    break-before: avoid;
+    break-after: avoid;
+    margin: 0.3rem 0;
+    padding: 0.1rem 0;
+  }
+
+  .receipt-document:last-child {
+    break-before: avoid;
+    margin-top: 0;
+  }
+
+  /* Compress spacing even more for print */
+  .info-table,
+  .product-table,
+  .confirmation-text {
+    margin-bottom: 0.4rem;
+  }
+}
+
+/* ========== Responsive Design ========== */
+
+@media (max-width: 768px) {
+  .receipt-preview {
+    padding: 1rem;
+  }
+
+  .receipt-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .receipt-info {
+    text-align: center;
+  }
+
+  /* Table 기반이므로 모바일에서도 테이블 레이아웃 유지 */
+  .info-table th,
+  .info-table td {
+    display: table-cell;
+    font-size: 11px;
+  }
+
+  .info-table th {
+    background: #f3f4f6;
+  }
+
+  .product-table {
+    overflow-x: auto;
+  }
+
+  .product-table table {
+    min-width: 600px;
+  }
+
+  .signature-section {
+    justify-content: center;
+  }
+
+  .receipt-title {
+    font-size: 20px;
+  }
+
+  .company-name {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .receipt-document {
+    font-size: 11px;
+  }
+
+  .receipt-title {
+    font-size: 18px;
+  }
+
+  .product-table th,
+  .product-table td {
+    padding: 0.375rem;
+    font-size: 10px;
+  }
+
+  .info-table th,
+  .info-table td {
+    padding: 0.375rem;
+    font-size: 10px;
+  }
+
+  .logo-img {
+    width: 30px;
+    height: 30px;
+  }
+}

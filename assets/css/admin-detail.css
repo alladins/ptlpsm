@@ -1,0 +1,557 @@
+/**
+ * admin-detail.css
+ * Common styles for admin detail/confirm pages
+ * Used by: sales/detail, order/detail, transport/confirm
+ */
+
+/* ============================================
+   Amount Display Pattern (sales/order detail)
+   ============================================ */
+.amount-group {
+  background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
+  border-color: #f59e0b;
+}
+
+.amount-group .info-group-header {
+  background: linear-gradient(to right, #fef3c7, #fde68a);
+  border-bottom-color: #f59e0b;
+  color: #92400e;
+}
+
+.amount-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.amount-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  min-width: 150px;
+}
+
+.amount-item.total {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: #3b82f6;
+}
+
+.amount-item label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.amount-item span {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.amount-item.total span {
+  color: #1e40af;
+  font-size: 1.125rem;
+}
+
+.amount-operator {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+/* ============================================
+   Items Table Readonly (sales/order detail)
+   ============================================ */
+/*
+ * 기본 스타일은 admin-common.css의 .items-table에서 상속
+ * 여기서는 detail 페이지 readonly 특화 스타일만 정의
+ */
+
+/* Detail 페이지 특화: 테이블 래퍼 */
+.table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  grid-column: 1 / -1;
+}
+
+/* Detail 페이지 특화: 고정 레이아웃 및 최소 너비 */
+.items-table {
+  min-width: 1070px;
+  table-layout: fixed;
+}
+
+/* Detail 페이지 특화: readonly 입력 필드 스타일 (자동 readonly) */
+.items-table input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--gray-50);
+  color: var(--gray-600);
+  border-color: var(--gray-200);
+  padding: 0.375rem 0.5rem;
+}
+
+/* ============================================
+   Detail Item Display (sales detail)
+   ============================================ */
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-item label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.detail-item .value {
+  padding: 0.5rem 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  color: #1f2937;
+}
+
+/* ============================================
+   Status Badges (sales detail)
+   ============================================ */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.status-in-progress {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-complete {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ============================================
+   File Display Components (sales detail)
+   ============================================ */
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+}
+
+.file-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 0.875rem;
+}
+
+.file-size {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.btn-download {
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-download:hover {
+  background: #2563eb;
+}
+
+.no-file {
+  padding: 0.75rem;
+  text-align: center;
+  color: #9ca3af;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* ============================================
+   Action Cards (transport confirm)
+   ============================================ */
+.action-section {
+  padding: 2rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.action-card {
+  background: #3b82f6;
+  border-radius: 12px;
+  padding: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.action-card.completed {
+  background: #10b981;
+}
+
+.action-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: white;
+}
+
+.action-icon {
+  font-size: 2.5rem;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+
+.action-text h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.action-text p {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.action-retry {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.btn-retry {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-retry:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   Signature Components (transport confirm)
+   ============================================ */
+.signature-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.signature-pad {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.signature-canvas {
+  width: 100%;
+  height: 200px;
+  background: white;
+  cursor: crosshair;
+}
+
+.signature-controls {
+  padding: 1rem;
+  background: #f9fafb;
+  border-top: 1px solid #d1d5db;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-clear {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.signature-label {
+  font-weight: bold;
+}
+
+.signature-box {
+  min-width: 150px;
+  min-height: 40px;
+  border: 1px solid #000;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.signature-placeholder {
+  color: #9ca3af;
+}
+
+/* ============================================
+   Receipt Components (transport confirm)
+   ============================================ */
+.receipt-content {
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #000;
+}
+
+.company-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.receipt-logo {
+  width: 160px;
+  height: 40px;
+  background: #3b82f6;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.company-name {
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+.receipt-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.receipt-info {
+  text-align: right;
+  font-size: 0.75rem;
+}
+
+.receipt-details {
+  margin-bottom: 2rem;
+}
+
+.receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.receipt-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.receipt-table .label {
+  font-weight: bold;
+  width: 30%;
+}
+
+.receipt-products {
+  margin-bottom: 2rem;
+}
+
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.product-table th,
+.product-table td {
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.product-table th {
+  background: #f9fafb;
+  font-weight: bold;
+}
+
+.receipt-confirmation {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-weight: bold;
+}
+
+.receipt-signature {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.driver-note {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 1rem;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 4px;
+}
+
+/* ============================================
+   Photo Components (transport confirm)
+   ============================================ */
+.photo-preview-section {
+  padding: 2rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.photo-preview-section h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.photo-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.photo-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-remove {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+/* ============================================
+   Responsive Design (all detail pages)
+   ============================================ */
+@media (max-width: 1024px) {
+  .amount-display {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .amount-operator {
+    display: none;
+  }
+
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .action-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .photo-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .receipt-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .receipt-signature {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

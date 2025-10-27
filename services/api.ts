@@ -1,0 +1,75 @@
+// API 환경 설정 서비스
+export const apiEnvironment = {
+  /**
+   * 현재 API 환경 확인
+   */
+  getCurrentEnvironment(): 'development' | 'production' {
+    if (process.client) {
+      // 1. hostname 기반 자동 감지 (최우선)
+      const hostname = window.location.hostname
+      if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+        return 'production'
+      }
+
+      // 2. localStorage 설정 확인
+      const stored = localStorage.getItem('api_environment') as 'development' | 'production'
+      if (stored) {
+        return stored
+      }
+
+      // 3. 기본값: localhost면 development
+      return 'development'
+    }
+    // SSR/SSG 빌드 시 기본값은 production
+    return 'production'
+  },
+
+  /**
+   * API 환경 설정 (개발 디버깅용)
+   */
+  setEnvironment(env: 'development' | 'production') {
+    if (process.client) {
+      localStorage.setItem('api_environment', env);
+      console.log(`🔧 API 환경이 ${env}로 설정되었습니다. (hostname 자동 감지가 우선 적용됩니다)`);
+    }
+  },
+
+  /**
+   * API 기본 URL 가져오기
+   */
+  getApiBaseUrl(): string {
+    const env = this.getCurrentEnvironment()
+
+    // 환경에 따라 API URL 반환
+    // 운영 환경: 상대 경로 사용 (Nginx가 localhost:9031로 프록시)
+    // 개발 환경: 백엔드 서버로 직접 접근
+    return env === 'production'
+      ? '/api'
+      : 'http://localhost:9031/api'
+  },
+
+  /**
+   * 환경 강제 설정 (개발용)
+   */
+  forceProduction() {
+    if (process.client) {
+      localStorage.setItem('api_environment', 'production');
+      console.log('🚀 API 환경을 운영 모드로 설정했습니다. 페이지를 새로고침하세요.');
+    }
+  },
+
+  /**
+   * 환경 강제 설정 (개발용)
+   */
+  forceDevelopment() {
+    if (process.client) {
+      localStorage.setItem('api_environment', 'development');
+      console.log('🔧 API 환경을 개발 모드로 설정했습니다. 페이지를 새로고침하세요.');
+    }
+  }
+};
+
+// 편의를 위한 직접 export 함수들
+export const getApiBaseUrl = () => apiEnvironment.getApiBaseUrl();
+export const getCurrentEnvironment = () => apiEnvironment.getCurrentEnvironment();
+export const setEnvironment = (env: 'development' | 'production') => apiEnvironment.setEnvironment(env);

@@ -1,0 +1,63 @@
+{
+  "name": "ptlpsm",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "cross-env NODE_ENV=production nuxt build",
+    "start": "nuxt start",
+    "generate": "set NODE_OPTIONS=--max-old-space-size=4096 && cross-env NODE_ENV=production NUXT_STATIC=true nuxt generate",
+    "lint": "eslint --ext .js,.vue --ignore-path .gitignore .",
+    "preview": "nuxt preview"
+  },
+  "imports": {
+    "#internal/nuxt/paths": "./.nuxt/paths.mjs",
+    "#internal/nitro": "./.nuxt/nitro.json",
+    "#build": "./.nuxt/build",
+    "#app": "./.nuxt/app",
+    "#head": "./.nuxt/head",
+    "#pages": "./.nuxt/pages",
+    "#components": "./.nuxt/components",
+    "#imports": "./.nuxt/imports"
+  },
+  "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "^44.3.0",
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@nuxt/image": "^1.8.1",
+    "@pinia/nuxt": "^0.4.11",
+    "@types/axios": "^0.9.36",
+    "@types/swiper": "^5.4.3",
+    "@vueuse/core": "^10.4.1",
+    "@vueuse/nuxt": "^10.4.1",
+    "aos": "^2.3.4",
+    "axios": "^1.7.9",
+    "date-fns": "^2.30.0",
+    "exceljs": "^4.4.0",
+    "lucide-vue-next": "^0.263.0",
+    "nuxt": "^3.15.4",
+    "pinia": "^2.1.6",
+    "swiper": "^11.2.5",
+    "ua-parser-js": "^2.0.3",
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@nuxtjs/eslint-config-typescript": "^12.1.0",
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/aos": "^3.0.7",
+    "@types/node": "^22.13.4",
+    "@types/ua-parser-js": "^0.7.39",
+    "@types/vue": "^1.0.31",
+    "@vue/eslint-config-typescript": "^11.0.3",
+    "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.47.0",
+    "eslint-plugin-vue": "^9.17.0",
+    "postcss": "^8.5.6",
+    "sass": "^1.66.1",
+    "sass-loader": "^13.3.2",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.1.6"
+  }
+}

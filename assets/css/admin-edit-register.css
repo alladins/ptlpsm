@@ -1,0 +1,291 @@
+/**
+ * Admin Edit/Register Pages - 공통 스타일
+ *
+ * 모든 등록/수정 페이지에서 공통으로 사용하는 스타일
+ * - Content section layout
+ * - Two column layout
+ * - Items management section
+ * - Items table
+ * - Summary display
+ * - Responsive design
+ *
+ * 사용 페이지:
+ * - sales/register.vue, sales/edit/[id].vue
+ * - order/register.vue, order/edit/[id].vue
+ * - shipping/register.vue, shipping/edit/[id].vue
+ * - transport/register.vue, transport/edit/[id].vue
+ */
+
+/* ========== Content Section Layout (등록/수정 페이지 공통) ========== */
+
+.content-section {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  padding-left: 2rem;
+  padding-bottom: 0;
+  margin-top: -1rem;
+  margin-bottom: 0;
+}
+
+/* ========== Two Column Layout ========== */
+
+/* Register/Edit 페이지용: 좌우 2열 레이아웃 */
+.two-column-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+  grid-column: 1 / -1;
+}
+
+.left-column .info-group,
+.right-column .info-group {
+  margin-bottom: 0.9rem;
+}
+
+.left-column .info-group:last-child,
+.right-column .info-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Detail 페이지용: 계약서 파일 + 시스템 정보 2열 레이아웃 */
+.two-column-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.two-column-sections .column-1,
+.two-column-sections .column-2 {
+  min-width: 0; /* grid overflow 방지 */
+}
+
+/* ========== Items Management Section ========== */
+
+.items-section-wrapper {
+  grid-column: 1 / -1;
+}
+
+.items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.items-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Items Summary (order edit page) */
+.items-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.summary-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.summary-value {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.summary-divider {
+  color: #d1d5db;
+}
+
+/* ========== Items Section Header (Shipping) ========== */
+
+.items-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(to right, #eff6ff, #dbeafe);
+  border: 1px solid #3b82f6;
+  border-bottom: none;
+  border-radius: 0.5rem 0.5rem 0 0;
+  font-weight: 600;
+  color: #1e40af;
+  font-size: 0.875rem;
+  margin-bottom: 0;
+}
+
+/* ========== Items Table (등록/수정 페이지 전용 - editable) ========== */
+/*
+ * 기본 스타일은 admin-common.css의 .items-table에서 상속
+ * 여기서는 등록/수정 페이지 editable 특화 스타일만 정의
+ */
+
+/* Edit/Register 페이지 특화: Items Table Wrapper Variant (with header) */
+.items-table-wrapper.with-header {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  border-top: none;
+}
+
+/* Edit/Register 페이지 특화: 더 넓은 최소 너비 */
+.items-table {
+  min-width: 1200px;
+}
+
+/* Edit/Register 페이지 특화: Table footer */
+.items-table tfoot {
+  background: var(--gray-100);
+}
+
+.items-table tfoot td {
+  padding: 0.75rem;
+  font-weight: 600;
+  border-top: 2px solid var(--gray-200);
+}
+
+/* Edit/Register 페이지 특화: 버튼 스타일 */
+.items-table button {
+  padding: 0.375rem 0.75rem;
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+/* ========== Items Summary Display ========== */
+
+.items-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.items-summary strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.summary-info {
+  display: flex;
+  gap: 2rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  grid-column: 1 / -1;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.summary-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.summary-item label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.summary-item span {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+/* ========== Form Actions ========== */
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 2rem;
+}
+
+/* ========== Responsive Design ========== */
+
+@media (max-width: 1024px) {
+  .two-column-layout,
+  .two-column-sections {
+    grid-template-columns: 1fr; /* 모바일에서는 1열로 변경 */
+  }
+
+  .content-section {
+    padding-left: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-section {
+    padding: 1rem;
+    margin-top: 0;
+  }
+
+  .info-grid.grid-5,
+  .info-grid.grid-4,
+  .info-grid.grid-3,
+  .info-grid.grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .items-table-wrapper {
+    border-radius: 0.375rem;
+  }
+
+  .items-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .items-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .summary-info {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .items-table {
+    font-size: 0.75rem;
+  }
+
+  .items-table th,
+  .items-table td {
+    padding: 0.375rem;
+  }
+
+  .items-table input,
+  .items-table select {
+    font-size: 0.75rem;
+    padding: 0.375rem;
+  }
+}

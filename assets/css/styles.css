@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 공통 스타일 정의 */
+.main {
+  position: relative;
+  width: 100%;
+}
+
+/* Swiper Pagination Styles */
+.pager-bullets {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.swiper-pagination-bullet {
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 1;
+  margin: 0 5px;
+}
+
+.swiper-pagination-bullet-active {
+  background: #fff;
+}
+
+.main-section1 {
+  padding: 5rem 0;
+  background: #fff;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.state-project {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.state-project li {
+  flex: 1;
+  min-width: 250px;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.state-project dt {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.txt_wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.txt_wrap dl {
+  margin-bottom: 2rem;
+}
+
+.btn-counsel {
+  display: inline-block;
+  padding: 1rem 3rem;
+  background: #007bff;
+  color: #fff;
+  border-radius: 50px;
+  font-size: 1.2rem;
+  transition: background-color 0.3s;
+}
+
+.btn-counsel:hover {
+  background: #0056b3;
+}
+
+.scroll_down {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
+} 

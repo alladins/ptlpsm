@@ -1,0 +1,520 @@
+/**
+ * Admin Buttons - 전문가급 버튼 디자인 시스템
+ *
+ * 디자인 철학:
+ * - 명확한 시각적 계층구조와 상태 피드백
+ * - Gradient + Shadow로 입체감과 고급스러움 표현
+ * - 일관된 hover/active 인터랙션
+ * - 업무 효율성을 고려한 명확한 색상 구분
+ *
+ * 사용법:
+ * layouts/admin.vue에서 전역 import 됨
+ */
+
+/* ========== 주요 버튼 (Primary Buttons) - 업무 시스템 최적화 ========== */
+
+/* Primary Button - 주요 액션 (조회, 저장, 확인 등) */
+.btn-primary {
+  background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  color: white;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px 0 rgba(37, 99, 235, 0.25), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  box-shadow: 0 6px 12px -2px rgba(37, 99, 235, 0.35), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px 0 rgba(37, 99, 235, 0.2);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Secondary Button - 보조 액션 (취소, 닫기 등) */
+.btn-secondary {
+  background: linear-gradient(180deg, white 0%, var(--gray-50) 100%);
+  color: var(--gray-700);
+  border: 1.5px solid var(--gray-300);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  line-height: 1.5;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--gray-50) 0%, var(--gray-100) 100%);
+  border-color: var(--gray-400);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Danger Button - 삭제, 취소 등 위험한 작업 */
+.btn-danger {
+  background: linear-gradient(180deg, var(--danger-500) 0%, var(--danger-600) 100%);
+  color: white;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px 0 rgba(239, 68, 68, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--danger-600) 0%, #b91c1c 100%);
+  box-shadow: 0 6px 12px -2px rgba(239, 68, 68, 0.4), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-danger:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px 0 rgba(239, 68, 68, 0.2);
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Success Button - 완료, 승인 등 긍정 작업 */
+.btn-success {
+  background: linear-gradient(180deg, var(--success-500) 0%, var(--success-600) 100%);
+  color: white;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px 0 rgba(16, 185, 129, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--success-600) 0%, #047857 100%);
+  box-shadow: 0 6px 12px -2px rgba(16, 185, 129, 0.4), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-success:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px 0 rgba(16, 185, 129, 0.2);
+}
+
+.btn-success:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ========== 액션 버튼 (Action Buttons) - 테이블 내 액션 ========== */
+
+.btn-edit,
+.btn-delete,
+.btn-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* Edit Button - 수정 */
+.btn-edit {
+  background: linear-gradient(180deg, var(--warning-500) 0%, var(--warning-600) 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-edit:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--warning-600) 0%, #d97706 100%);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-edit:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(245, 158, 11, 0.2);
+}
+
+/* Delete Button - 삭제 */
+.btn-delete {
+  background: linear-gradient(180deg, var(--danger-500) 0%, var(--danger-600) 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-delete:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--danger-600) 0%, #b91c1c 100%);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-delete:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
+}
+
+/* View Button - 보기/상세 */
+.btn-view {
+  background: linear-gradient(180deg, white 0%, var(--gray-50) 100%);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-300);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-view:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--gray-50) 0%, var(--gray-100) 100%);
+  border-color: var(--gray-400);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn-view:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ========== Compact 버튼 (PageHeader용) - 소형 액션 버튼 ========== */
+
+.btn-action {
+  padding: 6px 12px;
+  font-size: 13px;
+  min-width: 70px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  transition: all 0.2s ease;
+  background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-action:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-action:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+.btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Compact Secondary */
+.btn-action.btn-secondary {
+  background: linear-gradient(180deg, var(--gray-500) 0%, var(--gray-600) 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(107, 114, 128, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-action.btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--gray-600) 0%, var(--gray-700) 100%);
+  box-shadow: 0 4px 8px rgba(107, 114, 128, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Compact Success (Primary variant) */
+.btn-action.btn-primary {
+  background: linear-gradient(180deg, var(--success-500) 0%, var(--success-600) 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-action.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--success-600) 0%, #047857 100%);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== 특화 버튼 (Specialized Buttons) - 도메인별 전용 ========== */
+
+/* Add Item Button - 품목 추가 */
+.btn-add-item {
+  background: linear-gradient(180deg, var(--success-500) 0%, var(--success-600) 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-add-item:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--success-600) 0%, #047857 100%);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-add-item:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.2);
+}
+
+/* Remove Item Button - 품목 제거 */
+.btn-remove-item {
+  background: linear-gradient(180deg, var(--danger-500) 0%, var(--danger-600) 100%);
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+}
+
+.btn-remove-item:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--danger-600) 0%, #b91c1c 100%);
+  box-shadow: 0 3px 6px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-remove-item:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
+}
+
+/* Search Small Button - 작은 검색 버튼 */
+.btn-search-sm {
+  padding: 0.375rem 0.75rem;
+  background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.btn-search-sm:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-search-sm:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Select Item Button - 품목 선택 버튼 */
+.btn-select-item {
+  background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-select-item:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-select-item:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Upload Button - 파일 업로드 */
+.btn-upload {
+  background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-upload:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.4), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-upload:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Download Button - 다운로드 */
+.btn-download {
+  background: linear-gradient(180deg, var(--success-500) 0%, var(--success-600) 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-download:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--success-600) 0%, #047857 100%);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-download:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.2);
+}
+
+/* Print Button - 인쇄 */
+.btn-print {
+  background: linear-gradient(180deg, var(--success-500) 0%, var(--success-600) 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-print:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--success-600) 0%, #047857 100%);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-print:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.2);
+}
+
+.btn-print:disabled {
+  background: linear-gradient(180deg, var(--gray-300) 0%, var(--gray-400) 100%);
+  color: var(--gray-500);
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ========== 버튼 그룹 레이아웃 ========== */
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}

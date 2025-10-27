@@ -1,0 +1,271 @@
+import { DELIVERY_ENDPOINTS } from './api/endpoints/delivery.endpoints'
+
+// MIGRATED: 2025-10-27 - URL을 DELIVERY_ENDPOINTS로 이전
+
+/**
+ * Delivery 관련 인터페이스
+ */
+
+// 납품 생성 요청
+export interface DeliveryCreateRequest {
+  transportId: number
+  shipmentId: number
+  orderId: number
+}
+
+// 납품 생성 응답 (메시지 발송용)
+export interface DeliveryCreateResponse {
+  deliveryId: number
+  transportId: number
+  accessToken: string
+  tokenExpiresAt: string
+  mobileUrl: string
+}
+
+// 납품 정보 조회 (모바일용)
+export interface DeliveryInfo {
+  deliveryId: number
+  transportId: number
+  shipmentId: number
+  orderId: number
+  status: string
+  tokenExpiresAt: string
+
+  // 운송 정보
+  transport: {
+    trackingNumber: string
+    deliveryAddress: string
+    addressDetail: string
+    deliveryDate: string
+    siteSupervisorName: string
+    receiverName: string
+    receiverPhone: string
+    driverName: string
+    driverPhone: string
+    vehicleNo: string
+  }
+
+  // 출하 정보
+  shipment: {
+    shipmentId: number
+    shipmentDate: string
+    projectName: string
+    client: string
+  }
+
+  // 발주 정보
+  order: {
+    deliveryRequestNo: string
+    contractId: string
+  }
+
+  // 품목 목록
+  items: Array<{
+    skuId: string
+    itemId: string
+    itemName: string
+    specification: string
+    unit: string
+    quantity: number
+    unitPrice: number
+  }>
+}
+
+// 납품 완료 요청
+export interface DeliveryConfirmRequest {
+  latitude?: number
+  longitude?: number
+}
+
+/**
+ * Delivery Service
+ */
+class DeliveryService {
+  /**
+   * 납품 생성 및 메시지 URL 발급
+   * @param transportId 운송장 ID
+   */
+  async createDelivery(transportId: number): Promise<DeliveryCreateResponse> {
+    try {
+      const response = await fetch(DELIVERY_ENDPOINTS.create(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ transportId })
+      })
+
+      if (!response.ok) {
+        throw new Error(`납품 생성 실패: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('납품 생성 실패:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 토큰으로 납품 정보 조회 (모바일용)
+   * @param token 접근 토큰
+   */
+  async getDeliveryByToken(token: string): Promise<DeliveryInfo> {
+    try {
+      const response = await fetch(DELIVERY_ENDPOINTS.getByToken(token))
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('유효하지 않은 링크입니다.')
+        } else if (response.status === 410) {
+          throw new Error('만료된 링크입니다.')
+        }
+        throw new Error(`납품 정보 조회 실패: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('납품 정보 조회 실패:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 서명 이미지 업로드 (모바일용)
+   * @param token 접근 토큰
+   * @param signatureBlob 서명 이미지 Blob
+   */
+  async uploadSignature(token: string, signatureBlob: Blob): Promise<{ signatureUrl: string }> {
+    try {
+      const formData = new FormData()
+      formData.append('signatureImage', signatureBlob, 'signature.png')
+
+      const response = await fetch(DELIVERY_ENDPOINTS.uploadSignature(token), {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error(`서명 업로드 실패: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('서명 업로드 실패:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 사진 업로드 (모바일용)
+   * @param token 접근 토큰
+   * @param photos 사진 파일 배열 (최대 5개)
+   */
+  async uploadPhotos(token: string, photos: File[]): Promise<{ photoUrls: string[] }> {
+    try {
+      const formData = new FormData()
+      photos.forEach((photo, index) => {
+        formData.append('photos', photo, `photo${index + 1}.jpg`)
+      })
+
+      const response = await fetch(DELIVERY_ENDPOINTS.uploadPhotos(token), {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error(`사진 업로드 실패: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('사진 업로드 실패:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 납품 완료 처리 (모바일용)
+   * @param token 접근 토큰
+   * @param data 납품 완료 데이터
+   */
+  async confirmDelivery(token: string, data: DeliveryConfirmRequest): Promise<{ deliveryId: number; confirmedAt: string }> {
+    try {
+      const response = await fetch(DELIVERY_ENDPOINTS.confirm(token), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (!response.ok) {
+        throw new Error(`납품 완료 처리 실패: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('납품 완료 처리 실패:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 납품 목록 조회 (관리자용)
+   */
+  async getDeliveryList(params: {
+    startDate?: string
+    endDate?: string
+    status?: string
+    page: number
+    size: number
+    sort?: string
+  }): Promise<{
+    content: any[]
+    totalElements: number
+    totalPages: number
+    size: number
+    number: number
+  }> {
+    try {
+      const queryParams = new URLSearchParams()
+      if (params.startDate) queryParams.append('startDate', params.startDate)
+      if (params.endDate) queryParams.append('endDate', params.endDate)
+      if (params.status) queryParams.append('status', params.status)
+      if (params.sort) queryParams.append('sort', params.sort)
+      queryParams.append('page', params.page.toString())
+      queryParams.append('size', params.size.toString())
+
+      const response = await fetch(`${DELIVERY_ENDPOINTS.list()}?${queryParams.toString()}`)
+
+      if (!response.ok) {
+        throw new Error(`납품 목록 조회 실패: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('납품 목록 조회 실패:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 납품 상세 조회 (관리자용)
+   */
+  async getDeliveryDetail(deliveryId: number): Promise<any> {
+    try {
+      const response = await fetch(DELIVERY_ENDPOINTS.detail(deliveryId))
+
+      if (!response.ok) {
+        throw new Error(`납품 상세 조회 실패: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('납품 상세 조회 실패:', error)
+      throw error
+    }
+  }
+}
+
+export const deliveryService = new DeliveryService()

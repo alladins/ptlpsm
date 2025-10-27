@@ -1,0 +1,55 @@
+order.service.ts:49 API 호출 URL: http://localhost:9031/api/admin/orders?page=1&size=10&sort=createdAt%2Cdesc
+order.service.ts:51 Fetch finished loading: GET "http://localhost:9031/api/admin/orders?page=1&size=10&sort=createdAt%2Cdesc".
+getOrders @ order.service.ts:51
+loadOrders @ OrderSelectPopup.vue:119
+(anonymous) @ OrderSelectPopup.vue:177
+(anonymous) @ runtime-core.esm-bundler.js:2836
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+hook.__weh.hook.__weh @ runtime-core.esm-bundler.js:2816
+flushPostFlushCbs @ runtime-core.esm-bundler.js:385
+flushJobs @ runtime-core.esm-bundler.js:427
+Promise.then
+queueFlush @ runtime-core.esm-bundler.js:322
+queueJob @ runtime-core.esm-bundler.js:317
+effect2.scheduler @ runtime-core.esm-bundler.js:5482
+trigger @ reactivity.esm-bundler.js:265
+endBatch @ reactivity.esm-bundler.js:323
+notify @ reactivity.esm-bundler.js:614
+trigger @ reactivity.esm-bundler.js:588
+set value @ reactivity.esm-bundler.js:1465
+openOrderSelectPopup @ register.vue:260
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+invoker @ runtime-dom.esm-bundler.js:730
+index.mjs:21 Fetch finished loading: GET "http://localhost:3000/_nuxt/builds/latest.json?1760246317616".
+(anonymous) @ index.mjs:21
+$fetchRaw2 @ ofetch.03887fc3.mjs:258
+$fetch2 @ ofetch.03887fc3.mjs:316
+getLatestManifest @ check-outdated-build.client.js:18
+order.service.ts:169 Fetch finished loading: GET "http://localhost:9031/api/admin/orders/4".
+getOrderDetail @ order.service.ts:169
+selectOrder @ OrderSelectPopup.vue:146
+onClick @ OrderSelectPopup.vue:52
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+invoker @ runtime-dom.esm-bundler.js:730
+OrderSelectPopup.vue:147 선택된 발주 상세 정보: {orderId: 4, salesId: null, contractId: '제00-22-7-0305-00호', contractDate: '2022-08-19', preNotificationNo: null, …}
+register.vue:270 선택된 발주 정보: {orderId: 4, salesId: null, contractId: '제00-22-7-0305-00호', contractDate: '2022-08-19', preNotificationNo: null, …}
+register.vue:281 출하 현황: {deliveryRequestNo: '35-23-3-06072-00', orderId: 4, items: Array(2)}
+shipment.service.ts:78 Fetch finished loading: GET "http://localhost:9031/api/admin/shipments/by-order/35-23-3-06072-00".
+getShipmentStatusByOrder @ shipment.service.ts:78
+handleOrderSelect @ register.vue:280
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+emit @ runtime-core.esm-bundler.js:6450
+(anonymous) @ runtime-core.esm-bundler.js:8164
+selectOrder @ OrderSelectPopup.vue:150
+await in selectOrder
+onClick @ OrderSelectPopup.vue:52
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+invoker @ runtime-dom.esm-bundler.js:730
+register.vue:291 품목 매핑 상세: {원본item전체: {…}, skuId: '25312981', itemId: '1', itemCd: undefined, itemNm: undefined, …}
+register.vue:291 품목 매핑 상세: {원본item전체: {…}, skuId: '25312983', itemId: '2', itemCd: undefined, itemNm: undefined, …}itemCd: undefineditemId: "2"itemName: undefineditemNm: undefinedquantity: 3411remainingQuantity: 2211shippedQuantity: 1200skuId: "25312983"skuName: undefinedskuNm: "JYGB-70LC"statusFound: true원본item전체: amount: 81864000createdAt: "2025-10-12T01:09:51"createdBy: "admin"deliveryDeadline: "2023-12-31"deliveryLocation: "수요기관지정장소"deliveryTerms: "공장상차도"inspectionExemption: "N"itemClassificationNumber: "30141503"itemId: "2"itemIdentificationNumber: "23561447"midTermCompetitionItem: "N"optionItemNumber: ""orderId: 4orderItemId: 12productName: "기포단열재"quantity: 3411skuId: "25312983"skuNm: "JYGB-70LC"sortOrder: 2specification: "폴리우레탄기포단열재,정우산업,JYGB-70LC,1000×1000×70mm"unit: "㎡"unitPrice: 24000updatedAt: "2025-10-12T01:09:51"updatedBy: "admin"[[Prototype]]: Object[[Prototype]]: Objectconstructor: ƒ Object()hasOwnProperty: ƒ hasOwnProperty()isPrototypeOf: ƒ isPrototypeOf()propertyIsEnumerable: ƒ propertyIsEnumerable()toLocaleString: ƒ toLocaleString()toString: ƒ toString()valueOf: ƒ valueOf()__defineGetter__: ƒ __defineGetter__()__defineSetter__: ƒ __defineSetter__()__lookupGetter__: ƒ __lookupGetter__()__lookupSetter__: ƒ __lookupSetter__()__proto__: (...)get __proto__: ƒ __proto__()set __proto__: ƒ __proto__()length: 1name: "set __proto__"arguments: (...)caller: (...)[[Prototype]]: ƒ ()[[Scopes]]: Scopes[0]
+register.vue:353 매핑된 품목 목록: Proxy(Array) {0: {…}, 1: {…}}[[Handler]]: MutableReactiveHandler[[Target]]: Array(2)[[IsRevoked]]: false
