@@ -21,6 +21,7 @@
       <button
         class="btn-clear"
         @click="clearSignature"
+        :disabled="isSaved"
         type="button"
       >
         <i class="fas fa-eraser"></i>
@@ -172,12 +173,17 @@ const saveSignature = async () => {
       }, 'image/png')
     })
 
-    isSaved.value = true
+    // 부모 컴포넌트가 서버 응답 후 markAsSaved()를 호출할 때까지 대기
     emit('save', blob)
   } catch (error) {
     console.error('서명 저장 실패:', error)
     alert('서명 저장에 실패했습니다.')
   }
+}
+
+// 외부에서 저장 완료 상태로 변경
+const markAsSaved = () => {
+  isSaved.value = true
 }
 
 // 외부에서 서명 여부 확인용
@@ -188,7 +194,8 @@ const hasSignature = () => {
 // Expose
 defineExpose({
   hasSignature,
-  clearSignature
+  clearSignature,
+  markAsSaved
 })
 
 // 클린업

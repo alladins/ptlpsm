@@ -255,18 +255,30 @@
               >
             </FormField>
             <FormField label="배차/출차 시각">
-              <input
-                type="datetime-local"
+              <VueDatePicker
                 v-model="formData.dispatchAt"
-                class="form-input-md"
-              >
+                :enable-time-picker="true"
+                :format="'yyyy-MM-dd HH:mm'"
+                locale="ko"
+                time-picker-inline
+                :action-row="{ showNow: true, showCancel: true, showSelect: true }"
+                placeholder="날짜와 시간을 선택하세요"
+                auto-apply
+                :teleport="true"
+              />
             </FormField>
             <FormField label="도착 예정 시각">
-              <input
-                type="datetime-local"
+              <VueDatePicker
                 v-model="formData.expectedArrival"
-                class="form-input-md"
-              >
+                :enable-time-picker="true"
+                :format="'yyyy-MM-dd HH:mm'"
+                locale="ko"
+                time-picker-inline
+                :action-row="{ showNow: true, showCancel: true, showSelect: true }"
+                placeholder="날짜와 시간을 선택하세요"
+                auto-apply
+                :teleport="true"
+              />
             </FormField>
             <FormField label="운송장번호" full-width>
               <div class="tracking-number-group">

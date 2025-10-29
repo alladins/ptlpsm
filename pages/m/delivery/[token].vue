@@ -34,24 +34,34 @@
       <!-- 운송 정보 -->
       <section class="info-section">
         <h2><i class="fas fa-truck"></i> 운송 정보</h2>
-        <div class="info-card">
-          <div class="info-row">
+        <div class="transport-grid">
+          <!-- 1행: 운송장번호, 차량번호 -->
+          <div class="grid-item">
             <span class="label">운송장번호</span>
             <span class="value">{{ deliveryData?.transport?.trackingNumber ?? '-' }}</span>
           </div>
-          <div class="info-row">
+          <div class="grid-item">
+            <span class="label">차량번호</span>
+            <span class="value">{{ deliveryData?.transport?.vehicleNo ?? '-' }}</span>
+          </div>
+
+          <!-- 2행: 배송지 (전체 너비) -->
+          <div class="grid-item full-width">
             <span class="label">배송지</span>
-            <span class="value">{{ deliveryData?.transport?.deliveryAddress ?? '-' }}</span>
+            <span class="value">
+              {{ deliveryData?.transport?.deliveryAddress ?? '-' }}
+              <span v-if="deliveryData?.transport?.addressDetail">
+                {{ deliveryData.transport.addressDetail }}
+              </span>
+            </span>
           </div>
-          <div class="info-row" v-if="deliveryData?.transport?.addressDetail">
-            <span class="label">상세주소</span>
-            <span class="value">{{ deliveryData?.transport?.addressDetail }}</span>
-          </div>
-          <div class="info-row">
+
+          <!-- 3행: 배송예정일, 현장소장 -->
+          <div class="grid-item">
             <span class="label">배송예정일</span>
             <span class="value">{{ deliveryData?.transport?.deliveryDate ?? '-' }}</span>
           </div>
-          <div class="info-row">
+          <div class="grid-item">
             <span class="label">현장소장</span>
             <span class="value">{{ deliveryData?.transport?.siteSupervisorName ?? '-' }}</span>
           </div>
@@ -61,15 +71,22 @@
       <!-- 품목 목록 -->
       <section class="info-section">
         <h2><i class="fas fa-box"></i> 출하 품목 ({{ deliveryData?.items?.length ?? 0 }}개)</h2>
-        <div class="items-list">
-          <div v-for="(item, index) in deliveryData?.items" :key="index" class="item-card">
-            <div class="item-name">{{ item?.itemName ?? '-' }}</div>
-            <div class="item-spec">{{ item?.specification ?? '-' }}</div>
-            <div class="item-quantity">
-              수량: <strong>{{ item?.quantity?.toLocaleString() ?? 0 }} {{ item?.unit ?? '' }}</strong>
-            </div>
-          </div>
-        </div>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>품목</th>
+              <th>규격</th>
+              <th>수량</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in deliveryData?.items" :key="index">
+              <td>{{ item?.itemName ?? '-' }}</td>
+              <td>{{ item?.specification ?? '-' }}</td>
+              <td>{{ item?.quantity?.toLocaleString() ?? 0 }} {{ item?.unit ?? '' }}</td>
+            </tr>
+          </tbody>
+        </table>
       </section>
 
       <!-- 서명 섹션 -->
@@ -172,11 +189,16 @@ onMounted(async () => {
 const handleSignatureSave = async (blob: Blob) => {
   try {
     console.log('서명 저장:', blob)
-    await deliveryService.uploadSignature(token, blob)
-    alert('서명이 저장되었습니다.')
+    const result = await deliveryService.uploadSignature(token, blob)
+
+    // 서버 응답 성공 시 컴포넌트를 저장 완료 상태로 변경
+    signatureRef.value?.markAsSaved()
+
+    // 서버에서 받은 메시지 표시
+    alert(result.message)
   } catch (err) {
     console.error('서명 저장 실패:', err)
-    alert('서명 저장에 실패했습니다.')
+    alert(`서명 저장에 실패했습니다.\n${err instanceof Error ? err.message : '알 수 없는 오류'}`)
   }
 }
 

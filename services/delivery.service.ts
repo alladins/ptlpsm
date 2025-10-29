@@ -6,6 +6,55 @@ import { DELIVERY_ENDPOINTS } from './api/endpoints/delivery.endpoints'
  * Delivery 관련 인터페이스
  */
 
+// 서버 업로드 응답 형식
+export interface UploadResponse {
+  success: boolean
+  message: string
+  timestamp: string
+}
+
+// 서버 API 응답 형식 (flat structure)
+export interface DeliveryApiResponse {
+  deliveryId: number
+  transportId: number
+  shipmentId: number
+  orderId: number
+  status: string
+  tokenExpiresAt: string
+
+  // 운송 정보 (flat structure)
+  trackingNumber: string
+  siteAddress: string
+  addressDetail: string
+  deliveryDate: string
+  siteSupervisorName: string
+  receiverName: string
+  receiverPhone: string
+  driverName: string
+  driverPhone: string
+  vehicleNo: string
+
+  // 출하 정보 (flat structure)
+  shipmentDate: string
+  projectName: string
+  client: string
+
+  // 발주 정보 (flat structure)
+  deliveryRequestNo: string
+  contractId: string
+
+  // 품목 목록
+  items: Array<{
+    skuId: string
+    itemId: string
+    itemName: string
+    itemSpec: string  // specification으로 변환 필요
+    unit: string
+    shipmentQuantity: number  // quantity로 변환 필요
+    unitPrice: number
+  }>
+}
+
 // 납품 생성 요청
 export interface DeliveryCreateRequest {
   transportId: number
@@ -78,6 +127,61 @@ export interface DeliveryConfirmRequest {
 }
 
 /**
+ * 서버 API 응답(flat)을 프론트엔드 형식(nested)으로 변환
+ * @param apiResponse 서버로부터 받은 flat structure 응답
+ * @returns 프론트엔드에서 사용하는 nested structure
+ */
+function transformDeliveryResponse(apiResponse: DeliveryApiResponse): DeliveryInfo {
+  return {
+    deliveryId: apiResponse.deliveryId,
+    transportId: apiResponse.transportId,
+    shipmentId: apiResponse.shipmentId,
+    orderId: apiResponse.orderId,
+    status: apiResponse.status,
+    tokenExpiresAt: apiResponse.tokenExpiresAt,
+
+    // 운송 정보를 nested object로 변환
+    transport: {
+      trackingNumber: apiResponse.trackingNumber,
+      deliveryAddress: apiResponse.siteAddress,  // siteAddress → deliveryAddress
+      addressDetail: apiResponse.addressDetail,
+      deliveryDate: apiResponse.deliveryDate,
+      siteSupervisorName: apiResponse.siteSupervisorName,
+      receiverName: apiResponse.receiverName,
+      receiverPhone: apiResponse.receiverPhone,
+      driverName: apiResponse.driverName,
+      driverPhone: apiResponse.driverPhone,
+      vehicleNo: apiResponse.vehicleNo
+    },
+
+    // 출하 정보를 nested object로 변환
+    shipment: {
+      shipmentId: apiResponse.shipmentId,
+      shipmentDate: apiResponse.shipmentDate,
+      projectName: apiResponse.projectName,
+      client: apiResponse.client
+    },
+
+    // 발주 정보를 nested object로 변환
+    order: {
+      deliveryRequestNo: apiResponse.deliveryRequestNo,
+      contractId: apiResponse.contractId
+    },
+
+    // 품목 목록의 필드명 변환
+    items: apiResponse.items.map(item => ({
+      skuId: item.skuId,
+      itemId: item.itemId,
+      itemName: item.itemName,
+      specification: item.itemSpec,  // itemSpec → specification
+      unit: item.unit,
+      quantity: item.shipmentQuantity,  // shipmentQuantity → quantity
+      unitPrice: item.unitPrice
+    }))
+  }
+}
+
+/**
  * Delivery Service
  */
 class DeliveryService {
@@ -123,7 +227,11 @@ class DeliveryService {
         throw new Error(`납품 정보 조회 실패: ${response.status}`)
       }
 
-      return await response.json()
+      // 서버 응답을 DeliveryApiResponse로 파싱
+      const apiResponse: DeliveryApiResponse = await response.json()
+
+      // flat structure를 nested structure로 변환하여 반환
+      return transformDeliveryResponse(apiResponse)
     } catch (error) {
       console.error('납품 정보 조회 실패:', error)
       throw error
@@ -135,7 +243,7 @@ class DeliveryService {
    * @param token 접근 토큰
    * @param signatureBlob 서명 이미지 Blob
    */
-  async uploadSignature(token: string, signatureBlob: Blob): Promise<{ signatureUrl: string }> {
+  async uploadSignature(token: string, signatureBlob: Blob): Promise<UploadResponse> {
     try {
       const formData = new FormData()
       formData.append('signatureImage', signatureBlob, 'signature.png')
@@ -149,7 +257,13 @@ class DeliveryService {
         throw new Error(`서명 업로드 실패: ${response.status}`)
       }
 
-      return await response.json()
+      const result: UploadResponse = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.message)
+      }
+
+      return result
     } catch (error) {
       console.error('서명 업로드 실패:', error)
       throw error
@@ -161,7 +275,7 @@ class DeliveryService {
    * @param token 접근 토큰
    * @param photos 사진 파일 배열 (최대 5개)
    */
-  async uploadPhotos(token: string, photos: File[]): Promise<{ photoUrls: string[] }> {
+  async uploadPhotos(token: string, photos: File[]): Promise<UploadResponse> {
     try {
       const formData = new FormData()
       photos.forEach((photo, index) => {
@@ -177,7 +291,13 @@ class DeliveryService {
         throw new Error(`사진 업로드 실패: ${response.status}`)
       }
 
-      return await response.json()
+      const result: UploadResponse = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.message)
+      }
+
+      return result
     } catch (error) {
       console.error('사진 업로드 실패:', error)
       throw error

@@ -97,6 +97,7 @@
           <thead>
             <tr>
               <th>No</th>
+              <th>출하ID</th>
               <th>계약일자</th>
               <th>납품요구일자</th>
               <th>수요기관</th>
@@ -115,6 +116,7 @@
               style="cursor: pointer;"
             >
               <td>{{ startIndex + index }}</td>
+              <td>{{ item.shipmentId }}</td>
               <td>{{ formatDate(item.contractDate) }}</td>
               <td>{{ formatDate(item.deliveryRequestDate) }}</td>
               <td>{{ item.client }}</td>
@@ -131,7 +133,7 @@
           </tbody>
           <tfoot v-if="shippingData.length > 0">
             <tr>
-              <td colspan="7" class="text-right"><strong>총 출하수량</strong></td>
+              <td colspan="8" class="text-right"><strong>총 출하수량</strong></td>
               <td class="text-right"><strong>{{ formatNumber(totalShippingQuantity) }}</strong></td>
               <td class="text-right"><strong>{{ formatCurrency(totalShippingAmount) }}</strong></td>
             </tr>

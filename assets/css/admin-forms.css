@@ -334,3 +334,130 @@
     align-items: stretch;
   }
 }
+
+/* ========== VueDatePicker Custom Styles ========== */
+/**
+ * @vuepic/vue-datepicker 커스터마이징
+ *
+ * 기본 스타일 덮어쓰기:
+ * - 프로젝트 테마 컬러 적용 (primary: #2563eb)
+ * - 한국어 폰트 적용
+ * - 액션 버튼 스타일링
+ */
+
+/* 메인 테마 색상 */
+.dp__theme_light {
+  --dp-primary-color: #2563eb;
+  --dp-primary-text-color: #ffffff;
+  --dp-secondary-color: #e5e7eb;
+  --dp-border-color: #d1d5db;
+  --dp-border-radius: 4px;
+  --dp-font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+}
+
+/* 입력 필드 */
+.dp__input {
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 0.75rem;
+  font-size: 14px;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+}
+
+.dp__input:hover {
+  border-color: #9ca3af;
+}
+
+.dp__input:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* 달력 팝오버 */
+.dp__menu {
+  border: 1px solid #d1d5db;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* 액션 버튼 영역 */
+.dp__action_row {
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+/* 액션 버튼 */
+.dp__action_button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dp__action_button:hover {
+  background: #1d4ed8;
+}
+
+/* 취소 버튼 */
+.dp__action_cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.dp__action_cancel:hover {
+  background: #e5e7eb;
+}
+
+/* 선택 버튼 (확인) */
+.dp__action_select {
+  background: #2563eb;
+  color: white;
+}
+
+.dp__action_select:hover {
+  background: #1d4ed8;
+}
+
+/* 오늘 버튼 */
+.dp__now_button {
+  background: #10b981;
+  color: white;
+}
+
+.dp__now_button:hover {
+  background: #059669;
+}
+
+/* 선택된 날짜 */
+.dp__active_date {
+  background: #2563eb;
+  color: white;
+}
+
+/* 시간 선택기 */
+.dp__time_input {
+  font-size: 14px;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .dp__menu {
+    max-width: 90vw;
+  }
+
+  .dp__action_row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .dp__action_button {
+    flex: 1;
+    min-width: 100px;
+  }
+}
