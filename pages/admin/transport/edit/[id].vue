@@ -10,19 +10,27 @@
           <i class="fas fa-times"></i>
           취소
         </button>
-        <button class="btn-delete" @click="deleteTransport">
+        <button
+          v-if="canDelete"
+          class="btn-delete"
+          @click="deleteTransport"
+        >
           <i class="fas fa-trash"></i>
           삭제
         </button>
         <button
           class="btn-print"
           @click="printTransport"
-          :disabled="formData.status !== 'IN_PROGRESS'"
         >
           <i class="fas fa-print"></i>
           운송장 출력
         </button>
-        <button class="btn-primary" @click="saveTransport">
+        <button
+          class="btn-primary"
+          @click="saveTransport"
+          :disabled="!canSave"
+          :title="!canSave ? '대기 또는 진행중 상태에서만 저장할 수 있습니다.' : ''"
+        >
           <i class="fas fa-save"></i>
           저장
         </button>
@@ -392,7 +400,15 @@
                 <div class="signature-section">
                   <div class="signature-field">
                     <span class="signature-label">물품 인수자</span>
-                    <span class="signature-box">(인)</span>
+                    <div class="signature-box">
+                      <img
+                        v-if="receiverSignatureUrl"
+                        :src="receiverSignatureUrl"
+                        alt="서명"
+                        class="signature-image"
+                      >
+                      <span v-else>(인)</span>
+                    </div>
                   </div>
                 </div>
 
@@ -469,7 +485,15 @@
                 <div class="signature-section">
                   <div class="signature-field">
                     <span class="signature-label">물품 인수자</span>
-                    <span class="signature-box">(인)</span>
+                    <div class="signature-box">
+                      <img
+                        v-if="receiverSignatureUrl"
+                        :src="receiverSignatureUrl"
+                        alt="서명"
+                        class="signature-image"
+                      >
+                      <span v-else>(인)</span>
+                    </div>
                   </div>
                 </div>
 
@@ -497,10 +521,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { transportService } from '~/services/transport.service'
-import type { TransportDetail } from '~/services/transport.service'
 import { shipmentService } from '~/services/shipment.service'
-import { orderService } from '~/services/order.service'
-import type { OrderDetailResponse } from '~/types/order'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import axios from 'axios'
@@ -529,6 +550,9 @@ const receiptData = ref({
   unloadingTime: '',
   remarks: ''
 })
+
+// 서명 이미지 URL (납품확인에서 가져옴)
+const receiverSignatureUrl = ref<string | null>(null)
 
 // 품목 목록
 const productList = ref<Array<{
@@ -714,31 +738,37 @@ const saveTransport = async () => {
 
 // 운송장 출력
 const printTransport = async () => {
-  if (formData.value.status !== 'IN_PROGRESS') {
-    alert('진행중 상태일 때만 운송장을 출력할 수 있습니다.')
-    return
-  }
-
   try {
     // 운송장 상세 정보 조회
     const transportDetail = await transportService.getTransportDetail(formData.value.transportId)
 
-    // 발주 ID로 발주 상세 정보 조회
-    const orderDetail: OrderDetailResponse = await orderService.getOrderDetail(transportDetail.orderId)
+    // 출하 ID로 출하 상세 정보 조회 (해당 출하의 품목만 포함)
+    const shipmentDetail = await shipmentService.getShipmentDetail(transportDetail.shipmentId)
 
     // 인수증 데이터 업데이트
     receiptData.value = {
-      clientName: orderDetail.client || '',
+      clientName: shipmentDetail.client || '',
       deliveryLocation: formData.value.deliveryAddress || '',
       managerContact: `${formData.value.siteSupervisorName || ''} ${formData.value.receiverPhone || ''}`.trim(),
       unloadingTime: formData.value.expectedArrival?.slice(11, 16) || '',
       remarks: formData.value.deliveryMemo || ''
     }
 
+    // 서명 이미지 URL 생성 (백엔드 API 경로)
+    const deliveryConfirmation = (transportDetail as any).deliveryConfirmation
+    if (deliveryConfirmation && deliveryConfirmation.hasSignature) {
+      const baseUrl = getApiBaseUrl()
+      receiverSignatureUrl.value = `${baseUrl}/admin/deliveries/${deliveryConfirmation.deliveryId}/signature`
+    } else {
+      receiverSignatureUrl.value = null
+    }
+
     // 품목 목록 업데이트 (specification 파싱)
-    productList.value = orderDetail.items.map(item => {
-      // specification 파싱: "폴리우레탄기포단열재,정우산업,JYGB-60LC,1000×1000×60mm"
-      const parts = (item.specification || '').split(',').map(p => p.trim())
+    productList.value = shipmentDetail.items
+      .filter(item => item.shipmentQuantity > 0)  // 수량 0인 품목 제외
+      .map(item => {
+        // specification 파싱: "폴리우레탄기포단열재,정우산업,JYGB-60LC,1000×1000×60mm"
+        const parts = (item.specification || '').split(',').map(p => p.trim())
 
       // 두께 추출: parts[3] = "1000×1000×60mm" → "60T"
       let thickness = '-'
@@ -768,19 +798,19 @@ const printTransport = async () => {
         if (sizeParts.length >= 2) {
           const width = parseInt(sizeParts[0]) || 0
           const height = parseInt(sizeParts[1]) || 0
-          const area = (width * height * item.quantity) / 1000000
+          const area = (width * height * item.shipmentQuantity) / 1000000
           remarks = area > 0 ? `단위 환산: ${Math.round(area).toLocaleString('ko-KR')}㎡` : '-'
         }
       }
 
-      return {
-        name: item.productName || item.itemNm || item.itemName || '',
-        thickness: thickness,
-        quantity: item.quantity.toLocaleString('ko-KR'),
-        specification: specification,
-        remarks: remarks
-      }
-    })
+        return {
+          name: item.itemName || '',
+          thickness: thickness,
+          quantity: item.shipmentQuantity.toLocaleString('ko-KR'),
+          specification: specification,
+          remarks: remarks
+        }
+      })
 
     // 5줄로 맞추기: 실제 데이터가 5개 미만이면 공백 행 추가
     while (productList.value.length < 5) {
@@ -838,6 +868,16 @@ const statusText = computed(() => {
     'CANCELLED': '취소'
   }
   return statusMap[formData.value.status] || formData.value.status
+})
+
+// 삭제 가능 여부 (대기 또는 진행중일 때만)
+const canDelete = computed(() => {
+  return ['PENDING', 'IN_PROGRESS'].includes(formData.value.status)
+})
+
+// 저장 가능 여부 (대기 또는 진행중일 때만)
+const canSave = computed(() => {
+  return ['PENDING', 'IN_PROGRESS'].includes(formData.value.status)
 })
 
 // 메시지 전송 가능 여부 체크
@@ -987,5 +1027,26 @@ const sendMessageToDriver = async () => {
     width: 100%;
     justify-content: center;
   }
+}
+
+/* 서명 이미지 스타일 */
+.signature-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  min-height: 80px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px;
+  background: white;
+}
+
+.signature-image {
+  max-width: 100%;
+  max-height: 80px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 </style>

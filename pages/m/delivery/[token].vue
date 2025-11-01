@@ -261,7 +261,33 @@ const handleSubmit = async () => {
 
     // 완료 화면으로 전환
     isCompleted.value = true
-    completedAt.value = new Date(result.confirmedAt).toLocaleString('ko-KR')
+
+    // 안전한 날짜 파싱
+    try {
+      if (result.confirmedAt) {
+        const date = new Date(result.confirmedAt)
+        // 유효한 날짜인지 확인
+        if (!isNaN(date.getTime())) {
+          completedAt.value = date.toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          })
+        } else {
+          console.warn('Invalid date format:', result.confirmedAt)
+          completedAt.value = new Date().toLocaleString('ko-KR')
+        }
+      } else {
+        console.warn('confirmedAt is missing in server response')
+        completedAt.value = new Date().toLocaleString('ko-KR')
+      }
+    } catch (dateError) {
+      console.error('날짜 파싱 에러:', dateError, 'confirmedAt:', result.confirmedAt)
+      completedAt.value = new Date().toLocaleString('ko-KR')
+    }
 
     // 화면 맨 위로 스크롤
     window.scrollTo({ top: 0, behavior: 'smooth' })

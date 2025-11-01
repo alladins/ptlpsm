@@ -19,18 +19,10 @@
           취소
         </button>
         <button
-          class="btn-action"
-          @click="handleRegisterTransport"
-          :disabled="!canRegisterTransport"
-          :title="!canRegisterTransport ? '준비 상태에서만 운송등록이 가능합니다.' : ''"
-        >
-          <i class="fas fa-truck"></i>
-          운송등록
-        </button>
-        <button
           class="btn-action btn-primary"
           @click="handleSubmit"
-          :disabled="submitting"
+          :disabled="submitting || !canEdit"
+          :title="!canEdit ? '완료 또는 취소된 출하는 수정할 수 없습니다.' : ''"
         >
           <i class="fas fa-save"></i>
           {{ submitting ? '저장 중...' : '저장' }}
@@ -94,6 +86,7 @@
                       type="date"
                       v-model="formData.shippingDate"
                       class="form-input-sm text-center"
+                      :readonly="!canEdit"
                     >
                   </FormField>
 
@@ -103,11 +96,12 @@
                       v-model="formData.trackingNumber"
                       class="form-input-md text-center"
                       placeholder="운송장번호"
+                      :readonly="!canEdit"
                     >
                   </FormField>
 
                   <FormField label="상태" required :error="errors.status">
-                    <select v-model="formData.status" class="form-select-sm text-center">
+                    <select v-model="formData.status" class="form-select-sm text-center" :disabled="!canEdit">
                       <option value="PENDING">대기</option>
                       <option value="READY">준비</option>
                       <option value="IN_PROGRESS">진행중</option>
@@ -186,18 +180,18 @@
               <table class="items-table">
                 <thead>
                   <tr>
-                    <th style="width: 30px">NO</th>
-                    <th style="width: 60px">품목명</th>
-                    <th style="width: 60px">SKU ID</th>
-                    <th style="width: 60px">SKU 품명</th>
-                    <th style="width: 250px">규격</th>
-                    <th style="width: 30px">단위</th>
-                    <th style="width: 60px">발주수량</th>
+                    <th style="width: 20px">NO</th>
+                    <th style="width: 80px">품목명</th>
+                    <th style="width: 70px">SKU ID</th>
+                    <th style="width: 100px">SKU 품명</th>
+                    <th style="width: 420px">규격</th>
+                    <th style="width: 20px">단위</th>
+                    <th style="width: 80px">발주수량</th>
                     <th style="width: 60px">기출하</th>
-                    <th style="width: 60px">잔여수량</th>
-                    <th style="width: 60px">출하수량</th>
-                    <th style="width: 60px">단가</th>
-                    <th style="width: 60px">금액</th>
+                    <th style="width: 70px">잔여수량</th>
+                    <th style="width: 80px">출하수량</th>
+                    <th style="width: 80px">단가</th>
+                    <th style="width: 120px">금액</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -221,7 +215,7 @@
                     <td class="text-right quantity-col">
                       <!-- 대기/준비 상태일 때만 수정 가능 -->
                       <input
-                        v-if="canEditQuantity"
+                        v-if="canEdit && canEditQuantity"
                         type="number"
                         v-model.number="item.shippingQuantity"
                         :min="0"
@@ -307,8 +301,7 @@ const {
   loading,
   submitting,
   submit,
-  goBack,
-  reload
+  goBack
 } = useEditForm<ShipmentDetailWithOrder, any, any>({
   fetchFunction: async (id) => {
     try {
@@ -318,6 +311,8 @@ const {
       console.log('[출하 수정] API 호출 전')
       const data = await shipmentService.getShipmentDetail(id)
       console.log('[출하 수정] API 응답 데이터:', data)
+      console.log('[출하 수정] 🔍 기관번호 (clientNo):', data.clientNo)
+      console.log('[출하 수정] 🔍 담당자 (clientManagerName):', data.clientManagerName)
 
       // 데이터 유효성 검증
       if (!data) {
@@ -499,14 +494,14 @@ const canDelete = computed(() => {
   return ['READY', 'PENDING', 'CANCELLED'].includes(formData.status)
 })
 
-// 운송등록 가능 여부
-const canRegisterTransport = computed(() => {
-  return formData.status === 'READY'
-})
-
 // 수량 수정 가능 여부 (대기/준비 상태만)
 const canEditQuantity = computed(() => {
   return ['PENDING', 'READY'].includes(formData.status)
+})
+
+// 출하 수정 가능 여부 (완료/취소 상태에서는 수정 불가)
+const canEdit = computed(() => {
+  return !['COMPLETED', 'CANCELLED'].includes(formData.status)
 })
 
 // 포커스 시 원래 값 저장
@@ -577,23 +572,6 @@ const handleDelete = async () => {
     console.error('출하 정보 삭제 실패:', error)
     alert('출하 정보 삭제에 실패했습니다.')
   }
-}
-
-// 운송등록 화면으로 이동
-const handleRegisterTransport = () => {
-  const transportData = {
-    shipmentId: shipmentId.value,
-    projectName: formData.projectName,
-    deliveryRequestNo: formData.deliveryRequestNo,
-    clientName: formData.client
-  }
-
-  router.push({
-    path: '/admin/transport/register',
-    query: {
-      data: JSON.stringify(transportData)
-    }
-  })
 }
 </script>
 

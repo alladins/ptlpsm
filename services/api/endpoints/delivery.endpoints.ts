@@ -51,6 +51,21 @@ export const DELIVERY_ENDPOINTS = {
   },
 
   /**
+   * 납품 트리 구조 조회 (Admin용 - 발주 → 출하 → 운송/납품확인)
+   * @returns Base URL for query parameters
+   * @example
+   * const queryParams = new URLSearchParams()
+   * queryParams.append('page', '0')
+   * queryParams.append('size', '10')
+   * queryParams.append('startDate', '2024-07-01')
+   * fetch(`${DELIVERY_ENDPOINTS.tree()}?${queryParams}`)
+   */
+  tree: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/deliveries/tree`
+  },
+
+  /**
    * 납품 상세 조회 (Admin용)
    * @param deliveryId - 납품 ID
    * @returns GET /admin/deliveries/{deliveryId}

@@ -170,12 +170,12 @@ export function useDataTable<T = any>(options: UseDataTableOptions = {}) {
       // Spring Data 페이지네이션 응답 처리
       if (response && 'content' in response) {
         const pageResponse = response as SpringPageResponse<T>
-        items.value = pageResponse.content
-        totalElements.value = pageResponse.totalElements
-        totalPages.value = pageResponse.totalPages
-        isFirstPage.value = pageResponse.first
-        isLastPage.value = pageResponse.last
-        currentPage.value = pageResponse.number
+        items.value = pageResponse.content || []
+        totalElements.value = pageResponse.totalElements ?? 0
+        totalPages.value = pageResponse.totalPages ?? 0
+        isFirstPage.value = pageResponse.first ?? true
+        isLastPage.value = pageResponse.last ?? true
+        currentPage.value = pageResponse.number ?? 0
       } else {
         // 일반 배열 응답 처리
         items.value = response || []

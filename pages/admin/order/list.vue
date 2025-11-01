@@ -132,14 +132,14 @@
             <thead>
               <tr>
                 <th>No</th>
-                <th>계약번호</th>
-                <th>계약일자</th>
                 <th>납품요구번호</th>
+                <th>납품요구일자</th>
                 <th>수요기관</th>
                 <th>담당자</th>
                 <th>사업명</th>
                 <th>총계약금액</th>
-                <th>납품요구일자</th>
+                <th>계약번호</th>
+                <th>계약일자</th>
               </tr>
             </thead>
             <tbody>
@@ -150,14 +150,14 @@
                 @dblclick="editItem(item.orderId)"
               >
                 <td>{{ startIndex + index }}</td>
-                <td>{{ item.contractId }}</td>
-                <td>{{ item.contractDate }}</td>
                 <td>{{ item.deliveryRequestNo }}</td>
+                <td>{{ item.deliveryRequestDate }}</td>
                 <td>{{ item.client }}</td>
                 <td>{{ item.clientManagerName }}</td>
                 <td>{{ item.projectName }}</td>
                 <td class="text-right">{{ formatNumber(item.totalAmount) }}</td>
-                <td>{{ item.deliveryRequestDate }}</td>
+                <td>{{ item.contractId }}</td>
+                <td>{{ item.contractDate }}</td>
               </tr>
             </tbody>
           </table>

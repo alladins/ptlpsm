@@ -1,16 +1,16 @@
 <template>
-  <div class="delivery-list">
+  <div class="delivery-tree-list">
     <!-- 페이지 헤더 -->
     <UiPageHeader
-      title="납품확인관리 목록"
-      description="납품확인 정보를 관리합니다."
+      title="납품현황 관리"
+      description="발주별 납품 현황을 트리 구조로 확인합니다."
     >
       <template #actions>
-        <button class="btn-action" @click="search">
+        <button class="btn-action" @click="handleSearch">
           <i class="fas fa-search"></i>
           검색
         </button>
-        <button class="btn-action btn-secondary" @click="reset">
+        <button class="btn-action btn-secondary" @click="handleReset">
           <i class="fas fa-undo"></i>
           초기화
         </button>
@@ -22,7 +22,7 @@
     </UiPageHeader>
 
     <div class="content-section">
-      <!-- 검색 조건 섹션 - 완전히 한 줄 -->
+      <!-- 검색 조건 섹션 -->
       <div class="search-section-compact">
         <div class="search-row-single">
           <!-- 납품일자 -->
@@ -31,6 +31,17 @@
             <input type="date" v-model="searchForm.startDate" class="date-input">
             <span class="separator">~</span>
             <input type="date" v-model="searchForm.endDate" class="date-input">
+          </div>
+
+          <!-- 납품요구번호 (NEW) -->
+          <div class="search-item">
+            <label>납품요구번호:</label>
+            <input
+              type="text"
+              v-model="searchForm.deliveryRequestNo"
+              placeholder="납품요구번호 검색"
+              class="text-input"
+            >
           </div>
 
           <!-- 상태 -->
@@ -49,13 +60,13 @@
         </div>
       </div>
 
-      <!-- 납품확인 목록 테이블 -->
-      <div class="table-section">
-        <div class="table-header">
-          <div class="table-info">
-            <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
+      <!-- 트리 구조 섹션 -->
+      <div class="tree-section">
+        <div class="tree-header">
+          <div class="tree-info">
+            <span>총 {{ totalElements }}개 발주 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
-          <div class="table-actions">
+          <div class="tree-actions">
             <select v-model.number="pageSize" @change="handlePageSizeChange" class="page-size-select">
               <option :value="10">10개씩</option>
               <option :value="20">20개씩</option>
@@ -71,54 +82,20 @@
         </div>
 
         <!-- 데이터가 없을 때 -->
-        <div v-else-if="deliveryList.length === 0" class="no-data-message">
+        <div v-else-if="orderList.length === 0" class="no-data-message">
           <i class="fas fa-clipboard-check"></i>
-          <p>등록된 납품확인 정보가 없습니다.</p>
+          <p>등록된 발주 정보가 없습니다.</p>
         </div>
 
-        <div v-else class="table-container">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>운송장ID</th>
-                <th>출하ID</th>
-                <th>납품요구번호</th>
-                <th>배송지</th>
-                <th>납품일자</th>
-                <th>기사명</th>
-                <th>서명</th>
-                <th>사진</th>
-                <th>상태</th>
-                <th>완료일시</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in deliveryList" :key="item.deliveryId" class="table-row" @dblclick="viewDetail(item)">
-                <td>{{ startIndex + index }}</td>
-                <td>{{ item.transportId }}</td>
-                <td>{{ item.shipmentId }}</td>
-                <td>{{ item.deliveryRequestNo }}</td>
-                <td>{{ item.siteAddress || '-' }}</td>
-                <td>{{ formatDate(item.deliveryDate) }}</td>
-                <td>{{ item.driverName || '-' }}</td>
-                <td>
-                  <i v-if="item.supervisorSignaturePath" class="fas fa-check-circle" style="color: #10b981;"></i>
-                  <span v-else>-</span>
-                </td>
-                <td>
-                  <span v-if="item.photoCount > 0">{{ item.photoCount }}장</span>
-                  <span v-else>-</span>
-                </td>
-                <td>
-                  <span class="status-badge" :class="getStatusClass(item.status)">
-                    {{ getStatusText(item.status) }}
-                  </span>
-                </td>
-                <td>{{ item.completedAt ? formatDateTime(item.completedAt) : '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- 트리 컨테이너 -->
+        <div v-else class="tree-container">
+          <AdminDeliveryOrderTreeNode
+            v-for="order in orderList"
+            :key="order.orderId"
+            :order="order"
+            :level="0"
+            :default-expanded="false"
+          />
         </div>
 
         <!-- 페이지네이션 -->
@@ -135,15 +112,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { deliveryService } from '~/services/delivery.service'
-import { formatDate, formatDateTime } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
+import type { OrderTreeNode } from '~/types/delivery'
 
 definePageMeta({
   layout: 'admin',
-  pageTitle: '납품확인관리 목록'
+  pageTitle: '납품현황 관리'
 })
 
 const router = useRouter()
@@ -159,12 +136,13 @@ const getOneMonthAgo = () => {
 const searchForm = ref({
   startDate: getOneMonthAgo(),
   endDate: new Date().toISOString().split('T')[0],
+  deliveryRequestNo: '', // NEW field
   status: ''
 })
 
-// useDataTable composable 사용
+// useDataTable composable 사용 (트리 구조 API)
 const {
-  items: deliveryList,
+  items: orderList,
   loading,
   currentPage,
   totalPages,
@@ -176,47 +154,22 @@ const {
   changePageSize,
   search,
   reset
-} = useDataTable<any>({
+} = useDataTable<OrderTreeNode>({
   fetchFunction: async (params) => {
-    const response = await deliveryService.getDeliveryList({
+    const response = await deliveryService.getDeliveryTree({
       startDate: searchForm.value.startDate,
       endDate: searchForm.value.endDate,
+      deliveryRequestNo: searchForm.value.deliveryRequestNo,
       status: searchForm.value.status,
       page: params.page || 0,
       size: params.size || 10,
-      sort: params.sort || 'createdAt,desc'
+      sort: params.sort || 'contractDate,desc'
     })
     return response
   },
   initialPageSize: 10,
-  initialSort: 'createdAt,desc'
+  initialSort: 'contractDate,desc'
 })
-
-// 상태 텍스트 변환
-const getStatusText = (status: string): string => {
-  const statusMap: { [key: string]: string } = {
-    'PENDING': '대기',
-    'IN_TRANSIT': '운송중',
-    'ARRIVED': '도착',
-    'UNLOADING': '하차중',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소'
-  }
-  return statusMap[status] || status
-}
-
-// 상태 클래스
-const getStatusClass = (status: string) => {
-  const classMap: { [key: string]: string } = {
-    'PENDING': 'status-waiting',
-    'IN_TRANSIT': 'status-in-transit',
-    'ARRIVED': 'status-arrived',
-    'UNLOADING': 'status-unloading',
-    'COMPLETED': 'status-completed',
-    'CANCELLED': 'status-cancelled'
-  }
-  return classMap[status] || 'status-default'
-}
 
 // 검색
 const handleSearch = () => {
@@ -228,6 +181,7 @@ const handleReset = () => {
   searchForm.value = {
     startDate: getOneMonthAgo(),
     endDate: new Date().toISOString().split('T')[0],
+    deliveryRequestNo: '',
     status: ''
   }
   reset()
@@ -236,13 +190,6 @@ const handleReset = () => {
 // 등록 페이지로 이동
 const goToRegister = () => {
   router.push('/admin/delivery/register')
-}
-
-// 상세 보기
-const viewDetail = (item: any) => {
-  console.log('상세 보기:', item)
-  // TODO: 상세 페이지 구현 후 이동
-  alert('상세 보기 기능은 곧 구현됩니다.')
 }
 
 // 페이지 변경
@@ -263,55 +210,154 @@ onMounted(() => {
 
 <style scoped>
 /*
- * Delivery List Page Styles
- * 공통 스타일은 admin-common.css, admin-search.css, admin-tables.css에서 관리됩니다.
+ * Delivery Tree List Page Styles
+ * 트리 구조 특화 스타일
  */
 
-/* 페이지 특화: 상태별 badge 색상 */
-.status-waiting {
-  background: #fef3c7;
-  color: #92400e;
+.delivery-tree-list {
+  padding: 1.5rem;
 }
 
-.status-in-transit {
-  background: #dbeafe;
-  color: #1e40af;
+.content-section {
+  margin-top: 1.5rem;
 }
 
-.status-arrived {
-  background: #e0e7ff;
-  color: #3730a3;
+/* 검색 섹션 */
+.search-section-compact {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.status-unloading {
-  background: #fce7f3;
-  color: #9f1239;
+.search-row-single {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
 }
 
-.status-completed {
-  background: #dcfce7;
-  color: #166534;
+.search-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.status-default {
-  background: #f3f4f6;
+.search-item label {
+  font-size: 0.875rem;
+  font-weight: 500;
   color: #374151;
+  white-space: nowrap;
 }
 
-/* 반응형 - 페이지 특화 스타일만 유지 */
+.date-input,
+.text-input,
+.condition-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: white;
+}
+
+.text-input {
+  width: 200px;
+}
+
+.date-input {
+  width: 140px;
+}
+
+.separator {
+  color: #9ca3af;
+  margin: 0 0.25rem;
+}
+
+/* 트리 섹션 */
+.tree-section {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.tree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tree-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.page-size-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: white;
+}
+
+/* 트리 컨테이너 */
+.tree-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* 로딩/빈 데이터 메시지 */
+.loading-message,
+.no-data-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+
+.loading-message i,
+.no-data-message i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.loading-message p,
+.no-data-message p {
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* 반응형 */
 @media (max-width: 1024px) {
-  .delivery-list {
+  .delivery-tree-list {
     padding: 1rem;
   }
 
-  .data-table {
-    min-width: 1000px;
+  .search-row-single {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .text-input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .tree-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
 }
 </style>
-

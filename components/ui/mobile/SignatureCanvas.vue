@@ -1,8 +1,13 @@
 <template>
-  <div class="signature-canvas-wrapper">
+  <div
+    class="signature-canvas-wrapper"
+    @touchstart.stop
+    @touchmove.prevent.stop
+  >
     <canvas
       ref="canvasRef"
       class="signature-canvas"
+      :class="{ 'canvas-disabled': isSaved }"
       @touchstart.prevent="startDrawing"
       @touchmove.prevent="draw"
       @touchend="stopDrawing"
@@ -109,11 +114,13 @@ const getPosition = (e: TouchEvent | MouseEvent): { x: number; y: number } => {
 
 // 그리기 시작
 const startDrawing = (e: TouchEvent | MouseEvent) => {
-  if (!ctx) return
+  if (!ctx || isSaved.value) return
+
+  // 서명 중 페이지 스크롤 방지
+  document.body.style.overflow = 'hidden'
 
   isDrawing.value = true
   hasDrawing.value = true
-  isSaved.value = false
 
   const pos = getPosition(e)
   lastX = pos.x
@@ -125,7 +132,7 @@ const startDrawing = (e: TouchEvent | MouseEvent) => {
 
 // 그리기
 const draw = (e: TouchEvent | MouseEvent) => {
-  if (!isDrawing.value || !ctx) return
+  if (!isDrawing.value || !ctx || isSaved.value) return
 
   const pos = getPosition(e)
 
@@ -140,6 +147,9 @@ const draw = (e: TouchEvent | MouseEvent) => {
 const stopDrawing = () => {
   if (!ctx) return
 
+  // 페이지 스크롤 복원
+  document.body.style.overflow = ''
+
   isDrawing.value = false
   ctx.closePath()
 }
@@ -147,6 +157,12 @@ const stopDrawing = () => {
 // 서명 지우기
 const clearSignature = () => {
   if (!ctx || !canvasRef.value) return
+
+  // 저장된 서명 삭제 시 확인
+  if (isSaved.value) {
+    const confirmed = confirm('저장된 서명을 삭제하고 다시 작성하시겠습니까?')
+    if (!confirmed) return
+  }
 
   const canvas = canvasRef.value
 
@@ -209,6 +225,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  touch-action: none; /* wrapper 전체에서 터치 스크롤 방지 */
 }
 
 .signature-canvas {
@@ -219,6 +236,14 @@ onBeforeUnmount(() => {
   background: white;
   touch-action: none; /* 터치 스크롤 방지 */
   cursor: crosshair;
+  transition: opacity 0.2s, filter 0.2s;
+}
+
+.signature-canvas.canvas-disabled {
+  pointer-events: none; /* 모든 이벤트 차단 */
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
 }
 
 .signature-status {

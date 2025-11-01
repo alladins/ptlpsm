@@ -126,6 +126,14 @@ export interface DeliveryConfirmRequest {
   longitude?: number
 }
 
+// 납품 완료 응답
+export interface DeliveryConfirmResponse {
+  success: boolean
+  message: string
+  deliveryId: number
+  confirmedAt: string
+}
+
 /**
  * 서버 API 응답(flat)을 프론트엔드 형식(nested)으로 변환
  * @param apiResponse 서버로부터 받은 flat structure 응답
@@ -309,7 +317,7 @@ class DeliveryService {
    * @param token 접근 토큰
    * @param data 납품 완료 데이터
    */
-  async confirmDelivery(token: string, data: DeliveryConfirmRequest): Promise<{ deliveryId: number; confirmedAt: string }> {
+  async confirmDelivery(token: string, data: DeliveryConfirmRequest): Promise<DeliveryConfirmResponse> {
     try {
       const response = await fetch(DELIVERY_ENDPOINTS.confirm(token), {
         method: 'POST',
@@ -323,7 +331,20 @@ class DeliveryService {
         throw new Error(`납품 완료 처리 실패: ${response.status}`)
       }
 
-      return await response.json()
+      const result: DeliveryConfirmResponse = await response.json()
+
+      // 서버 응답 검증
+      if (!result.success) {
+        throw new Error(result.message || '납품 완료 처리에 실패했습니다.')
+      }
+
+      // confirmedAt 필드 검증
+      if (!result.confirmedAt) {
+        console.warn('서버 응답에 confirmedAt이 없습니다. 현재 시각을 사용합니다.')
+        result.confirmedAt = new Date().toISOString()
+      }
+
+      return result
     } catch (error) {
       console.error('납품 완료 처리 실패:', error)
       throw error
@@ -331,7 +352,60 @@ class DeliveryService {
   }
 
   /**
-   * 납품 목록 조회 (관리자용)
+   * 납품 트리 구조 조회 (관리자용 - 발주 → 출하 → 운송/납품확인)
+   */
+  async getDeliveryTree(params: {
+    startDate?: string
+    endDate?: string
+    deliveryRequestNo?: string
+    status?: string
+    page: number
+    size: number
+    sort?: string
+  }): Promise<{
+    content: any[]
+    totalElements: number
+    totalPages: number
+    size: number
+    number: number
+  }> {
+    try {
+      const queryParams = new URLSearchParams()
+      if (params.startDate) queryParams.append('startDate', params.startDate)
+      if (params.endDate) queryParams.append('endDate', params.endDate)
+      if (params.deliveryRequestNo) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
+      if (params.status) queryParams.append('status', params.status)
+      queryParams.append('sort', params.sort || 'contractDate,desc')
+      queryParams.append('page', params.page.toString())
+      queryParams.append('size', params.size.toString())
+
+      const response = await fetch(`${DELIVERY_ENDPOINTS.tree()}?${queryParams.toString()}`)
+
+      if (!response.ok) {
+        // 인증 오류
+        if (response.status === 401) {
+          throw new Error('인증이 필요합니다. 다시 로그인해주세요.')
+        }
+        // 권한 오류
+        if (response.status === 403) {
+          throw new Error('접근 권한이 없습니다.')
+        }
+        // 서버 오류
+        if (response.status >= 500) {
+          throw new Error('서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+        }
+        throw new Error(`납품 트리 조회 실패: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('납품 트리 조회 실패:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 납품 목록 조회 (관리자용 - 기존 Flat 구조)
    */
   async getDeliveryList(params: {
     startDate?: string
