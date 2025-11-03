@@ -1,0 +1,488 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+  ★ 중요 ★ 환경별 이미지 경로 설정
+
+  1. 로고 이미지 경로:
+     - 개발 환경 (Windows): D:/dev/ptlpsmback/logo.png
+     - 운영 환경 (Linux):   /app/leadpower/www/images/common/logo.png
+
+  2. 로고 파일 형식 주의:
+     - 반드시 PNG 형식이어야 함 (WEBP는 Java ImageIO에서 지원 안 됨)
+     - 파일명은 logo.png지만 실제 형식이 WEBP인 경우 PDF 생성 시 이미지가 안 보임
+
+  3. 이미지 처리 방식:
+     - PdfGenerationService.processImagesInHtml()이 로컬 경로를 자동으로 Base64로 변환
+     - 서명 이미지는 Handlebars 변수 {{signatureImageUrl}}로 이미 Base64 처리됨
+
+  4. Flying Saucer PDF 엔진 제약사항:
+     - XHTML 1.0 Strict 필수
+     - CSS 2.1만 지원 (Flexbox, transform 등 최신 CSS 불가)
+     - 모든 태그는 self-closing (예: <img />, <br />)
+     - 테이블 기반 레이아웃 사용 필수
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>운송 인수증</title>
+  <style>
+    @font-face {
+      font-family: 'MalgunGothic';
+      src: url('file:///C:/Windows/Fonts/malgun.ttf');
+      -fs-pdf-font-embed: embed;
+      -fs-pdf-font-encoding: Identity-H;
+    }
+
+    @page {
+      size: A4;
+      margin: 10mm;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 190mm;
+      font-family: 'MalgunGothic', serif;
+      font-size: 11pt;
+      line-height: 1.4;
+      color: #000;
+      background: white;
+    }
+
+    .receipt-document {
+      margin-bottom: 10px;
+    }
+
+    /* 헤더 */
+    .receipt-header {
+      width: 100%;
+      border-bottom: 2px solid #000;
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+    }
+
+    .receipt-header table {
+      width: 100%;
+      border: 0;
+    }
+
+    .receipt-header td {
+      border: 0;
+      padding: 3px;
+    }
+
+    .logo-img {
+      width: 28px;
+      height: 28px;
+      vertical-align: middle;
+      margin-right: 5px;
+    }
+
+    .company-name {
+      font-weight: bold;
+      font-size: 12pt;
+    }
+
+    .receipt-title {
+      font-size: 28pt;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .retention-type {
+      font-weight: bold;
+      text-align: right;
+      font-size: 10pt;
+    }
+
+    .receipt-date {
+      text-align: right;
+      font-size: 11pt;
+    }
+
+    /* 정보 테이블 */
+    .info-table {
+      margin-bottom: 10px;
+    }
+
+    .info-table table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+    }
+
+    .info-table th,
+    .info-table td {
+      border: 1px solid #000;
+      padding: 5px;
+      text-align: left;
+    }
+
+    .info-table th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+      width: 100px;
+    }
+
+    /* 제품 테이블 */
+    .product-table {
+      margin-bottom: 10px;
+    }
+
+    .product-table table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+    }
+
+    .product-table th,
+    .product-table td {
+      border: 1px solid #000;
+      padding: 5px;
+      text-align: center;
+    }
+
+    .product-table th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+
+    .product-table td {
+      padding: 3px;
+    }
+
+    .product-table .text-left {
+      text-align: left;
+    }
+
+    .product-table .text-right {
+      text-align: right;
+    }
+
+    /* 확인 텍스트 */
+    .confirmation-text {
+      text-align: center;
+      font-weight: bold;
+      margin: 8px 0;
+      font-size: 12pt;
+    }
+
+    /* 서명 */
+    .signature-section {
+      text-align: right;
+      margin: 5px 0;
+    }
+
+    .signature-label {
+      font-weight: bold;
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    .signature-box {
+      display: inline-block;
+      width: 100px;
+      height: 80px;
+      border: none;
+      vertical-align: middle;
+      text-align: center;
+      position: relative;
+    }
+
+    .signature-box::before {
+      content: "(인)";
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      width: 90px;
+      height: 70px;
+      line-height: 70px;
+      text-align: center;
+      font-size: 11pt;
+      color: #666;
+      z-index: 1;
+    }
+
+    .signature-image {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      width: 90px;
+      height: 70px;
+      z-index: 2;
+      filter: contrast(2) brightness(0.7);
+    }
+
+    .signature-box span {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 14pt;
+      color: #333;
+      z-index: 1;
+    }
+
+    /* 기사 주의사항 */
+    .driver-note {
+      text-align: center;
+      font-size: 9pt;
+      color: #cc0000;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    /* 절취선 */
+    .receipt-separator {
+      text-align: center;
+      margin: 8px 0;
+      padding: 3px 0;
+      border-top: 2px dashed #999;
+      font-size: 10pt;
+      color: #666;
+      page-break-after: avoid;
+    }
+  </style>
+</head>
+<body>
+  <!-- 첫 번째 인수증: 공급/운반자 보관용 -->
+  <div class="receipt-document">
+    <!-- 헤더 -->
+    <div class="receipt-header">
+      <table>
+        <tr>
+          <td style="width: 30%;">
+            <img src="http://leadpower.platree.com/images/common/logo.png" alt="회사 로고" class="logo-img" />
+            <span class="company-name">LP LEADPOWER</span>
+          </td>
+          <td style="width: 40%;">
+            <div class="receipt-title">인수증</div>
+          </td>
+          <td style="width: 30%;">
+            <div class="retention-type">공급/운반자 보관용</div>
+            <div class="receipt-date">2025-11-01</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 기본 정보 -->
+    <div class="info-table">
+      <table>
+        <tr>
+          <th>거래처명</th>
+          <td colspan="5">전라북도무주군</td>
+        </tr>
+        <tr>
+          <th>납품장소</th>
+          <td>서울 관악구 국회단지11길 20</td>
+          <th>현장담당자</th>
+          <td>홍길동 담당자</td>
+          <th>하차</th>
+          <td>06:41</td>
+        </tr>
+        <tr>
+          <th>비고</th>
+          <td>안전 배송 부탁 합니다.</td>
+          <th colspan="4" style="font-weight: bold;">★상차완료 후 현장담당자에게 통화 필수.꼭☆</th>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 제품 테이블 -->
+    <div class="product-table">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 15%;">제품명</th>
+            <th style="width: 12%;">두께(t)</th>
+            <th style="width: 12%;">수량(장)</th>
+            <th style="width: 41%;">규격</th>
+            <th style="width: 20%;">비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left">기포단열재</td>
+            <td>60T</td>
+            <td class="text-right">150</td>
+            <td class="text-left">JYGB-60LC, 1000×1000×60mm</td>
+            <td>단위 환산: 150㎡</td>
+          </tr>
+          <tr>
+            <td class="text-left">기포단열재</td>
+            <td>70T</td>
+            <td class="text-right">411</td>
+            <td class="text-left">JYGB-70LC, 1000×1000×70mm</td>
+            <td>단위 환산: 411㎡</td>
+          </tr>
+          <tr>
+            <td class="text-left">기포단열재</td>
+            <td>60T</td>
+            <td class="text-right">150</td>
+            <td class="text-left">JYGB-60LC, 1000×1000×60mm</td>
+            <td>단위 환산: 150㎡</td>
+          </tr>
+          <tr>
+            <td class="text-left">기포단열재</td>
+            <td>70T</td>
+            <td class="text-right">411</td>
+            <td class="text-left">JYGB-70LC, 1000×1000×70mm</td>
+            <td>단위 환산: 411㎡</td>
+          </tr>
+          <tr>
+            <td class="text-left">기포단열재</td>
+            <td>70T</td>
+            <td class="text-right">411</td>
+            <td class="text-left">JYGB-70LC, 1000×1000×70mm</td>
+            <td>단위 환산: 411㎡</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 확인 텍스트 -->
+    <div class="confirmation-text">
+      상기 물품을 정히 인수하였음을 확인합니다.
+    </div>
+
+    <!-- 서명 -->
+    <div class="signature-section">
+      <span class="signature-label">물품 인수자</span>
+      <span class="signature-box">
+        <img src="data:image/png;base64,${signatureBase64}" alt="서명" class="signature-image" />
+      </span>
+    </div>
+
+    <!-- 기사 주의사항 -->
+    <div class="driver-note">
+      ※ 기사님은 반드시 물품 인수자의 서명을 받으신 후 출발하시기 바랍니다.
+    </div>
+  </div>
+
+  <!-- 절취선 -->
+  <div class="receipt-separator">
+    ✂ ----------------------------- 절취선 -----------------------------
+  </div>
+
+  <!-- 두 번째 인수증: 공급받는자 보관용 -->
+  <div class="receipt-document">
+    <!-- 헤더 -->
+    <div class="receipt-header">
+      <table>
+        <tr>
+          <td style="width: 30%;">
+            <img src="http://leadpower.platree.com/images/common/logo.png" alt="회사 로고" class="logo-img" />
+            <span class="company-name">LP LEADPOWER</span>
+          </td>
+          <td style="width: 40%;">
+            <div class="receipt-title">인수증</div>
+          </td>
+          <td style="width: 30%;">
+            <div class="retention-type">공급받는자 보관용</div>
+            <div class="receipt-date">2025-11-01</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 기본 정보 -->
+    <div class="info-table">
+      <table>
+        <tr>
+          <th>거래처명</th>
+          <td colspan="5">전라북도무주군</td>
+        </tr>
+        <tr>
+          <th>납품장소</th>
+          <td>서울 관악구 국회단지11길 20</td>
+          <th>현장담당자</th>
+          <td>홍길동 담당자</td>
+          <th>하차</th>
+          <td>06:41</td>
+        </tr>
+        <tr>
+          <th>비고</th>
+          <td>안전 배송 부탁 합니다.</td>
+          <th colspan="4" style="font-weight: bold;">★상차완료 후 현장담당자에게 통화 필수.꼭☆</th>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 제품 테이블 -->
+    <div class="product-table">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 15%;">제품명</th>
+            <th style="width: 12%;">두께(t)</th>
+            <th style="width: 12%;">수량(장)</th>
+            <th style="width: 41%;">규격</th>
+            <th style="width: 20%;">비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left">기포단열재</td>
+            <td>60T</td>
+            <td class="text-right">150</td>
+            <td class="text-left">JYGB-60LC, 1000×1000×60mm</td>
+            <td>단위 환산: 150㎡</td>
+          </tr>
+          <tr>
+            <td class="text-left">기포단열재</td>
+            <td>70T</td>
+            <td class="text-right">411</td>
+            <td class="text-left">JYGB-70LC, 1000×1000×70mm</td>
+            <td>단위 환산: 411㎡</td>
+          </tr>
+          <tr>
+            <td class="text-left">기포단열재</td>
+            <td>60T</td>
+            <td class="text-right">150</td>
+            <td class="text-left">JYGB-60LC, 1000×1000×60mm</td>
+            <td>단위 환산: 150㎡</td>
+          </tr>
+          <tr>
+            <td class="text-left">기포단열재</td>
+            <td>70T</td>
+            <td class="text-right">411</td>
+            <td class="text-left">JYGB-70LC, 1000×1000×70mm</td>
+            <td>단위 환산: 411㎡</td>
+          </tr>
+          <tr>
+            <td class="text-left">기포단열재</td>
+            <td>70T</td>
+            <td class="text-right">411</td>
+            <td class="text-left">JYGB-70LC, 1000×1000×70mm</td>
+            <td>단위 환산: 411㎡</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 확인 텍스트 -->
+    <div class="confirmation-text">
+      상기 물품을 정히 인수하였음을 확인합니다.
+    </div>
+
+    <!-- 서명 -->
+    <div class="signature-section">
+      <span class="signature-label">물품 인수자</span>
+      <span class="signature-box">
+        <img src="data:image/png;base64,${signatureBase64}" alt="서명" class="signature-image" />
+      </span>
+    </div>
+
+    <!-- 기사 주의사항 -->
+    <div class="driver-note">
+      ※ 기사님은 반드시 물품 인수자의 서명을 받으신 후 출발하시기 바랍니다.
+    </div>
+  </div>
+</body>
+</html>

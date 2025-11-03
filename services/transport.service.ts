@@ -44,6 +44,7 @@ export interface TransportDetail {
   completedAt: string | null
   status: string
   deliveryMemo: string
+  deliveryId?: number | null  // 납품 ID (완료 시에만 값 존재)
   createdBy: string
   createdAt: string
   updatedBy: string

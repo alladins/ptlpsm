@@ -101,13 +101,13 @@
                   </FormField>
 
                   <FormField label="상태" required :error="errors.status">
-                    <select v-model="formData.status" class="form-select-sm text-center" :disabled="!canEdit">
-                      <option value="PENDING">대기</option>
-                      <option value="READY">준비</option>
-                      <option value="IN_PROGRESS">진행중</option>
-                      <option value="COMPLETED">완료</option>
-                      <option value="CANCELLED">취소</option>
-                    </select>
+                    <input
+                      type="text"
+                      :value="getStatusLabel(formData.status)"
+                      class="form-input-sm text-center"
+                      readonly
+                      :style="getStatusStyle(formData.status)"
+                    >
                   </FormField>
 
                   <FormField label="총 출하수량">
@@ -503,6 +503,30 @@ const canEditQuantity = computed(() => {
 const canEdit = computed(() => {
   return !['COMPLETED', 'CANCELLED'].includes(formData.status)
 })
+
+// 상태 라벨 변환
+const getStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    'PENDING': '대기',
+    'READY': '준비',
+    'IN_PROGRESS': '진행중',
+    'COMPLETED': '완료',
+    'CANCELLED': '취소'
+  }
+  return labels[status] || status
+}
+
+// 상태별 스타일
+const getStatusStyle = (status: string): string => {
+  const styles: Record<string, string> = {
+    'PENDING': 'color: #6b7280; font-weight: 500;',
+    'READY': 'color: #2563eb; font-weight: 500;',
+    'IN_PROGRESS': 'color: #f59e0b; font-weight: 600;',
+    'COMPLETED': 'color: #059669; font-weight: 600;',
+    'CANCELLED': 'color: #dc2626; font-weight: 500;'
+  }
+  return styles[status] || ''
+}
 
 // 포커스 시 원래 값 저장
 const saveOriginalQuantity = (item: OrderItem) => {

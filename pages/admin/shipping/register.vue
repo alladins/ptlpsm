@@ -176,16 +176,16 @@
                 <thead>                  
                   <tr>
                     <th style="width: 30px">NO</th>
-                    <th style="width: 60px">품목명</th>
+                    <th style="width: 90px">품목명</th>
                     <th style="width: 60px">SKU ID</th>
-                    <th style="width: 60px">SKU 품명</th>
-                    <th style="width: 250px">규격</th>
+                    <th style="width: 100px">SKU 품명</th>
+                    <th style="width: 420px">규격</th>
                     <th style="width: 30px">단위</th>
                     <th style="width: 60px">발주수량</th>
                     <th style="width: 60px">잔여수량</th>
                     <th style="width: 60px" class="quantity-col">출하수량</th>
                     <th style="width: 60px">단가</th>
-                    <th style="width: 60px">금액</th>
+                    <th style="width: 100px">금액</th>
                   </tr>
                 </thead>
                 <tbody>

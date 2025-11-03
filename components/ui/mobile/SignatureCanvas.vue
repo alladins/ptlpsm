@@ -81,14 +81,13 @@ onMounted(() => {
   ctx.scale(dpr, dpr)
 
   // 스타일 설정
-  ctx.lineWidth = 2
+  ctx.lineWidth = 4  // 2배 증가 (2 → 4)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   ctx.strokeStyle = '#000000'
 
-  // 배경을 흰색으로 (투명 배경 방지)
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  // 배경은 투명하게 유지 (흰색 배경 제거)
+  // PNG 형식으로 저장 시 투명 배경이 유지됨
 })
 
 // 좌표 가져오기 (터치/마우스 통합)
@@ -166,9 +165,8 @@ const clearSignature = () => {
 
   const canvas = canvasRef.value
 
-  // 배경을 다시 흰색으로
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  // 캔버스를 투명하게 지우기 (clearRect 사용)
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
 
   hasDrawing.value = false
   isSaved.value = false

@@ -76,6 +76,19 @@ export const DELIVERY_ENDPOINTS = {
   },
 
   /**
+   * 인수증 PDF 다운로드/미리보기 (Admin용)
+   * @param deliveryId - 납품 ID
+   * @returns GET /admin/deliveries/{deliveryId}/receipt-pdf
+   * @example
+   * // PDF가 이미 있으면 기존 PDF 반환, 없으면 자동 생성 후 반환
+   * window.open(DELIVERY_ENDPOINTS.receiptPdf(19), '_blank')
+   */
+  receiptPdf: (deliveryId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/deliveries/${deliveryId}/receipt-pdf`
+  },
+
+  /**
    * 토큰으로 납품 정보 조회 (Mobile용)
    * @param token - 접근 토큰 (UUID)
    * @returns GET /m/delivery/{token}

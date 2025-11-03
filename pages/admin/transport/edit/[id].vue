@@ -522,6 +522,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { transportService } from '~/services/transport.service'
 import { shipmentService } from '~/services/shipment.service'
+import { DELIVERY_ENDPOINTS } from '~/services/api/endpoints/delivery.endpoints'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import axios from 'axios'
@@ -736,12 +737,21 @@ const saveTransport = async () => {
   }
 }
 
-// 운송장 출력
+// 운송장 출력 (PDF 미리보기)
 const printTransport = async () => {
   try {
     // 운송장 상세 정보 조회
     const transportDetail = await transportService.getTransportDetail(formData.value.transportId)
 
+    // PDF 미리보기 (deliveryId가 있는 경우 - 납품 완료된 경우)
+    if (transportDetail.deliveryId) {
+      const pdfUrl = DELIVERY_ENDPOINTS.receiptPdf(transportDetail.deliveryId)
+      // 새 탭에서 PDF 열기
+      window.open(pdfUrl, '_blank')
+      return
+    }
+
+    // deliveryId가 없는 경우: 기존 HTML 팝업 사용 (오프라인 출력용)
     // 출하 ID로 출하 상세 정보 조회 (해당 출하의 품목만 포함)
     const shipmentDetail = await shipmentService.getShipmentDetail(transportDetail.shipmentId)
 
@@ -755,10 +765,9 @@ const printTransport = async () => {
     }
 
     // 서명 이미지 URL 생성 (백엔드 API 경로)
-    const deliveryConfirmation = (transportDetail as any).deliveryConfirmation
-    if (deliveryConfirmation && deliveryConfirmation.hasSignature) {
+    if (transportDetail.deliveryId && transportDetail.status === 'COMPLETED') {
       const baseUrl = getApiBaseUrl()
-      receiverSignatureUrl.value = `${baseUrl}/admin/deliveries/${deliveryConfirmation.deliveryId}/signature`
+      receiverSignatureUrl.value = `${baseUrl}/admin/deliveries/${transportDetail.deliveryId}/signature`
     } else {
       receiverSignatureUrl.value = null
     }

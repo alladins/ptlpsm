@@ -3,16 +3,12 @@
     <!-- 페이지 헤더 -->
     <UiPageHeader
       title="운송장 등록"
-      description="운송장 정보를 등록하고 인수증을 출력합니다."
+      description="운송장 정보를 등록합니다."
     >
       <template #actions>
         <button class="btn-secondary" @click="goBack">
           <i class="fas fa-times"></i>
           취소
-        </button>
-        <button class="btn-secondary" @click="printReceipt">
-          <i class="fas fa-print"></i>
-          인수증 출력
         </button>
         <button class="btn-primary" @click="handleSubmit" :disabled="submitting">
           <i class="fas fa-save"></i>
@@ -373,25 +369,6 @@ const { errors, validateAll, rules } = useFormValidation({
 
 // 팝업 상태
 const showShipmentPopup = ref(false)
-const showReceiptPopup = ref(false)
-
-// 인수증 데이터
-const receiptData = ref({
-  clientName: '',
-  deliveryLocation: '',
-  managerContact: '',
-  unloadingTime: '',
-  remarks: ''
-})
-
-// 품목 목록
-const productList = ref<Array<{
-  name: string
-  thickness: string
-  quantity: string
-  specification: string
-  remarks: string
-}>>([])
 
 // URL 파라미터에서 데이터 로드
 onMounted(async () => {
@@ -430,16 +407,6 @@ onMounted(async () => {
         console.error('배송 정보 조회 실패:', error)
       }
 
-      // 품목 목록 업데이트
-      if (data.items) {
-        productList.value = data.items.map((item: any) => ({
-          name: item.itemName,
-          thickness: item.specification,
-          quantity: item.orderQuantity?.toString() || item.quantity?.toString() || '',
-          specification: `${item.skuName} (${item.skuId})`,
-          remarks: `단위: ${item.unit}`
-        }))
-      }
     } catch (error) {
       console.error('데이터 파싱 오류:', error)
     }
@@ -464,27 +431,6 @@ const handleShipmentSelect = async (shipment: ShipmentListItem) => {
     formData.deliveryRequestNo = detail.deliveryRequestNo || ''
     formData.clientName = detail.client || ''
 
-    // 출하 상세 정보 조회
-    const orderStatus = await shipmentService.getShipmentStatusByOrder(detail.deliveryRequestNo)
-
-    // 인수증 데이터 업데이트
-    receiptData.value = {
-      clientName: orderStatus.items[0]?.itemName?.split(' ')[0] || '',
-      deliveryLocation: formData.deliveryAddress || '',
-      managerContact: formData.siteSupervisorName || '',
-      unloadingTime: formData.expectedArrival?.slice(11, 16) || '',
-      remarks: formData.deliveryMemo || ''
-    }
-
-    // 품목 목록 업데이트
-    productList.value = orderStatus.items.map(item => ({
-      name: item.itemName || '',
-      thickness: item.specification || '',
-      quantity: item.orderQuantity.toString(),
-      specification: `${item.skuName || ''} (${item.skuId})`,
-      remarks: `단위: ${item.unit || ''}`
-    }))
-
     closeShipmentPopup()
   } catch (error) {
     console.error('출하 정보 조회 실패:', error)
@@ -501,15 +447,6 @@ const searchAddress = () => {
       formData.addressDetail = ''
     }
   }).open()
-}
-
-// 인수증 출력
-const printReceipt = () => {
-  showReceiptPopup.value = true
-}
-
-const closeReceiptPopup = () => {
-  showReceiptPopup.value = false
 }
 
 // 제출 처리
