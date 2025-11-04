@@ -1,23 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Read(d:/dev/ptipsaback/**)",
-      "Grep(d:/dev/ptipsaback/**)",
-      "Read(**)",
-      "Grep(**)",
-      "WebSearch(https://www.google.com/**)",
-      "Bash(cwd /c:*)",
+      "WebSearch(https://www.google.com/*)",
+      "Bash(cmd /c:*)",
       "Bash(claude mcp:*)",
       "Bash(npx -y @benborla29/mcp-server-mysql:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Read(/**)",
-      "Read(d:/**)",
-      "Read(D:/**)",
-      "Grep(/**)",
+      "Read(**)",
+      "Grep(./**)",
       "Grep(**)",
       "Grep pattern(**/**)",
-      "Glob(/**)",
+      "Glob(./**)",
       "Glob pattern(**/**)"
     ],
     "deny": [],

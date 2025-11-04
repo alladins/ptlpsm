@@ -1,0 +1,382 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+  ★ 중요 ★ 환경별 이미지 경로 설정
+
+  1. 로고 이미지 경로:
+     - 개발 환경 (Windows): D:/dev/ptlpsmback/logo.png
+     - 운영 환경 (Linux):   /app/leadpower/www/images/common/logo.png
+
+  2. 로고 파일 형식 주의:
+     - 반드시 PNG 형식이어야 함 (WEBP는 Java ImageIO에서 지원 안 됨)
+     - 파일명은 logo.png지만 실제 형식이 WEBP인 경우 PDF 생성 시 이미지가 안 보임
+
+  3. 이미지 처리 방식:
+     - PdfGenerationService.processImagesInHtml()이 로컬 경로를 자동으로 Base64로 변환
+     - 사진 이미지는 Handlebars 변수로 이미 Base64 처리됨
+
+  4. Flying Saucer PDF 엔진 제약사항:
+     - XHTML 1.0 Strict 필수
+     - CSS 2.1만 지원 (Flexbox, transform 등 최신 CSS 불가)
+     - 모든 태그는 self-closing (예: <img />, <br />)
+     - 테이블 기반 레이아웃 사용 필수
+
+  5. 사진대지 레이아웃:
+     - 페이지당 2장의 사진
+     - 각 사진마다 설명, GPS 좌표 표시
+     - 자동 페이지 분할
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>납품 사진대지</title>
+  <style>
+    @font-face {
+      font-family: 'MalgunGothic';
+      src: url('file:///C:/Windows/Fonts/malgun.ttf');
+      -fs-pdf-font-embed: embed;
+      -fs-pdf-font-encoding: Identity-H;
+    }
+
+    @page {
+      size: A4;
+      margin: 10mm;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'MalgunGothic', serif;
+      font-size: 10pt;
+      line-height: 1.4;
+    }
+
+    /* ========== Document Header ========== */
+    .document-header {
+      width: 100%;
+      border-bottom: 2px solid #000;
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      page-break-inside: avoid;
+    }
+
+    .document-header table {
+      width: 100%;
+      border: 0;
+    }
+
+    .document-header td {
+      border: 0;
+      padding: 3px;
+      vertical-align: middle;
+    }
+
+    .logo-img {
+      width: 28px;
+      height: 28px;
+      vertical-align: middle;
+      margin-right: 5px;
+    }
+
+    .company-name {
+      font-weight: bold;
+      font-size: 11pt;
+    }
+
+    .document-title {
+      font-size: 20pt;
+      font-weight: bold;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    .document-date {
+      text-align: right;
+      font-size: 9pt;
+    }
+
+    /* ========== Contract Info Bar ========== */
+    .contract-info-bar {
+      margin-bottom: 10px;
+      padding: 8px;
+      border: 1px solid #000;
+      background-color: #f5f5f5;
+      page-break-inside: avoid;
+    }
+
+    .contract-info-bar table {
+      width: 100%;
+      border: 0;
+    }
+
+    .contract-info-bar td {
+      border: 0;
+      padding: 2px 5px;
+      font-size: 9pt;
+    }
+
+    .contract-info-bar strong {
+      font-weight: bold;
+    }
+
+    /* ========== Photo Container ========== */
+    .photo-container {
+      margin-bottom: 15px;
+      page-break-inside: avoid;
+    }
+
+    /* ========== Photo Item ========== */
+    .photo-item {
+      margin-bottom: 20px;
+      border: 1px solid #999;
+      padding: 10px;
+      page-break-inside: avoid;
+    }
+
+    /* Photo Header */
+    .photo-header {
+      margin-bottom: 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .photo-header table {
+      width: 100%;
+      border: 0;
+    }
+
+    .photo-header td {
+      border: 0;
+      padding: 2px;
+      font-size: 9pt;
+    }
+
+    .photo-number {
+      font-weight: bold;
+      font-size: 10pt;
+    }
+
+    .photo-date {
+      text-align: right;
+      font-size: 9pt;
+      color: #666;
+    }
+
+    /* Photo Image */
+    .photo-image-box {
+      width: 100%;
+      height: 320px;
+      margin-bottom: 8px;
+      border: 1px solid #ddd;
+      text-align: center;
+      position: relative;
+      background-color: #fafafa;
+    }
+
+    .photo-image {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: auto;
+    }
+
+    .photo-placeholder {
+      width: 100%;
+      height: 320px;
+      line-height: 320px;
+      text-align: center;
+      color: #999;
+      font-size: 12pt;
+    }
+
+    /* Photo Info */
+    .photo-info {
+      margin-top: 8px;
+    }
+
+    .photo-info table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #ccc;
+    }
+
+    .photo-info th,
+    .photo-info td {
+      border: 1px solid #ccc;
+      padding: 5px;
+      font-size: 9pt;
+    }
+
+    .photo-info th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+      width: 80px;
+      text-align: center;
+    }
+
+    .photo-info td {
+      text-align: left;
+      padding-left: 8px;
+    }
+
+    /* ========== Page Break ========== */
+    .page-break {
+      page-break-after: always;
+    }
+
+    /* ========== Footer ========== */
+    .photo-footer {
+      margin-top: 15px;
+      padding-top: 8px;
+      border-top: 1px solid #999;
+      text-align: center;
+      font-size: 8pt;
+      color: #666;
+      page-break-inside: avoid;
+    }
+  </style>
+</head>
+<body>
+  <!-- Document Header (Only on first page) -->
+  <div class="document-header">
+    <table>
+      <tr>
+        <td style="width: 30%;">
+          <img src="/app/leadpower/www/images/common/logo.png" alt="회사 로고" class="logo-img" />
+          <span class="company-name">LP LEADPOWER</span>
+        </td>
+        <td style="width: 40%;">
+          <div class="document-title">사진대지</div>
+        </td>
+        <td style="width: 30%;">
+          <div class="document-date">{{currentDate}}</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Contract Info Bar -->
+  <div class="contract-info-bar">
+    <table>
+      <tr>
+        <td style="width: 50%;"><strong>계약번호:</strong> {{contractNo}}</td>
+        <td style="width: 50%;"><strong>납품요구번호:</strong> {{deliveryRequestNo}}</td>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>수요기관:</strong> {{client}}</td>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>사업명:</strong> {{projectName}}</td>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>납품장소:</strong> {{deliveryLocation}}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Photo Items (2 per page) -->
+  {{#each photos}}
+  <div class="photo-container">
+    <div class="photo-item">
+      <!-- Photo Header -->
+      <div class="photo-header">
+        <table>
+          <tr>
+            <td style="width: 50%;">
+              <span class="photo-number">사진 {{photoNumber}}</span>
+            </td>
+            <td style="width: 50%;">
+              <div class="photo-date">촬영일시: {{photoDate}}</div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Photo Image -->
+      <div class="photo-image-box">
+        {{#if photoUrl}}
+        <img src="{{photoUrl}}" alt="납품 사진 {{photoNumber}}" class="photo-image" />
+        {{else}}
+        <div class="photo-placeholder">사진 없음</div>
+        {{/if}}
+      </div>
+
+      <!-- Photo Info -->
+      <div class="photo-info">
+        <table>
+          <tbody>
+            <tr>
+              <th>설명</th>
+              <td>{{description}}</td>
+            </tr>
+            <tr>
+              <th>촬영위치</th>
+              <td>{{#if latitude}}위도: {{latitude}}, 경도: {{longitude}}{{else}}GPS 정보 없음{{/if}}</td>
+            </tr>
+            <tr>
+              <th>촬영자</th>
+              <td>{{photographerName}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Page break after every 2 photos -->
+    {{#if needsPageBreak}}
+    <div class="page-break"></div>
+
+    <!-- Repeat header on new page -->
+    <div class="document-header">
+      <table>
+        <tr>
+          <td style="width: 30%;">
+            <img src="/app/leadpower/www/images/common/logo.png" alt="회사 로고" class="logo-img" />
+            <span class="company-name">LP LEADPOWER</span>
+          </td>
+          <td style="width: 40%;">
+            <div class="document-title">사진대지</div>
+          </td>
+          <td style="width: 30%;">
+            <div class="document-date">{{../currentDate}}</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Repeat contract info on new page -->
+    <div class="contract-info-bar">
+      <table>
+        <tr>
+          <td style="width: 50%;"><strong>계약번호:</strong> {{../contractNo}}</td>
+          <td style="width: 50%;"><strong>납품요구번호:</strong> {{../deliveryRequestNo}}</td>
+        </tr>
+        <tr>
+          <td colspan="2"><strong>수요기관:</strong> {{../client}}</td>
+        </tr>
+        <tr>
+          <td colspan="2"><strong>사업명:</strong> {{../projectName}}</td>
+        </tr>
+        <tr>
+          <td colspan="2"><strong>납품장소:</strong> {{../deliveryLocation}}</td>
+        </tr>
+      </table>
+    </div>
+    {{/if}}
+  </div>
+  {{/each}}
+
+  <!-- Footer -->
+  <div class="photo-footer">
+    본 사진대지는 조달청 나라장터 계약에 따른 납품 현장 사진을 증명하는 공식 문서입니다.
+  </div>
+</body>
+</html>

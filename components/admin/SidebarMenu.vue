@@ -188,17 +188,28 @@ const manualMenus = ref<Menu[]>([
   },
   {
     menuId: 6,
+    menuCode: 'DELIVERY_DONE',
+    menuName: '납품완료계',
+    menuUrl: '/admin/delivery-done/list',
+    menuIcon: 'fas fa-file-contract',
+    menuLevel: 1,
+    sortOrder: 6,
+    visible: 'Y',
+    useYn: 'Y'
+  },
+  {
+    menuId: 7,
     menuCode: 'STATISTICS',
     menuName: '통계',
     menuUrl: '/admin/statistics',
     menuIcon: 'fas fa-chart-bar',
     menuLevel: 1,
-    sortOrder: 6,
+    sortOrder: 7,
     visible: 'Y',
     useYn: 'Y',
     children: [
       {
-        menuId: 61,
+        menuId: 71,
         menuCode: 'STAT_SALES',
         menuName: '영업통계',
         menuUrl: '/admin/statistics/sales',
@@ -210,7 +221,7 @@ const manualMenus = ref<Menu[]>([
         children: []
       },
       {
-        menuId: 62,
+        menuId: 72,
         menuCode: 'STAT_REGION',
         menuName: '지역별통계',
         menuUrl: '/admin/statistics/region',
@@ -224,18 +235,18 @@ const manualMenus = ref<Menu[]>([
     ]
   },
   {
-    menuId: 7,
+    menuId: 8,
     menuCode: 'BASIC_INFO',
     menuName: '기초정보',
     menuUrl: '/admin/basic-info',
     menuIcon: 'fas fa-cogs',
     menuLevel: 1,
-    sortOrder: 7,
+    sortOrder: 8,
     visible: 'Y',
     useYn: 'Y',
     children: [
       {
-        menuId: 71,
+        menuId: 81,
         menuCode: 'CODE_MANAGE',
         menuName: '코드관리',
         menuUrl: '/admin/basic-info/code',
@@ -247,7 +258,7 @@ const manualMenus = ref<Menu[]>([
         children: []
       },
       {
-        menuId: 72,
+        menuId: 82,
         menuCode: 'ITEM_MANAGE',
         menuName: '품목관리',
         menuUrl: '/admin/basic-info/item',
@@ -259,7 +270,7 @@ const manualMenus = ref<Menu[]>([
         children: []
       },
       {
-        menuId: 73,
+        menuId: 83,
         menuCode: 'USER_MANAGE',
         menuName: '사용자관리',
         menuUrl: '/admin/basic-info/user',
@@ -271,7 +282,7 @@ const manualMenus = ref<Menu[]>([
         children: []
       },
       {
-        menuId: 74,
+        menuId: 84,
         menuCode: 'ORG_MANAGE',
         menuName: '수요기관관리',
         menuUrl: '/admin/basic-info/organization',
@@ -283,7 +294,7 @@ const manualMenus = ref<Menu[]>([
         children: []
       },
       {
-        menuId: 75,
+        menuId: 85,
         menuCode: 'COMPANY_MANAGE',
         menuName: '회사정보',
         menuUrl: '/admin/basic-info/company',
@@ -297,18 +308,18 @@ const manualMenus = ref<Menu[]>([
     ]
   },
   {
-    menuId: 8,
+    menuId: 9,
     menuCode: 'SYSTEM',
     menuName: '시스템관리',
     menuUrl: '/admin/system',
     menuIcon: 'fas fa-tools',
     menuLevel: 1,
-    sortOrder: 8,
+    sortOrder: 9,
     visible: 'Y',
     useYn: 'Y',
     children: [
       {
-        menuId: 81,
+        menuId: 91,
         menuCode: 'SYSTEM_CONFIG',
         menuName: '시스템설정',
         menuUrl: '/admin/system/config',
@@ -320,7 +331,7 @@ const manualMenus = ref<Menu[]>([
         children: []
       },
       {
-        menuId: 82,
+        menuId: 92,
         menuCode: 'MENU_AUTH',
         menuName: '메뉴권한관리',
         menuUrl: '/admin/system/menu-auth',
@@ -332,7 +343,7 @@ const manualMenus = ref<Menu[]>([
         children: []
       },
       {
-        menuId: 83,
+        menuId: 93,
         menuCode: 'ACCESS_LOG',
         menuName: '접근로그',
         menuUrl: '/admin/system/access-log',

@@ -48,9 +48,10 @@
         </template>
       </div>
 
-      <!-- 납품확인 정보 (완료 시에만 표시) -->
-      <div v-if="transport.deliveryConfirmation" class="transport-body">
-        <div class="delivery-confirmation-compact">
+      <!-- 납품확인 정보 -->
+      <div class="transport-body">
+        <!-- 납품확인 완료 -->
+        <div v-if="transport.deliveryConfirmation" class="delivery-confirmation-compact">
           <div class="confirmation-header-compact">
             <i class="fas fa-check-circle"></i>
             <span>납품확인 완료</span>
@@ -60,9 +61,10 @@
           </div>
 
           <div class="confirmation-items-inline">
-            <!-- 서명 -->
+            <!-- PDF 다운로드 -->
             <AdminDeliverySignatureViewer
-              :signature-url="transport.deliveryConfirmation.signatureUrl"
+              :pdf-file-url="transport.deliveryConfirmation.pdfFileUrl"
+              :delivery-id="transport.deliveryConfirmation.deliveryId"
               :has-signature="transport.deliveryConfirmation.hasSignature"
               compact
             />
@@ -82,6 +84,18 @@
               📍 {{ transport.deliveryConfirmation.latitude.toFixed(4) }}°N,
               {{ transport.deliveryConfirmation.longitude.toFixed(4) }}°E
             </span>
+          </div>
+        </div>
+
+        <!-- 납품확인 진행중 -->
+        <div v-else class="delivery-confirmation-pending">
+          <div class="pending-header">
+            <i class="fas fa-clock"></i>
+            <span>납품확인 진행중</span>
+          </div>
+          <div class="pending-message">
+            <i class="fas fa-info-circle"></i>
+            <span>납품 완료 후 PDF 및 사진을 확인할 수 있습니다</span>
           </div>
         </div>
       </div>
@@ -104,6 +118,7 @@ defineProps<Props>()
 const getStatusText = (status: string): string => {
   const statusMap: { [key: string]: string } = {
     'PENDING': '대기',
+    'IN_PROGRESS': '진행중',
     'IN_TRANSIT': '운송중',
     'ARRIVED': '도착',
     'UNLOADING': '하차중',
@@ -117,6 +132,7 @@ const getStatusText = (status: string): string => {
 const getStatusClass = (status: string) => {
   const classMap: { [key: string]: string } = {
     'PENDING': 'status-waiting',
+    'IN_PROGRESS': 'status-in-progress',
     'IN_TRANSIT': 'status-in-transit',
     'ARRIVED': 'status-arrived',
     'UNLOADING': 'status-unloading',
@@ -223,6 +239,11 @@ const getStatusClass = (status: string) => {
   color: #92400e;
 }
 
+.status-in-progress {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 .status-in-transit {
   background: #dbeafe;
   color: #1e40af;
@@ -302,6 +323,50 @@ const getStatusClass = (status: string) => {
   color: #6b7280;
   font-family: monospace;
   white-space: nowrap;
+}
+
+/* 납품확인 진행중 */
+.delivery-confirmation-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #fffbeb;
+  border-radius: 0.375rem;
+  border: 1px solid #fde047;
+}
+
+.pending-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.pending-header i {
+  color: #d97706;
+  font-size: 1rem;
+}
+
+.pending-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.pending-message i {
+  color: #3b82f6;
+  font-size: 0.875rem;
+  margin-top: 0.125rem;
+  flex-shrink: 0;
 }
 
 /* 반응형 */

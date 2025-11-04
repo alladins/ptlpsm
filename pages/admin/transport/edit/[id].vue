@@ -11,14 +11,6 @@
           취소
         </button>
         <button
-          v-if="canDelete"
-          class="btn-delete"
-          @click="deleteTransport"
-        >
-          <i class="fas fa-trash"></i>
-          삭제
-        </button>
-        <button
           class="btn-print"
           @click="printTransport"
         >
@@ -119,8 +111,8 @@
             <FormField label="인수자 연락처">
               <input
                 type="tel"
-                v-model="formData.receiverPhone"
-                @input="handleReceiverPhoneInput"
+                v-model="formData.siteSupervisorPhone"
+                @input="handlesiteSupervisorPhoneInput"
                 class="form-input-md"
                 placeholder="010-0000-0000"
                 maxlength="13"
@@ -349,11 +341,11 @@
                     <tbody>
                       <tr>
                         <th>거래처명</th>
-                        <td>{{ receiptData.clientName }}</td>
-                        <th>납품장소</th>
-                        <td>{{ receiptData.deliveryLocation }}</td>
+                        <td colspan="3">{{ receiptData.clientName }}</td>
                       </tr>
                       <tr>
+                        <th>납품장소</th>
+                        <td>{{ receiptData.deliveryLocation }}</td>
                         <th>현장담당자</th>
                         <td>{{ receiptData.managerContact }}</td>
                         <th>하차</th>
@@ -362,9 +354,7 @@
                       <tr>
                         <th>비고</th>
                         <td>{{ receiptData.remarks }}</td>
-                        <td colspan="2" style="text-align: center; font-weight: bold; color: #000;">
-                          ★상차완료 후 현장담당자에게 통화 필수.꼭☆
-                        </td>
+                        <th colspan="4" style="font-weight: bold;">★상차완료 후 현장담당자에게 통화 필수.꼭☆</th>
                       </tr>
                     </tbody>
                   </table>
@@ -441,15 +431,20 @@
                     <tbody>
                       <tr>
                         <th>거래처명</th>
-                        <td>{{ receiptData.clientName }}</td>
-                        <th>납품장소</th>
-                        <td>{{ receiptData.deliveryLocation }}</td>
+                        <td colspan="3">{{ receiptData.clientName }}</td>
                       </tr>
                       <tr>
+                        <th>납품장소</th>
+                        <td>{{ receiptData.deliveryLocation }}</td>
                         <th>현장담당자</th>
                         <td>{{ receiptData.managerContact }}</td>
                         <th>하차</th>
                         <td>{{ receiptData.unloadingTime }}</td>
+                      </tr>
+                      <tr>
+                        <th>비고</th>
+                        <td>{{ receiptData.remarks }}</td>
+                        <th colspan="4" style="font-weight: bold;">★상차완료 후 현장담당자에게 통화 필수.꼭☆</th>
                       </tr>
                     </tbody>
                   </table>
@@ -522,6 +517,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { transportService } from '~/services/transport.service'
 import { shipmentService } from '~/services/shipment.service'
+import { deliveryService } from '~/services/delivery.service'
 import { DELIVERY_ENDPOINTS } from '~/services/api/endpoints/delivery.endpoints'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
@@ -579,7 +575,7 @@ const formData = ref({
   addressDetail: '',
   siteSupervisorName: '',
   receiverName: '',
-  receiverPhone: '',
+  siteSupervisorPhone: '',
   carrierName: '',
   driverName: '',
   driverPhone: '',
@@ -606,10 +602,10 @@ const formatPhoneNumber = (value: string): string => {
 }
 
 // 인수자 연락처 포맷팅
-const handleReceiverPhoneInput = (event: Event) => {
+const handlesiteSupervisorPhoneInput = (event: Event) => {
   const input = event.target as HTMLInputElement
   const formatted = formatPhoneNumber(input.value)
-  formData.value.receiverPhone = formatted
+  formData.value.siteSupervisorPhone = formatted
 }
 
 // 기사 연락처 포맷팅
@@ -667,7 +663,7 @@ onMounted(async () => {
       addressDetail: transportDetail.addressDetail || '',
       siteSupervisorName: transportDetail.siteSupervisorName || '',
       receiverName: transportDetail.receiverName || '',
-      receiverPhone: transportDetail.receiverPhone || '',
+      siteSupervisorPhone: transportDetail.siteSupervisorPhone || '',
       carrierName: transportDetail.carrierName || '',
       driverName: transportDetail.driverName || '',
       driverPhone: transportDetail.driverPhone || '',
@@ -717,7 +713,7 @@ const saveTransport = async () => {
       addressDetail: formData.value.addressDetail,
       siteSupervisorName: formData.value.siteSupervisorName,
       receiverName: formData.value.receiverName,
-      receiverPhone: formData.value.receiverPhone,
+      siteSupervisorPhone: formData.value.siteSupervisorPhone,
       carrierName: formData.value.carrierName,
       driverName: formData.value.driverName,
       driverPhone: formData.value.driverPhone,
@@ -743,15 +739,21 @@ const printTransport = async () => {
     // 운송장 상세 정보 조회
     const transportDetail = await transportService.getTransportDetail(formData.value.transportId)
 
-    // PDF 미리보기 (deliveryId가 있는 경우 - 납품 완료된 경우)
-    if (transportDetail.deliveryId) {
-      const pdfUrl = DELIVERY_ENDPOINTS.receiptPdf(transportDetail.deliveryId)
-      // 새 탭에서 PDF 열기
-      window.open(pdfUrl, '_blank')
-      return
+    // ===== CASE 1: 완료 상태 - 저장된 PDF 조회만 (생성 안 함) =====
+    if (transportDetail.deliveryId && transportDetail.status === 'COMPLETED') {
+      try {
+        const pdfUrl = DELIVERY_ENDPOINTS.receiptPdf(transportDetail.deliveryId)
+        // 새 탭에서 PDF 열기
+        window.open(pdfUrl, '_blank')
+        return
+      } catch (error) {
+        console.error('PDF 조회 실패:', error)
+        alert('PDF 파일을 찾을 수 없습니다. 납품 완료 처리를 먼저 진행해주세요.')
+        // PDF 없으면 HTML 팝업으로 fallback
+      }
     }
 
-    // deliveryId가 없는 경우: 기존 HTML 팝업 사용 (오프라인 출력용)
+    // ===== CASE 2: 진행중/대기 또는 PDF 없음 - HTML 팝업 (오프라인 출력용) =====
     // 출하 ID로 출하 상세 정보 조회 (해당 출하의 품목만 포함)
     const shipmentDetail = await shipmentService.getShipmentDetail(transportDetail.shipmentId)
 
@@ -759,7 +761,7 @@ const printTransport = async () => {
     receiptData.value = {
       clientName: shipmentDetail.client || '',
       deliveryLocation: formData.value.deliveryAddress || '',
-      managerContact: `${formData.value.siteSupervisorName || ''} ${formData.value.receiverPhone || ''}`.trim(),
+      managerContact: `${formData.value.siteSupervisorName || ''} ${formData.value.siteSupervisorPhone || ''}`.trim(),
       unloadingTime: formData.value.expectedArrival?.slice(11, 16) || '',
       remarks: formData.value.deliveryMemo || ''
     }
@@ -852,22 +854,6 @@ const printReceiptDocument = () => {
   closeReceiptPopup()
 }
 
-// 운송장 삭제
-const deleteTransport = async () => {
-  if (!confirm('운송장을 삭제하시겠습니까?')) {
-    return
-  }
-
-  try {
-    await transportService.deleteTransport(formData.value.transportId)
-    alert('운송장이 삭제되었습니다.')
-    router.back()
-  } catch (error) {
-    console.error('운송장 삭제 실패:', error)
-    alert('운송장 삭제에 실패했습니다.')
-  }
-}
-
 // 상태 텍스트 변환 (한글)
 const statusText = computed(() => {
   const statusMap: { [key: string]: string } = {
@@ -877,11 +863,6 @@ const statusText = computed(() => {
     'CANCELLED': '취소'
   }
   return statusMap[formData.value.status] || formData.value.status
-})
-
-// 삭제 가능 여부 (대기 또는 진행중일 때만)
-const canDelete = computed(() => {
-  return ['PENDING', 'IN_PROGRESS'].includes(formData.value.status)
 })
 
 // 저장 가능 여부 (대기 또는 진행중일 때만)
@@ -896,7 +877,7 @@ const canSendMessage = computed(() => {
          formData.value.driverPhone
 })
 
-// 기사에게 메시지 전송 (백엔드 API 호출)
+// 기사에게 메시지 전송 (deliveryService 사용)
 const sendMessageToDriver = async () => {
   const confirmed = confirm(
     `기사에게 메시지를 전송하시겠습니까?\n\n` +
@@ -908,19 +889,33 @@ const sendMessageToDriver = async () => {
   if (!confirmed) return
 
   try {
-    // 백엔드 API로 운송장 ID 전송
-    const response = await axios.post<{ success: boolean; message?: string; delivery_id?: number }>(
-      `${getApiBaseUrl()}/transports/${route.params.id}/send-message`
+    // deliveryService로 납품 생성 및 토큰 발급
+    const result = await deliveryService.createDelivery(Number(route.params.id))
+
+    console.log('메시지 발송 결과:', result)
+
+    // URL 팝업 표시 (임시: alert 대신 prompt로 URL 복사 가능하게)
+    const copyUrl = confirm(
+      `메시지가 생성되었습니다.\n\n` +
+      `아래 URL을 기사에게 전달해주세요:\n` +
+      `${result.mobileUrl}\n\n` +
+      `만료 시간: ${new Date(result.tokenExpiresAt).toLocaleString('ko-KR')}\n\n` +
+      `URL을 클립보드에 복사하시겠습니까?`
     )
 
-    if (response.data.success) {
-      alert('기사에게 메시지가 전송되었습니다.\n납품확인 데이터가 생성되었습니다.')
-    } else {
-      alert('메시지 전송에 실패했습니다.')
+    if (copyUrl) {
+      // 클립보드에 URL 복사
+      try {
+        await navigator.clipboard.writeText(result.mobileUrl)
+        alert('URL이 클립보드에 복사되었습니다.')
+      } catch (err) {
+        // 클립보드 API 실패 시 수동 복사
+        prompt('아래 URL을 복사하세요:', result.mobileUrl)
+      }
     }
   } catch (error) {
     console.error('메시지 전송 실패:', error)
-    alert('메시지 전송에 실패했습니다.\n잠시 후 다시 시도해주세요.')
+    alert(`메시지 전송에 실패했습니다.\n${error instanceof Error ? error.message : '알 수 없는 오류'}`)
   }
 }
 </script>

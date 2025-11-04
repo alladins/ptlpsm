@@ -88,6 +88,34 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.btn-close-page {
+  margin-top: 2rem;
+  padding: 0.875rem 2rem;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-close-page:hover {
+  background: #4b5563;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.btn-close-page:active {
+  transform: translateY(0);
+}
+
 /* 메인 컨텐츠 */
 .delivery-content {
   max-width: 768px;
@@ -209,11 +237,11 @@
 
 /* 품목 목록 테이블 */
 .items-table {
-  width: 400px !important;  /* 고정 400px (115 + 160 + 125) */
+  width: 100% !important;  /* 부모 컨테이너 너비에 맞춤 */
   min-width: auto !important;  /* admin CSS의 min-width: 1070px 차단 */
   max-width: 100% !important;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;  /* 0.875rem → 0.8125rem (조금 작게) */
   table-layout: fixed !important;  /* 컬럼 너비 제어 */
   display: table !important;
 }
@@ -223,28 +251,28 @@
 }
 
 .items-table th {
-  padding: 0.75rem 0.5rem;
+  padding: 0.5rem 0.25rem;  /* 0.75rem 0.5rem → 0.5rem 0.25rem (간격 축소) */
   font-weight: 600;
   color: #374151;
   text-align: center;
   border-bottom: 2px solid #2563eb;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;  /* 0.875rem → 0.8125rem */
   white-space: nowrap;
 }
 
 /* 품목 컬럼 헤더 */
 .items-table th:nth-child(1) {
-  width: 115px;
+  width: 28%;  /* 고정 115px → 비율 28% */
 }
 
 /* 규격 컬럼 헤더 */
 .items-table th:nth-child(2) {
-  width: 160px;
+  width: 42%;  /* 고정 160px → 비율 42% */
 }
 
 /* 수량 컬럼 헤더 */
 .items-table th:nth-child(3) {
-  width: 125px;
+  width: 30%;  /* 고정 125px → 비율 30% */
   text-align: right;
 }
 
@@ -257,14 +285,14 @@
 }
 
 .items-table td {
-  padding: 0.75rem 0.5rem;
+  padding: 0.5rem 0.25rem;  /* 0.75rem 0.5rem → 0.5rem 0.25rem (간격 축소) */
   color: #1f2937;
   vertical-align: middle;
 }
 
 /* 품목 컬럼 데이터 */
 .items-table td:nth-child(1) {
-  width: 115px;
+  width: 28%;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -273,8 +301,9 @@
 
 /* 규격 컬럼 데이터 */
 .items-table td:nth-child(2) {
-  width: 160px;
+  width: 42%;
   color: #6b7280;
+  font-size: 0.75rem;  /* 규격은 더 작게 (0.8125rem → 0.75rem) */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -282,7 +311,7 @@
 
 /* 수량 컬럼 데이터 */
 .items-table td:nth-child(3) {
-  width: 125px;
+  width: 30%;
   font-weight: 600;
   color: #2563eb;
   white-space: nowrap;

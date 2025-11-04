@@ -29,7 +29,7 @@ export interface DeliveryApiResponse {
   deliveryDate: string
   siteSupervisorName: string
   receiverName: string
-  receiverPhone: string
+  siteSupervisorPhone: string
   driverName: string
   driverPhone: string
   vehicleNo: string
@@ -88,7 +88,7 @@ export interface DeliveryInfo {
     deliveryDate: string
     siteSupervisorName: string
     receiverName: string
-    receiverPhone: string
+    siteSupervisorPhone: string
     driverName: string
     driverPhone: string
     vehicleNo: string
@@ -156,7 +156,7 @@ function transformDeliveryResponse(apiResponse: DeliveryApiResponse): DeliveryIn
       deliveryDate: apiResponse.deliveryDate,
       siteSupervisorName: apiResponse.siteSupervisorName,
       receiverName: apiResponse.receiverName,
-      receiverPhone: apiResponse.receiverPhone,
+      siteSupervisorPhone: apiResponse.siteSupervisorPhone,
       driverName: apiResponse.driverName,
       driverPhone: apiResponse.driverPhone,
       vehicleNo: apiResponse.vehicleNo

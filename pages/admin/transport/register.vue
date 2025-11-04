@@ -102,7 +102,7 @@
             <FormField label="인수자 연락처">
               <input
                 type="tel"
-                v-model="formData.receiverPhone"
+                v-model="formData.siteSupervisorPhone"
                 class="form-input-md"
                 placeholder="010-0000-0000"
                 maxlength="13"
@@ -316,7 +316,7 @@ const {
       addressDetail: data.addressDetail,
       siteSupervisorName: data.siteSupervisorName,
       receiverName: data.receiverName,
-      receiverPhone: data.receiverPhone,
+      siteSupervisorPhone: data.siteSupervisorPhone,
       carrierName: data.carrierName,
       driverName: data.driverName,
       driverPhone: data.driverPhone,
@@ -341,7 +341,7 @@ const {
     addressDetail: '',
     siteSupervisorName: '',
     receiverName: '',
-    receiverPhone: '',
+    siteSupervisorPhone: '',
     carrierName: '',
     driverName: '',
     driverPhone: '',
@@ -390,7 +390,7 @@ onMounted(async () => {
             addressDetail: transportDetail.addressDetail || '',
             siteSupervisorName: transportDetail.siteSupervisorName || '',
             receiverName: transportDetail.receiverName || '',
-            receiverPhone: transportDetail.receiverPhone || '',
+            siteSupervisorPhone: transportDetail.siteSupervisorPhone || '',
             deliveryDate: transportDetail.deliveryDate?.split('T')[0] || formData.deliveryDate,
             carrierName: transportDetail.carrierName || '',
             trackingNumber: transportDetail.trackingNumber || '',

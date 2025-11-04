@@ -399,9 +399,8 @@ onMounted(() => {
 }
 
 .data-table tbody tr:hover {
-  background: #f9fafb;
-  transform: scale(1.005);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: #f0f4ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .data-table tbody td {

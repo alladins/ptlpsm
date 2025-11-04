@@ -142,7 +142,7 @@ GET /api/m/delivery/{token}
     "deliveryDate": "2025-10-27",
     "siteSupervisorName": "김감독",
     "receiverName": "이수령",
-    "receiverPhone": "010-1234-5678",
+    "siteSupervisorPhone": "010-1234-5678",
     "driverName": "박기사",
     "driverPhone": "010-9876-5432",
     "vehicleNo": "12가3456"

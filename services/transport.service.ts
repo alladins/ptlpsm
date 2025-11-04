@@ -32,7 +32,7 @@ export interface TransportDetail {
   addressDetail: string
   siteSupervisorName: string
   receiverName: string
-  receiverPhone: string
+  siteSupervisorPhone: string
   deliveryDate: string
   carrierName: string
   trackingNumber: string
@@ -60,7 +60,7 @@ export interface TransportCreateRequest {
   addressDetail?: string            // 상세주소
   siteSupervisorName?: string       // 현장담당자
   receiverName?: string             // 현장 인수자
-  receiverPhone?: string            // 현장 인수자 연락처
+  siteSupervisorPhone?: string            // 현장 인수자 연락처
   carrierName?: string              // 운송사명
   driverName?: string               // 기사명
   driverPhone?: string              // 기사 연락처

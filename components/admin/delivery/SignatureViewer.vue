@@ -1,119 +1,130 @@
 <template>
   <!-- Compact 모드 -->
-  <div v-if="compact" class="signature-viewer-compact">
-    <div v-if="hasSignature && signatureUrl" class="signature-thumbnail-mini" @click="openModal">
-      <img :src="signatureUrl" alt="서명" loading="lazy">
-    </div>
+  <div v-if="compact" class="pdf-download-compact">
+    <a v-if="hasSignature && fullPdfUrl" :href="fullPdfUrl" target="_blank" class="pdf-button-mini" title="PDF 다운로드">
+      <i class="fas fa-file-pdf"></i>
+    </a>
   </div>
 
   <!-- 일반 모드 -->
-  <div v-else class="signature-viewer">
-    <!-- 서명 없을 때 -->
-    <div v-if="!hasSignature" class="no-signature">
-      <i class="fas fa-signature"></i>
-      <span>서명 없음</span>
+  <div v-else class="pdf-download-viewer">
+    <!-- PDF 없을 때 -->
+    <div v-if="!hasSignature || !fullPdfUrl" class="no-pdf">
+      <i class="fas fa-file-pdf"></i>
+      <span>PDF 없음</span>
     </div>
 
-    <!-- 서명 있을 때 -->
-    <div v-else class="signature-container">
-      <div class="signature-thumbnail" @click="openModal">
-        <img :src="signatureUrl" alt="서명" loading="lazy">
-        <div class="thumbnail-overlay">
-          <i class="fas fa-search-plus"></i>
-          <span>확대</span>
-        </div>
-      </div>
-      <button class="btn-view" @click="openModal">
-        <i class="fas fa-eye"></i>
-        서명 보기
-      </button>
+    <!-- PDF 있을 때 -->
+    <div v-else class="pdf-download-container">
+      <a :href="fullPdfUrl" target="_blank" class="btn-download-pdf">
+        <i class="fas fa-file-pdf"></i>
+        PDF 다운로드
+      </a>
     </div>
   </div>
-
-    <!-- 모달 -->
-    <Teleport to="body">
-      <div v-if="showModal" class="signature-modal" @click="closeModal">
-        <div class="modal-content" @click.stop>
-          <div class="modal-header">
-            <h3>
-              <i class="fas fa-signature"></i>
-              현장소장 서명
-            </h3>
-            <button class="btn-close" @click="closeModal">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="modal-body">
-            <img :src="signatureUrl" alt="서명 원본" class="signature-full">
-          </div>
-        </div>
-      </div>
-    </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
+import { getApiBaseUrl } from '~/services/api'
 
 interface Props {
-  signatureUrl: string | null
+  pdfFileUrl?: string | null
+  deliveryId?: number | null
   hasSignature: boolean
   compact?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
+  pdfFileUrl: null,
+  deliveryId: null,
   compact: false
 })
 
-const showModal = ref(false)
+// 완전한 PDF URL 생성 (상대 경로 → 절대 경로)
+const fullPdfUrl = computed(() => {
+  const baseUrl = getApiBaseUrl()
 
-const openModal = () => {
-  showModal.value = true
-}
+  // 1순위: pdfFileUrl이 있으면 사용
+  if (props.pdfFileUrl) {
+    // 이미 완전한 URL이면 그대로 반환
+    if (props.pdfFileUrl.startsWith('http://') || props.pdfFileUrl.startsWith('https://')) {
+      return props.pdfFileUrl
+    }
 
-const closeModal = () => {
-  showModal.value = false
-}
+    // /api/... 형태면 baseUrl의 /api를 제거하고 결합
+    if (props.pdfFileUrl.startsWith('/api/')) {
+      return props.pdfFileUrl.replace('/api/', `${baseUrl}/`)
+    }
+
+    // 일반 상대 경로
+    return props.pdfFileUrl.startsWith('/')
+      ? `${baseUrl}${props.pdfFileUrl}`
+      : `${baseUrl}/${props.pdfFileUrl}`
+  }
+
+  // 2순위: deliveryId로 fallback URL 생성
+  if (props.deliveryId) {
+    return `${baseUrl}/admin/deliveries/${props.deliveryId}/receipt-pdf`
+  }
+
+  return null
+})
 </script>
 
 <style scoped>
-/* Compact 모드 */
-.signature-viewer-compact {
+/* Compact 모드 - PDF 다운로드 */
+.pdf-download-compact {
   display: inline-block;
 }
 
-.signature-thumbnail-mini {
+.pdf-button-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 40px;
   height: 40px;
-  border: 1px solid #e5e7eb;
+  border: 2px solid #dc2626;
   border-radius: 0.25rem;
-  overflow: hidden;
+  background: #dc2626;
+  color: white;
+  font-size: 1.25rem;
+  text-decoration: none;
   cursor: pointer;
   transition: all 0.2s;
-  background: white;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
 }
 
-.signature-thumbnail-mini:hover {
-  border-color: #2563eb;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-  transform: scale(1.05);
+.pdf-button-mini:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: white;
+  box-shadow: 0 4px 6px rgba(220, 38, 38, 0.4);
+  transform: scale(1.1);
 }
 
-.signature-thumbnail-mini img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background: white;
+.pdf-button-mini.pdf-disabled {
+  background: #9ca3af;
+  border-color: #9ca3af;
+  color: white;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-/* 일반 모드 */
-.signature-viewer {
+.pdf-button-mini.pdf-disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 4px rgba(156, 163, 175, 0.2);
+}
+
+/* 일반 모드 - PDF 다운로드 */
+.pdf-download-viewer {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-/* 서명 없을 때 */
-.no-signature {
+/* PDF 없을 때 */
+.no-pdf {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -125,218 +136,42 @@ const closeModal = () => {
   font-size: 0.875rem;
 }
 
-.no-signature i {
+.no-pdf i {
   font-size: 1rem;
+  color: #dc2626;
 }
 
-/* 서명 있을 때 */
-.signature-container {
+/* PDF 다운로드 컨테이너 */
+.pdf-download-container {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.signature-thumbnail {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.375rem;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.signature-thumbnail:hover {
-  border-color: #2563eb;
-  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.1);
-}
-
-.signature-thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background: white;
-}
-
-.thumbnail-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  opacity: 0;
-  transition: opacity 0.2s;
-  color: white;
-  font-size: 0.75rem;
-}
-
-.signature-thumbnail:hover .thumbnail-overlay {
-  opacity: 1;
-}
-
-.thumbnail-overlay i {
-  font-size: 1.25rem;
-}
-
-.btn-view {
+.btn-download-pdf {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: white;
+  border: 2px solid #dc2626;
   border-radius: 0.375rem;
-  color: #374151;
+  color: #dc2626;
   font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-view:hover {
-  background: #e5e7eb;
-  border-color: #d1d5db;
-}
-
-.btn-view i {
-  font-size: 1rem;
-}
-
-/* 모달 */
-.signature-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 1rem;
-  animation: fadeIn 0.2s;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.modal-content {
-  background: white;
-  border-radius: 0.5rem;
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  animation: slideUp 0.3s;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h3 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
-  margin: 0;
-}
-
-.modal-header i {
-  color: #2563eb;
-}
-
-.btn-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 0.375rem;
-  border: none;
-  background: #f3f4f6;
-  color: #6b7280;
+  text-decoration: none;
   cursor: pointer;
   transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.btn-close:hover {
-  background: #e5e7eb;
-  color: #374151;
+.btn-download-pdf:hover {
+  background: #dc2626;
+  color: white;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+  transform: translateY(-1px);
 }
 
-.modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.signature-full {
-  max-width: 100%;
-  max-height: 400px;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background: white;
-}
-
-/* 반응형 */
-@media (max-width: 768px) {
-  .signature-modal {
-    padding: 0.5rem;
-  }
-
-  .modal-content {
-    max-width: 100%;
-  }
-
-  .modal-header {
-    padding: 1rem;
-  }
-
-  .modal-header h3 {
-    font-size: 1rem;
-  }
-
-  .modal-body {
-    padding: 1rem;
-  }
-
-  .signature-full {
-    max-height: 300px;
-  }
+.btn-download-pdf i {
+  font-size: 1rem;
 }
 </style>

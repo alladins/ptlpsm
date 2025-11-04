@@ -21,6 +21,10 @@
       <div class="completed-info">
         <p><strong>완료 시각:</strong> {{ completedAt }}</p>
       </div>
+      <button class="btn-close-page" @click="closePage">
+        <i class="fas fa-times"></i>
+        닫기
+      </button>
     </div>
 
     <!-- 메인 컨텐츠 -->
@@ -296,6 +300,17 @@ const handleSubmit = async () => {
     alert(`납품 확인에 실패했습니다.\n${err instanceof Error ? err.message : '알 수 없는 오류'}`)
   } finally {
     submitting.value = false
+  }
+}
+
+// 페이지 닫기
+const closePage = () => {
+  // 모바일 브라우저에서 창 닫기 시도
+  if (window.opener) {
+    window.close()
+  } else {
+    // 창을 닫을 수 없는 경우 홈으로 이동
+    window.location.href = '/'
   }
 }
 </script>

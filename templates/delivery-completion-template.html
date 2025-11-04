@@ -1,0 +1,405 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+  ★ 중요 ★ 환경별 이미지 경로 설정
+
+  1. 로고 이미지 경로:
+     - 개발 환경 (Windows): D:/dev/ptlpsmback/logo.png
+     - 운영 환경 (Linux):   /app/leadpower/www/images/common/logo.png
+
+  2. 로고 파일 형식 주의:
+     - 반드시 PNG 형식이어야 함 (WEBP는 Java ImageIO에서 지원 안 됨)
+     - 파일명은 logo.png지만 실제 형식이 WEBP인 경우 PDF 생성 시 이미지가 안 보임
+
+  3. 이미지 처리 방식:
+     - PdfGenerationService.processImagesInHtml()이 로컬 경로를 자동으로 Base64로 변환
+     - 서명/인감 이미지는 Handlebars 변수로 이미 Base64 처리됨
+
+  4. Flying Saucer PDF 엔진 제약사항:
+     - XHTML 1.0 Strict 필수
+     - CSS 2.1만 지원 (Flexbox, transform 등 최신 CSS 불가)
+     - 모든 태그는 self-closing (예: <img />, <br />)
+     - 테이블 기반 레이아웃 사용 필수
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>납품완료계</title>
+  <style>
+    @font-face {
+      font-family: 'MalgunGothic';
+      src: url('file:///C:/Windows/Fonts/malgun.ttf');
+      -fs-pdf-font-embed: embed;
+      -fs-pdf-font-encoding: Identity-H;
+    }
+
+    @page {
+      size: A4;
+      margin: 15mm 10mm;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'MalgunGothic', serif;
+      font-size: 10pt;
+      line-height: 1.4;
+    }
+
+    /* ========== Document Title ========== */
+    .document-title {
+      text-align: center;
+      font-size: 24pt;
+      font-weight: bold;
+      margin: 15px 0 20px 0;
+      letter-spacing: 2px;
+    }
+
+    /* ========== Contract Info Section ========== */
+    .contract-info {
+      margin-bottom: 15px;
+    }
+
+    .contract-info table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+    }
+
+    .contract-info th,
+    .contract-info td {
+      border: 1px solid #000;
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .contract-info th {
+      background-color: #e8e8e8;
+      font-weight: bold;
+      width: 120px;
+      text-align: center;
+    }
+
+    .contract-info td {
+      padding-left: 10px;
+    }
+
+    /* ========== Summary Section ========== */
+    .summary-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 2px solid #000;
+      background-color: #f9f9f9;
+    }
+
+    .summary-title {
+      font-size: 12pt;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .summary-content {
+      font-size: 10pt;
+      line-height: 1.8;
+      text-indent: 20px;
+    }
+
+    /* ========== Items Summary Table ========== */
+    .items-summary-table {
+      margin-bottom: 20px;
+    }
+
+    .items-summary-table table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+    }
+
+    .items-summary-table th,
+    .items-summary-table td {
+      border: 1px solid #000;
+      padding: 8px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .items-summary-table th {
+      background-color: #e8e8e8;
+      font-weight: bold;
+      font-size: 10pt;
+    }
+
+    .items-summary-table td {
+      font-size: 10pt;
+    }
+
+    .items-summary-table td.text-left {
+      text-align: left;
+      padding-left: 10px;
+    }
+
+    .items-summary-table td.text-right {
+      text-align: right;
+      padding-right: 10px;
+    }
+
+    /* ========== Verification Statement ========== */
+    .verification-statement {
+      margin: 25px 0;
+      padding: 15px;
+      border: 1px solid #666;
+      background-color: #fafafa;
+      text-align: center;
+    }
+
+    .verification-statement p {
+      font-size: 11pt;
+      line-height: 1.8;
+      font-weight: bold;
+    }
+
+    /* ========== Contractor Info Section ========== */
+    .contractor-section {
+      margin-top: 25px;
+      margin-bottom: 20px;
+    }
+
+    .contractor-section table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+    }
+
+    .contractor-section th,
+    .contractor-section td {
+      border: 1px solid #000;
+      padding: 8px;
+      vertical-align: middle;
+    }
+
+    .contractor-section th {
+      background-color: #e8e8e8;
+      font-weight: bold;
+      width: 120px;
+      text-align: center;
+    }
+
+    .contractor-section td {
+      text-align: left;
+      padding-left: 10px;
+    }
+
+    /* ========== Signature Section ========== */
+    .signature-section {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    .signature-date {
+      font-size: 12pt;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .signature-box {
+      margin: 0 auto;
+      width: 300px;
+    }
+
+    .signature-label {
+      font-weight: bold;
+      font-size: 11pt;
+      margin-bottom: 8px;
+    }
+
+    .signature-company {
+      font-size: 10pt;
+      margin-bottom: 5px;
+    }
+
+    .signature-name {
+      font-size: 10pt;
+      margin-bottom: 10px;
+    }
+
+    .signature-image-box {
+      width: 140px;
+      height: 110px;
+      margin: 0 auto;
+      border: 1px solid #999;
+      position: relative;
+      display: block;
+    }
+
+    .signature-image {
+      width: 140px;
+      height: 110px;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .signature-placeholder {
+      width: 140px;
+      height: 110px;
+      line-height: 110px;
+      text-align: center;
+      color: #999;
+      font-size: 14pt;
+    }
+
+    /* ========== Footer Note ========== */
+    .footer-note {
+      margin-top: 20px;
+      padding: 10px;
+      border-top: 2px solid #000;
+      font-size: 9pt;
+      text-align: center;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <!-- Document Title -->
+  <div class="document-title">납품완료계</div>
+
+  <!-- Contract Info Section -->
+  <div class="contract-info">
+    <table>
+      <tbody>
+        <tr>
+          <th>계약번호</th>
+          <td>{{contractNo}}</td>
+          <th>납품요구번호</th>
+          <td>{{deliveryRequestNo}}</td>
+        </tr>
+        <tr>
+          <th>수요기관</th>
+          <td colspan="3">{{client}}</td>
+        </tr>
+        <tr>
+          <th>사업명</th>
+          <td colspan="3">{{projectName}}</td>
+        </tr>
+        <tr>
+          <th>납품장소</th>
+          <td colspan="3">{{deliveryLocation}}</td>
+        </tr>
+        <tr>
+          <th>납품기간</th>
+          <td colspan="3">{{deliveryStartDate}} ~ {{deliveryEndDate}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Summary Section -->
+  <div class="summary-section">
+    <div class="summary-title">납품 개요</div>
+    <div class="summary-content">
+      아래 명시된 계약에 따른 모든 물품이 완전히 납품되었으며,
+      현장 검수 결과 계약 내용과 일치함을 확인하였습니다.
+      총 {{totalDeliveryCount}}회에 걸쳐 납품이 완료되었으며,
+      모든 품목이 계약된 규격과 수량에 부합함을 증명합니다.
+    </div>
+  </div>
+
+  <!-- Items Summary Table -->
+  <div class="items-summary-table">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 8%;">No</th>
+          <th style="width: 22%;">품목명</th>
+          <th style="width: 32%;">규격</th>
+          <th style="width: 8%;">단위</th>
+          <th style="width: 12%;">계약수량</th>
+          <th style="width: 12%;">납품수량</th>
+          <th style="width: 6%;">상태</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+        <tr>
+          <td>{{sequenceNumber}}</td>
+          <td class="text-left">{{name}}</td>
+          <td class="text-left">{{specification}}</td>
+          <td>{{unit}}</td>
+          <td class="text-right">{{contractQuantity}}</td>
+          <td class="text-right">{{deliveredQuantity}}</td>
+          <td>{{#if isComplete}}완료{{else}}진행중{{/if}}</td>
+        </tr>
+        {{/each}}
+        <tr>
+          <td colspan="4" style="font-weight: bold; text-align: center;">합계</td>
+          <td class="text-right" style="font-weight: bold;">{{totalContractQuantity}}</td>
+          <td class="text-right" style="font-weight: bold;">{{totalDeliveredQuantity}}</td>
+          <td style="font-weight: bold;">완료</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Verification Statement -->
+  <div class="verification-statement">
+    <p>
+      상기 내용과 같이 납품이 완료되었음을 확인하며,<br />
+      계약 조건에 따라 모든 물품이 정상적으로 인수되었음을 증명합니다.
+    </p>
+  </div>
+
+  <!-- Contractor Info Section -->
+  <div class="contractor-section">
+    <table>
+      <tbody>
+        <tr>
+          <th>공급자 (시공사)</th>
+          <td>{{contractorCompanyName}}</td>
+        </tr>
+        <tr>
+          <th>대표이사</th>
+          <td>{{contractorRepresentative}}</td>
+        </tr>
+        <tr>
+          <th>사업자등록번호</th>
+          <td>{{contractorBusinessNo}}</td>
+        </tr>
+        <tr>
+          <th>주소</th>
+          <td>{{contractorAddress}}</td>
+        </tr>
+        <tr>
+          <th>연락처</th>
+          <td>{{contractorPhone}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Signature Section -->
+  <div class="signature-section">
+    <div class="signature-date">{{signatureDate}}</div>
+    <div class="signature-box">
+      <div class="signature-label">공급자 (시공사 대표)</div>
+      <div class="signature-company">{{contractorCompanyName}}</div>
+      <div class="signature-name">대표이사: {{contractorRepresentative}}</div>
+      <div class="signature-image-box">
+        {{#if contractorSealImage}}
+        <img src="{{contractorSealImage}}" alt="인감" class="signature-image" />
+        {{else}}
+        <div class="signature-placeholder">(인)</div>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Note -->
+  <div class="footer-note">
+    본 납품완료계는 조달청 나라장터 계약에 따른 납품 완료를 증명하는 공식 문서입니다.
+  </div>
+</body>
+</html>

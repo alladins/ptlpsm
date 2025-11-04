@@ -335,7 +335,7 @@ const loadReceiptData = async () => {
   receiptData.value = {
     clientName: orderDetail.client || '',
     deliveryLocation: formData.value.deliveryAddress || '',
-    managerContact: `${formData.value.siteSupervisorName || ''} ${formData.value.receiverPhone || ''}`.trim(),
+    managerContact: `${formData.value.siteSupervisorName || ''} ${formData.value.siteSupervisorPhone || ''}`.trim(),
     unloadingTime: formData.value.expectedArrival?.slice(11, 16) || '',
     remarks: formData.value.deliveryMemo || ''
   }

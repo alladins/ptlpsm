@@ -101,8 +101,8 @@
                 <FormField label="인수자 연락처">
                   <input
                     type="tel"
-                    v-model="transportForm.receiverPhone"
-                    @input="handleReceiverPhoneInput"
+                    v-model="transportForm.siteSupervisorPhone"
+                    @input="handlesiteSupervisorPhoneInput"
                     class="form-input-md"
                     placeholder="010-0000-0000"
                     maxlength="13"
@@ -431,7 +431,7 @@ const transportForm = ref({
   addressDetail: '',                 // 상세주소
   siteSupervisorName: '',           // 현장담당자(포기공)
   receiverName: '',                 // 현장 인수자
-  receiverPhone: '',                // 현장 인수자 연락처
+  siteSupervisorPhone: '',                // 현장 인수자 연락처
   deliveryDate: '',                 // 배송예정일
   carrierName: '',                  // 운송사명
   trackingNumber: '',               // 운송장/트래킹번호
@@ -463,10 +463,10 @@ const formatPhoneNumber = (value: string): string => {
 }
 
 // 인수자 연락처 포맷팅
-const handleReceiverPhoneInput = (event: Event) => {
+const handlesiteSupervisorPhoneInput = (event: Event) => {
   const input = event.target as HTMLInputElement
   const formatted = formatPhoneNumber(input.value)
-  transportForm.value.receiverPhone = formatted
+  transportForm.value.siteSupervisorPhone = formatted
 }
 
 // 기사 연락처 포맷팅
@@ -554,7 +554,7 @@ const saveTransport = async () => {
       addressDetail: transportForm.value.addressDetail,
       siteSupervisorName: transportForm.value.siteSupervisorName,
       receiverName: transportForm.value.receiverName,
-      receiverPhone: transportForm.value.receiverPhone,
+      siteSupervisorPhone: transportForm.value.siteSupervisorPhone,
       carrierName: transportForm.value.carrierName,
       driverName: transportForm.value.driverName,
       driverPhone: transportForm.value.driverPhone,
@@ -592,7 +592,7 @@ const printTransport = async () => {
     receiptData.value = {
       clientName: orderDetail.client || '',
       deliveryLocation: transportForm.value.deliveryAddress || '',
-      managerContact: `${transportForm.value.siteSupervisorName || ''} ${transportForm.value.receiverPhone || ''}`.trim(),
+      managerContact: `${transportForm.value.siteSupervisorName || ''} ${transportForm.value.siteSupervisorPhone || ''}`.trim(),
       unloadingTime: transportForm.value.expectedArrival?.slice(11, 16) || '',
       remarks: transportForm.value.deliveryMemo || ''
     }

@@ -50,9 +50,7 @@
             <select v-model="searchForm.status" class="condition-select">
               <option value="">전체</option>
               <option value="PENDING">대기</option>
-              <option value="IN_TRANSIT">운송중</option>
-              <option value="ARRIVED">도착</option>
-              <option value="UNLOADING">하차중</option>
+              <option value="IN_PROGRESS">운송중</option>
               <option value="COMPLETED">완료</option>
               <option value="CANCELLED">취소</option>
             </select>

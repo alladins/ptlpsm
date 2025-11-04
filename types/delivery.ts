@@ -12,6 +12,7 @@ export interface DeliveryConfirmationNode {
   status: string
   completedAt: string
   hasSignature: boolean
+  pdfFileUrl: string | null
   signatureUrl: string | null
   photoCount: number
   photoUrls: string[]
@@ -42,12 +43,12 @@ export interface TransportDetailNode {
  */
 export interface ShipmentTreeNode {
   shipmentId: number
-  shipmentDate: string
+  shipmentDate: string | null
   shipmentQuantity: number
   shipmentResponsible: string | null
   status: string
   itemCount: number
-  itemSummary: string
+  itemSummary: string | null
   transport: TransportDetailNode | null
 }
 

@@ -18,7 +18,7 @@
         <span class="info-separator">·</span>
         <span class="info-text">
           <i class="fas fa-list"></i>
-          품목: {{ shipment.itemSummary }} ({{ shipment.itemCount }}개)
+          품목: {{ shipment.itemSummary || '-' }} ({{ shipment.itemCount }}개)
         </span>
         <span class="info-separator">·</span>
         <span class="shipment-quantity">
@@ -80,6 +80,7 @@ const toggleExpand = () => {
 const getStatusText = (status: string): string => {
   const statusMap: { [key: string]: string } = {
     'PENDING': '대기',
+    'IN_PROGRESS': '진행중',
     'IN_TRANSIT': '운송중',
     'ARRIVED': '도착',
     'UNLOADING': '하차중',
@@ -93,6 +94,7 @@ const getStatusText = (status: string): string => {
 const getStatusClass = (status: string) => {
   const classMap: { [key: string]: string } = {
     'PENDING': 'status-waiting',
+    'IN_PROGRESS': 'status-in-progress',
     'IN_TRANSIT': 'status-in-transit',
     'ARRIVED': 'status-arrived',
     'UNLOADING': 'status-unloading',
@@ -236,6 +238,11 @@ const getStatusClass = (status: string) => {
 .status-waiting {
   background: #fef3c7;
   color: #92400e;
+}
+
+.status-in-progress {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .status-in-transit {

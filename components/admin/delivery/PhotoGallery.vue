@@ -99,8 +99,8 @@
           </div>
 
           <!-- 썸네일 네비게이션 -->
-          <div v-if="photoCount > 1" class="modal-footer">
-            <div class="thumbnail-nav">
+          <div class="modal-footer">
+            <div v-if="photoCount > 1" class="thumbnail-nav">
               <div
                 v-for="(url, index) in photoUrls"
                 :key="index"
@@ -111,6 +111,12 @@
                 <img :src="url" :alt="`썸네일 ${index + 1}`">
               </div>
             </div>
+
+            <!-- 닫기 버튼 -->
+            <button class="btn-close-bottom" @click="closeGallery">
+              <i class="fas fa-times"></i>
+              닫기
+            </button>
           </div>
         </div>
       </div>
@@ -497,6 +503,9 @@ if (typeof window !== 'undefined') {
   padding: 1rem 1.5rem;
   border-top: 1px solid #e5e7eb;
   background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .thumbnail-nav {
@@ -505,6 +514,33 @@ if (typeof window !== 'undefined') {
   justify-content: center;
   overflow-x: auto;
   padding: 0.5rem 0;
+}
+
+.btn-close-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: #ef4444;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-close-bottom:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(220, 38, 38, 0.3);
+}
+
+.btn-close-bottom i {
+  font-size: 1.125rem;
 }
 
 .thumb-item {
