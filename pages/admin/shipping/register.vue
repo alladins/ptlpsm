@@ -95,11 +95,9 @@
 
                   <FormField label="상태" required :error="errors.status">
                     <select v-model="formData.status" class="form-select-sm text-center">
-                      <option value="PENDING">대기</option>
-                      <option value="READY">준비</option>
-                      <option value="IN_PROGRESS">진행중</option>
-                      <option value="COMPLETED">완료</option>
-                      <option value="CANCELLED">취소</option>
+                      <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                      </option>
                     </select>
                   </FormField>
 
@@ -262,6 +260,7 @@ import { shipmentService } from '~/services/shipment.service'
 import { formatNumber, formatCurrency } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
+import { useCommonStatus } from '~/composables/useCommonStatus'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 
@@ -271,6 +270,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 상태 관리 (DB 기반)
+const { statusOptions } = useCommonStatus()
 
 // 품목 인터페이스
 interface OrderItem {

@@ -15,6 +15,8 @@ import type {
   SubmitToNaraRequest,
   SubmitToNaraResponse
 } from '~/types/delivery-done'
+import { codeService } from './code.service'
+import type { StatusCode } from '~/types/common'
 
 /**
  * 납품완료계 서비스
@@ -300,32 +302,53 @@ export async function convertSignatureBlobToBase64(blob: Blob): Promise<string> 
 
 // ==================== 유틸리티 함수 ====================
 
+// 전역 캐시 (Service 레이어용)
+let statusCodesCache: StatusCode[] | null = null
+
 /**
- * 상태 텍스트 변환
+ * 상태 코드 로드 및 캐싱 (DB 기반)
  */
-export function getStatusText(status: DeliveryDoneStatus): string {
-  const statusMap: Record<DeliveryDoneStatus, string> = {
-    [DeliveryDoneStatus.PENDING]: '대기',
-    [DeliveryDoneStatus.IN_PROGRESS]: '납품중',
-    [DeliveryDoneStatus.PENDING_SIGNATURE]: '서명 대기',
-    [DeliveryDoneStatus.COMPLETED]: '완료',
-    [DeliveryDoneStatus.SUBMITTED]: '제출완료'
+async function loadStatusCodesIfNeeded(): Promise<StatusCode[]> {
+  if (statusCodesCache) {
+    return statusCodesCache
   }
-  return statusMap[status] || status
+
+  try {
+    const response = await codeService.getCodeDetails('COMMON_STATUS')
+    statusCodesCache = response.map((detail: any) => ({
+      code: detail.code,
+      codeName: detail.codeName,
+      description: detail.description || '',
+      cssClass: detail.cssClass || `status-${detail.code.toLowerCase().replace(/_/g, '-')}`,
+      badgeClass: detail.badgeClass || 'bg-gray-100 text-gray-800',
+      sortOrder: detail.sortOrder || 0
+    }))
+    return statusCodesCache
+  } catch (error) {
+    console.error('Failed to load status codes in service layer:', error)
+    // Fallback: 빈 배열
+    return []
+  }
 }
 
 /**
- * 상태별 CSS 클래스 반환
+ * 상태 텍스트 변환 (DB 기반)
+ * Service 레이어에서 사용하는 비동기 함수
  */
-export function getStatusClass(status: DeliveryDoneStatus): string {
-  const statusClassMap: Record<DeliveryDoneStatus, string> = {
-    [DeliveryDoneStatus.PENDING]: 'status-pending',
-    [DeliveryDoneStatus.IN_PROGRESS]: 'status-in-progress',
-    [DeliveryDoneStatus.PENDING_SIGNATURE]: 'status-pending-signature',
-    [DeliveryDoneStatus.COMPLETED]: 'status-completed',
-    [DeliveryDoneStatus.SUBMITTED]: 'status-submitted'
-  }
-  return statusClassMap[status] || ''
+export async function getStatusText(status: DeliveryDoneStatus): Promise<string> {
+  const codes = await loadStatusCodesIfNeeded()
+  const found = codes.find(c => c.code === status)
+  return found?.codeName || status
+}
+
+/**
+ * 상태별 CSS 클래스 반환 (DB 기반)
+ * Service 레이어에서 사용하는 비동기 함수
+ */
+export async function getStatusClass(status: DeliveryDoneStatus): Promise<string> {
+  const codes = await loadStatusCodesIfNeeded()
+  const found = codes.find(c => c.code === status)
+  return found?.cssClass || `status-${status.toLowerCase().replace(/_/g, '-')}`
 }
 
 /**

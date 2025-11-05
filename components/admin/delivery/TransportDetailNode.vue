@@ -114,32 +114,19 @@ interface Props {
 
 defineProps<Props>()
 
-// 상태 텍스트 변환
+// 공통 상태 코드 사용 (DB에서 관리)
+const { getStatusLabel } = useCommonStatus()
+
+// 상태 텍스트 변환: DB에서 조회 (PENDING, IN_PROGRESS, COMPLETED, CANCELLED)
 const getStatusText = (status: string): string => {
-  const statusMap: { [key: string]: string } = {
-    'PENDING': '대기',
-    'IN_PROGRESS': '진행중',
-    'IN_TRANSIT': '운송중',
-    'ARRIVED': '도착',
-    'UNLOADING': '하차중',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소'
-  }
-  return statusMap[status] || status
+  return getStatusLabel(status)
 }
 
-// 상태 클래스
-const getStatusClass = (status: string) => {
-  const classMap: { [key: string]: string } = {
-    'PENDING': 'status-waiting',
-    'IN_PROGRESS': 'status-in-progress',
-    'IN_TRANSIT': 'status-in-transit',
-    'ARRIVED': 'status-arrived',
-    'UNLOADING': 'status-unloading',
-    'COMPLETED': 'status-completed',
-    'CANCELLED': 'status-cancelled'
-  }
-  return classMap[status] || 'status-default'
+// 상태 CSS 클래스: 컨벤션 기반 자동 변환
+// PENDING → status-pending, IN_PROGRESS → status-in-progress
+const getStatusClass = (status: string): string => {
+  const kebabCase = status.toLowerCase().replace(/_/g, '-')
+  return `status-${kebabCase}`
 }
 </script>
 

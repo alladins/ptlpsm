@@ -500,6 +500,161 @@
   border: 1px solid #c7d2fe;
 }
 
+/* ============================================
+   DB-based Status Badge Styles
+   ============================================
+   These styles are applied based on the css_class
+   column from the code_detail table.
+
+   Usage: <span class="status-badge" :class="getStatusClass(code)">...</span>
+
+   Default statuses:
+   - PENDING: 대기 (노란색)
+   - IN_PROGRESS: 진행중 (파란색)
+   - COMPLETED: 완료 (초록색)
+   - CANCELLED: 취소 (빨간색)
+   - PENDING_SIGNATURE: 서명대기 (주황색)
+   - SUBMITTED: 제출완료 (남색)
+   ============================================ */
+
+/* 대기 (PENDING) - 노란색 */
+.status-pending {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 진행중 (IN_PROGRESS) - 파란색 */
+.status-in-progress {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 완료 (COMPLETED) - 초록색 */
+.status-completed {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 취소 (CANCELLED) - 빨간색 */
+.status-cancelled {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 서명대기 (PENDING_SIGNATURE) - 주황색 */
+.status-pending-signature {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #ffedd5;
+  color: #c2410c;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 제출완료 (SUBMITTED) - 남색 */
+.status-submitted {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #e0e7ff;
+  color: #4338ca;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 기본 상태 (fallback) - 회색 */
+.status-default {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Legacy compatibility - Sales pages */
+.status-complete,
+.status-progress,
+.status-cancel {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-complete {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-progress {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-cancel {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Delivery-specific legacy statuses (to be removed) */
+.status-in-transit,
+.status-arrived,
+.status-unloading {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-in-transit {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.status-arrived {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.status-unloading {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
 .use-badge {
   display: inline-flex;
   align-items: center;

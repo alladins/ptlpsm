@@ -523,6 +523,7 @@ import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import axios from 'axios'
 import { getApiBaseUrl } from '~/services/api'
+import { useCommonStatus } from '~/composables/useCommonStatus'
 
 definePageMeta({
   layout: 'admin',
@@ -532,6 +533,9 @@ definePageMeta({
 const router = useRouter()
 const route = useRoute()
 const loading = ref(true)
+
+// 상태 관리 (DB 기반)
+const { getStatusLabel } = useCommonStatus()
 
 // 팝업 관련
 const showReceiptPopup = ref(false)
@@ -854,15 +858,9 @@ const printReceiptDocument = () => {
   closeReceiptPopup()
 }
 
-// 상태 텍스트 변환 (한글)
+// 상태 텍스트 변환 (DB 기반)
 const statusText = computed(() => {
-  const statusMap: { [key: string]: string } = {
-    'PENDING': '대기',
-    'IN_PROGRESS': '진행중',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소'
-  }
-  return statusMap[formData.value.status] || formData.value.status
+  return getStatusLabel(formData.value.status)
 })
 
 // 저장 가능 여부 (대기 또는 진행중일 때만)

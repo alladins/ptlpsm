@@ -232,7 +232,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
@@ -245,6 +245,7 @@ import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import ItemsManager from '~/components/admin/forms/ItemsManager.vue'
+import { useSalesStatus } from '~/composables/useSalesStatus'
 
 definePageMeta({
   layout: 'admin',
@@ -361,8 +362,13 @@ watch(totalItemsAmount, (newAmount) => {
 const selectedFile = ref<File | null>(null)
 const fileInput = ref<HTMLInputElement>()
 
-// 옵션 데이터
-const salesStatusOptions = salesService.getSalesStatusOptions()
+// 옵션 데이터 (DB 기반)
+const { statusOptions: salesStatusOptions, loadStatusCodes } = useSalesStatus()
+
+// 상태 코드 로드
+onMounted(async () => {
+  await loadStatusCodes()
+})
 
 // 수요기관 선택
 const handleOrganizationSelected = (organization: DemandOrganization) => {

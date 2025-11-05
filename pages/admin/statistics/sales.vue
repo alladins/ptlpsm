@@ -110,9 +110,20 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useSalesStatus } from '~/composables/useSalesStatus'
+
 definePageMeta({
   layout: 'admin',
   pageTitle: '영업통계'
+})
+
+// DB 기반 상태 관리 (영업 모듈 전용 - 한글 코드)
+const { getStatusClass, loadStatusCodes } = useSalesStatus()
+
+// 상태 코드 로드
+onMounted(async () => {
+  await loadStatusCodes()
 })
 
 // 임시 데이터
@@ -148,15 +159,6 @@ const recentSales = ref([
     createdAt: '2024-01-20'
   }
 ])
-
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case '진행중': return 'status-progress'
-    case '완료': return 'status-complete'
-    case '취소': return 'status-cancel'
-    default: return 'status-default'
-  }
-}
 </script>
 
 <style scoped>

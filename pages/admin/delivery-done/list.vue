@@ -53,16 +53,14 @@
             />
           </div>
 
-          <!-- 상태 -->
+          <!-- 상태 (DB 기반) -->
           <div class="search-item">
             <label>상태:</label>
             <select v-model="searchForm.status" class="condition-select">
               <option value="">전체</option>
-              <option value="PENDING">대기</option>
-              <option value="IN_PROGRESS">납품중</option>
-              <option value="PENDING_SIGNATURE">서명 대기</option>
-              <option value="COMPLETED">완료</option>
-              <option value="SUBMITTED">제출완료</option>
+              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
             </select>
           </div>
         </div>
@@ -294,6 +292,7 @@ import type {
   DeliveryDoneStatus
 } from '~/types/delivery-done'
 import { formatDate } from '~/utils/format'
+import { useCommonStatus } from '~/composables/useCommonStatus'
 
 definePageMeta({
   layout: 'admin',
@@ -301,6 +300,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// DB 기반 상태 관리
+const { statusOptions, loadStatusCodes } = useCommonStatus()
 
 // 1개월 전 날짜 계산
 const getOneMonthAgo = () => {
@@ -461,7 +463,8 @@ function handleSubmitted() {
 }
 
 // 초기 로드
-onMounted(() => {
+onMounted(async () => {
+  await loadStatusCodes()  // 상태 코드 먼저 로드
   loadData()
 })
 </script>

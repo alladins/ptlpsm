@@ -92,6 +92,7 @@
 import { ref, onMounted } from 'vue'
 import type { ShipmentListItem } from '~/services/shipment.service'
 import { shipmentService } from '~/services/shipment.service'
+import { useCommonStatus } from '~/composables/useCommonStatus'
 
 const props = defineProps<{
   show: boolean
@@ -101,6 +102,9 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'select', shipment: ShipmentListItem): void
 }>()
+
+// 상태 관리 (DB 기반)
+const { getStatusLabel } = useCommonStatus()
 
 // 상태 관리
 const searchParams = ref({
@@ -122,7 +126,7 @@ const changePage = async (page: number) => {
   await loadShipments()
 }
 
-// 출하 목록 로드 (PENDING, READY 상태만 필터링)
+// 출하 목록 로드 (PENDING 상태만 필터링)
 const loadShipments = async () => {
   try {
     const response = await shipmentService.getShipments({
@@ -132,15 +136,15 @@ const loadShipments = async () => {
       sort: 'createdAt,desc'
     })
 
-    // ✅ PENDING(대기) 또는 READY(준비) 상태만 필터링
+    // ✅ PENDING(대기) 상태만 필터링
     const filteredShipments = response.content.filter(shipment =>
-      shipment.status === 'PENDING' || shipment.status === 'READY'
+      shipment.status === 'PENDING'
     )
 
     shipments.value = filteredShipments
     totalPages.value = response.totalPages
 
-    console.log(`[출하 선택 팝업] 전체: ${response.content.length}개, 필터링 후: ${filteredShipments.length}개 (PENDING, READY만 표시)`)
+    console.log(`[출하 선택 팝업] 전체: ${response.content.length}개, 필터링 후: ${filteredShipments.length}개 (PENDING만 표시)`)
   } catch (error) {
     console.error('출하 목록 로드 오류:', error)
     shipments.value = []
@@ -155,28 +159,15 @@ const formatDate = (dateString: string): string => {
   return date.toLocaleDateString('ko-KR')
 }
 
-// 상태 텍스트
+// 상태 텍스트 (DB 기반)
 const getStatusText = (status: string): string => {
-  const statusMap: { [key: string]: string } = {
-    'PENDING': '대기',
-    'READY': '준비',
-    'IN_PROGRESS': '진행중',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소'
-  }
-  return statusMap[status] || status
+  return getStatusLabel(status)
 }
 
-// 상태 클래스
+// 상태 클래스 (컨벤션 기반)
 const getStatusClass = (status: string): string => {
-  const classMap: { [key: string]: string } = {
-    'PENDING': 'status-pending',
-    'READY': 'status-ready',
-    'IN_PROGRESS': 'status-in-progress',
-    'COMPLETED': 'status-completed',
-    'CANCELLED': 'status-cancelled'
-  }
-  return classMap[status] || ''
+  const kebabCase = status.toLowerCase().replace(/_/g, '-')
+  return `status-${kebabCase}`
 }
 
 // 출하 선택
@@ -257,22 +248,12 @@ onMounted(() => {
   color: var(--gray-400);
 }
 
-/* 페이지별 특화: 출하 상태 배지 */
+/* 페이지별 특화: 출하 상태 배지 (컨벤션 기반 클래스) */
 .status-pending {
   display: inline-block;
   padding: 0.25rem 0.75rem;
   background: var(--warning-50);
   color: #92400e;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-}
-
-.status-ready {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  background: var(--primary-100);
-  color: var(--primary-700);
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: 500;
@@ -303,6 +284,16 @@ onMounted(() => {
   padding: 0.25rem 0.75rem;
   background: var(--danger-50);
   color: #991b1b;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.status-pending-signature {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #ffedd5;
+  color: #c2410c;
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: 500;

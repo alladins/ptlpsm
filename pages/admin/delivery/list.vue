@@ -49,10 +49,9 @@
             <label>상태:</label>
             <select v-model="searchForm.status" class="condition-select">
               <option value="">전체</option>
-              <option value="PENDING">대기</option>
-              <option value="IN_PROGRESS">운송중</option>
-              <option value="COMPLETED">완료</option>
-              <option value="CANCELLED">취소</option>
+              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
             </select>
           </div>
         </div>
@@ -114,6 +113,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { deliveryService } from '~/services/delivery.service'
 import { useDataTable } from '~/composables/useDataTable'
+import { useCommonStatus } from '~/composables/useCommonStatus'
 import type { OrderTreeNode } from '~/types/delivery'
 
 definePageMeta({
@@ -122,6 +122,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 상태 관리 (DB 기반)
+const { statusOptions } = useCommonStatus()
 
 // 1개월 전 날짜 계산
 const getOneMonthAgo = () => {

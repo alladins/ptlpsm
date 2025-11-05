@@ -120,34 +120,19 @@ export const USE_YN = {
 } as const
 
 /**
- * 상태 코드
+ * 상태 코드 - REMOVED
+ *
+ * ✅ 마이그레이션 완료: DB 기반 코드 관리 시스템으로 이관됨
+ *
+ * 대체 방법:
+ * - Vue 컴포넌트: useCommonStatus() composable 사용
+ * - Service 레이어: utils/status.ts의 함수 사용
+ * - 영업 모듈: useSalesStatus() composable 사용
+ *
+ * 코드 그룹:
+ * - COMMON_STATUS: 공통 상태 (PENDING, IN_PROGRESS, COMPLETED, CANCELLED, PENDING_SIGNATURE, SUBMITTED)
+ * - SALES_STATUS: 영업 상태 (진행중, 완료, 취소, 보류)
  */
-export const STATUS = {
-  /** 대기 */
-  PENDING: 'PENDING',
-  /** 진행중 */
-  IN_PROGRESS: 'IN_PROGRESS',
-  /** 완료 */
-  COMPLETED: 'COMPLETED',
-  /** 취소 */
-  CANCELLED: 'CANCELLED',
-  /** 보류 */
-  ON_HOLD: 'ON_HOLD'
-} as const
-
-/**
- * 영업 상태
- */
-export const SALES_STATUS = {
-  /** 진행중 */
-  IN_PROGRESS: '진행중',
-  /** 완료 */
-  COMPLETED: '완료',
-  /** 취소 */
-  CANCELLED: '취소',
-  /** 보류 */
-  ON_HOLD: '보류'
-} as const
 
 /**
  * 정렬 옵션 (공통)

@@ -1,6 +1,7 @@
 import { apiEnvironment } from './api'
 import { demandOrganizationService } from './demand-organization.service'
 import { SALES_ENDPOINTS } from './api/endpoints/sales.endpoints'
+import { codeService } from './code.service'
 
 // MIGRATED: 2025-01-25 - URL을 SALES_ENDPOINTS로 이전
 
@@ -470,15 +471,21 @@ export const salesService = {
   },
 
   /**
-   * 영업상태 옵션 가져오기
+   * 영업상태 옵션 가져오기 (DB 기반)
+   * SALES_STATUS 코드 그룹에서 한글 상태 코드 조회
    */
-  getSalesStatusOptions() {
-    return [
-      { value: '진행중', label: '진행중' },
-      { value: '완료', label: '완료' },
-      { value: '취소', label: '취소' },
-      { value: '보류', label: '보류' },
-    ]
+  async getSalesStatusOptions() {
+    try {
+      const response = await codeService.getCodeDetails('SALES_STATUS')
+      return response.map((detail: any) => ({
+        value: detail.code,
+        label: detail.codeName
+      }))
+    } catch (error) {
+      console.error('Failed to load sales status options:', error)
+      // Fallback: 빈 배열 반환
+      return []
+    }
   },
 
   /**

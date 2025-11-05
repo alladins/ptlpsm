@@ -49,10 +49,9 @@
             <label>상태:</label>
             <select v-model="searchForm.status" class="status-select">
               <option value="">전체</option>
-              <option value="PENDING">대기</option>
-              <option value="IN_PROGRESS">진행중</option>
-              <option value="IN_COMPLETE">완료</option>
-              <option value="CANCELLED">취소</option>
+              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
             </select>
           </div>
 
@@ -172,6 +171,7 @@ import type { OrderDetailResponse } from '~/types/order'
 // 리팩토링: 공통 모듈 import
 import { formatDate, formatDateTime, formatNumber, formatCurrency } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
+import { useCommonStatus } from '~/composables/useCommonStatus'
 
 definePageMeta({
   layout: 'admin',
@@ -179,6 +179,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 상태 관리 (DB 기반)
+const { statusOptions, getStatusLabel } = useCommonStatus()
 
 // 발주번호 조회 팝업 상태
 const showOrderSelectPopup = ref(false)
@@ -243,28 +246,15 @@ const {
   initialPageSize: 10
 })
 
-// 상태 텍스트 변환
+// 상태 텍스트 변환 (DB 기반)
 const getStatusText = (status: string): string => {
-  const statusMap: { [key: string]: string } = {
-    'PENDING': '대기',
-    'READY': '준비',
-    'IN_PROGRESS': '진행중',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소'
-  }
-  return statusMap[status] || status
+  return getStatusLabel(status)
 }
 
-// 상태별 CSS 클래스
+// 상태별 CSS 클래스 (컨벤션 기반)
 const getStatusClass = (status: string): string => {
-  const classMap: { [key: string]: string } = {
-    'PENDING': 'status-pending',
-    'READY': 'status-ready',
-    'IN_PROGRESS': 'status-in-progress',
-    'COMPLETED': 'status-completed',
-    'CANCELLED': 'status-cancelled'
-  }
-  return classMap[status] || ''
+  const kebabCase = status.toLowerCase().replace(/_/g, '-')
+  return `status-${kebabCase}`
 }
 
 // 발주번호 조회 팝업 열기/닫기
@@ -343,7 +333,7 @@ onMounted(() => {
  * 공통 스타일은 admin-common.css, admin-search.css, admin-tables.css에서 관리됩니다.
  */
 
-/* 상태 배지 스타일 */
+/* 상태 배지 스타일 (컨벤션 기반 클래스) */
 .status-pending {
   display: inline-block;
   padding: 4px 12px;
@@ -352,16 +342,6 @@ onMounted(() => {
   font-weight: 500;
   background-color: #fef3c7;
   color: #92400e;
-}
-
-.status-ready {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  background-color: #dbeafe;
-  color: #1e40af;
 }
 
 .status-in-progress {
@@ -392,6 +372,16 @@ onMounted(() => {
   font-weight: 500;
   background-color: #fee2e2;
   color: #991b1b;
+}
+
+.status-pending-signature {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: #ffedd5;
+  color: #c2410c;
 }
 
 /* 반응형 - 페이지 특화 스타일만 유지 */

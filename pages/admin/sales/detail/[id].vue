@@ -401,6 +401,7 @@ import FormField from '~/components/admin/forms/FormField.vue'
 import { useItemManagement } from '~/composables/admin/useItemManagement'
 import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
 import ItemsManager from '~/components/admin/forms/ItemsManager.vue'
+import { useSalesStatus } from '~/composables/useSalesStatus'
 
 definePageMeta({
   layout: 'admin',
@@ -460,24 +461,8 @@ const totalItemsAmount = computed(() => {
   return salesItems.value.reduce((total, item) => total + (item.amount || 0), 0)
 })
 
-// 옵션 데이터
-const salesStatusOptions = salesService.getSalesStatusOptions()
-
-// 영업상태별 클래스
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case '진행중':
-      return 'status-in-progress'
-    case '완료':
-      return 'status-complete'
-    case '취소':
-      return 'status-cancelled'
-    case '보류':
-      return 'status-pending'
-    default:
-      return 'status-default'
-  }
-}
+// DB 기반 상태 관리 (영업 모듈 전용 - 한글 코드)
+const { statusOptions: salesStatusOptions, getStatusClass, loadStatusCodes } = useSalesStatus()
 
 // 통화 포맷팅
 const formatCurrency = (amount?: number) => {
@@ -770,7 +755,8 @@ watch(editTotalItemsAmount, (newAmount) => {
 })
 
 // 컴포넌트 마운트 시 데이터 로드
-onMounted(() => {
+onMounted(async () => {
+  await loadStatusCodes()  // 상태 코드 먼저 로드
   fetchSalesDetail()
 })
 </script>

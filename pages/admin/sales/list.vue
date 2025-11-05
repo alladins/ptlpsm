@@ -175,6 +175,7 @@ import { salesService, type Sales, type SalesSearchRequest } from '~/services/sa
 // 리팩토링: 공통 모듈 import
 import { formatCurrency, formatDate } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
+import { useSalesStatus } from '~/composables/useSalesStatus'
 
 definePageMeta({
   layout: 'admin',
@@ -193,8 +194,13 @@ const searchForm = ref<SalesSearchRequest>({
   keyword: ''
 })
 
-// 옵션 데이터
-const salesStatusOptions = salesService.getSalesStatusOptions()
+// DB 기반 상태 관리 (영업 모듈 전용 - 한글 코드)
+// 한 번만 호출하여 모든 필요한 값을 가져옴
+const {
+  statusOptions: salesStatusOptions,
+  getStatusClass,
+  loadStatusCodes
+} = useSalesStatus()
 
 // 리팩토링: useDataTable composable 사용으로 페이지네이션 로직 통합
 const {
@@ -226,22 +232,6 @@ const {
   },
   initialPageSize: 10
 })
-
-// 영업상태별 클래스 (페이지 특화 로직)
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case '진행중':
-      return 'status-in-progress'
-    case '완료':
-      return 'status-complete'
-    case '취소':
-      return 'status-cancelled'
-    case '보류':
-      return 'status-pending'
-    default:
-      return 'status-default'
-  }
-}
 
 // 검색 기능
 const handleSearch = () => {
@@ -284,7 +274,8 @@ const viewItem = (id?: number) => {
 }
 
 // 컴포넌트 마운트 시 데이터 로드
-onMounted(() => {
+onMounted(async () => {
+  await loadStatusCodes()  // 상태 코드 먼저 로드
   search()
 })
 </script>

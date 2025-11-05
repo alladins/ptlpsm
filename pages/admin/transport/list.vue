@@ -55,10 +55,9 @@
             <label>상태:</label>
             <select v-model="searchForm.status" class="keyword-input">
               <option value="">전체</option>
-              <option value="PENDING">대기</option>
-              <option value="IN_PROGRESS">진행중</option>
-              <option value="COMPLETED">완료</option>
-              <option value="CANCELLED">취소</option>
+              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
             </select>
           </div>
         </div>
@@ -182,6 +181,7 @@ import type { OrderDetailResponse } from '~/types/order'
 // 리팩토링: 공통 모듈 import
 import { formatDate, formatDateTime } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
+import { useCommonStatus } from '~/composables/useCommonStatus'
 
 // 동적 import로 변경
 const OrderSelectPopup = defineAsyncComponent(() =>
@@ -194,6 +194,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 상태 관리 (DB 기반)
+const { statusOptions, getStatusLabel } = useCommonStatus()
 
 // 발주 선택 팝업 상태
 const showOrderPopup = ref(false)
@@ -250,16 +253,9 @@ const {
   initialSort: 'createdAt,desc'
 })
 
-// 상태 포맷팅 (페이지 특화 함수)
+// 상태 포맷팅 (DB 기반)
 const formatStatus = (status: string) => {
-  const statusMap: { [key: string]: string } = {
-    'PENDING': '대기',
-    'READY': '준비',
-    'IN_PROGRESS': '진행중',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소'
-  }
-  return statusMap[status] || status
+  return getStatusLabel(status)
 }
 
 // 발주번호 조회 팝업 열기/닫기

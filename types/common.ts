@@ -246,6 +246,14 @@ export interface SelectOption<T = string> {
   disabled?: boolean
 }
 
+/** 상태 드롭다운 옵션 (단순 버전) */
+export interface StatusOption {
+  /** 옵션 값 */
+  value: string
+  /** 옵션 라벨 */
+  label: string
+}
+
 /**
  * 사용 여부 타입
  */
@@ -256,11 +264,36 @@ export type UseYn = 'Y' | 'N'
  * 상태 관련 타입
  */
 
-/** 공통 상태 */
-export type CommonStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
+/** 공통 상태 (코드 관리 시스템에서 관리) */
+export type CommonStatus =
+  | 'PENDING'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'PENDING_SIGNATURE'
+  | 'SUBMITTED'
 
 /** 상태 뱃지 타입 */
 export type StatusBadgeType = 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'default'
+
+/**
+ * DB 기반 상태 코드 인터페이스
+ * code_detail 테이블에서 조회된 상태 코드 정보
+ */
+export interface StatusCode {
+  /** 상태 코드 (예: PENDING, IN_PROGRESS) */
+  code: string
+  /** 상태 이름 (예: 대기, 진행중) */
+  codeName: string
+  /** 상태 설명 */
+  description: string
+  /** CSS 클래스명 (예: status-pending) */
+  cssClass: string
+  /** Tailwind 배지 클래스 (예: bg-yellow-100 text-yellow-800) */
+  badgeClass: string
+  /** 정렬 순서 */
+  sortOrder: number
+}
 
 /**
  * 기본 엔티티 타입

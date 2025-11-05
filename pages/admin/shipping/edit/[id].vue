@@ -9,7 +9,7 @@
           class="btn-action btn-delete"
           @click="handleDelete"
           :disabled="!canDelete"
-          :title="!canDelete ? '대기, 준비 또는 취소 상태에서만 삭제할 수 있습니다.' : ''"
+          :title="!canDelete ? '대기 또는 취소 상태에서만 삭제할 수 있습니다.' : ''"
         >
           <i class="fas fa-trash"></i>
           삭제
@@ -269,6 +269,7 @@ import type { ShipmentDetailWithOrder, ShipmentItemWithOrder } from '~/services/
 import { formatNumber, formatCurrency } from '~/utils/format'
 import { useEditForm } from '~/composables/admin/useEditForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
+import { useCommonStatus } from '~/composables/useCommonStatus'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 
@@ -278,6 +279,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 상태 관리 (DB 기반)
+const { getStatusLabel: getStatusLabelFromDB, getStatusBadgeClass } = useCommonStatus()
 
 // 품목 인터페이스 (ShipmentItemWithOrder 확장)
 interface OrderItem extends ShipmentItemWithOrder {
@@ -489,14 +493,14 @@ const totalAmount = computed(() => {
   return items.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * item.unitPrice), 0)
 })
 
-// 삭제 가능 여부
+// 삭제 가능 여부 (대기 또는 취소 상태만 삭제 가능)
 const canDelete = computed(() => {
-  return ['READY', 'PENDING', 'CANCELLED'].includes(formData.status)
+  return ['PENDING', 'CANCELLED'].includes(formData.status)
 })
 
-// 수량 수정 가능 여부 (대기/준비 상태만)
+// 수량 수정 가능 여부 (대기 상태만)
 const canEditQuantity = computed(() => {
-  return ['PENDING', 'READY'].includes(formData.status)
+  return formData.status === 'PENDING'
 })
 
 // 출하 수정 가능 여부 (완료/취소 상태에서는 수정 불가)
@@ -504,28 +508,25 @@ const canEdit = computed(() => {
   return !['COMPLETED', 'CANCELLED'].includes(formData.status)
 })
 
-// 상태 라벨 변환
+// 상태 라벨 변환 (DB 기반)
 const getStatusLabel = (status: string): string => {
-  const labels: Record<string, string> = {
-    'PENDING': '대기',
-    'READY': '준비',
-    'IN_PROGRESS': '진행중',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소'
-  }
-  return labels[status] || status
+  return getStatusLabelFromDB(status)
 }
 
-// 상태별 스타일
+// 상태별 스타일 (DB 기반 badge class 활용)
 const getStatusStyle = (status: string): string => {
-  const styles: Record<string, string> = {
-    'PENDING': 'color: #6b7280; font-weight: 500;',
-    'READY': 'color: #2563eb; font-weight: 500;',
-    'IN_PROGRESS': 'color: #f59e0b; font-weight: 600;',
-    'COMPLETED': 'color: #059669; font-weight: 600;',
-    'CANCELLED': 'color: #dc2626; font-weight: 500;'
+  const badgeClass = getStatusBadgeClass(status)
+
+  // badge class를 인라인 스타일로 변환
+  const styleMap: Record<string, string> = {
+    'bg-yellow-100 text-yellow-800': 'color: #92400e; font-weight: 500;',
+    'bg-blue-100 text-blue-800': 'color: #1e40af; font-weight: 600;',
+    'bg-green-100 text-green-800': 'color: #059669; font-weight: 600;',
+    'bg-red-100 text-red-800': 'color: #dc2626; font-weight: 500;',
+    'bg-orange-100 text-orange-800': 'color: #c2410c; font-weight: 500;'
   }
-  return styles[status] || ''
+
+  return styleMap[badgeClass] || 'color: #6b7280; font-weight: 500;'
 }
 
 // 포커스 시 원래 값 저장
