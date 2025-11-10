@@ -65,6 +65,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from '#imports'
+import { useAuthStore } from '~/stores/auth'
+import { authService } from '~/services/auth.service'
 import SidebarMenu from '~/components/admin/SidebarMenu.vue'
 
 // Reactive data
@@ -159,10 +161,37 @@ const markAllAsRead = () => {
   showNotifications.value = false
 }
 
-const handleLogout = () => {
-  // 로그아웃 처리
-  console.log('로그아웃 처리')
-  router.push('/login')
+const handleLogout = async () => {
+  try {
+    const authStore = useAuthStore()
+    
+    console.log('로그아웃 시작...', {
+      userId: authStore.user?.userId || authStore.user?.userId,
+      hasToken: !!authStore.accessToken
+    })
+    
+    // 서버에 로그아웃 요청
+    if (authStore.accessToken && authStore.user) {
+      const userId = authStore.user.userId
+      if (userId) {
+        await authService.logout(userId, authStore.accessToken)
+      }
+    }
+    
+    // Store 및 localStorage 정리
+    authStore.clearAuthData()
+    
+    console.log('로그아웃 완료')
+    
+    // 로그인 페이지로 이동
+    await router.push('/login')
+  } catch (error) {
+    console.error('로그아웃 실패:', error)
+    // 에러가 발생해도 클라이언트 데이터는 정리
+    const authStore = useAuthStore()
+    authStore.clearAuthData()
+    await router.push('/login')
+  }
 }
 
 // Click outside handlers

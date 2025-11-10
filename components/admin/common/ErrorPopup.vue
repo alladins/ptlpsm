@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div v-if="isOpen" class="error-popup-overlay">
       <!-- 배경 오버레이 -->
-      <div class="error-popup-backdrop" @click="close"></div>
+      <div class="error-popup-backdrop"></div>
 
       <!-- 팝업 컨텐츠 -->
       <div class="error-popup-content">

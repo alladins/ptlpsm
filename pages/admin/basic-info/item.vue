@@ -88,7 +88,7 @@
                </thead>
               <tbody>
                 <tr v-for="item in items" :key="item.itemId || ''" class="table-row"
-                    :class="{ 'selected': selectedItemId === item.itemId.toString() }"
+                    :class="{ 'selected': selectedItemId === item.itemId?.toString() }"
                     @click="selectItem(item)">
                   <td>{{ item.itemId }}</td>
                   <td>{{ item.itemNm }}</td>
@@ -316,7 +316,7 @@
     </div>
 
     <!-- 등록 모달 -->
-    <div v-if="showAddModal" class="modal-overlay" @click="closeModal">
+    <div v-if="showAddModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>품목 등록</h3>
@@ -459,7 +459,7 @@
     </div>
 
     <!-- 수정 모달 -->
-    <div v-if="showEditModal" class="modal-overlay" @click="closeModal">
+    <div v-if="showEditModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>품목 수정</h3>
@@ -600,7 +600,7 @@
     </div>
 
     <!-- 상세보기 모달 -->
-    <div v-if="showViewModal" class="modal-overlay" @click="closeModal">
+    <div v-if="showViewModal" class="modal-overlay">
       <div class="modal large-modal" @click.stop>
         <div class="modal-header">
           <h3>품목 상세보기</h3>
@@ -702,7 +702,7 @@
     </div>
 
     <!-- 스펙 등록/수정 모달 -->
-    <div v-if="showSpecModal" class="modal-overlay" @click="closeSpecModal">
+    <div v-if="showSpecModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>{{ specModalMode === 'create' ? '스펙 등록' : '스펙 수정' }}</h3>
@@ -848,7 +848,7 @@
     </div>
 
     <!-- SKU 등록/수정 모달 -->
-    <div v-if="showSkuModal" class="modal-overlay" @click="closeSkuModal">
+    <div v-if="showSkuModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>{{ skuModalMode === 'create' ? 'SKU 등록' : 'SKU 수정' }}</h3>
@@ -1109,7 +1109,7 @@ const skuForm = ref<SkuForm>({
 // 품목 선택
 const selectItem = (item: Item) => {
   selectedItem.value = item
-  selectedItemId.value = item.itemId.toString()
+  selectedItemId.value = item.itemId?.toString() ?? ''
   activeTab.value = 'specs'
 }
 
@@ -1332,7 +1332,7 @@ const validateSkuForm = async (): Promise<boolean> => {
   // SKU 코드 중복 확인 (새로 등록하는 경우에만)
   if (skuModalMode.value === 'create') {
     try {
-      const isDuplicate = await itemService.checkSkuId(skuForm.value.skuId.toString())
+      const isDuplicate = await itemService.checkSkuId(skuForm.value.skuId?.toString() ?? '')
       if (isDuplicate) {
         alert('이미 존재하는 SKU코드입니다. 다른 코드를 사용해주세요.')
         return false
@@ -1494,7 +1494,7 @@ const submitSku = async () => {
     if (skuModalMode.value === 'create') {
       // 새 SKU 추가 - 별도 API 사용
       const skuData = {
-        skuId: skuForm.value.skuId.toString(),
+        skuId: skuForm.value.skuId?.toString() ?? '',
         skuNm: skuForm.value.skuName,
         option1Cd: 'OPTION1',
         option2Cd: 'OPTION2',
@@ -1510,11 +1510,11 @@ const submitSku = async () => {
       await itemService.createSku(selectedItem.value.itemId, skuData)
     } else {
       // 기존 SKU 수정 - 품목 업데이트 API 사용
-      const skuIndex = selectedItem.value.itemSkus.findIndex(sku => sku.skuId === skuForm.value.skuId.toString())
+      const skuIndex = selectedItem.value.itemSkus.findIndex(sku => sku.skuId === (skuForm.value.skuId?.toString() ?? ''))
       if (skuIndex !== -1) {
         selectedItem.value.itemSkus[skuIndex] = {
           ...selectedItem.value.itemSkus[skuIndex],
-          skuId: skuForm.value.skuId.toString(),
+          skuId: skuForm.value.skuId?.toString() ?? '',
           skuNm: skuForm.value.skuName,
           width: skuForm.value.width || undefined,
           height: skuForm.value.height || undefined,
@@ -1621,7 +1621,7 @@ const deleteSpec = async (specId: string | number) => {
     if (!confirmed) return
     
     // API를 통한 스펙 삭제
-    await itemService.deleteSpec(selectedItem.value.itemId, specId.toString())
+    await itemService.deleteSpec(selectedItem.value.itemId, specId?.toString() ?? '')
     
     // 삭제 후 즉시 데이터 새로고침
     await refreshItemDetail(selectedItem.value.itemId)

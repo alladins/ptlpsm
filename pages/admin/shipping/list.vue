@@ -181,7 +181,7 @@ definePageMeta({
 const router = useRouter()
 
 // 상태 관리 (DB 기반)
-const { statusOptions, getStatusLabel } = useCommonStatus()
+const { statusOptions, getStatusLabel, loadStatusCodes } = useCommonStatus()
 
 // 발주번호 조회 팝업 상태
 const showOrderSelectPopup = ref(false)
@@ -322,7 +322,8 @@ const totalShippingAmount = computed(() => {
 })
 
 // 초기 데이터 로드
-onMounted(() => {
+onMounted(async () => {
+  await loadStatusCodes()  // 상태 코드 로드
   search()
 })
 </script>

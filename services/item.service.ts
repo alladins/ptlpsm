@@ -6,6 +6,7 @@ import { ITEM_ENDPOINTS } from './api/endpoints/item.endpoints'
 // 품목 정보
 export interface Item {
   itemId: string           // 문자열로 변경
+  itemClassificationNumber: string  // ← 추가
   itemNm: string
   itemTypeCd: string      // 필수로 변경
   unitCd: string         // 필수로 변경
@@ -444,6 +445,7 @@ const getMockItems = (params: any): PageResponse<Item> => {
   const mockItems: Item[] = [
     {
       itemId: 'ITEM001',
+      itemClassificationNumber: '3014150301',
       itemNm: '스테인리스 스틸',
       itemTypeCd: 'TYPE001',
       unitCd: 'UNIT001',
@@ -479,6 +481,7 @@ const getMockItems = (params: any): PageResponse<Item> => {
     },
     {
       itemId: 'ITEM002',
+      itemClassificationNumber: '3014150301',
       itemNm: '알루미늄 합금',
       itemTypeCd: 'TYPE001',
       unitCd: 'UNIT001',
@@ -514,6 +517,7 @@ const getMockItems = (params: any): PageResponse<Item> => {
     },
     {
       itemId: 'ITEM003',
+      itemClassificationNumber: '3014150301',
       itemNm: '플라스틱 시트',
       itemTypeCd: 'TYPE002',
       unitCd: 'UNIT002',

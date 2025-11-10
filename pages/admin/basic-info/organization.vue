@@ -159,7 +159,7 @@
     </div>
 
     <!-- 등록 모달 -->
-    <div v-if="showAddModal" class="modal-overlay" @click="closeModal">
+    <div v-if="showAddModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>수요기관 등록</h3>
@@ -455,7 +455,7 @@
     </div>
 
     <!-- 수정 모달 -->
-    <div v-if="showEditModal" class="modal-overlay" @click="closeModal">
+    <div v-if="showEditModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>수요기관 수정</h3>

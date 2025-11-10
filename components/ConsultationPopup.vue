@@ -1,7 +1,7 @@
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <!-- 배경 오버레이 -->
-    <div class="absolute inset-0 bg-black bg-opacity-50" @click="close"></div>
+    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
     
     <!-- 팝업 컨텐츠 -->
     <div class="relative bg-white rounded-lg w-full max-w-xl mx-auto p-4 sm:p-8 max-h-[80vh] overflow-y-auto mt-16 sm:mt-20">

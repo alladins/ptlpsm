@@ -106,6 +106,7 @@
 <script setup lang="ts">
 import type { TransportDetailNode } from '~/types/delivery'
 import { formatDate, formatDateTime } from '~/utils/format'
+import { useCommonStatus } from '~/composables/useCommonStatus'
 
 interface Props {
   transport: TransportDetailNode

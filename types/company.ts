@@ -40,3 +40,37 @@ export interface CompanyCreateRequest {
 }
 
 export interface CompanyUpdateRequest extends Partial<CompanyCreateRequest> {}
+
+/**
+ * 백엔드 응답 형식 (id 필드 사용)
+ * GET /api/basic/company 응답
+ */
+export interface CompanyInfoResponse {
+  id: number                    // companyId가 아닌 id
+  companyName: string
+  businessNumber: string
+  g2bNumber: string | null
+  representative: string
+  address: string
+  detailAddress: string
+  zipCode: string
+  tel: string
+  fax: string | null
+  email: string
+  homepage: string | null
+  establishedDate: string
+  employeeCount: number
+  annualSales: number
+  businessType: string
+  businessCategory: string
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * 드롭다운용 간소화 타입
+ */
+export interface CompanyOption {
+  id: number
+  companyName: string
+}

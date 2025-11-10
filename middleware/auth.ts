@@ -1,12 +1,4 @@
-// 개발 환경에서는 인증 미들웨어 비활성화
-export default defineNuxtRouteMiddleware(async (to) => {
-  // 개발 환경에서는 모든 접근 허용
-  console.log('개발 환경: 인증 미들웨어 비활성화, 모든 접근 허용')
-  return
-})
-
-/*
-// 실제 인증 미들웨어 (프로덕션 환경에서 사용)
+// 실제 인증 미들웨어
 import { useAuthStore } from '~/stores/auth'
 
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -19,10 +11,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // 클라이언트 측에서만 인증 스토어 사용
   const authStore = useAuthStore()
   
-  // *** 중요: 먼저 로컬 스토리지에서 인증 상태 복원 ***
+  // *** 중요: 먼저 로컬 스토리지에서 인증 상태 복원 및 서버 검증 ***
   if (process.client) {
-    console.log('미들웨어: 인증 상태 복원 시도 (페이지 경로:', to.path, ')')
-    await authStore.checkAuth()
+    console.log('미들웨어: 인증 상태 복원 및 서버 검증 시도 (페이지 경로:', to.path, ')')
+    const isValid = await authStore.checkAuth()
+
+    // checkAuth() 실패 시 (서버 토큰 검증 실패)
+    if (!isValid && to.path.startsWith('/admin')) {
+      console.warn('서버 토큰 검증 실패: 로그인 페이지로 리다이렉트')
+      localStorage.setItem('redirectAfterLogin', to.fullPath)
+      return navigateTo('/login')
+    }
   }
   
   // 이제 복원된 인증 상태를 기반으로 로그인 상태 확인
@@ -147,4 +146,3 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 })
-*/ 

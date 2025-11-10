@@ -1,12 +1,13 @@
 import { apiEnvironment } from './api'
 import { USER_ENDPOINTS } from './api/endpoints/user.endpoints'
+import type { UserByRole, UserRole } from '~/types/user'
 
 // MIGRATED: 2025-01-25 - URL을 USER_ENDPOINTS로 이전
 
 export interface User {
   id?: number
-  userid: string
-  username: string
+  userId: string
+  userName: string
   email: string
   phone?: string
   department?: string
@@ -23,7 +24,7 @@ export interface User {
 
 export interface UserSearchRequest {
   searchKeyword?: string
-  username?: string
+  userName?: string
   role?: string
   department?: string
   phone?: string
@@ -221,7 +222,7 @@ export const userService = {
   async getUserById(id: number): Promise<User> {
     try {
       const url = USER_ENDPOINTS.detail(id)
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -239,6 +240,38 @@ export const userService = {
       // 개발 환경에서는 목 데이터 반환
       console.log('개발 환경: 사용자 목 데이터 반환')
       return this.getMockUser(id)
+    }
+  },
+
+  /**
+   * 역할별 사용자 목록 조회
+   * GET /api/common/users/by-roles?roles=OEM_MANAGER&roles=COURIER
+   */
+  async getUsersByRoles(roles: UserRole[]): Promise<UserByRole[]> {
+    try {
+      const { getApiBaseUrl } = await import('./api')
+      const baseUrl = getApiBaseUrl()
+
+      // Query parameters 생성 (roles 배열을 multiple query params로)
+      const queryParams = roles.map(role => `roles=${role}`).join('&')
+      const url = `${baseUrl}/common/users/by-roles?${queryParams}`
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return Array.isArray(data) ? data : []
+    } catch (error) {
+      console.error('역할별 사용자 조회 실패:', error)
+      return []
     }
   },
 
@@ -450,8 +483,8 @@ export const userService = {
     const mockUsers: User[] = [
       {
         id: 1,
-        userid: 'admin',
-        username: '시스템관리자',
+        userId: 'admin',
+        userName: '시스템관리자',
         email: 'admin@ptlpsm.com',
         phone: '010-1234-5678',
         department: 'IT팀',
@@ -466,8 +499,8 @@ export const userService = {
       },
       {
         id: 2,
-        userid: 'sales1',
-        username: '김영업',
+        userId: 'sales1',
+        userName: '김영업',
         email: 'sales1@ptlpsm.com',
         phone: '010-1111-2222',
         department: '영업팀',
@@ -482,8 +515,8 @@ export const userService = {
       },
       {
         id: 3,
-        userid: 'shipping1',
-        username: '박출하',
+        userId: 'shipping1',
+        userName: '박출하',
         email: 'shipping1@ptlpsm.com',
         phone: '010-3333-4444',
         department: '출하팀',
@@ -498,8 +531,8 @@ export const userService = {
       },
       {
         id: 4,
-        userid: 'courier1',
-        username: '이택배',
+        userId: 'courier1',
+        userName: '이택배',
         email: 'courier1@ptlpsm.com',
         phone: '010-5555-6666',
         department: '배송팀',
@@ -514,8 +547,8 @@ export const userService = {
       },
       {
         id: 5,
-        userid: 'viewer1',
-        username: '최조회',
+        userId: 'viewer1',
+        userName: '최조회',
         email: 'viewer1@ptlpsm.com',
         phone: '010-7777-8888',
         department: '기획팀',
@@ -536,16 +569,16 @@ export const userService = {
     if (params.searchKeyword) {
       const keyword = params.searchKeyword.toLowerCase()
       filteredUsers = filteredUsers.filter(user => 
-        user.userid.toLowerCase().includes(keyword) ||
-        user.username.toLowerCase().includes(keyword) ||
+        user.userId.toLowerCase().includes(keyword) ||
+        user.userName.toLowerCase().includes(keyword) ||
         user.email.toLowerCase().includes(keyword)
       )
     }
 
-    if (params.username) {
-      const username = params.username.toLowerCase()
+    if (params.userName) {
+      const userName = params.userName.toLowerCase()
       filteredUsers = filteredUsers.filter(user => 
-        user.username.toLowerCase().includes(username)
+        user.userName.toLowerCase().includes(userName)
       )
     }
 

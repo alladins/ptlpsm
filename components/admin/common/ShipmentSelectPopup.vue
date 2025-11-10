@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="popup-overlay" @click="handleOverlayClick">
+  <div v-if="show" class="popup-overlay">
     <div class="popup-content large" @click.stop>
       <div class="popup-header">
         <h2>출하ID 조회</h2>

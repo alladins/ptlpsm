@@ -131,7 +131,7 @@
     </div>
 
     <!-- 운송장 목록 팝업 -->
-    <div v-if="showTransportPopup" class="popup-overlay" @click="closeTransportPopup">
+    <div v-if="showTransportPopup" class="popup-overlay">
       <div class="popup-content" @click.stop>
         <div class="popup-header">
           <h3>운송장 목록</h3>

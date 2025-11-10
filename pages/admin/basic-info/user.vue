@@ -88,8 +88,8 @@
             </thead>
             <tbody>
               <tr v-for="user in users" :key="user.id" class="table-row">
-                <td>{{ user.userid }}</td>
-                <td>{{ user.username }}</td>
+                <td>{{ user.userId }}</td>
+                <td>{{ user.userName }}</td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.phone || '-' }}</td>
                 <td>{{ user.department || '-' }}</td>
@@ -168,7 +168,7 @@
     </div>
 
     <!-- 사용자 등록/수정 모달 -->
-    <div v-if="showAddModal || showEditModal" class="modal-overlay" @click="closeModal">
+    <div v-if="showAddModal || showEditModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>{{ showAddModal ? '사용자 등록' : '사용자 수정' }}</h3>
@@ -178,12 +178,12 @@
         </div>
 
         <div class="modal-body">
-          <form @submit.prevent="showAddModal ? submitAdd : submitEdit" class="user-form">
+          <form @submit.prevent="handleFormSubmit" class="user-form">
             <div class="form-row">
               <div class="form-group">
                 <label>사용자 ID *</label>
                 <input 
-                  v-model="userForm.userid" 
+                  v-model="userForm.userId" 
                   type="text" 
                   required
                   placeholder="사용자 ID"
@@ -215,7 +215,7 @@
               <div class="form-group">
                 <label>이름 *</label>
                 <input 
-                  v-model="userForm.username" 
+                  v-model="userForm.userName" 
                   type="text" 
                   required
                   placeholder="이름"
@@ -279,12 +279,23 @@
             <div class="form-row">
               <div class="form-group">
                 <label>소속회사</label>
-                <input 
-                  v-model="userForm.companyName" 
-                  type="text" 
-                  placeholder="소속회사"
-                  class="form-input"
+                <select
+                  v-model="userForm.companyName"
+                  class="form-select"
+                  :disabled="loadingCompanies"
                 >
+                  <option value="">선택 안 함</option>
+                  <option
+                    v-for="company in companies"
+                    :key="company.id"
+                    :value="company.companyName"
+                  >
+                    {{ company.companyName }}
+                  </option>
+                </select>
+                <span v-if="loadingCompanies" class="field-hint">
+                  <i class="fas fa-spinner fa-spin"></i> 회사 목록 로딩 중...
+                </span>
               </div>
               <div class="form-group">
                 <label>권한 *</label>
@@ -346,7 +357,7 @@
     </div>
 
     <!-- 비밀번호 변경 모달 -->
-    <div v-if="showPasswordModal" class="modal-overlay" @click="closePasswordModal">
+    <div v-if="showPasswordModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>비밀번호 변경</h3>
@@ -412,11 +423,15 @@ definePageMeta({
 // API 서비스
 import { userService } from '~/services/user.service'
 import { codeService } from '~/services/code.service'
+import { companyService } from '~/services/company.service'
+import type { CompanyInfoResponse } from '~/types/company'
 
 // 반응형 데이터
 const users = ref<any[]>([])
 const userRoles = ref<any[]>([])
+const companies = ref<CompanyInfoResponse[]>([])
 const loading = ref(false)
+const loadingCompanies = ref(false)
 
 // 검색 관련
 const searchForm = ref({
@@ -443,15 +458,15 @@ const editingUser = ref<any>(null)
 
 // 사용자 폼
 const userForm = ref({
-  userid: '',
+  userId: '',
   password: '',
-  username: '',
+  userName: '',
   email: '',
   phone: '',
   department: '',
   position: '',
   employeeNumber: '',
-  companyName: 'PTLPSM',
+  companyName: '',
   role: '',
   address: '',
   addressDetail: '',
@@ -466,17 +481,17 @@ const passwordForm = ref({
 
 // 유효성 검사 오류 메시지
 const validationErrors = ref<{
-  userid: string
+  userId: string
   password: string
-  username: string
+  userName: string
   email: string
   role: string
   phone: string
   [key: string]: string
 }>({
-  userid: '',
+  userId: '',
   password: '',
-  username: '',
+  userName: '',
   email: '',
   role: '',
   phone: ''
@@ -592,24 +607,24 @@ const changePageSize = () => {
 // 등록 모달 열기
 const openAddModal = () => {
   userForm.value = {
-    userid: '',
+    userId: '',
     password: '',
-    username: '',
+    userName: '',
     email: '',
     phone: '',
     department: '',
     position: '',
     employeeNumber: '',
-    companyName: 'PTLPSM',
+    companyName: '',
     role: '',
     address: '',
     addressDetail: '',
     zipCode: ''
   }
   validationErrors.value = {
-    userid: '',
+    userId: '',
     password: '',
-    username: '',
+    userName: '',
     email: '',
     role: '',
     phone: ''
@@ -622,9 +637,9 @@ const openEditModal = (user: any) => {
   editingUser.value = user
   userForm.value = { ...user }
   validationErrors.value = {
-    userid: '',
+    userId: '',
     password: '',
-    username: '',
+    userName: '',
     email: '',
     role: '',
     phone: ''
@@ -638,9 +653,9 @@ const closeModal = () => {
   showEditModal.value = false
   editingUser.value = null
   validationErrors.value = {
-    userid: '',
+    userId: '',
     password: '',
-    username: '',
+    userName: '',
     email: '',
     role: '',
     phone: ''
@@ -663,9 +678,9 @@ const closePasswordModal = () => {
 // 유효성 검사
 const validateForm = (): boolean => {
   validationErrors.value = {
-    userid: '',
+    userId: '',
     password: '',
-    username: '',
+    userName: '',
     email: '',
     role: '',
     phone: ''
@@ -673,8 +688,8 @@ const validateForm = (): boolean => {
 
   let isValid = true
 
-  if (!userForm.value.userid) {
-    validationErrors.value.userid = '사용자 ID를 입력해주세요.'
+  if (!userForm.value.userId) {
+    validationErrors.value.userId = '사용자 ID를 입력해주세요.'
     isValid = false
   }
 
@@ -683,8 +698,8 @@ const validateForm = (): boolean => {
     isValid = false
   }
 
-  if (!userForm.value.username) {
-    validationErrors.value.username = '이름을 입력해주세요.'
+  if (!userForm.value.userName) {
+    validationErrors.value.userName = '이름을 입력해주세요.'
     isValid = false
   }
 
@@ -733,17 +748,38 @@ const validatePasswordForm = (): boolean => {
 }
 
 // 등록
+// 통합 폼 제출 핸들러
+const handleFormSubmit = async () => {
+  if (showAddModal.value) {
+    await submitAdd()
+  } else {
+    await submitEdit()
+  }
+}
+
 const submitAdd = async () => {
-  if (!validateForm()) return
-  
+  if (!validateForm()) {
+    alert('필수 항목을 모두 입력해주세요.')
+    return
+  }
+
   try {
-    await userService.createUser(userForm.value)
+    console.log('사용자 등록 시도:', userForm.value)
+    const result = await userService.createUser(userForm.value)
+    console.log('사용자 등록 성공:', result)
+
     closeModal()
     loadUsers()
     alert('사용자가 성공적으로 등록되었습니다.')
   } catch (error) {
     console.error('사용자 등록 실패:', error)
-    alert(error instanceof Error ? error.message : '사용자 등록에 실패했습니다.')
+
+    let errorMessage = '사용자 등록에 실패했습니다.'
+    if (error instanceof Error) {
+      errorMessage = error.message
+    }
+
+    alert(errorMessage + '\n\n콘솔을 확인하여 상세 오류를 확인하세요.')
   }
 }
 
@@ -810,10 +846,27 @@ const loadUserRoles = async () => {
   }
 }
 
+/**
+ * 회사 목록 로드
+ */
+const loadCompanies = async () => {
+  try {
+    loadingCompanies.value = true
+    companies.value = await companyService.getCompanies()
+    console.log('회사 목록 로드 완료:', companies.value.length, '개')
+  } catch (error) {
+    console.error('회사 목록 로드 실패:', error)
+    companies.value = []
+  } finally {
+    loadingCompanies.value = false
+  }
+}
+
 // 초기 로드
 onMounted(() => {
   loadUserRoles()
   loadUsers()
+  loadCompanies()
 })
 </script>
 

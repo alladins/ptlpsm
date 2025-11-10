@@ -3,8 +3,12 @@
  *
  * MIGRATED FROM: shipment.service.ts
  * MIGRATED DATE: 2025-01-25
+ * UPDATED DATE: 2025-11-05 - 권한 주석 추가
  *
- * 기존 URL 패턴 (100% 동일하게 유지):
+ * 권한: 시스템관리자 (전체), 리드파워담당자 (전체)
+ *       OEM생산자 (본인 담당 건만 조회), 조회전용 (조회만)
+ *
+ * API 패턴:
  * - Base: ${baseUrl}/admin/shipments
  * - List: GET ${base}?params
  * - Detail: GET ${base}/{id}

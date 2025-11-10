@@ -98,7 +98,7 @@ class TransportService {
       if (!response.ok) {
         throw new Error(`운송장 목록 조회 실패: ${response.status}`)
       }
-      
+
       const data = await response.json()
 
       // 백엔드에서 비표준 배열을 직접 반환하는 경우에 대한 처리

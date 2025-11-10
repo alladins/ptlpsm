@@ -1,6 +1,7 @@
 // 품목 기본 정보
 export interface Item {
-    itemId: number;          // 품목 ID
+    itemId: string;          // 품목 ID
+    itemClassificationNumber: string  // ← 추가
     itemCd: string;          // 품목 코드
     itemNm: string;          // 품목명
     itemType: string;        // 품목 유형

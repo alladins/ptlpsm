@@ -59,6 +59,7 @@
 import { ref } from 'vue'
 import type { ShipmentTreeNode } from '~/types/delivery'
 import { formatDate } from '~/utils/format'
+import { useCommonStatus } from '~/composables/useCommonStatus'
 
 interface Props {
   shipment: ShipmentTreeNode

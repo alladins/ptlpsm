@@ -97,7 +97,7 @@
     </div>
 
     <!-- 인수증 미리보기 팝업 -->
-    <div v-if="showReceiptPreview" class="popup-overlay" @click="closeReceiptPreview">
+    <div v-if="showReceiptPreview" class="popup-overlay">
       <div class="popup-content receipt-preview" @click.stop>
         <div class="popup-header">
           <h3>인수증 미리보기</h3>
@@ -197,7 +197,7 @@
     </div>
 
     <!-- 사인 입력 팝업 -->
-    <div v-if="showSignaturePopup" class="popup-overlay" @click="closeSignaturePopup">
+    <div v-if="showSignaturePopup" class="popup-overlay">
       <div class="popup-content signature-popup" @click.stop>
         <div class="popup-header">
           <h3>인수자 정보 및 사인</h3>

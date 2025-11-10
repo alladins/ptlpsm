@@ -3,10 +3,13 @@
  *
  * MIGRATED FROM: contract.service.ts
  * MIGRATED DATE: 2025-01-25
+ * UPDATED DATE: 2025-11-05 - API 경로 수정 (설계문서 반영)
  *
- * 기존 URL 패턴 (100% 동일하게 유지):
- * - Register: POST /admin/contract/register
- * - UploadPdf: POST /admin/contract/upload-pdf
+ * 권한: 시스템관리자, 영업담당자, 리드파워담당자
+ *
+ * API 패턴:
+ * - Register: POST /contracts/register
+ * - UploadPdf: POST /contracts/upload-pdf
  */
 
 import { getApiBaseUrl } from '../config'
@@ -14,7 +17,7 @@ import { getApiBaseUrl } from '../config'
 export const CONTRACT_ENDPOINTS = {
   /**
    * 계약 정보 등록
-   * @returns POST /admin/contract/register
+   * @returns POST /contracts/register
    */
   register: () => {
     const baseUrl = getApiBaseUrl()
@@ -23,7 +26,7 @@ export const CONTRACT_ENDPOINTS = {
 
   /**
    * PDF 업로드 및 데이터 추출
-   * @returns POST /admin/contract/upload-pdf
+   * @returns POST /contracts/upload-pdf
    */
   uploadPdf: () => {
     const baseUrl = getApiBaseUrl()

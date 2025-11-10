@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="popup-overlay" @click="close">
+  <div v-if="show" class="popup-overlay">
     <div class="popup-content xlarge" @click.stop>
       <div class="popup-header">
         <h2>품목 선택</h2>
@@ -47,12 +47,12 @@
               </tr>
             </thead>
             <tbody>
-              <template v-for="item in items" :key="item.id">
-                <tr v-for="sku in item.itemSkus" :key="`${item.id}-${sku.id}`">
-                  <td>{{ item.itemCd }}</td>
+              <template v-for="item in items" :key="item.itemClassificationNumber">
+                <tr v-for="sku in item.itemSkus" :key="`${item.itemClassificationNumber}-${sku.skuId}`">
+                  <td>{{ item.itemId }}</td>
                   <td>{{ item.itemNm }}</td>
                   <td>{{ item.itemTypeCd }}</td>
-                  <td>{{ sku.id }}</td>
+                  <td>{{ sku.skuId }}</td>
                   <td>{{ sku.skuNm }}</td>
                   <td>{{ formatSpecification(item, sku) }}</td>
                   <td>{{ item.unitCd }}</td>
@@ -92,6 +92,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { itemService, type Item, type ItemSku } from '~/services/item.service'
+import { formatNumber } from '~/utils/format'
 
 const props = defineProps<{
   show: boolean
@@ -150,11 +151,6 @@ const formatSpecification = (item: Item, sku?: ItemSku): string => {
   if (height) dimensions.push(height)
   if (thickness) dimensions.push(thickness)
   return dimensions.length > 0 ? dimensions.join('*') : '-'
-}
-
-// 숫자 포맷팅
-const formatNumber = (num: number | undefined): string => {
-  return num?.toLocaleString() ?? '-'
 }
 
 // SKU 선택

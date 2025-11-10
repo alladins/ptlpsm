@@ -41,10 +41,10 @@ export const apiEnvironment = {
     const env = this.getCurrentEnvironment()
 
     // 환경에 따라 API URL 반환
-    // 운영 환경: 상대 경로 사용 (Nginx가 localhost:9031로 프록시)
-    // 개발 환경: 백엔드 서버로 직접 접근
+    // SSG(Static Site Generation) 환경에서는 프록시가 작동하지 않으므로
+    // 운영/개발 모두 백엔드 서버의 절대 경로 사용
     return env === 'production'
-      ? '/api'
+      ? 'http://leadpower.platree.com/api'
       : 'http://localhost:9031/api'
   },
 

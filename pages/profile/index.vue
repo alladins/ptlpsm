@@ -22,11 +22,11 @@
         <div class="info-grid">
           <div class="info-item">
             <label>사용자 ID</label>
-            <span>{{ currentUser.userid }}</span>
+            <span>{{ currentUser.userId }}</span>
           </div>
           <div class="info-item">
             <label>이름</label>
-            <span>{{ currentUser.username }}</span>
+            <span>{{ currentUser.userName }}</span>
           </div>
           <div class="info-item">
             <label>이메일</label>
@@ -99,7 +99,7 @@
     </div>
 
     <!-- 정보 수정 모달 -->
-    <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
+    <div v-if="showEditModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>내 정보 수정</h3>
@@ -114,7 +114,7 @@
               <div class="form-group">
                 <label>사용자 ID</label>
                 <input 
-                  v-model="profileForm.userid" 
+                  v-model="profileForm.userId" 
                   type="text" 
                   disabled
                   class="disabled-input"
@@ -124,16 +124,16 @@
               <div class="form-group">
                 <label>이름 *</label>
                 <input 
-                  v-model="profileForm.username" 
+                  v-model="profileForm.userName" 
                   type="text" 
                   required
                   placeholder="이름을 입력하세요"
-                  @input="validateField('username', profileForm.username)"
-                  @blur="validateField('username', profileForm.username)"
-                  :class="{ 'error': validationErrors.username }"
+                  @input="validateField('userName', profileForm.userName)"
+                  @blur="validateField('userName', profileForm.userName)"
+                  :class="{ 'error': validationErrors.userName }"
                 >
-                <span v-if="validationErrors.username" class="error-message">
-                  {{ validationErrors.username }}
+                <span v-if="validationErrors.userName" class="error-message">
+                  {{ validationErrors.userName }}
                 </span>
               </div>
             </div>
@@ -258,7 +258,7 @@
     </div>
 
     <!-- 비밀번호 변경 모달 -->
-    <div v-if="showPasswordModal" class="modal-overlay" @click="closePasswordModal">
+    <div v-if="showPasswordModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>비밀번호 변경</h3>
@@ -355,8 +355,8 @@ import { formatPhoneNumber } from '~/utils/format'
 // 반응형 데이터
 const currentUser = ref<any>({
   id: 1,
-  userid: 'admin',
-  username: '시스템관리자',
+  userId: 'admin',
+  userName: '시스템관리자',
   email: 'admin@ptlpsm.com',
   phone: '010-1234-5678',
   department: 'IT팀',
@@ -376,8 +376,8 @@ const showPasswordModal = ref(false)
 
 // 프로필 수정 폼
 const profileForm = ref({
-  userid: '',
-  username: '',
+  userId: '',
+  userName: '',
   email: '',
   phone: '',
   department: '',
@@ -398,12 +398,12 @@ const passwordForm = ref({
 
 // 유효성 검사 오류 메시지
 const validationErrors = ref<{
-  username: string
+  userName: string
   email: string
   phone: string
   [key: string]: string
 }>({
-  username: '',
+  userName: '',
   email: '',
   phone: ''
 })
@@ -432,20 +432,6 @@ const isValidPhone = (phone: string) => {
   return phoneRegex.test(phone)
 }
 
-// 전화번호 형식 변환 함수
-const formatPhoneNumber = (value: string) => {
-  const numbers = value.replace(/\D/g, '')
-  const limitedNumbers = numbers.slice(0, 11)
-  
-  if (limitedNumbers.length <= 3) {
-    return limitedNumbers
-  } else if (limitedNumbers.length <= 7) {
-    return `${limitedNumbers.slice(0, 3)}-${limitedNumbers.slice(3)}`
-  } else {
-    return `${limitedNumbers.slice(0, 3)}-${limitedNumbers.slice(3, 7)}-${limitedNumbers.slice(7)}`
-  }
-}
-
 // 전화번호 입력 처리 함수
 const handlePhoneInput = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -453,23 +439,16 @@ const handlePhoneInput = (event: Event) => {
   profileForm.value.phone = formattedValue
 }
 
-// 우편번호 입력 처리 함수 (숫자만 허용) - 현재 미사용
-// const handleZipCodeInput = (event: Event) => {
-//   const target = event.target as HTMLInputElement
-//   const numbersOnly = target.value.replace(/\D/g, '')
-//   profileForm.value.zipCode = numbersOnly.slice(0, 5)
-// }
-
 // 실시간 유효성 검사
 const validateField = (field: string, value: string) => {
   validationErrors.value[field] = ''
   
   switch (field) {
-    case 'username':
+    case 'userName':
       if (!value.trim()) {
-        validationErrors.value.username = '이름은 필수입니다.'
+        validationErrors.value.userName = '이름은 필수입니다.'
       } else if (value.length > 50) {
-        validationErrors.value.username = '이름은 50자를 초과할 수 없습니다.'
+        validationErrors.value.userName = '이름은 50자를 초과할 수 없습니다.'
       }
       break
       
@@ -538,7 +517,7 @@ const validatePasswordForm = () => {
 
 // 프로필 수정 폼 전체 유효성 검사
 const validateProfileForm = () => {
-  validateField('username', profileForm.value.username)
+  validateField('userName', profileForm.value.userName)
   validateField('email', profileForm.value.email)
   validateField('phone', profileForm.value.phone)
   
@@ -562,8 +541,8 @@ const loadCurrentUser = async () => {
 
 const openEditModal = () => {
   profileForm.value = {
-    userid: currentUser.value.userid,
-    username: currentUser.value.username,
+    userId: currentUser.value.userId,
+    userName: currentUser.value.userName,
     email: currentUser.value.email,
     phone: currentUser.value.phone || '',
     department: currentUser.value.department || '',
@@ -576,7 +555,7 @@ const openEditModal = () => {
   }
   // 유효성 검사 오류 초기화
   validationErrors.value = {
-    username: '',
+    userName: '',
     email: '',
     phone: ''
   }
@@ -586,7 +565,7 @@ const openEditModal = () => {
 const closeEditModal = () => {
   showEditModal.value = false
   validationErrors.value = {
-    username: '',
+    userName: '',
     email: '',
     phone: ''
   }
@@ -602,7 +581,7 @@ const submitProfileUpdate = async () => {
   try {
     // 실제 API 호출
     const updateData: any = { ...profileForm.value }
-    delete updateData.userid // 사용자 ID는 변경 불가
+    delete updateData.userId // 사용자 ID는 변경 불가
     
     const updatedUser = await userService.updateProfile(currentUser.value.id, updateData)
     currentUser.value = updatedUser

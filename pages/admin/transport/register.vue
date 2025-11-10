@@ -84,28 +84,35 @@
           </div>
           <div class="info-grid grid-2">
             <FormField label="현장담당자(포기공)">
-              <input
-                type="text"
+              <select
                 v-model="formData.siteSupervisorName"
                 class="form-input-md"
-                placeholder="현장담당자명을 입력하세요"
               >
+                <option value="">현장담당자를 선택하세요</option>
+                <option v-for="manager in siteManagers" :key="manager.id" :value="manager.userName">
+                  {{ manager.userName }} ({{ manager.companyName || '회사 정보 없음' }})
+                </option>
+              </select>
             </FormField>
             <FormField label="현장 인수자">
-              <input
-                type="text"
-                v-model="formData.receiverName"
+              <select
+                v-model="selectedReceiverId"
+                @change="handleReceiverChange"
                 class="form-input-md"
-                placeholder="인수자명을 입력하세요"
               >
+                <option value="">현장 인수자를 선택하세요</option>
+                <option v-for="manager in siteManagers" :key="manager.id" :value="manager.id">
+                  {{ manager.userName }} ({{ manager.companyName || '회사 정보 없음' }})
+                </option>
+              </select>
             </FormField>
             <FormField label="인수자 연락처">
               <input
                 type="tel"
                 v-model="formData.siteSupervisorPhone"
                 class="form-input-md"
-                placeholder="010-0000-0000"
-                maxlength="13"
+                placeholder="현장 인수자 선택 시 자동 입력"
+                readonly
               >
             </FormField>
           </div>
@@ -188,12 +195,34 @@
             <span>운송 정보</span>
           </div>
           <div class="info-grid grid-3">
+            <FormField label="기사명">
+              <select
+                v-model="selectedDriverId"
+                @change="handleDriverChange"
+                class="form-input-md"
+              >
+                <option value="">기사를 선택하세요</option>
+                <option v-for="courier in couriers" :key="courier.id" :value="courier.id">
+                  {{ courier.userName }} ({{ courier.companyName || '운송사 정보 없음' }})
+                </option>
+              </select>
+            </FormField>
             <FormField label="운송사명">
               <input
                 type="text"
                 v-model="formData.carrierName"
                 class="form-input-md"
-                placeholder="운송사명을 입력하세요"
+                placeholder="기사 선택 시 자동 입력"
+                readonly
+              >
+            </FormField>
+            <FormField label="기사 연락처">
+              <input
+                type="tel"
+                v-model="formData.driverPhone"
+                class="form-input-md"
+                placeholder="기사 선택 시 자동 입력"
+                readonly
               >
             </FormField>
             <FormField label="차량번호" required :error="errors.vehicleNo">
@@ -206,23 +235,6 @@
               <template #hint>
                 차량번호를 기준으로 운송장번호가 자동 생성됩니다.
               </template>
-            </FormField>
-            <FormField label="기사명">
-              <input
-                type="text"
-                v-model="formData.driverName"
-                class="form-input-md"
-                placeholder="기사명을 입력하세요"
-              >
-            </FormField>
-            <FormField label="기사 연락처">
-              <input
-                type="tel"
-                v-model="formData.driverPhone"
-                class="form-input-md"
-                placeholder="010-0000-0000"
-                maxlength="13"
-              >
             </FormField>
             <FormField label="배차/출차 시각">
               <VueDatePicker
@@ -283,7 +295,9 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { transportService } from '~/services/transport.service'
 import { shipmentService } from '~/services/shipment.service'
+import { userService } from '~/services/user.service'
 import type { ShipmentListItem } from '~/services/shipment.service'
+import type { UserByRole } from '~/types/user'
 import { formatPhoneNumber } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
@@ -298,6 +312,14 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
+
+// 사용자 목록
+const siteManagers = ref<UserByRole[]>([])  // SITE_MANAGER (현장소장/현장담당자)
+const couriers = ref<UserByRole[]>([])       // COURIER (배송 기사)
+
+// 선택된 사용자 ID
+const selectedReceiverId = ref<number | ''>('')
+const selectedDriverId = ref<number | ''>('')
 
 // useRegisterForm 사용
 const {
@@ -372,6 +394,23 @@ const showShipmentPopup = ref(false)
 
 // URL 파라미터에서 데이터 로드
 onMounted(async () => {
+  // 사용자 목록 로드
+  try {
+    // SITE_MANAGER 목록 조회 (현장소장/현장담당자)
+    const managers = await userService.getUsersByRoles(['SITE_MANAGER'])
+    siteManagers.value = managers
+
+    // COURIER 목록 조회
+    const courierList = await userService.getUsersByRoles(['COURIER'])
+    couriers.value = courierList
+
+    console.log('현장 담당자 목록:', siteManagers.value)
+    console.log('배송 기사 목록:', couriers.value)
+  } catch (error) {
+    console.error('사용자 목록 조회 실패:', error)
+  }
+
+  // URL 파라미터에서 데이터 로드
   if (route.query.data) {
     try {
       const data = JSON.parse(route.query.data as string)
@@ -447,6 +486,36 @@ const searchAddress = () => {
       formData.addressDetail = ''
     }
   }).open()
+}
+
+// 현장 인수자 선택 시 자동 입력
+const handleReceiverChange = () => {
+  if (selectedReceiverId.value) {
+    const receiver = siteManagers.value.find(m => m.id === selectedReceiverId.value)
+    if (receiver) {
+      formData.receiverName = receiver.userName
+      formData.siteSupervisorPhone = receiver.phone || ''
+    }
+  } else {
+    formData.receiverName = ''
+    formData.siteSupervisorPhone = ''
+  }
+}
+
+// 기사 선택 시 자동 입력
+const handleDriverChange = () => {
+  if (selectedDriverId.value) {
+    const driver = couriers.value.find(c => c.id === selectedDriverId.value)
+    if (driver) {
+      formData.driverName = driver.userName
+      formData.carrierName = driver.companyName || ''
+      formData.driverPhone = driver.phone || ''
+    }
+  } else {
+    formData.driverName = ''
+    formData.carrierName = ''
+    formData.driverPhone = ''
+  }
 }
 
 // 제출 처리

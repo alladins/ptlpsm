@@ -307,209 +307,17 @@
       <!-- two-column-layout 종료 -->
     </div>
       </FormSection>
-    </div>
-
-    <!-- 인수증 출력 팝업 (백업본 그대로) -->
-    <div v-if="showReceiptPopup" class="popup-overlay" @click="closeReceiptPopup">
-      <div class="popup-content receipt-popup" @click.stop>
-        <div class="popup-header">
-          <h3>인수증 출력</h3>
-          <button @click="closeReceiptPopup" class="popup-close">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-
-        <div class="popup-body">
-          <div class="receipt-preview">
-            <!-- 공급/운반자 보관용 인수증 -->
-            <div class="receipt-document">
-              <div class="receipt-header">
-                <div class="company-logo">
-                  <img src="/images/common/logo.png" alt="LP LEADPOWER" class="logo-img">
-                  <span class="company-name">LP LEADPOWER</span>
-                </div>
-                <div class="receipt-title">인   수   증</div>
-                <div class="receipt-info">
-                  <div class="retention-type">공급/운반자 보관용</div>
-                  <div class="receipt-date">{{ receiptDate }}</div>
-                </div>
-              </div>
-
-              <div class="receipt-content">
-                <div class="info-table">
-                  <table>
-                    <tbody>
-                      <tr>
-                        <th>거래처명</th>
-                        <td colspan="3">{{ receiptData.clientName }}</td>
-                      </tr>
-                      <tr>
-                        <th>납품장소</th>
-                        <td>{{ receiptData.deliveryLocation }}</td>
-                        <th>현장담당자</th>
-                        <td>{{ receiptData.managerContact }}</td>
-                        <th>하차</th>
-                        <td>{{ receiptData.unloadingTime }}</td>
-                      </tr>
-                      <tr>
-                        <th>비고</th>
-                        <td>{{ receiptData.remarks }}</td>
-                        <th colspan="4" style="font-weight: bold;">★상차완료 후 현장담당자에게 통화 필수.꼭☆</th>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div class="product-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>제품명</th>
-                        <th>두께(t)</th>
-                        <th>수량(장)</th>
-                        <th>규격</th>
-                        <th>비고</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="(product, index) in productList" :key="index">
-                        <td>{{ product.name }}</td>
-                        <td>{{ product.thickness }}</td>
-                        <td>{{ product.quantity }}</td>
-                        <td>{{ product.specification }}</td>
-                        <td>{{ product.remarks }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div class="confirmation-text">
-                  상기 물품의 현장인도를 확인함.
-                </div>
-
-                <div class="signature-section">
-                  <div class="signature-field">
-                    <span class="signature-label">물품 인수자</span>
-                    <div class="signature-box">
-                      <img
-                        v-if="receiverSignatureUrl"
-                        :src="receiverSignatureUrl"
-                        alt="서명"
-                        class="signature-image"
-                      >
-                      <span v-else>(인)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="driver-note">
-                  *기사님 꼭 사진찍어서 운송사에 보내주세요* 안전!운전하세요
-                </div>
-              </div>
-            </div>
-
-            <!-- 영역 구분선 (절취선) -->
-            <div class="receipt-separator"></div>
-
-            <!-- 공급받는자 보관용 인수증 -->
-            <div class="receipt-document">
-              <div class="receipt-header">
-                <div class="company-logo">
-                  <img src="/images/common/logo.png" alt="LP LEADPOWER" class="logo-img">
-                  <span class="company-name">LP LEADPOWER</span>
-                </div>
-                <div class="receipt-title">인   수   증</div>
-                <div class="receipt-info">
-                  <div class="retention-type">공급받는자 보관용</div>
-                  <div class="receipt-date">{{ receiptDate }}</div>
-                </div>
-              </div>
-
-              <div class="receipt-content">
-                <div class="info-table">
-                  <table>
-                    <tbody>
-                      <tr>
-                        <th>거래처명</th>
-                        <td colspan="3">{{ receiptData.clientName }}</td>
-                      </tr>
-                      <tr>
-                        <th>납품장소</th>
-                        <td>{{ receiptData.deliveryLocation }}</td>
-                        <th>현장담당자</th>
-                        <td>{{ receiptData.managerContact }}</td>
-                        <th>하차</th>
-                        <td>{{ receiptData.unloadingTime }}</td>
-                      </tr>
-                      <tr>
-                        <th>비고</th>
-                        <td>{{ receiptData.remarks }}</td>
-                        <th colspan="4" style="font-weight: bold;">★상차완료 후 현장담당자에게 통화 필수.꼭☆</th>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div class="product-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>제품명</th>
-                        <th>두께(t)</th>
-                        <th>수량(장)</th>
-                        <th>규격</th>
-                        <th>비고</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="(product, index) in productList" :key="`receiver-${index}`">
-                        <td>{{ product.name }}</td>
-                        <td>{{ product.thickness }}</td>
-                        <td>{{ product.quantity }}</td>
-                        <td>{{ product.specification }}</td>
-                        <td>{{ product.remarks }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div class="confirmation-text">
-                  상기 물품의 현장인도를 확인함.
-                </div>
-
-                <div class="signature-section">
-                  <div class="signature-field">
-                    <span class="signature-label">물품 인수자</span>
-                    <div class="signature-box">
-                      <img
-                        v-if="receiverSignatureUrl"
-                        :src="receiverSignatureUrl"
-                        alt="서명"
-                        class="signature-image"
-                      >
-                      <span v-else>(인)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="driver-note">
-                  *기사님 꼭 사진찍어서 운송사에 보내주세요* 안전!운전하세요
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="popup-footer">
-          <button class="btn-primary" @click="printReceiptDocument">
-            <i class="fas fa-print"></i>
-            인수증 출력
-          </button>
-          <button class="btn-secondary" @click="closeReceiptPopup">닫기</button>
-        </div>
-      </div>
-    </div>
+    </div>    
   </div>
+
+<!-- 운송장 PDF 미리보기 모달 -->
+<PdfPreviewModal
+  :pdf-url="transportPdfUrl"
+  :delivery-id="transportDeliveryId"
+  :file-name="`운송장_${transportDeliveryId || 'unknown'}.pdf`"
+  :show="showTransportPdfModal"
+  @close="showTransportPdfModal = false"
+/>
 </template>
 
 <script setup lang="ts">
@@ -519,11 +327,13 @@ import { transportService } from '~/services/transport.service'
 import { shipmentService } from '~/services/shipment.service'
 import { deliveryService } from '~/services/delivery.service'
 import { DELIVERY_ENDPOINTS } from '~/services/api/endpoints/delivery.endpoints'
+import { TRANSPORT_ENDPOINTS } from '~/services/api/endpoints/transport.endpoints'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
-import axios from 'axios'
 import { getApiBaseUrl } from '~/services/api'
 import { useCommonStatus } from '~/composables/useCommonStatus'
+import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
+
 
 definePageMeta({
   layout: 'admin',
@@ -537,32 +347,13 @@ const loading = ref(true)
 // 상태 관리 (DB 기반)
 const { getStatusLabel } = useCommonStatus()
 
-// 팝업 관련
-const showReceiptPopup = ref(false)
-
-// 현재 날짜
-const receiptDate = ref(new Date().toISOString().split('T')[0])
-
-// 인수증 데이터
-const receiptData = ref({
-  clientName: '',
-  deliveryLocation: '',
-  managerContact: '',
-  unloadingTime: '',
-  remarks: ''
-})
+// 운송장 PDF 미리보기 모달
+const showTransportPdfModal = ref(false)
+const transportPdfUrl = ref<string>('')
+const transportDeliveryId = ref<number | undefined>(undefined)
 
 // 서명 이미지 URL (납품확인에서 가져옴)
 const receiverSignatureUrl = ref<string | null>(null)
-
-// 품목 목록
-const productList = ref<Array<{
-  name: string
-  thickness: string
-  quantity: string
-  specification: string
-  remarks: string
-}>>([])
 
 // 운송장 정보 폼 (등록 페이지와 동일하게 formData 사용)
 const formData = ref({
@@ -745,117 +536,37 @@ const printTransport = async () => {
 
     // ===== CASE 1: 완료 상태 - 저장된 PDF 조회만 (생성 안 함) =====
     if (transportDetail.deliveryId && transportDetail.status === 'COMPLETED') {
-      try {
-        const pdfUrl = DELIVERY_ENDPOINTS.receiptPdf(transportDetail.deliveryId)
-        // 새 탭에서 PDF 열기
-        window.open(pdfUrl, '_blank')
-        return
-      } catch (error) {
-        console.error('PDF 조회 실패:', error)
-        alert('PDF 파일을 찾을 수 없습니다. 납품 완료 처리를 먼저 진행해주세요.')
-        // PDF 없으면 HTML 팝업으로 fallback
-      }
+      // SignatureViewer 모달로 PDF 표시 (Authorization 헤더 자동 추가)
+      transportPdfUrl.value = DELIVERY_ENDPOINTS.receiptPdf(transportDetail.deliveryId)
+      transportDeliveryId.value = transportDetail.deliveryId
+      showTransportPdfModal.value = true
+      return
     }
 
-    // ===== CASE 2: 진행중/대기 또는 PDF 없음 - HTML 팝업 (오프라인 출력용) =====
-    // 출하 ID로 출하 상세 정보 조회 (해당 출하의 품목만 포함)
-    const shipmentDetail = await shipmentService.getShipmentDetail(transportDetail.shipmentId)
+    // ===== CASE 2: 진행중/대기 또는 PDF 없음 - PDF 생성 후 미리보기 =====
+    console.log('운송장 PDF 생성 시작:', formData.value.transportId)
 
-    // 인수증 데이터 업데이트
-    receiptData.value = {
-      clientName: shipmentDetail.client || '',
-      deliveryLocation: formData.value.deliveryAddress || '',
-      managerContact: `${formData.value.siteSupervisorName || ''} ${formData.value.siteSupervisorPhone || ''}`.trim(),
-      unloadingTime: formData.value.expectedArrival?.slice(11, 16) || '',
-      remarks: formData.value.deliveryMemo || ''
+    // 1. 서버에 PDF 생성 요청
+    const generateResponse = await fetch(TRANSPORT_ENDPOINTS.generatePdf(formData.value.transportId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+
+    if (!generateResponse.ok) {
+      throw new Error(`PDF 생성 실패: ${generateResponse.status}`)
     }
 
-    // 서명 이미지 URL 생성 (백엔드 API 경로)
-    if (transportDetail.deliveryId && transportDetail.status === 'COMPLETED') {
-      const baseUrl = getApiBaseUrl()
-      receiverSignatureUrl.value = `${baseUrl}/admin/deliveries/${transportDetail.deliveryId}/signature`
-    } else {
-      receiverSignatureUrl.value = null
-    }
+    console.log('PDF 생성 완료, 미리보기 모달 열기')
 
-    // 품목 목록 업데이트 (specification 파싱)
-    productList.value = shipmentDetail.items
-      .filter(item => item.shipmentQuantity > 0)  // 수량 0인 품목 제외
-      .map(item => {
-        // specification 파싱: "폴리우레탄기포단열재,정우산업,JYGB-60LC,1000×1000×60mm"
-        const parts = (item.specification || '').split(',').map(p => p.trim())
+    // 2. PDF 미리보기 모달 열기 (Authorization 헤더 자동 포함)
+    transportPdfUrl.value = TRANSPORT_ENDPOINTS.receiptPdf(formData.value.transportId)
+    transportDeliveryId.value = undefined // transport용이므로 deliveryId 없음
+    showTransportPdfModal.value = true    
 
-      // 두께 추출: parts[3] = "1000×1000×60mm" → "60T"
-      let thickness = '-'
-      if (parts.length >= 4) {
-        const sizeStr = parts[3] // "1000×1000×60mm"
-        const sizeParts = sizeStr.split('×').map(s => s.trim())
-        if (sizeParts.length === 3) {
-          // 마지막 값 "60mm"에서 숫자만 추출
-          const thicknessNum = sizeParts[2].replace(/[^\d]/g, '') // "60"
-          thickness = thicknessNum ? `${thicknessNum}T` : '-'
-        }
-      }
-
-      // 규격 조합: "JYGB-60LC, 1000×1000×60mm" (전체 치수 포함)
-      let specification = '-'
-      if (parts.length >= 4) {
-        const model = parts[2]     // "JYGB-60LC"
-        const sizeStr = parts[3]   // "1000×1000×60mm" (전체)
-        specification = `${model}, ${sizeStr}`
-      }
-
-      // 단위 환산 계산: (폭 × 높이 × 수량) / 1,000,000 = ㎡
-      let remarks = '-'
-      if (parts.length >= 4) {
-        const sizeStr = parts[3]
-        const sizeParts = sizeStr.split('×').map(s => s.trim())
-        if (sizeParts.length >= 2) {
-          const width = parseInt(sizeParts[0]) || 0
-          const height = parseInt(sizeParts[1]) || 0
-          const area = (width * height * item.shipmentQuantity) / 1000000
-          remarks = area > 0 ? `단위 환산: ${Math.round(area).toLocaleString('ko-KR')}㎡` : '-'
-        }
-      }
-
-        return {
-          name: item.itemName || '',
-          thickness: thickness,
-          quantity: item.shipmentQuantity.toLocaleString('ko-KR'),
-          specification: specification,
-          remarks: remarks
-        }
-      })
-
-    // 5줄로 맞추기: 실제 데이터가 5개 미만이면 공백 행 추가
-    while (productList.value.length < 5) {
-      productList.value.push({
-        name: '',
-        thickness: '',
-        quantity: '',
-        specification: '',
-        remarks: ''
-      })
-    }
-
-    // 팝업 열기
-    showReceiptPopup.value = true
   } catch (error) {
     console.error('인수증 데이터 로드 실패:', error)
     alert('인수증 데이터를 불러오는데 실패했습니다.')
   }
-}
-
-// 팝업 닫기
-const closeReceiptPopup = () => {
-  showReceiptPopup.value = false
-}
-
-// 인수증 문서 출력
-const printReceiptDocument = () => {
-  console.log('인수증 문서 출력')
-  window.print()
-  closeReceiptPopup()
 }
 
 // 상태 텍스트 변환 (DB 기반)

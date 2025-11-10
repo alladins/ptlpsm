@@ -274,7 +274,7 @@
     </div>
 
     <!-- 코드 그룹 모달 -->
-    <div v-if="showGroupModal" class="modal-overlay" @click="closeGroupModal">
+    <div v-if="showGroupModal" class="modal-overlay">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>{{ groupModalMode === 'create' ? '새 코드 그룹 등록' : '코드 그룹 수정' }}</h3>
@@ -333,7 +333,7 @@
     </div>
 
     <!-- 코드 상세 모달 -->
-    <div v-if="showDetailModal" class="modal-overlay" @click="closeDetailModal">
+    <div v-if="showDetailModal" class="modal-overlay">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>{{ detailModalMode === 'create' ? '새 코드 등록' : '코드 수정' }}</h3>

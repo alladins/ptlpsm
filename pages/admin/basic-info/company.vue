@@ -250,7 +250,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRuntimeConfig } from '#app'
+import { companyService } from '~/services/company.service'
+import type { CompanyInfoResponse } from '~/types/company'
 
 interface Company {
   id: number
@@ -295,20 +296,10 @@ const selectTab = async (index: number) => {
   try {
     selectedTabIndex.value = index
     isNewForm.value = false
-    
-    // 선택된 회사의 상세 정보 조회
-    const config = useRuntimeConfig()
-    const response = await fetch(`${config.public.apiBaseUrl}/api/basic/company/${companies.value[index].id}`, {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    })
-    if (!response.ok) {
-      throw new Error('회사 상세 정보 로드 실패')
-    }
-    
-    const company = await response.json()
+
+    // 선택된 회사의 상세 정보 조회 (service 사용)
+    const company = await companyService.getCompanyById(companies.value[index].id)
+
     companyData.value = {
       companyName: company.companyName,
       businessNumber: company.businessNumber,
@@ -365,7 +356,7 @@ const resetForm = (showConfirm = true) => {
 }
 
 // 상태 관리
-const companies = ref<Company[]>([])
+const companies = ref<CompanyInfoResponse[]>([])
 const selectedTabIndex = ref(0)
 const isNewForm = ref(false)
 
@@ -569,6 +560,7 @@ const validateForm = (): boolean => {
 }
 
 // 회사 정보 저장
+// 회사 정보 저장
 const saveCompany = async () => {
   if (!validateForm()) {
     return
@@ -577,63 +569,27 @@ const saveCompany = async () => {
   try {
     saving.value = true
     
-    const headers = {
-      'Content-Type': 'application/json'
-    }
-
-    const config = useRuntimeConfig()
     console.log('회사 정보 저장 시작:', { isNewForm: isNewForm.value, selectedTabIndex: selectedTabIndex.value })
     
-    let response
-    if (!isNewForm.value && selectedTabIndex.value < companies.value.length) {
-      // 수정 API 호출
-      const currentCompany = companies.value[selectedTabIndex.value]
-      const updateUrl = `${config.public.apiBaseUrl}/api/basic/company/${currentCompany.id}`
-      console.log('회사 정보 수정 요청:', { url: updateUrl, data: companyData.value })
-      response = await fetch(updateUrl, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(companyData.value)
-      })
-    } else {
-      // 신규 등록 API 호출
-      const createUrl = `${config.public.apiBaseUrl}/api/basic/company`
-      console.log('회사 정보 등록 요청:', { url: createUrl, data: companyData.value })
-      response = await fetch(createUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(companyData.value)
-      })
-    }
-
-    console.log('API 응답:', {
-      ok: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries())
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API 응답 에러:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-        body: errorText
-      })
-      throw new Error(isNewForm.value ? '회사 정보 등록 실패' : '회사 정보 수정 실패')
-    }
-
-    const responseText = await response.text()
-    console.log('API 응답 본문:', responseText)
-    
     let company
-    try {
-      company = JSON.parse(responseText)
-    } catch (error) {
-      console.error('JSON 파싱 에러:', error)
-      throw new Error('API 응답이 유효한 JSON이 아닙니다')
+    if (!isNewForm.value && selectedTabIndex.value < companies.value.length) {
+      // 수정: companyService 사용
+      const currentCompany = companies.value[selectedTabIndex.value]
+      console.log('회사 정보 수정 요청:', { id: currentCompany.id, data: companyData.value })
+
+      company = await companyService.updateCompany(currentCompany.id, companyData.value)
+    } else {
+      // 신규 등록: companyService 사용
+      console.log('회사 정보 등록 요청:', { data: companyData.value })
+
+      company = await companyService.createCompany(companyData.value)
     }
+
+    if (!company) {
+      throw new Error('서버에서 응답이 없습니다')
+    }
+
+    console.log('API 응답:', company)
     
     if (isNewForm.value) {
       // 신규 등록 시 목록에 추가
@@ -674,72 +630,24 @@ const saveCompany = async () => {
   }
 }
 
-
 // 회사 정보 로드
 const loadCompanies = async () => {
   try {
-    const config = useRuntimeConfig()
-    const apiUrl = `${config.public.apiBaseUrl}/api/basic/company`
-    console.log('회사 정보 로드 시작:', { url: apiUrl })
-    const response = await fetch(apiUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    })
-    console.log('API 응답:', {
-      ok: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries())
-    })
+    // 회사 목록 조회 (service 사용)
+    const data = await companyService.getCompanies()
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API 응답 에러:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-        body: errorText
-      })
-      throw new Error(`회사 정보 로드 실패: ${response.status} ${response.statusText}`)
-    }
-
-    // 응답 본문을 텍스트로 먼저 받아서 로깅
-    const responseText = await response.text()
-    console.log('API 응답 본문:', responseText)
-    
-    // 텍스트를 JSON으로 파싱
-    let data
-    try {
-      data = JSON.parse(responseText)
-    } catch (error) {
-      console.error('JSON 파싱 에러:', error)
-      throw new Error('API 응답이 유효한 JSON이 아닙니다')
-    }
-    
     console.log('받은 회사 데이터:', data)
-    
+
     if (Array.isArray(data) && data.length > 0) {
       companies.value = data
       console.log('회사 목록 설정:', companies.value)
       isNewForm.value = false
       selectedTabIndex.value = 0
-      
-      // 첫 번째 회사의 상세 정보 로드
-      const detailUrl = `${config.public.apiBaseUrl}/api/basic/company/${data[0].id}`
-      console.log('회사 상세 정보 로드:', { url: detailUrl })
-      const detailResponse = await fetch(detailUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      })
-      if (!detailResponse.ok) throw new Error('회사 상세 정보 로드 실패')
-      
-      const company = await detailResponse.json()
+
+      // 첫 번째 회사의 상세 정보 로드 (service 사용)
+      const company = await companyService.getCompanyById(data[0].id)
       console.log('첫 번째 회사 상세 정보:', company)
-      
+
       companyData.value = {
         companyName: company.companyName,
         businessNumber: company.businessNumber,

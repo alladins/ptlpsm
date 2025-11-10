@@ -7,7 +7,7 @@
       class="photo-thumbnail-mini"
       @click="openGallery(index)"
     >
-      <img :src="url" :alt="`사진 ${index + 1}`" loading="lazy">
+      <UiSecureImage :src="url" :alt="`사진 ${index + 1}`" loading="lazy" />
     </div>
 
     <!-- 더보기 배지 -->
@@ -33,7 +33,7 @@
           class="photo-thumbnail"
           @click="openGallery(index)"
         >
-          <img :src="url" :alt="`사진 ${index + 1}`" loading="lazy">
+          <UiSecureImage :src="url" :alt="`사진 ${index + 1}`" loading="lazy" />
           <div class="thumbnail-overlay">
             <i class="fas fa-search-plus"></i>
           </div>
@@ -55,8 +55,8 @@
 
     <!-- 갤러리 모달 -->
     <Teleport to="body">
-      <div v-if="showGallery" class="gallery-modal" @click="closeGallery">
-        <div class="modal-content" @click.stop>
+      <div v-if="showGallery" class="gallery-modal">
+        <div class="modal-content">
           <div class="modal-header">
             <h3>
               <i class="fas fa-images"></i>
@@ -80,11 +80,12 @@
 
             <!-- 현재 이미지 -->
             <div class="photo-display">
-              <img
+              <UiSecureImage
                 :src="photoUrls[currentIndex]"
                 :alt="`사진 ${currentIndex + 1}`"
                 class="photo-full"
-              >
+                loading="eager"
+              />
             </div>
 
             <!-- 다음 버튼 -->
@@ -108,7 +109,7 @@
                 :class="{ active: index === currentIndex }"
                 @click="currentIndex = index"
               >
-                <img :src="url" :alt="`썸네일 ${index + 1}`">
+                <UiSecureImage :src="url" :alt="`썸네일 ${index + 1}`" loading="lazy" />
               </div>
             </div>
 
@@ -125,6 +126,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import UiSecureImage from '~/components/ui/SecureImage.vue'
 
 interface Props {
   photoUrls: string[]

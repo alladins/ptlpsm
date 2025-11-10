@@ -1,9 +1,19 @@
 <template>
   <!-- Compact 모드 -->
   <div v-if="compact" class="pdf-download-compact">
-    <a v-if="hasSignature && fullPdfUrl" :href="fullPdfUrl" target="_blank" class="pdf-button-mini" title="PDF 다운로드">
-      <i class="fas fa-file-pdf"></i>
-    </a>
+    <div
+      v-if="hasSignature && fullPdfUrl"
+      class="pdf-thumbnail"
+      @click="openPdfModal"
+      title="PDF 미리보기"
+    >
+      <div class="pdf-icon">
+        <i class="fas fa-file-pdf"></i>
+      </div>
+      <div class="pdf-overlay">
+        <i class="fas fa-search-plus"></i>
+      </div>
+    </div>
   </div>
 
   <!-- 일반 모드 -->
@@ -16,17 +26,28 @@
 
     <!-- PDF 있을 때 -->
     <div v-else class="pdf-download-container">
-      <a :href="fullPdfUrl" target="_blank" class="btn-download-pdf">
-        <i class="fas fa-file-pdf"></i>
-        PDF 다운로드
-      </a>
+      <button @click="openPdfModal" class="btn-preview-pdf">
+        <i class="fas fa-search"></i>
+        PDF 미리보기
+      </button>
     </div>
   </div>
+
+  <!-- PDF 미리보기 모달 -->
+  <AdminDeliveryPdfPreviewModal
+    v-if="showPdfModal"
+    :pdf-url="fullPdfUrl"
+    :delivery-id="deliveryId"
+    :file-name="`납품영수증_${deliveryId}.pdf`"
+    :show="showPdfModal"
+    @close="showPdfModal = false"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { getApiBaseUrl } from '~/services/api'
+import AdminDeliveryPdfPreviewModal from './PdfPreviewModal.vue'
 
 interface Props {
   pdfFileUrl?: string | null
@@ -40,6 +61,12 @@ const props = withDefaults(defineProps<Props>(), {
   deliveryId: null,
   compact: false
 })
+
+const showPdfModal = ref(false)
+
+const openPdfModal = () => {
+  showPdfModal.value = true
+}
 
 // 완전한 PDF URL 생성 (상대 경로 → 절대 경로)
 const fullPdfUrl = computed(() => {
@@ -73,47 +100,56 @@ const fullPdfUrl = computed(() => {
 </script>
 
 <style scoped>
-/* Compact 모드 - PDF 다운로드 */
+/* Compact 모드 - PDF 썸네일 */
 .pdf-download-compact {
   display: inline-block;
 }
 
-.pdf-button-mini {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.pdf-thumbnail {
+  position: relative;
   width: 40px;
   height: 40px;
-  border: 2px solid #dc2626;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   border-radius: 0.25rem;
-  background: #dc2626;
-  color: white;
-  font-size: 1.25rem;
-  text-decoration: none;
   cursor: pointer;
   transition: all 0.2s;
+  overflow: hidden;
   box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
 }
 
-.pdf-button-mini:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
-  color: white;
-  box-shadow: 0 4px 6px rgba(220, 38, 38, 0.4);
+.pdf-thumbnail:hover {
   transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
-.pdf-button-mini.pdf-disabled {
-  background: #9ca3af;
-  border-color: #9ca3af;
+.pdf-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
   color: white;
-  cursor: not-allowed;
-  opacity: 0.6;
+  font-size: 1.25rem;
 }
 
-.pdf-button-mini.pdf-disabled:hover {
-  transform: none;
-  box-shadow: 0 2px 4px rgba(156, 163, 175, 0.2);
+.pdf-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: white;
+  font-size: 1rem;
+}
+
+.pdf-thumbnail:hover .pdf-overlay {
+  opacity: 1;
 }
 
 /* 일반 모드 - PDF 다운로드 */
@@ -148,7 +184,7 @@ const fullPdfUrl = computed(() => {
   gap: 0.75rem;
 }
 
-.btn-download-pdf {
+.btn-preview-pdf {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -159,19 +195,18 @@ const fullPdfUrl = computed(() => {
   color: #dc2626;
   font-size: 0.875rem;
   font-weight: 600;
-  text-decoration: none;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.btn-download-pdf:hover {
+.btn-preview-pdf:hover {
   background: #dc2626;
   color: white;
   box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
   transform: translateY(-1px);
 }
 
-.btn-download-pdf i {
+.btn-preview-pdf i {
   font-size: 1rem;
 }
 </style>
