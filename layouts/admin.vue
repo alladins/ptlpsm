@@ -89,6 +89,7 @@ const currentPageTitle = computed(() => {
     '/admin/delivery': '납품확인관리',
     '/admin/delivery-done': '납품완료계',
     '/admin/statistics': '통계',
+    '/admin/message': '문자관리',
     '/admin/basic-info': '기초정보',
     '/admin/system': '시스템관리'
   }

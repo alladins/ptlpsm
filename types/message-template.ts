@@ -10,7 +10,7 @@ export interface MessageTemplate {
   templateName: string
   templateType: MessageTemplateType
   subject: string | null
-  content: string
+  content: string | null
   description: string | null
   useYn: 'Y' | 'N'
   createdAt: string

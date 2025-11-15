@@ -1,17 +1,45 @@
 import type { Menu, MenuPage, MenuAuth } from '~/types/menu'
+import { MENU_ENDPOINTS } from '~/services/api/endpoints/menu.endpoints'
 
 // 메뉴 서비스
 export const menuService = {
   /**
-   * 사용자별 메뉴 목록 조회
+   * 사용자별 메뉴 목록 조회 (실제 API 연동)
    */
   async getUserMenus(userId: number): Promise<Menu[]> {
     try {
-      // 실제 구현에서는 API 호출
-      // const response = await $fetch(`/api/menus/user/${userId}`)
-      
-      // 임시 데이터 반환 (백엔드 스키마 기반)
-      return [
+      // 실제 API 호출
+      const response = await fetch(MENU_ENDPOINTS.userMenus(userId), {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`API 호출 실패: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (data.success && Array.isArray(data.data)) {
+        return data.data
+      }
+
+      throw new Error('잘못된 API 응답 형식')
+    } catch (error) {
+      console.warn('사용자 메뉴 조회 실패, Mock 데이터 사용:', error)
+
+      // API 실패 시 Mock 데이터 반환 (백엔드 스키마 기반)
+      return getMockMenuData()
+    }
+  },
+
+  /**
+   * Mock 메뉴 데이터 반환 (개발용)
+   */
+  getMockMenuData(): Menu[] {
+    return [
         {
           menuId: 1,
           menuCode: 'SALES',
@@ -277,6 +305,46 @@ export const menuService = {
           ]
         },
         {
+          menuId: 10,
+          menuCode: 'MESSAGE_MANAGE',
+          menuName: '문자관리',
+          menuUrl: '/admin/message',
+          menuIcon: 'fas fa-envelope',
+          menuLevel: 1,
+          target: '_self',
+          sortOrder: 8,
+          visible: 'Y',
+          useYn: 'Y',
+          children: [
+            {
+              menuId: 101,
+              menuCode: 'MESSAGE_TEMPLATE',
+              menuName: '메시지 템플릿 관리',
+              parentMenuId: 10,
+              menuUrl: '/admin/basic-info/message-templates/list',
+              menuIcon: 'fas fa-file-lines',
+              menuLevel: 2,
+              target: '_self',
+              sortOrder: 1,
+              visible: 'Y',
+              useYn: 'Y'
+            },
+            {
+              menuId: 102,
+              menuCode: 'MESSAGE_HISTORY',
+              menuName: '메시지 히스토리',
+              parentMenuId: 10,
+              menuUrl: '/admin/message/history',
+              menuIcon: 'fas fa-clock-rotate-left',
+              menuLevel: 2,
+              target: '_self',
+              sortOrder: 2,
+              visible: 'Y',
+              useYn: 'Y'
+            }
+          ]
+        },
+        {
           menuId: 8,
           menuCode: 'BASIC_INFO',
           menuName: '기초정보',
@@ -284,7 +352,7 @@ export const menuService = {
           menuIcon: 'fas fa-cogs',
           menuLevel: 1,
           target: '_self',
-          sortOrder: 8,
+          sortOrder: 9,
           visible: 'Y',
           useYn: 'Y',
           children: [
@@ -350,7 +418,7 @@ export const menuService = {
           menuIcon: 'fas fa-tools',
           menuLevel: 1,
           target: '_self',
-          sortOrder: 9,
+          sortOrder: 10,
           visible: 'Y',
           useYn: 'Y',
           children: [
@@ -382,36 +450,73 @@ export const menuService = {
             }
           ]
         }
-      ]
-    } catch (error) {
-      console.error('메뉴 조회 실패:', error)
-      return []
-    }
+      ] // Mock 데이터 배열 종료
   },
 
   /**
-   * 메뉴별 권한 조회
+   * 메뉴별 권한 조회 (실제 API 연동)
    */
   async getMenuAuth(userId: number, menuId: number): Promise<MenuAuth> {
     try {
-      // 실제 구현에서는 API 호출
-      // const response = await $fetch(`/api/menus/${menuId}/auth/${userId}`)
-      
-      // 임시로 모든 권한 허용
+      // 실제 API 호출
+      const response = await fetch(MENU_ENDPOINTS.menuAuth(userId, menuId), {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`API 호출 실패: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        return data.data
+      }
+
+      throw new Error('잘못된 API 응답 형식')
+    } catch (error) {
+      console.warn('메뉴 권한 조회 실패, 모든 권한 허용:', error)
+
+      // API 실패 시 임시로 모든 권한 허용
       return {
         readAuth: 'Y',
         writeAuth: 'Y',
         editAuth: 'Y',
         deleteAuth: 'Y'
       }
-    } catch (error) {
-      console.error('메뉴 권한 조회 실패:', error)
-      return {
-        readAuth: 'N',
-        writeAuth: 'N',
-        editAuth: 'N',
-        deleteAuth: 'N'
+    }
+  },
+
+  /**
+   * URL로 메뉴 조회 (실제 API 연동)
+   */
+  async getMenuByUrl(url: string): Promise<Menu | null> {
+    try {
+      // 실제 API 호출
+      const response = await fetch(MENU_ENDPOINTS.menuByUrl(url), {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`API 호출 실패: ${response.status}`)
       }
+
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        return data.data
+      }
+
+      return null
+    } catch (error) {
+      console.warn('URL로 메뉴 조회 실패:', error)
+      return null
     }
   },
 

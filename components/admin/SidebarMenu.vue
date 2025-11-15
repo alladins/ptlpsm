@@ -235,13 +235,50 @@ const manualMenus = ref<Menu[]>([
     ]
   },
   {
+    menuId: 10,
+    menuCode: 'MESSAGE_MANAGE',
+    menuName: '문자관리',
+    menuUrl: '/admin/message',
+    menuIcon: 'fas fa-envelope',
+    menuLevel: 1,
+    sortOrder: 8,
+    visible: 'Y',
+    useYn: 'Y',
+    children: [
+      {
+        menuId: 101,
+        menuCode: 'MESSAGE_TEMPLATE',
+        menuName: '메시지 템플릿 관리',
+        menuUrl: '/admin/basic-info/message-templates/list',
+        menuIcon: 'fas fa-file-lines',
+        menuLevel: 2,
+        sortOrder: 1,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 102,
+        menuCode: 'MESSAGE_HISTORY',
+        menuName: '메시지 히스토리',
+        menuUrl: '/admin/message/history',
+        menuIcon: 'fas fa-clock-rotate-left',
+        menuLevel: 2,
+        sortOrder: 2,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      }
+    ]
+  },
+  {
     menuId: 8,
     menuCode: 'BASIC_INFO',
     menuName: '기초정보',
     menuUrl: '/admin/basic-info',
     menuIcon: 'fas fa-cogs',
     menuLevel: 1,
-    sortOrder: 8,
+    sortOrder: 9,
     visible: 'Y',
     useYn: 'Y',
     children: [
@@ -314,7 +351,7 @@ const manualMenus = ref<Menu[]>([
     menuUrl: '/admin/system',
     menuIcon: 'fas fa-tools',
     menuLevel: 1,
-    sortOrder: 9,
+    sortOrder: 10,
     visible: 'Y',
     useYn: 'Y',
     children: [

@@ -1,5 +1,5 @@
 <template>
-  <div class="message-template-list-page">
+  <div class="content-section">
     <!-- 페이지 헤더 -->
     <PageHeader
       title="메시지 템플릿 관리"
@@ -14,59 +14,57 @@
     </PageHeader>
 
     <!-- 검색 영역 -->
-    <div class="search-section">
-      <div class="search-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label>템플릿 코드</label>
-            <input
-              v-model="searchParams.templateCode"
-              type="text"
-              placeholder="템플릿 코드 검색"
-              @keyup.enter="handleSearch"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>템플릿명</label>
-            <input
-              v-model="searchParams.templateName"
-              type="text"
-              placeholder="템플릿명 검색"
-              @keyup.enter="handleSearch"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>메시지 타입</label>
-            <select v-model="searchParams.templateType">
-              <option value="">전체</option>
-              <option value="SMS">SMS</option>
-              <option value="LMS">LMS</option>
-              <option value="MMS">MMS</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>사용여부</label>
-            <select v-model="searchParams.useYn">
-              <option value="">전체</option>
-              <option value="Y">사용</option>
-              <option value="N">미사용</option>
-            </select>
-          </div>
+    <div class="search-section-compact">
+      <div class="search-row-single">
+        <div class="search-item">
+          <label>템플릿 코드</label>
+          <input
+            v-model="searchParams.templateCode"
+            type="text"
+            class="text-input"
+            placeholder="템플릿 코드 검색"
+            @keyup.enter="handleSearch"
+          />
         </div>
 
-        <div class="search-actions">
-          <button class="btn-secondary" @click="handleReset">
-            <i class="ri-refresh-line"></i>
-            초기화
-          </button>
-          <button class="btn-primary" @click="handleSearch">
-            <i class="ri-search-line"></i>
-            검색
-          </button>
+        <div class="search-item">
+          <label>템플릿명</label>
+          <input
+            v-model="searchParams.templateName"
+            type="text"
+            class="text-input"
+            placeholder="템플릿명 검색"
+            @keyup.enter="handleSearch"
+          />
         </div>
+
+        <div class="search-item">
+          <label>메시지 타입</label>
+          <select v-model="searchParams.templateType" class="status-select">
+            <option value="">전체</option>
+            <option value="SMS">SMS</option>
+            <option value="LMS">LMS</option>
+            <option value="MMS">MMS</option>
+          </select>
+        </div>
+
+        <div class="search-item">
+          <label>사용여부</label>
+          <select v-model="searchParams.useYn" class="status-select">
+            <option value="">전체</option>
+            <option value="Y">사용</option>
+            <option value="N">미사용</option>
+          </select>
+        </div>
+
+        <button class="btn-search-inline" @click="handleSearch">
+          <i class="ri-search-line"></i>
+          검색
+        </button>
+        <button class="btn-reset-inline" @click="handleReset">
+          <i class="ri-refresh-line"></i>
+          초기화
+        </button>
       </div>
     </div>
 
@@ -146,25 +144,25 @@
           <td>
             <div class="action-buttons">
               <button
-                class="btn-icon btn-detail"
-                title="상세보기"
+                class="btn-action-table btn-view"
                 @click="goToDetail(template.templateId)"
               >
                 <i class="ri-eye-line"></i>
+                보기
               </button>
               <button
-                class="btn-icon btn-edit"
-                title="수정"
+                class="btn-action-table btn-edit"
                 @click="goToEdit(template.templateId)"
               >
                 <i class="ri-edit-line"></i>
+                수정
               </button>
               <button
-                class="btn-icon btn-delete"
-                title="삭제"
+                class="btn-action-table btn-delete"
                 @click="handleDelete(template)"
               >
                 <i class="ri-delete-bin-line"></i>
+                삭제
               </button>
             </div>
           </td>
@@ -251,6 +249,9 @@ const loadTemplates = async () => {
     totalElements.value = response.totalElements
   } catch (err: any) {
     error.value = err.message || '데이터를 불러오는데 실패했습니다'
+    templates.value = []
+    totalPages.value = 0
+    totalElements.value = 0
     console.error('템플릿 목록 조회 오류:', err)
   } finally {
     loading.value = false
@@ -318,7 +319,8 @@ const handleDelete = async (template: MessageTemplate) => {
   }
 }
 
-const truncateContent = (content: string, maxLength = 50): string => {
+const truncateContent = (content: string | null | undefined, maxLength = 50): string => {
+  if (!content) return '-'
   if (content.length <= maxLength) return content
   return content.substring(0, maxLength) + '...'
 }
@@ -343,113 +345,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.message-template-list-page {
-  padding: 24px;
-}
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-tables.css';
+@import '@/assets/css/admin-search.css';
 
-/* 검색 영역 */
-.search-section {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.search-form .form-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-group label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-}
-
-.form-group input,
-.form-group select {
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.search-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-/* 테이블 헤더 */
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.table-info {
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.table-info strong {
-  color: #2563eb;
-  font-weight: 600;
-}
-
-.table-controls select {
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-/* 데이터 테이블 */
-.data-table {
-  width: 100%;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.data-table th {
-  background: #f9fafb;
-  padding: 12px 16px;
-  text-align: left;
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.data-table td {
-  padding: 12px 16px;
-  font-size: 14px;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.data-table tbody tr:hover {
-  background: #f9fafb;
-}
+/* 페이지 전용 스타일 */
 
 /* 템플릿 코드 */
 .template-code {
@@ -460,6 +361,62 @@ onMounted(() => {
   font-family: 'Courier New', monospace;
   font-size: 12px;
   color: #1f2937;
+}
+
+/* 테이블 액션 버튼 */
+.btn-action-table {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-action-table i {
+  font-size: 14px;
+}
+
+.btn-action-table.btn-view {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+}
+
+.btn-action-table.btn-view:hover {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.35);
+  transform: translateY(-2px);
+}
+
+.btn-action-table.btn-edit {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.25);
+}
+
+.btn-action-table.btn-edit:hover {
+  background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.35);
+  transform: translateY(-2px);
+}
+
+.btn-action-table.btn-delete {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25);
+}
+
+.btn-action-table.btn-delete:hover {
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.35);
+  transform: translateY(-2px);
 }
 
 /* 배지 */
@@ -522,151 +479,5 @@ onMounted(() => {
 
 .toggle-btn:hover {
   opacity: 0.8;
-}
-
-/* 액션 버튼 */
-.action-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-detail {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.btn-detail:hover {
-  background: #bfdbfe;
-}
-
-.btn-edit {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.btn-edit:hover {
-  background: #fde68a;
-}
-
-.btn-delete {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.btn-delete:hover {
-  background: #fecaca;
-}
-
-/* 상태 표시 */
-.loading-state,
-.error-state,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 64px 24px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.loading-state i,
-.error-state i,
-.empty-state i {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.loading-state {
-  color: #2563eb;
-}
-
-.error-state {
-  color: #dc2626;
-}
-
-.empty-state {
-  color: #6b7280;
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* 공통 버튼 */
-.btn-primary,
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #1d4ed8;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-/* 반응형 */
-@media (max-width: 1024px) {
-  .search-form .form-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .search-form .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .data-table {
-    font-size: 12px;
-  }
-
-  .data-table th,
-  .data-table td {
-    padding: 8px 12px;
-  }
 }
 </style>
