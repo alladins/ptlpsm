@@ -1,6 +1,6 @@
 <template>
   <div class="shipping-register">
-    <UiPageHeader
+    <PageHeader
       title="출하 등록"
       description="출하 정보를 등록하고 관리합니다."
     >
@@ -18,7 +18,7 @@
           {{ submitting ? '저장 중...' : '저장' }}
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <div class="content-section">
       <form @submit.prevent="handleSubmit" class="register-form">

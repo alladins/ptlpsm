@@ -1,6 +1,6 @@
 <template>
   <div class="shipping-edit">
-    <UiPageHeader
+    <PageHeader
       title="출하 수정"
       description="출하 정보를 수정합니다."
     >
@@ -28,7 +28,7 @@
           {{ submitting ? '저장 중...' : '저장' }}
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <AdminCommonLoadingSection v-if="loading" message="데이터를 불러오는 중..." />
     <AdminCommonErrorSection v-else-if="!shipmentData && !loading" message="출하 정보를 찾을 수 없습니다." />

@@ -32,7 +32,7 @@
           </div>
           <div class="info-row">
             <label>납품률:</label>
-            <span class="delivery-rate">{{ deliveryDone.deliveryRate }}%</span>
+            <span class="delivery-rate">{{ deliveryDone.deliveryCompletionRate }}%</span>
           </div>
         </div>
 
@@ -45,7 +45,7 @@
           <div class="checklist">
             <div class="check-item">
               <i class="fas fa-check-circle" :class="{ success: deliveryDone.hasContractorSignature }"></i>
-              <span>시공사 대표 인감</span>
+              <span>현장 소장 서명</span>
             </div>
             <div class="check-item">
               <i class="fas fa-check-circle" :class="{ success: deliveryDone.hasSupervisorSignature }"></i>

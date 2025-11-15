@@ -62,7 +62,7 @@
 
           <div class="confirmation-items-inline">
             <!-- PDF 다운로드 -->
-            <AdminDeliverySignatureViewer
+            <SignatureViewer
               :pdf-file-url="transport.deliveryConfirmation.pdfFileUrl"
               :delivery-id="transport.deliveryConfirmation.deliveryId"
               :has-signature="transport.deliveryConfirmation.hasSignature"
@@ -70,7 +70,7 @@
             />
 
             <!-- 사진 -->
-            <AdminDeliveryPhotoGallery
+            <PhotoGallery
               :photo-urls="transport.deliveryConfirmation.photoUrls"
               :photo-count="transport.deliveryConfirmation.photoCount"
               compact

@@ -1,7 +1,7 @@
 <template>
   <div class="order-detail">
     <!-- 페이지 헤더 -->
-    <UiPageHeader
+    <PageHeader
       title="납품요구 상세"
       description="납품요구 정보를 조회합니다."
     >
@@ -11,7 +11,7 @@
           목록
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <AdminCommonLoadingSection v-if="loading" />
     <AdminCommonErrorSection v-else-if="!orderData && !loading" message="납품요구 정보를 찾을 수 없습니다." />

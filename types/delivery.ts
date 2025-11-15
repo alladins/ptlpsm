@@ -64,11 +64,11 @@ export interface OrderTreeNode {
   contractDate: string
   client: string
   projectName: string
-  totalOrderQuantity: number
+  totalOrderedQuantity: number
   totalShippedQuantity: number
   totalDeliveredQuantity: number
   inProgressQuantity: number  // 진행중 수량 (출하완료 - 납품완료)
-  deliveryRate: number
+  deliveryCompletionRate: number
   unit: string
   shipments: ShipmentTreeNode[]
 }

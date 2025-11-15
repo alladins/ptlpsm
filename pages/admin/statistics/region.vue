@@ -1,6 +1,6 @@
 <template>
   <div class="statistics-region">
-    <UiPageHeader
+    <PageHeader
       title="지역별통계"
       description="지역별 영업 현황을 통계로 확인합니다."
     />

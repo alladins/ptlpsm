@@ -1,7 +1,7 @@
 <template>
   <div class="delivery-done-list">
     <!-- 페이지 헤더 -->
-    <UiPageHeader
+    <PageHeader
       title="납품완료계 관리"
       description="발주별 납품완료계를 관리하고 서명 URL을 발송합니다."
     >
@@ -15,7 +15,7 @@
           초기화
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <div class="content-section">
       <!-- 검색 조건 섹션 -->
@@ -98,34 +98,22 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 8%;">납품요구번호</th>
-                <th style="width: 8%;">계약번호</th>
+                <th style="width: 10%;">납품요구번호</th>
                 <th style="width: 15%;">수요기관</th>
-                <th style="width: 15%;">사업명</th>
-                <th style="width: 8%;">시공사</th>
-                <th style="width: 6%;">납품률</th>
+                <th style="width: 18%;">사업명</th>
+                <th style="width: 10%;">시공사</th>
+                <th style="width: 8%;">납품률</th>
                 <th style="width: 6%;">출하횟수</th>
                 <th style="width: 8%;">상태</th>
                 <th style="width: 10%;">서명현황</th>
                 <th style="width: 8%;">납품요구일자</th>
-                <th style="width: 8%;">액션</th>
+                <th style="width: 10%;">액션</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in deliveryDoneList" :key="item.deliveryDoneId">
                 <!-- 납품요구번호 -->
-                <td>
-                  <a
-                    href="#"
-                    @click.prevent="goToDetail(item.deliveryDoneId)"
-                    class="link-primary"
-                  >
-                    {{ item.deliveryRequestNo }}
-                  </a>
-                </td>
-
-                <!-- 계약번호 -->
-                <td>{{ item.contractNo }}</td>
+                <td>{{ item.deliveryRequestNo }}</td>
 
                 <!-- 수요기관 -->
                 <td class="text-left">{{ item.client }}</td>
@@ -146,11 +134,11 @@
                     <div class="delivery-rate-bar">
                       <div
                         class="delivery-rate-fill"
-                        :style="{ width: item.deliveryRate + '%' }"
-                        :class="getRateClass(item.deliveryRate)"
+                        :style="{ width: item.deliveryCompletionRate + '%' }"
+                        :class="getRateClass(item.deliveryCompletionRate)"
                       ></div>
                     </div>
-                    <span class="delivery-rate-text">{{ item.deliveryRate }}%</span>
+                    <span class="delivery-rate-text">{{ item.deliveryCompletionRate }}%</span>
                   </div>
                 </td>
 
@@ -159,8 +147,8 @@
 
                 <!-- 상태 -->
                 <td>
-                  <span class="status-badge" :class="getStatusClass(item.status)">
-                    {{ getStatusText(item.status) }}
+                  <span class="status-badge" :class="getStatusBadgeClass(item.status)">
+                    {{ getStatusLabel(item.status) }}
                   </span>
                 </td>
 
@@ -194,43 +182,40 @@
                 <!-- 액션 -->
                 <td>
                   <div class="action-buttons">
-                    <!-- 메시지 발송 버튼 (PENDING_SIGNATURE 상태에서만 활성화) -->
+                    <!-- 메시지 발송 버튼 (항상 표시, PENDING_SIGNATURE 상태가 아니면 비활성화) -->
                     <button
-                      v-if="canSendMessage(item.status)"
                       @click="openMessageModal(item)"
                       class="btn-icon btn-primary"
-                      title="서명 URL 발송"
+                      :disabled="!canSendMessage(item.status)"
+                      :title="canSendMessage(item.status)
+                        ? '서명 URL 발송'
+                        : '서명 대기 상태에서만 가능합니다'"
                     >
                       <i class="fas fa-paper-plane"></i>
                     </button>
 
-                    <!-- PDF 다운로드 버튼 (COMPLETED, SUBMITTED 상태에서만) -->
+                    <!-- PDF 다운로드 버튼 (항상 표시, COMPLETED/SUBMITTED 상태가 아니면 비활성화) -->
                     <button
-                      v-if="canDownloadPdf(item.status)"
                       @click="openPdfModal(item)"
                       class="btn-icon btn-success"
-                      title="PDF 다운로드"
+                      :disabled="!canDownloadPdf(item.status)"
+                      :title="canDownloadPdf(item.status)
+                        ? 'PDF 다운로드'
+                        : '완료 또는 제출 상태에서만 가능합니다'"
                     >
                       <i class="fas fa-file-pdf"></i>
                     </button>
 
-                    <!-- 조달청 제출 버튼 (COMPLETED 상태에서만) -->
+                    <!-- 조달청 제출 버튼 (항상 표시, COMPLETED 상태가 아니면 비활성화) -->
                     <button
-                      v-if="canSubmitToNara(item.status)"
                       @click="openSubmitModal(item)"
                       class="btn-icon btn-warning"
-                      title="조달청 제출"
+                      :disabled="!canSubmitToNara(item.status)"
+                      :title="canSubmitToNara(item.status)
+                        ? '조달청 제출'
+                        : '완료 상태에서만 가능합니다'"
                     >
                       <i class="fas fa-upload"></i>
-                    </button>
-
-                    <!-- 상세보기 버튼 (항상 표시) -->
-                    <button
-                      @click="goToDetail(item.deliveryDoneId)"
-                      class="btn-icon btn-secondary"
-                      title="상세보기"
-                    >
-                      <i class="fas fa-eye"></i>
                     </button>
                   </div>
                 </td>
@@ -240,7 +225,7 @@
         </div>
 
         <!-- 페이지네이션 -->
-        <UiPagination
+        <Pagination
           v-if="totalPages > 0"
           :current-page="currentPage"
           :total-pages="totalPages"
@@ -252,7 +237,7 @@
 
     <!-- 메시지 발송 모달 -->
     <MessageSendModal
-      v-if="showMessageModal"
+      v-if="showMessageModal && selectedItem"
       :delivery-done="selectedItem"
       @close="closeMessageModal"
       @sent="handleMessageSent"
@@ -260,14 +245,14 @@
 
     <!-- PDF 다운로드 모달 -->
     <PdfDownloadModal
-      v-if="showPdfModal"
+      v-if="showPdfModal && selectedItem"
       :delivery-done="selectedItem"
       @close="closePdfModal"
     />
 
     <!-- 조달청 제출 모달 -->
     <SubmitToNaraModal
-      v-if="showSubmitModal"
+      v-if="showSubmitModal && selectedItem"
       :delivery-done="selectedItem"
       @close="closeSubmitModal"
       @submitted="handleSubmitted"
@@ -280,8 +265,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from '#imports'
 import {
   getDeliveryDoneList,
-  getStatusText,
-  getStatusClass,
   canSendMessage,
   canDownloadPdf,
   canSubmitToNara
@@ -302,7 +285,7 @@ definePageMeta({
 const router = useRouter()
 
 // DB 기반 상태 관리
-const { statusOptions, loadStatusCodes } = useCommonStatus()
+const { statusOptions, loadStatusCodes, getStatusLabel, getStatusClass: getStatusBadgeClass } = useCommonStatus()
 
 // 1개월 전 날짜 계산
 const getOneMonthAgo = () => {
@@ -404,11 +387,6 @@ function handlePageSizeChange() {
   searchForm.value.size = pageSize.value
   currentPage.value = 0
   loadData()
-}
-
-// 상세 페이지 이동
-function goToDetail(deliveryDoneId: number) {
-  router.push(`/admin/delivery-done/detail/${deliveryDoneId}`)
 }
 
 // 납품률 클래스
@@ -750,6 +728,18 @@ onMounted(async () => {
 .btn-secondary {
   background-color: #6b7280;
   color: white;
+}
+
+/* 비활성화된 버튼 스타일 */
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: #9ca3af;
+}
+
+.btn-icon:disabled:hover {
+  opacity: 0.4;
+  transform: none;
 }
 
 /* 메시지 */

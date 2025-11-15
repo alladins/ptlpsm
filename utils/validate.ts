@@ -32,23 +32,15 @@ export function validatePhoneNumber(phoneNumber: string): boolean {
 
 /**
  * 전화번호 포맷 자동 적용
+ * @deprecated 대신 utils/format.ts의 formatPhoneNumberInput 사용을 권장합니다
  * @param value - 입력된 전화번호
  * @returns 포맷팅된 전화번호
  */
 export function formatPhoneInput(value: string): string {
-  // 숫자만 추출
-  const numbers = value.replace(/\D/g, '')
-
-  // 길이에 따라 포맷팅
-  if (numbers.length <= 3) {
-    return numbers
-  } else if (numbers.length <= 7) {
-    return `${numbers.slice(0, 3)}-${numbers.slice(3)}`
-  } else if (numbers.length <= 10) {
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6)}`
-  } else {
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`
-  }
+  // 중복 제거: utils/format.ts의 formatPhoneNumberInput 사용
+  // 이 함수는 하위 호환성을 위해 유지되며, 내부적으로 formatPhoneNumberInput을 호출합니다
+  const { formatPhoneNumberInput } = require('./format')
+  return formatPhoneNumberInput(value)
 }
 
 /**

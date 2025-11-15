@@ -1,6 +1,6 @@
 <template>
   <div class="menu-auth">
-    <UiPageHeader
+    <PageHeader
       title="메뉴권한관리"
       description="사용자 역할별 메뉴 접근 권한을 관리합니다."
     >
@@ -14,7 +14,7 @@
           초기화
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <!-- 검색 조건 섹션 - 완전히 한 줄 -->
     <div class="search-section-compact">

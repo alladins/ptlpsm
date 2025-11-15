@@ -30,11 +30,11 @@
         <span class="separator">|</span>
 
         <span class="quantity-info">
-          {{ order.totalDeliveredQuantity.toLocaleString() }} / {{ order.totalOrderQuantity.toLocaleString() }} {{ order.unit }}
+          {{ (order.totalDeliveredQuantity || 0).toLocaleString() }} / {{ (order.totalOrderedQuantity || 0).toLocaleString() }} {{ order.unit }}
         </span>
 
         <span class="delivery-rate-badge" :class="getRateColorClass()">
-          {{ order.deliveryRate.toFixed(1) }}%
+          {{ (order.deliveryCompletionRate || 0).toFixed(1) }}%
         </span>
       </div>
 
@@ -48,7 +48,7 @@
               <span>출하 목록 ({{ order.shipments.length }}건)</span>
             </div>
 
-            <AdminDeliveryShipmentTreeNode
+            <ShipmentTreeNode
               v-for="shipment in order.shipments"
               :key="shipment.shipmentId"
               :shipment="shipment"
@@ -93,7 +93,7 @@ const toggleExpand = () => {
 
 // 납품율 색상 클래스
 const getRateColorClass = () => {
-  return getDeliveryRateColor(props.order.deliveryRate)
+  return getDeliveryRateColor(props.order.deliveryCompletionRate || 0)
 }
 </script>
 

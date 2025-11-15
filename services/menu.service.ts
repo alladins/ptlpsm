@@ -227,18 +227,29 @@ export const menuService = {
         },
         {
           menuId: 6,
+          menuCode: 'DELIVERY_DONE',
+          menuName: '납품완료계',
+          menuUrl: '/admin/delivery-done/list',
+          menuIcon: 'fas fa-file-contract',
+          menuLevel: 1,
+          sortOrder: 6,
+          visible: 'Y',
+          useYn: 'Y'
+        },
+        {
+          menuId: 7,
           menuCode: 'STATISTICS',
           menuName: '통계',
           menuUrl: '/statistics',
           menuIcon: 'fas fa-chart-bar',
           menuLevel: 1,
           target: '_self',
-          sortOrder: 6,
+          sortOrder: 7,
           visible: 'Y',
           useYn: 'Y',
           children: [
             {
-              menuId: 61,
+              menuId: 71,
               menuCode: 'STAT_SALES',
               menuName: '영업통계',
               parentMenuId: 6,
@@ -251,7 +262,7 @@ export const menuService = {
               useYn: 'Y'
             },
             {
-              menuId: 62,
+              menuId: 72,
               menuCode: 'STAT_REGION',
               menuName: '지역별통계',
               parentMenuId: 6,
@@ -266,19 +277,19 @@ export const menuService = {
           ]
         },
         {
-          menuId: 7,
+          menuId: 8,
           menuCode: 'BASIC_INFO',
           menuName: '기초정보',
           menuUrl: '/basic-info',
           menuIcon: 'fas fa-cogs',
           menuLevel: 1,
           target: '_self',
-          sortOrder: 7,
+          sortOrder: 8,
           visible: 'Y',
           useYn: 'Y',
           children: [
             {
-              menuId: 71,
+              menuId: 81,
               menuCode: 'CODE_MANAGE',
               menuName: '코드관리',
               parentMenuId: 7,
@@ -291,7 +302,7 @@ export const menuService = {
               useYn: 'Y'
             },
             {
-              menuId: 72,
+              menuId: 82,
               menuCode: 'ITEM_MANAGE',
               menuName: '품목관리',
               parentMenuId: 7,
@@ -304,7 +315,7 @@ export const menuService = {
               useYn: 'Y'
             },
             {
-              menuId: 73,
+              menuId: 83,
               menuCode: 'USER_MANAGE',
               menuName: '사용자관리',
               parentMenuId: 7,
@@ -317,7 +328,7 @@ export const menuService = {
               useYn: 'Y'
             },
             {
-              menuId: 74,
+              menuId: 84,
               menuCode: 'ORG_MANAGE',
               menuName: '수요기관관리',
               parentMenuId: 7,
@@ -332,19 +343,19 @@ export const menuService = {
           ]
         },
         {
-          menuId: 8,
+          menuId: 9,
           menuCode: 'SYSTEM',
           menuName: '시스템관리',
           menuUrl: '/system',
           menuIcon: 'fas fa-tools',
           menuLevel: 1,
           target: '_self',
-          sortOrder: 8,
+          sortOrder: 9,
           visible: 'Y',
           useYn: 'Y',
           children: [
             {
-              menuId: 81,
+              menuId: 91,
               menuCode: 'MENU_AUTH',
               menuName: '메뉴권한관리',
               parentMenuId: 8,
@@ -357,7 +368,7 @@ export const menuService = {
               useYn: 'Y'
             },
             {
-              menuId: 83,
+              menuId: 93,
               menuCode: 'ACCESS_LOG',
               menuName: '접근로그',
               parentMenuId: 8,

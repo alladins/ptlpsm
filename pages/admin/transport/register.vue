@@ -1,7 +1,7 @@
 <template>
   <div class="transport-register">
     <!-- 페이지 헤더 -->
-    <UiPageHeader
+    <PageHeader
       title="운송장 등록"
       description="운송장 정보를 등록합니다."
     >
@@ -15,7 +15,7 @@
           {{ submitting ? '등록 중...' : '등록' }}
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <div class="content-section">
       <!-- 운송장 정보 입력 폼 -->

@@ -127,6 +127,14 @@ class CompanyService {
             throw error
         }
     }
+
+    /**
+     * 회사 상세 조회 (alias for getCompanyById)
+     * GET /api/basic/company/{id}
+     */
+    async getCompany(id: number): Promise<CompanyInfoResponse> {
+        return this.getCompanyById(id)
+    }
 }
 
 export const companyService = new CompanyService()

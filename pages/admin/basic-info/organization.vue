@@ -1,6 +1,6 @@
 <template>
   <div class="organization-management">
-    <UiPageHeader
+    <PageHeader
       title="수요기관관리"
       description="수요기관 정보를 관리합니다."
     />

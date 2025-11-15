@@ -1,580 +1,419 @@
 <template>
   <div class="order-edit">
-    <UiPageHeader
+    <!-- 페이지 헤더 -->
+    <PageHeader
       title="납품요구 수정"
       description="납품요구 정보를 수정합니다."
     >
       <template #actions>
-        <button class="btn-delete" @click="handleDelete">
-          <i class="fas fa-trash"></i>
-          삭제
+        <button class="btn-action btn-secondary" @click="goBack">
+          <i class="fas fa-list"></i>
+          목록
         </button>
       </template>
-    </UiPageHeader>
-
-    <!-- 업로드 상태 표시 -->
-    <div v-if="uploadStatus" class="upload-status">
-      <div v-if="uploadStatus.loading" class="status-loading">
-        <i class="fas fa-spinner fa-spin"></i>
-        <span>{{ uploadStatus.message }}</span>
-      </div>
-      <div v-else-if="uploadStatus.success" class="status-success">
-        <i class="fas fa-check-circle"></i>
-        <span>{{ uploadStatus.message }}</span>
-        <button class="status-close" @click="uploadStatus = null">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div v-else-if="uploadStatus.error" class="status-error">
-        <i class="fas fa-exclamation-circle"></i>
-        <span>{{ uploadStatus.message }}</span>
-        <button class="status-close" @click="uploadStatus = null">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    </div>
+    </PageHeader>
 
     <AdminCommonLoadingSection v-if="loading" />
-    <AdminCommonErrorSection v-else-if="!orderData && !loading" message="발주 정보를 찾을 수 없습니다." />
+    <AdminCommonErrorSection v-else-if="!orderData && !loading" message="납품요구 정보를 찾을 수 없습니다." />
 
     <div v-else class="content-section">
-      <form @submit.prevent="handleSubmit" class="edit-form">
-        <FormSection title="계약 정보">
-          <FormField label="계약번호" full-width>
-            <input type="text" v-model="formData.contractNo" class="form-input" placeholder="계약번호를 입력하세요">
-          </FormField>
+      <!-- 분할납품요구서 정보 -->
+      <FormSection title="분할납품요구서 정보">
+        <!-- 1. 계약 정보 -->
+        <div class="info-group">
+          <div class="info-group-header">
+            <i class="fas fa-file-alt"></i>
+            <span>계약 정보</span>
+          </div>
+          <div class="info-grid grid-5">
+            <FormField label="계약번호">
+              <input type="text" :value="orderData?.contractId || '-'" class="form-input-sm" readonly>
+            </FormField>
+            <FormField label="계약일자">
+              <input type="text" :value="orderData?.contractDate || '-'" class="form-input-sm" readonly>
+            </FormField>
+            <FormField label="선고지번호">
+              <input type="text" :value="orderData?.preNotificationNo || '-'" class="form-input-xs" readonly>
+            </FormField>
+            <FormField label="납품요구번호">
+              <input type="text" :value="orderData?.deliveryRequestNo || '-'" class="form-input-sm" readonly>
+            </FormField>
+            <FormField label="납품요구일자">
+              <input type="text" :value="orderData?.deliveryRequestDate || '-'" class="form-input-sm" readonly>
+            </FormField>
+          </div>
+          <div class="info-group-header">
+            <i class="fas fa-file-contract"></i>
+            <span>계약 상세</span>
+          </div>
+          <div class="info-grid grid-4">
+            <FormField label="나라장터번호">
+              <input type="text" :value="orderData?.naraJangteoNo || '-'" class="form-input-sm" readonly>
+            </FormField>
+            <FormField label="지급방법">
+              <input type="text" :value="orderData?.paymentMethod || '-'" class="form-input-sm" readonly>
+            </FormField>
+            <FormField label="사업명" grid-2>
+              <input type="text" :value="orderData?.projectName || '-'" class="form-input-md" style="width: 370px" readonly>
+            </FormField>
+          </div>
+        </div>
 
-          <FormField label="계약일자">
-            <input type="date" v-model="formData.contractDate" class="form-input">
-          </FormField>
+        <!-- 2. 수요기관 정보 -->
+        <div class="info-group">
+          <div class="info-group-header">
+            <i class="fas fa-building"></i>
+            <span>수요기관 정보</span>
+          </div>
+          <div class="info-grid grid-4">
+            <FormField label="수요기관명">
+              <input type="text" :value="orderData?.client || '-'" class="form-input-md" readonly>
+            </FormField>
+            <FormField label="기관번호">
+              <input type="text" :value="orderData?.clientNo || '-'" class="form-input-sm" readonly>
+            </FormField>
+            <FormField label="우편번호">
+              <input type="text" :value="orderData?.clientPostalCode || '-'" class="form-input-sm" readonly>
+            </FormField>
+            <FormField label="주소" full-width>
+              <input type="text" :value="orderData?.clientAddress || '-'" class="form-input-lg" readonly>
+            </FormField>
+            <FormField label="전화번호">
+              <input type="text" :value="orderData?.clientPhoneNumber || '-'" class="form-input" readonly>
+            </FormField>
+            <FormField label="팩스번호">
+              <input type="text" :value="orderData?.clientFaxNumber || '-'" class="form-input" readonly>
+            </FormField>
+            <FormField label="담당자">
+              <input type="text" :value="orderData?.clientManagerName || '-'" class="form-input" readonly>
+            </FormField>
+          </div>
+        </div>
 
-          <FormField label="선고지번호" full-width>
-            <input type="text" v-model="formData.preNotificationNo" class="form-input" placeholder="선고지번호를 입력하세요">
-          </FormField>
+        <!-- 3. 기타 정보 -->
+        <div class="info-group">
+          <div class="info-group-header">
+            <i class="fas fa-clipboard-list"></i>
+            <span>기타 정보</span>
+          </div>
+          <!-- 현장소장 선택 (수정 가능) -->
+          <div class="info-grid grid-2">
+            <FormField label="현장소장">
+              <select
+                v-model="formData.siteManagerId"
+                @change="handleSupervisorChange"
+                class="form-input-sm"
+              >
+                <option :value="null">선택하세요</option>
+                <option
+                  v-for="manager in siteManagers"
+                  :key="manager.id"
+                  :value="manager.id"
+                >
+                  {{ manager.userName }}
+                </option>
+              </select>
+            </FormField>
+            <FormField label="회사명">
+              <input
+                type="text"
+                :value="selectedSupervisorCompany"
+                class="form-input-sm"
+                readonly
+              >
+            </FormField>
+          </div>
+          <!-- 기존 필드들 (readonly) -->
+          <div class="info-grid grid-4">
+            <FormField label="분할납품">
+              <input type="text" :value="orderData?.partialDelivery || '-'" class="form-input-xs" readonly>
+            </FormField>
+            <FormField label="하자담보책임기간">
+              <input type="text" :value="orderData?.warrantyPeriod || '-'" class="form-input-xs" readonly>
+            </FormField>
+            <FormField label="검사기관">
+              <input type="text" :value="orderData?.inspectionAgency || '-'" class="form-input-md" readonly>
+            </FormField>
+            <FormField label="인수기관">
+              <input type="text" :value="orderData?.acceptanceAgency || '-'" class="form-input-md" readonly>
+            </FormField>
+          </div>
+        </div>
 
-          <FormField label="납품요구번호">
-            <input type="text" v-model="formData.deliveryRequestNo" class="form-input" placeholder="납품요구번호를 입력하세요">
-          </FormField>
-
-          <FormField label="수요기관" full-width>
-            <input type="text" v-model="formData.client" class="form-input" placeholder="수요기관을 입력하세요">
-          </FormField>
-
-          <FormField label="수요기관번호">
-            <input type="text" v-model="formData.clientNo" class="form-input" placeholder="수요기관번호를 입력하세요">
-          </FormField>
-
-          <FormField label="수요기관 우편번호">
-            <input type="text" v-model="formData.clientPostalCode" class="form-input" placeholder="우편번호를 입력하세요">
-          </FormField>
-
-          <FormField label="수요기관 주소" full-width>
-            <input type="text" v-model="formData.clientAddress" class="form-input" placeholder="주소를 입력하세요">
-          </FormField>
-
-          <FormField label="수요기관 전화번호">
-            <input type="text" v-model="formData.clientPhoneNumber" class="form-input" placeholder="전화번호를 입력하세요">
-          </FormField>
-
-          <FormField label="수요기관 팩스번호">
-            <input type="text" v-model="formData.clientFaxNumber" class="form-input" placeholder="팩스번호를 입력하세요">
-          </FormField>
-
-          <FormField label="나라장터등록번호">
-            <input type="text" v-model="formData.naraJangteoNo" class="form-input" placeholder="나라장터등록번호를 입력하세요">
-          </FormField>
-
-          <FormField label="하자담보책임기간">
-            <input type="text" v-model="formData.warrantyPeriod" class="form-input" placeholder="하자담보책임기간을 입력하세요">
-          </FormField>
-
-          <FormField label="지급방법">
-            <select v-model="formData.paymentMethod" class="form-select">
-              <option value="">선택하세요</option>
-              <option value="대지급">대지급</option>
-              <option value="후지급">후지급</option>
-              <option value="분할지급">분할지급</option>
-            </select>
-          </FormField>
-
-          <FormField label="납품요구일자">
-            <input type="date" v-model="formData.deliveryRequestDate" class="form-input">
-          </FormField>
-
-          <FormField label="사업명" full-width>
-            <input type="text" v-model="formData.projectName" class="form-input" placeholder="사업명을 입력하세요">
-          </FormField>
-
-          <FormField label="계약자">
-            <input type="text" v-model="formData.contractor" class="form-input" placeholder="계약자를 입력하세요">
-          </FormField>
-
-          <FormField label="대표자명">
-            <input type="text" v-model="formData.representativeName" class="form-input" placeholder="대표자명을 입력하세요">
-          </FormField>
-
-          <FormField label="사업자등록번호">
-            <input type="text" v-model="formData.businessRegistrationNumber" class="form-input" placeholder="사업자등록번호를 입력하세요">
-          </FormField>
-
-          <FormField label="연락처">
-            <input type="text" v-model="formData.phoneNumber" class="form-input" placeholder="연락처를 입력하세요">
-          </FormField>
-
-          <FormField label="팩스번호">
-            <input type="text" v-model="formData.faxNumber" class="form-input" placeholder="팩스번호를 입력하세요">
-          </FormField>
-
-          <FormField label="품목총액">
-            <input type="number" v-model="formData.itemTotalAmount" class="form-input" placeholder="품목총액을 입력하세요">
-          </FormField>
-
-          <FormField label="수수료">
-            <input type="number" v-model="formData.commission" class="form-input" placeholder="수수료를 입력하세요">
-          </FormField>
-
-          <FormField label="총계약금액">
-            <input
-              type="number"
-              v-model="formData.totalAmount"
-              class="form-input"
-              placeholder="총계약금액을 입력하세요"
-              ref="contractAmountInputRef"
-              @input="handleAmountInput"
-            >
-          </FormField>
-
-          <FormField label="분할납품">
-            <select v-model="formData.partialDelivery" class="form-select">
-              <option value="">선택하세요</option>
-              <option value="가능">가능</option>
-              <option value="불가능">불가능</option>
-            </select>
-          </FormField>
-
-          <FormField label="검사기관">
-            <input type="text" v-model="formData.inspectionAgency" class="form-input" placeholder="검사기관을 입력하세요">
-          </FormField>
-
-          <FormField label="인수기관">
-            <input type="text" v-model="formData.acceptanceAgency" class="form-input" placeholder="인수기관을 입력하세요">
-          </FormField>
-        </FormSection>
-
-        <FormSection title="납품 목록">
-          <div class="items-section-wrapper">
-            <div class="items-header">
-              <div class="items-summary">
-                <span class="summary-label">선택된 품목</span>
-                <span class="summary-value">{{ items.length }}개</span>
-                <span class="summary-divider">|</span>
-                <span class="summary-label">수량 합계</span>
-                <span class="summary-value">{{ formatNumber(totalQuantity) }}</span>
-                <span class="summary-divider">|</span>
-                <span class="summary-label">총 금액</span>
-                <span class="summary-value">{{ formatCurrency(totalAmount) }}</span>
-              </div>
-              <button type="button" @click="addItem" class="btn-add-item">
-                <i class="fas fa-plus"></i>
-                품목 추가
-              </button>
+        <!-- 4. 금액 정보 -->
+        <div class="info-group amount-group">
+          <div class="info-group-header">
+            <i class="fas fa-won-sign"></i>
+            <span>금액 정보</span>
+          </div>
+          <div class="amount-display">
+            <div class="amount-item">
+              <label>품목총액</label>
+              <span>{{ formatCurrency(orderData?.itemTotalAmount || 0) }}</span>
             </div>
-
-            <div class="items-table-wrapper">
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th style="width: 60px">순번</th>
-                    <th style="width: 150px">품명</th>
-                    <th style="width: 200px">규격</th>
-                    <th style="width: 80px">단위</th>
-                    <th style="width: 100px">단가</th>
-                    <th style="width: 80px">수량</th>
-                    <th style="width: 120px">금액</th>
-                    <th style="width: 150px">납품장소</th>
-                    <th style="width: 120px">납품기한</th>
-                    <th style="width: 120px">납품조건</th>
-                    <th style="width: 80px">삭제</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="items.length === 0">
-                    <td colspan="11" class="empty-message">
-                      품목을 추가해주세요.
-                    </td>
-                  </tr>
-                  <tr v-for="(item, index) in items" :key="index">
-                    <td class="text-center">{{ index + 1 }}</td>
-                    <td>
-                      <div class="input-group">
-                        <input
-                          type="text"
-                          v-model="item.name"
-                          class="form-input table-input"
-                          placeholder="품명"
-                          readonly
-                        >
-                        <button type="button" class="btn-search-sm" @click="openItemSelector(index)">
-                          <i class="fas fa-search"></i>
-                        </button>
-                      </div>
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        v-model="item.specification"
-                        class="form-input table-input"
-                        placeholder="규격"
-                        readonly
-                      >
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        v-model="item.unit"
-                        class="form-input table-input"
-                        placeholder="단위"
-                        readonly
-                      >
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        v-model="item.unitPrice"
-                        class="form-input table-input"
-                        placeholder="단가"
-                        readonly
-                      >
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        v-model="item.quantity"
-                        class="form-input table-input"
-                        placeholder="수량"
-                        @input="calculateItemAmount(index)"
-                      >
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        v-model="item.totalAmount"
-                        class="form-input table-input"
-                        placeholder="금액"
-                        readonly
-                      >
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        v-model="item.deliveryLocation"
-                        class="form-input table-input"
-                        placeholder="납품장소"
-                      >
-                    </td>
-                    <td>
-                      <input
-                        type="date"
-                        v-model="item.deliveryDeadline"
-                        class="form-input table-input"
-                      >
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        v-model="item.deliveryTerms"
-                        class="form-input table-input"
-                        placeholder="납품조건"
-                      >
-                    </td>
-                    <td class="text-center">
-                      <button type="button" class="btn-remove-item" @click="removeItem(index)">
-                        <i class="fas fa-times"></i>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <span class="amount-operator">+</span>
+            <div class="amount-item">
+              <label>수수료</label>
+              <span>{{ formatCurrency(orderData?.commission || 0) }}</span>
+            </div>
+            <span class="amount-operator">=</span>
+            <div class="amount-item total">
+              <label>총 계약금액</label>
+              <span>{{ formatCurrency(orderData?.totalAmount || 0) }}</span>
             </div>
           </div>
-        </FormSection>
-
-        <div class="form-actions">
-          <button type="button" @click="goBack" class="btn-secondary">취소</button>
-          <button type="submit" :disabled="submitting" class="btn-primary">
-            {{ submitting ? '수정 중...' : '수정' }}
-          </button>
         </div>
-      </form>
+      </FormSection>
+
+      <!-- 납품 목록 -->
+      <FormSection title="납품 목록" style="margin-top: -20px">
+        <div class="table-wrapper">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width: 30px">순번</th>
+                <th style="width: 60px">품명</th>
+                <th style="width: 280px">규격</th>
+                <th style="width: 30px">단위</th>
+                <th style="width: 50px">단가</th>
+                <th style="width: 40px">수량</th>
+                <th style="width: 60px">금액</th>
+                <th style="width: 100px">납품장소</th>
+                <th style="width: 80px">납품기한</th>
+                <th style="width: 100px">납품조건</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="items.length === 0">
+                <td colspan="10" class="empty-row">등록된 납품 품목이 없습니다.</td>
+              </tr>
+              <tr v-for="(item, index) in items" :key="index">
+                <td class="text-center">{{ index + 1 }}</td>
+                <td><input :value="item.productName" type="text" readonly></td>
+                <td><input :value="item.specification" type="text" readonly></td>
+                <td><input :value="item.unit" type="text" readonly></td>
+                <td class="text-right"><input :value="formatNumber(item.unitPrice)" type="text" readonly class="text-right"></td>
+                <td class="text-right"><input :value="item.quantity" type="text" readonly class="text-right"></td>
+                <td class="text-right"><input :value="formatNumber(item.unitPrice * item.quantity)" type="text" readonly class="text-right"></td>
+                <td><input :value="item.deliveryLocation || '-'" type="text" readonly></td>
+                <td><input :value="item.deliveryDeadline || '-'" type="text" readonly></td>
+                <td><input :value="item.deliveryTerms || '-'" type="text" readonly></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 합계 정보 -->
+        <div class="summary-info">
+          <div class="summary-item">
+            <label>수량합계:</label>
+            <span>{{ totalQuantity }}</span>
+          </div>
+          <div class="summary-item">
+            <label>품목총액:</label>
+            <span>{{ formatCurrency(orderData?.itemTotalAmount || 0) }}</span>
+          </div>
+        </div>
+      </FormSection>
+
+      <!-- 저장 버튼 -->
+      <div class="form-actions">
+        <button type="button" @click="goBack" class="btn-secondary">
+          취소
+        </button>
+        <button type="button" @click="handleSave" class="btn-primary" :disabled="submitting">
+          {{ submitting ? '저장 중...' : '저장' }}
+        </button>
+      </div>
     </div>
-
-    <!-- 금액 불일치 알림 팝업 -->
-    <AdminCommonAmountMismatchAlert
-      v-model="showAmountMismatchAlert"
-      message="계약금액이 납품 목록의 합산금액과 다릅니다."
-    />
-
-    <!-- 품목 선택 팝업 -->
-    <ItemSkuSelector
-      v-model="showItemSelector"
-      @sku-selected="handleSkuSelected"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
-import { useRouter } from '#imports'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from '#imports'
 import { orderService } from '~/services/order.service'
-import type { Item, ItemSku } from '~/services/item.service'
-import type { OrderCreateRequest, OrderItemCreateRequest, OrderDetailResponse } from '~/types/order'
+import { userService } from '~/services/user.service'
 import { formatNumber, formatCurrency } from '~/utils/format'
-import { useEditForm } from '~/composables/admin/useEditForm'
-import { useItemManagement } from '~/composables/admin/useItemManagement'
-import { useAmountValidation } from '~/composables/admin/useAmountValidation'
+import type { OrderDetailResponse } from '~/types/order'
+import type { UserByRole } from '~/types/user'
+import FormSection from '~/components/admin/forms/FormSection.vue'
+import FormField from '~/components/admin/forms/FormField.vue'
 
 definePageMeta({
   layout: 'admin',
-  pageTitle: '발주 수정'
+  pageTitle: '납품요구 수정'
 })
 
 const router = useRouter()
+const route = useRoute()
+const orderId = computed(() => Number(route.params.id))
 
-// 업로드 상태
-const uploadStatus = ref<{
-  loading?: boolean
-  success?: boolean
-  error?: boolean
-  message?: string
-} | null>(null)
-
-// 원본 데이터 저장
+// 상태
+const loading = ref(true)
+const submitting = ref(false)
 const orderData = ref<OrderDetailResponse | null>(null)
+const items = ref<any[]>([])
 
-// useEditForm 사용
-const {
-  id: orderId,
-  formData,
-  loading,
-  submitting,
-  submit,
-  goBack,
-  reload
-} = useEditForm<OrderDetailResponse, any, OrderCreateRequest>({
-  fetchFunction: async (id) => {
-    const data = await orderService.getOrderDetail(id)
-    orderData.value = data
+// 현장소장 목록
+const siteManagers = ref<UserByRole[]>([])
+const selectedSupervisorCompany = ref('')
 
-    // 품목 데이터 초기화
-    items.value = data.items.map((item: any, index: number) => ({
-      itemOrder: index + 1,
-      skuId: item.skuId,
-      itemId: item.itemId,
-      itemName: item.itemNm,
-      skuName: item.skuNm,
-      name: item.itemNm,
-      specification: item.specification,
-      unit: item.unitCd,
-      unitPrice: item.unitPrice,
-      quantity: item.quantity,
-      totalAmount: item.quantity * item.unitPrice,
-      deliveryLocation: item.deliveryLocation || '',
-      deliveryDeadline: item.deliveryDeadline || '',
-      deliveryTerms: item.deliveryTerms || ''
-    }))
-
-    return data
-  },
-  updateFunction: async (id, data) => {
-    const formData = new FormData()
-
-    // order 데이터를 Blob으로 변환하여 추가
-    const orderBlob = new Blob([JSON.stringify(data)], {
-      type: 'application/json'
-    })
-    formData.append('order', orderBlob)
-
-    await orderService.updateOrder(id, formData)
-    return orderService.getOrderDetail(id)
-  },
-  successRoute: '/admin/order',
-  transformToForm: (order) => ({
-    salesId: order.salesId,
-    contractNo: order.contractId,
-    contractDate: order.contractDate,
-    preNotificationNo: order.preNotificationNo || '',
-    deliveryRequestNo: order.deliveryRequestNo || '',
-    client: order.client,
-    clientManagerName: order.clientManagerName || '',
-    clientNo: order.clientNo || '',
-    clientPostalCode: order.clientPostalCode || '',
-    clientAddress: order.clientAddress || '',
-    clientPhoneNumber: order.clientPhoneNumber || '',
-    clientFaxNumber: order.clientFaxNumber || '',
-    naraJangteoNo: order.naraJangteoNo || '',
-    warrantyPeriod: order.warrantyPeriod || '',
-    paymentMethod: order.paymentMethod || '',
-    deliveryRequestDate: order.deliveryRequestDate,
-    projectName: order.projectName,
-    contractor: order.contractor,
-    representativeName: order.representativeName || '',
-    businessRegistrationNumber: order.businessRegistrationNumber || '',
-    phoneNumber: order.phoneNumber || '',
-    faxNumber: order.faxNumber || '',
-    itemTotalAmount: order.itemTotalAmount,
-    commission: order.commission,
-    totalAmount: order.totalAmount,
-    partialDelivery: order.partialDelivery || '',
-    inspectionAgency: order.inspectionAgency || '',
-    acceptanceAgency: order.acceptanceAgency || ''
-  }),
-  transformToRequest: (formData) => ({
-    salesId: Number(formData.salesId),
-    contractId: formData.contractNo,
-    contractDate: formData.contractDate,
-    preNotificationNo: formData.preNotificationNo,
-    deliveryRequestNo: formData.deliveryRequestNo,
-    client: formData.client,
-    clientManagerName: formData.clientManagerName,
-    clientNo: formData.clientNo,
-    clientPostalCode: formData.clientPostalCode,
-    clientAddress: formData.clientAddress,
-    clientPhoneNumber: formData.clientPhoneNumber,
-    clientFaxNumber: formData.clientFaxNumber,
-    naraJangteoNo: formData.naraJangteoNo,
-    warrantyPeriod: formData.warrantyPeriod,
-    paymentMethod: formData.paymentMethod,
-    deliveryRequestDate: formData.deliveryRequestDate,
-    projectName: formData.projectName,
-    contractor: formData.contractor,
-    representativeName: formData.representativeName,
-    businessRegistrationNumber: formData.businessRegistrationNumber,
-    phoneNumber: formData.phoneNumber,
-    faxNumber: formData.faxNumber,
-    itemTotalAmount: Number(formData.itemTotalAmount),
-    commission: Number(formData.commission),
-    totalAmount: Number(formData.totalAmount),
-    partialDelivery: formData.partialDelivery,
-    inspectionAgency: formData.inspectionAgency,
-    acceptanceAgency: formData.acceptanceAgency,
-    items: items.value.map((item, index) => ({
-      itemOrder: index + 1,
-      skuId: item.skuId,
-      itemId: item.itemId,
-      itemName: item.itemName,
-      skuName: item.skuName,
-      name: item.name,
-      specification: item.specification,
-      unit: item.unit,
-      unitPrice: Number(item.unitPrice),
-      quantity: Number(item.quantity),
-      totalAmount: Number(item.totalAmount),
-      deliveryLocation: item.deliveryLocation,
-      deliveryDeadline: item.deliveryDeadline,
-      deliveryTerms: item.deliveryTerms
-    }))
-  }),
-  onUpdateSuccess: () => {
-    alert('발주가 수정되었습니다.')
-  },
-  onUpdateError: (error) => {
-    console.error('발주 수정 실패:', error)
-    alert('발주 수정에 실패했습니다.')
-  }
+// 수정 가능한 폼 데이터
+const formData = ref({
+  siteManagerId: null as number | null,
+  builder: ''
 })
-
-// useItemManagement 사용
-const itemManagement = useItemManagement({
-  autoCalculate: true,
-  duplicateCheckField: 'skuId'
-})
-
-const {
-  items,
-  showItemSelector,
-  currentItemIndex,
-  addItem,
-  openItemSelector,
-  handleSkuSelected,
-  totalAmount
-} = itemManagement
 
 // 수량 합계
 const totalQuantity = computed(() => {
   return items.value.reduce((sum, item) => sum + (item.quantity || 0), 0)
 })
 
-// useAmountValidation 사용
-const {
-  showAmountMismatchAlert,
-  contractAmountInput: contractAmountInputRef,
-  checkAmountMismatch,
-  isAmountMatch
-} = useAmountValidation()
+// 데이터 로드
+const loadData = async () => {
+  try {
+    loading.value = true
+    const data = await orderService.getOrderDetail(orderId.value)
+    orderData.value = data
 
-// 금액 입력 시 검증
-const handleAmountInput = () => {
-  nextTick(() => {
-    checkAmountMismatch(formData.totalAmount, totalAmount.value)
-  })
+    // 품목 데이터 변환
+    items.value = data.items.map((item: any) => ({
+      productName: item.itemNm,
+      specification: item.specification,
+      unit: item.unitCd,
+      unitPrice: item.unitPrice,
+      quantity: item.quantity,
+      deliveryLocation: item.deliveryLocation,
+      deliveryDeadline: item.deliveryDeadline,
+      deliveryTerms: item.deliveryTerms
+    }))
+
+    // 현장소장 정보 복원
+    if (data.siteManagerId) {
+      formData.value.siteManagerId = data.siteManagerId
+      formData.value.builder = data.builder || ''
+      selectedSupervisorCompany.value = data.builder || ''
+    }
+  } catch (error) {
+    console.error('납품요구 정보 조회 실패:', error)
+  } finally {
+    loading.value = false
+  }
 }
 
-// 품목 수량 변경 시 검증 추가
-const calculateItemAmount = (index: number) => {
-  itemManagement.calculateItemAmount(index)
-  nextTick(() => {
-    checkAmountMismatch(formData.totalAmount, totalAmount.value)
-  })
+// 현장소장 목록 조회
+const loadSiteManagers = async () => {
+  try {
+    const managers = await userService.getUsersByRoles(['SITE_MANAGER'])
+    siteManagers.value = managers
+  } catch (error) {
+    console.error('현장소장 목록 조회 실패:', error)
+  }
 }
 
-// 품목 삭제 시 검증 추가
-const removeItem = (index: number) => {
-  itemManagement.removeItem(index)
-  nextTick(() => {
-    checkAmountMismatch(formData.totalAmount, totalAmount.value)
-  })
+// 현장소장 선택 핸들러
+const handleSupervisorChange = () => {
+  const supervisor = siteManagers.value.find(m => m.id === formData.value.siteManagerId)
+  if (supervisor) {
+    formData.value.builder = supervisor.companyName || ''
+    selectedSupervisorCompany.value = supervisor.companyName || ''
+  } else {
+    formData.value.builder = ''
+    selectedSupervisorCompany.value = ''
+  }
 }
 
-// 삭제 처리
-const handleDelete = async () => {
-  if (!confirm('정말 삭제하시겠습니까?')) return
+// 저장
+const handleSave = async () => {
+  if (submitting.value) return
 
   try {
-    await orderService.deleteOrder(orderId.value)
-    alert('발주가 삭제되었습니다.')
-    router.push('/admin/order')
+    submitting.value = true
+
+    const updateData = {
+      salesId: orderData.value!.salesId,
+      contractId: orderData.value!.contractId,
+      contractDate: orderData.value!.contractDate,
+      preNotificationNo: orderData.value!.preNotificationNo || '',
+      deliveryRequestNo: orderData.value!.deliveryRequestNo || '',
+      client: orderData.value!.client,
+      clientManagerName: orderData.value!.clientManagerName || '',
+      clientNo: orderData.value!.clientNo || '',
+      clientPostalCode: orderData.value!.clientPostalCode || '',
+      clientAddress: orderData.value!.clientAddress || '',
+      clientPhoneNumber: orderData.value!.clientPhoneNumber || '',
+      clientFaxNumber: orderData.value!.clientFaxNumber || '',
+      naraJangteoNo: orderData.value!.naraJangteoNo || '',
+      warrantyPeriod: orderData.value!.warrantyPeriod || '',
+      paymentMethod: orderData.value!.paymentMethod || '',
+      deliveryRequestDate: orderData.value!.deliveryRequestDate,
+      projectName: orderData.value!.projectName,
+      itemTotalAmount: String(orderData.value!.itemTotalAmount),
+      commission: String(orderData.value!.commission),
+      totalAmount: String(orderData.value!.totalAmount),
+      partialDelivery: orderData.value!.partialDelivery || '',
+      inspectionAgency: orderData.value!.inspectionAgency || '',
+      acceptanceAgency: orderData.value!.acceptanceAgency || '',
+      siteManagerId: formData.value.siteManagerId,
+      builder: formData.value.builder || null,
+      items: orderData.value!.items.map((item: any, index: number) => ({
+        itemOrder: index + 1,
+        skuId: item.skuId,
+        itemId: item.itemId,
+        itemName: item.itemNm,
+        skuName: item.skuNm,
+        name: item.itemNm,
+        specification: item.specification,
+        unit: item.unitCd || '',
+        unitPrice: String(item.unitPrice),
+        quantity: Number(item.quantity),
+        totalAmount: String(item.unitPrice * item.quantity),
+        deliveryLocation: item.deliveryLocation || '',
+        deliveryDeadline: item.deliveryDeadline || '',
+        deliveryTerms: item.deliveryTerms || ''
+      }))
+    }
+
+    const formDataToSend = new FormData()
+    const orderBlob = new Blob([JSON.stringify(updateData)], {
+      type: 'application/json'
+    })
+    formDataToSend.append('order', orderBlob)
+
+    await orderService.updateOrder(orderId.value, formDataToSend)
+    alert('납품요구가 수정되었습니다.')
+    router.push('/admin/order/list')
   } catch (error) {
-    console.error('발주 삭제 실패:', error)
-    alert('발주 삭제에 실패했습니다.')
+    console.error('납품요구 수정 실패:', error)
+    alert('납품요구 수정에 실패했습니다.')
+  } finally {
+    submitting.value = false
   }
 }
 
-// 제출 처리
-const handleSubmit = async () => {
-  // 금액 검증
-  if (!isAmountMatch(formData.totalAmount, totalAmount.value)) {
-    return
-  }
-
-  await submit()
+// 목록으로 이동
+const goBack = () => {
+  router.push('/admin/order/list')
 }
+
+// 컴포넌트 마운트
+onMounted(async () => {
+  await Promise.all([loadData(), loadSiteManagers()])
+})
 </script>
 
 <style scoped>
 /*
  * Common styles managed by:
- * - admin-edit-register.css: items-table, items-table-wrapper, items-section-wrapper, items-header, items-summary, summary-label, summary-value, summary-divider, form-actions
- * - admin-forms.css: form-input, table-input, input-group
- * - admin-common.css: text-center, empty-message, upload-status, status-*, btn-add-item, btn-search-sm, btn-remove-item, btn-delete
+ * - admin-edit-register.css: content-section, items-table, summary-info, amount-group, amount-display, form-actions
+ * - admin-forms.css: form-input-*, info-group, info-grid, grid-5
+ * - admin-common.css: empty-row
  */
 
 /* Page-specific: Order edit page wrapper */
 .order-edit {
-  min-height: 100vh;
-}
-
-/* Page-specific: Table row last-child adjustment */
-.items-table tbody tr:last-child td {
-  border-bottom: none;
+  padding: 0;
+  margin-bottom: 0;
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <div class="transport-edit">
     <!-- 페이지 헤더 (백업본 버튼 사용) -->
-    <UiPageHeader
+    <PageHeader
       title="운송장 수정"
       description="운송장 정보를 수정합니다."
     >
@@ -27,7 +27,7 @@
           저장
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <!-- 로딩 섹션 -->
     <AdminCommonLoadingSection v-if="loading" message="데이터를 불러오는 중..." />
@@ -333,6 +333,7 @@ import FormSection from '~/components/admin/forms/FormSection.vue'
 import { getApiBaseUrl } from '~/services/api'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
+import { formatPhoneNumberInput } from '~/utils/format'
 
 
 definePageMeta({
@@ -381,33 +382,16 @@ const formData = ref({
   trackingNumber: ''
 })
 
-// 전화번호 포맷팅 함수
-const formatPhoneNumber = (value: string): string => {
-  const numbers = value.replace(/[^\d]/g, '')
-
-  if (numbers.length <= 3) {
-    return numbers
-  } else if (numbers.length <= 7) {
-    return `${numbers.slice(0, 3)}-${numbers.slice(3)}`
-  } else if (numbers.length <= 10) {
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6)}`
-  } else {
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`
-  }
-}
-
-// 인수자 연락처 포맷팅
+// 인수자 연락처 포맷팅 (공통 함수 사용)
 const handlesiteSupervisorPhoneInput = (event: Event) => {
   const input = event.target as HTMLInputElement
-  const formatted = formatPhoneNumber(input.value)
-  formData.value.siteSupervisorPhone = formatted
+  formData.value.siteSupervisorPhone = formatPhoneNumberInput(input.value)
 }
 
-// 기사 연락처 포맷팅
+// 기사 연락처 포맷팅 (공통 함수 사용)
 const handleDriverPhoneInput = (event: Event) => {
   const input = event.target as HTMLInputElement
-  const formatted = formatPhoneNumber(input.value)
-  formData.value.driverPhone = formatted
+  formData.value.driverPhone = formatPhoneNumberInput(input.value)
 }
 
 // 주소 검색

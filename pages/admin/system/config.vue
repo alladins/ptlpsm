@@ -1,6 +1,6 @@
 <template>
   <div class="system-config">
-    <UiPageHeader
+    <PageHeader
       title="시스템설정"
       description="시스템 전반적인 설정을 관리합니다."
     />

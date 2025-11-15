@@ -1,6 +1,6 @@
 <template>
   <div class="code-management">
-    <UiPageHeader
+    <PageHeader
       title="코드관리"
       description="시스템에서 사용되는 코드 그룹과 코드 상세를 관리합니다."
     />

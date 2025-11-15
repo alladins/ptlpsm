@@ -63,5 +63,15 @@ export const COMPANY_ENDPOINTS = {
   delete: (id: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/basic/company/${id}`
+  },
+
+  /**
+   * 회사 직인 이미지 조회
+   * @param id 회사 ID
+   * @returns GET /api/basic/company/{id}/seal-image
+   */
+  sealImage: (id: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/basic/company/${id}/seal-image`
   }
 } as const

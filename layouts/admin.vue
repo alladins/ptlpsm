@@ -83,10 +83,11 @@ const currentPageTitle = computed(() => {
   // 현재 경로에 따른 페이지 제목 반환
   const pathMap: Record<string, string> = {
     '/admin/sales': '영업관리',
-    '/admin/order': '납품요구관리1',
+    '/admin/order': '납품요구관리',
     '/admin/shipping': '출하관리',
     '/admin/transport': '운송장관리',
     '/admin/delivery': '납품확인관리',
+    '/admin/delivery-done': '납품완료계',
     '/admin/statistics': '통계',
     '/admin/basic-info': '기초정보',
     '/admin/system': '시스템관리'

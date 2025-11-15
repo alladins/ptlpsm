@@ -107,7 +107,20 @@ export default defineNuxtConfig({
   components: {
     global: true,
     dirs: [
-      '~/components'
+      {
+        path: '~/components',
+        pathPrefix: false
+      },
+      {
+        path: '~/components/admin/delivery',
+        pathPrefix: false,
+        global: true
+      },
+      {
+        path: '~/components/admin/delivery-done',
+        pathPrefix: false,
+        global: true
+      }
     ]
   },
 

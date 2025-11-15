@@ -89,7 +89,7 @@
           </div>
           <div class="summary-card">
             <div class="summary-label">발주 수량</div>
-            <div class="summary-value">{{ deliveryDoneInfo?.totalOrderQuantity?.toLocaleString() ?? 0 }}</div>
+            <div class="summary-value">{{ deliveryDoneInfo?.totalOrderedQuantity?.toLocaleString() ?? 0 }}</div>
           </div>
           <div class="summary-card">
             <div class="summary-label">납품 수량</div>
@@ -154,7 +154,7 @@
         </h2>
         <div class="signature-description">
           <p v-if="deliveryDoneInfo?.role === 'CONTRACTOR'">
-            시공사 대표 인감을 서명판에 그려주세요. 최대한 명확하게 작성해 주시기 바랍니다.
+            현장 소장 서명을 서명판에 그려주세요. 최대한 명확하게 작성해 주시기 바랍니다.
           </p>
           <p v-else>
             현장감리원 서명을 서명판에 그려주세요. 최대한 명확하게 작성해 주시기 바랍니다.
@@ -169,7 +169,7 @@
         <ul>
           <li>서명 후 "서명 완료" 버튼을 눌러주세요.</li>
           <li v-if="deliveryDoneInfo?.role === 'CONTRACTOR'">
-            시공사 대표 인감은 정확하게 작성해 주시기 바랍니다.
+            현장 소장 서명은 정확하게 작성해 주시기 바랍니다.
           </li>
           <li>양쪽 서명이 모두 완료되면 납품확인서, 납품완료계, 사진대지 PDF가 자동 생성됩니다.</li>
           <li>문제가 있을 경우 관리자에게 문의해 주세요.</li>
@@ -234,7 +234,7 @@ const otherSignatureMessage = computed(() => {
   if (deliveryDoneInfo.value.role === 'CONTRACTOR') {
     return '현장감리원 서명을 기다리고 있습니다.'
   } else {
-    return '시공사 대표 인감을 기다리고 있습니다.'
+    return '현장 소장 서명을 기다리고 있습니다.'
   }
 })
 
@@ -260,7 +260,7 @@ function getRoleBadgeClass(role?: SignatureRole): string {
 
 // 서명 섹션 제목
 function getSignatureTitle(role?: SignatureRole): string {
-  if (role === 'CONTRACTOR') return '시공사 대표 인감'
+  if (role === 'CONTRACTOR') return '현장 소장 서명'
   if (role === 'SUPERVISOR') return '현장감리원 서명'
   return '서명'
 }

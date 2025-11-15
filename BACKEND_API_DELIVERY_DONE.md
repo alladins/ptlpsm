@@ -20,7 +20,7 @@
 ### 핵심 기능
 1. **자동 생성**: 발주 생성 시 delivery_done 레코드 자동 생성 (PENDING 상태)
 2. **상태 관리**: 5단계 상태 자동 전환 (PENDING → IN_PROGRESS → PENDING_SIGNATURE → COMPLETED → SUBMITTED)
-3. **이중 승인**: 시공사 대표 인감 + 현장감리원 서명
+3. **이중 승인**: 현장 소장 서명 + 현장감리원 서명
 4. **PDF 생성**: 3개 PDF 자동 생성 (납품확인서, 납품완료계, 사진대지)
 5. **토큰 인증**: 모바일 서명 페이지 접근용 토큰 생성 및 검증
 
@@ -354,7 +354,7 @@ sort: string (default: 'deliveryRequestDate,desc') - 정렬
 ```
 [LP LEADPOWER 납품완료계]
 {recipientName}님, 안녕하세요.
-{deliveryRequestNo} 건에 대한 {시공사 대표 인감 or 현장감리원 서명}이 필요합니다.
+{deliveryRequestNo} 건에 대한 {현장 소장 서명 or 현장감리원 서명}이 필요합니다.
 아래 링크를 클릭하여 서명해 주시기 바랍니다.
 {tokenUrl}
 * 링크는 발송 후 7일간 유효합니다.
@@ -913,7 +913,7 @@ public class MessageService {
         String tokenUrl = baseUrl + "/m/delivery-done/" + token;
 
         // 3. 메시지 내용 구성
-        String roleText = role == SignatureRole.CONTRACTOR ? "시공사 대표 인감" : "현장감리원 서명";
+        String roleText = role == SignatureRole.CONTRACTOR ? "현장 소장 서명" : "현장감리원 서명";
         String message = String.format(
             "[LP LEADPOWER 납품완료계]\n" +
             "%s님, 안녕하세요.\n" +

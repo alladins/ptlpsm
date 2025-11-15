@@ -181,3 +181,134 @@ export function formatPercent(
 
   return `${value.toFixed(decimals)}%`
 }
+
+/**
+ * ===========================================
+ * 입력용 포맷팅 함수 (실시간 입력 시 사용)
+ * ===========================================
+ */
+
+/**
+ * 사업자등록번호 입력 포맷팅 (실시간)
+ * @param value - 입력된 문자열
+ * @returns 포맷팅된 사업자등록번호 (예: "123-45-67890")
+ * @description 10자리 숫자를 123-45-67890 형식으로 자동 변환
+ */
+export function formatBusinessNumberInput(value: string): string {
+  // 숫자만 추출
+  let numbers = value.replace(/[^0-9]/g, '')
+
+  // 최대 10자리로 제한
+  if (numbers.length > 10) {
+    numbers = numbers.substring(0, 10)
+  }
+
+  // 포맷팅 적용
+  if (numbers.length > 5) {
+    return `${numbers.substring(0, 3)}-${numbers.substring(3, 5)}-${numbers.substring(5)}`
+  } else if (numbers.length > 3) {
+    return `${numbers.substring(0, 3)}-${numbers.substring(3)}`
+  } else {
+    return numbers
+  }
+}
+
+/**
+ * 전화번호/팩스번호 입력 포맷팅 (실시간)
+ * @param value - 입력된 문자열
+ * @returns 포맷팅된 전화번호 (예: "010-1234-5678", "02-1234-5678")
+ * @description 한국 전화번호 형식에 맞춰 자동 포맷팅 및 길이 제한
+ */
+export function formatPhoneNumberInput(value: string): string {
+  // 숫자만 추출
+  let numbers = value.replace(/[^0-9]/g, '')
+
+  // 서울 지역번호 (02)
+  if (numbers.startsWith('02')) {
+    // 최대 10자리 (02-1234-5678 또는 02-123-4567)
+    if (numbers.length > 10) {
+      numbers = numbers.substring(0, 10)
+    }
+
+    if (numbers.length === 10) {
+      return numbers.replace(/^(\d{2})(\d{4})(\d{4})$/, '$1-$2-$3')
+    } else if (numbers.length === 9) {
+      return numbers.replace(/^(\d{2})(\d{3})(\d{4})$/, '$1-$2-$3')
+    } else if (numbers.length > 6) {
+      return numbers.replace(/^(\d{2})(\d{3,4})(.*)$/, '$1-$2-$3')
+    } else if (numbers.length > 2) {
+      return numbers.replace(/^(\d{2})(.*)$/, '$1-$2')
+    }
+  }
+  // 휴대폰 또는 지역번호 (3자리)
+  else {
+    // 최대 11자리 (010-1234-5678 또는 031-123-4567)
+    if (numbers.length > 11) {
+      numbers = numbers.substring(0, 11)
+    }
+
+    if (numbers.length === 11) {
+      return numbers.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3')
+    } else if (numbers.length === 10) {
+      return numbers.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3')
+    } else if (numbers.length > 7) {
+      return numbers.replace(/^(\d{3})(\d{3,4})(.*)$/, '$1-$2-$3')
+    } else if (numbers.length > 3) {
+      return numbers.replace(/^(\d{3})(.*)$/, '$1-$2')
+    }
+  }
+
+  return numbers
+}
+
+/**
+ * 이메일 입력 검증 및 정규화
+ * @param value - 입력된 이메일
+ * @returns 소문자로 변환된 이메일 (공백 제거)
+ */
+export function normalizeEmail(value: string): string {
+  return value.trim().toLowerCase()
+}
+
+/**
+ * 우편번호 입력 포맷팅 (실시간)
+ * @param value - 입력된 문자열
+ * @returns 포맷팅된 우편번호 (예: "12345" - 5자리 숫자)
+ */
+export function formatPostalCodeInput(value: string): string {
+  // 숫자만 추출
+  let numbers = value.replace(/[^0-9]/g, '')
+
+  // 최대 5자리로 제한
+  if (numbers.length > 5) {
+    numbers = numbers.substring(0, 5)
+  }
+
+  return numbers
+}
+
+/**
+ * 숫자만 추출 (금액, 수량 입력용)
+ * @param value - 입력된 문자열
+ * @returns 숫자만 포함된 문자열
+ */
+export function extractNumbers(value: string): string {
+  return value.replace(/[^0-9]/g, '')
+}
+
+/**
+ * 나라장터 등록번호 입력 포맷팅 (실시간)
+ * @param value - 입력된 문자열
+ * @returns 포맷팅된 나라장터 등록번호 (8자리 영문+숫자)
+ */
+export function formatG2BNumberInput(value: string): string {
+  // 영문 대문자와 숫자만 추출
+  let cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+
+  // 최대 8자리로 제한
+  if (cleaned.length > 8) {
+    cleaned = cleaned.substring(0, 8)
+  }
+
+  return cleaned
+}

@@ -1,6 +1,6 @@
 <template>
   <div class="access-log">
-    <UiPageHeader
+    <PageHeader
       title="접근로그"
       description="사용자 접근 및 시스템 활동 로그를 확인합니다."
     >
@@ -18,7 +18,7 @@
           엑셀 다운로드
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <!-- 검색 조건 섹션 - 완전히 한 줄 -->
     <div class="search-section-compact">

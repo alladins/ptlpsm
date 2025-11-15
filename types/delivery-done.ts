@@ -93,7 +93,7 @@ export interface DeliveryDone {
   deliveryEndDate: string | null
 
   // 수량 정보
-  totalOrderQuantity: number
+  totalOrderedQuantity: number
   totalDeliveredQuantity: number
   totalDeliveryCount: number  // 총 출하 횟수
 
@@ -116,10 +116,10 @@ export interface DeliveryDone {
   supervisorSignatureImage: string | null
   supervisorSignedAt: string | null
 
-  // PDF 파일 URL
-  confirmationPdfUrl: string | null   // 납품확인서 PDF
-  completionPdfUrl: string | null     // 납품완료계 PDF
-  photoSheetPdfUrl: string | null     // 사진대지 PDF
+  // PDF 파일 경로
+  confirmationDocumentPath: string | null   // 납품확인서 PDF 경로
+  completionReportPath: string | null       // 납품완료계 PDF 경로
+  photoCollectionPath: string | null        // 사진대지 PDF 경로
 
   // 메타 정보
   createdAt: string
@@ -144,11 +144,12 @@ export interface DeliveryDoneListItem {
   client: string
   projectName: string
   status: DeliveryDoneStatus
-  totalOrderQuantity: number
+  totalOrderedQuantity: number
   totalDeliveredQuantity: number
-  deliveryRate: number
+  deliveryCompletionRate: number
   totalDeliveryCount: number
-  contractorCompanyName: string
+  builder?: string                     // 백엔드 응답 필드 (optional, 호환성)
+  contractorCompanyName: string        // 프론트엔드 표준 필드
   supervisorName: string | null
   hasContractorSignature: boolean
   hasSupervisorSignature: boolean
@@ -220,7 +221,7 @@ export interface DeliveryDoneMobileInfo {
   // 품목 요약
   itemCount: number
   itemSummary: string
-  totalOrderQuantity: number
+  totalOrderedQuantity: number
   totalDeliveredQuantity: number
 }
 

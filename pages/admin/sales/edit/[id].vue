@@ -1,7 +1,7 @@
 <template>
   <div class="sales-edit">
     <!-- 페이지 헤더 -->
-    <UiPageHeader
+    <PageHeader
       title="영업 수정"
       description="영업 정보를 수정합니다."
     />
@@ -176,7 +176,7 @@ import { useRouter, useRoute } from '#imports'
 import { useEditForm } from '~/composables/admin/useEditForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { useItemManagement } from '~/composables/admin/useItemManagement'
-import { formatPhoneNumber } from '~/utils/format'
+import { formatPhoneNumberInput } from '~/utils/format'
 import { salesService, type Sales, type SalesUpdateRequest } from '~/services/sales.service'
 import { type SalesItemRequest } from '~/types/sales'
 import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
@@ -384,15 +384,10 @@ const isAmountMatch = computed(() => {
   return Math.abs(totalItemsAmount.value - formData.contractAmount) < 1
 })
 
-// 전화번호 입력 처리
+// 전화번호 입력 처리 (공통 함수 사용 - 길이 제한 포함)
 const handlePhoneInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  const formatted = formatPhoneNumber(target.value)
-  formData.customerTel = formatted
-
-  nextTick(() => {
-    target.value = formatted
-  })
+  formData.customerTel = formatPhoneNumberInput(target.value)
 }
 
 // 파일 다운로드

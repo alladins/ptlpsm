@@ -59,7 +59,17 @@ export async function getDeliveryDoneList(
       throw new Error(`Failed to fetch delivery done list: ${response.statusText}`)
     }
 
-    return await response.json()
+    const data = await response.json()
+
+    // 데이터 변환: builder → contractorCompanyName
+    if (data.content && Array.isArray(data.content)) {
+      data.content = data.content.map((item: any) => ({
+        ...item,
+        contractorCompanyName: item.builder || item.contractorCompanyName || '-'
+      }))
+    }
+
+    return data
   } catch (error) {
     console.error('Error fetching delivery done list:', error)
     throw error

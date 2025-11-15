@@ -35,6 +35,7 @@ export function isValidEmail(email: string): boolean {
 
 /**
  * 사업자등록번호 포맷팅 (123-45-67890 형식)
+ * @deprecated 대신 utils/format.ts의 formatBusinessNumberInput 사용을 권장합니다
  *
  * @param value - 입력된 사업자등록번호
  * @returns 포맷팅된 사업자등록번호
@@ -43,19 +44,12 @@ export function isValidEmail(email: string): boolean {
  * formatBusinessNumber('1234567890') // '123-45-67890'
  */
 export function formatBusinessNumber(value: string): string {
+  // 중복 제거: utils/format.ts의 formatBusinessNumberInput 사용
+  // 이 함수는 하위 호환성을 위해 유지되며, 내부적으로 formatBusinessNumberInput을 호출합니다
   if (!value) return ''
 
-  const numbers = value.replace(/[^0-9]/g, '')
-
-  if (numbers.length <= 3) {
-    return numbers
-  } else if (numbers.length <= 5) {
-    return `${numbers.slice(0, 3)}-${numbers.slice(3)}`
-  } else if (numbers.length <= 10) {
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 5)}-${numbers.slice(5, 10)}`
-  } else {
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 5)}-${numbers.slice(5, 10)}`
-  }
+  const { formatBusinessNumberInput } = require('./format')
+  return formatBusinessNumberInput(value)
 }
 
 /**

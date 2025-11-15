@@ -200,6 +200,137 @@ No test framework is currently configured. Manual testing is required.
 - `menu.service.ts` handles fetching and caching menu data
 - Admin pages can check user permissions via `MenuAuth` types
 
+---
+
+## 🎨 CSS 구조 및 사용 규칙
+
+### 📂 CSS 파일 구조 (`assets/css/`)
+
+프로젝트는 **공통 CSS 시스템**을 사용하여 일관된 UI/UX를 제공합니다.
+
+| 파일명 | 역할 | 주요 내용 |
+|--------|------|----------|
+| `global.css` | 디자인 토큰 | CSS 변수 (색상, 간격, 크기) |
+| `admin-common.css` | Admin 기본 | `.form-input`, `.form-select`, 테이블, 모달 |
+| `admin-forms.css` | 폼 확장 | `.info-group`, `.info-grid`, 크기 변형 |
+| `admin-buttons.css` | 버튼 전용 | 모든 버튼 스타일 |
+| `admin-tables.css` | 테이블 전용 | 테이블 레이아웃, 헤더 |
+| `admin-edit-register.css` | 등록/수정 페이지 | 2열 레이아웃 |
+| `admin-search.css` | 검색 UI | 검색 폼, 필터 |
+| `admin-detail.css` | 상세 페이지 | 금액 표시, 파일 정보 |
+
+### ⚠️ 필수 원칙
+
+1. **중복 금지**: 컴포넌트 내부에 이미 공통 CSS에 있는 스타일 작성 금지
+2. **검색 우선**: 새 스타일 작성 전 `assets/css/` 폴더에서 기존 스타일 검색
+3. **Import 최소화**: 필요한 CSS 파일만 import
+
+### ❌ 금지 사항
+
+```vue
+<!-- ❌ 나쁜 예: 공통 CSS에 이미 있는 스타일 중복 작성 -->
+<style scoped>
+.form-input {
+  padding: 0.625rem 0.875rem;
+  border: 1.5px solid #d1d5db;
+  /* ... */
+}
+.btn-primary {
+  background: blue;
+  /* ... */
+}
+</style>
+```
+
+### ✅ 올바른 사용법
+
+```vue
+<!-- ✅ 좋은 예: 공통 CSS import -->
+<style scoped>
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-forms.css';
+@import '@/assets/css/admin-buttons.css';
+
+/* 이 컴포넌트 전용 스타일만 작성 */
+.custom-feature {
+  /* 공통 CSS에 없는 스타일만 */
+}
+</style>
+```
+
+### 🔍 자주 사용하는 클래스
+
+**입력 필드**:
+- `.form-input`: 기본 input (width: 80%)
+- `.form-input-xs/sm/md/lg/xl`: 크기 지정 (60px ~ 400px)
+- `.form-select`, `.form-textarea`
+
+**버튼**:
+- `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.btn-success`
+- `.btn-edit`, `.btn-delete`, `.btn-view` (테이블 액션)
+- `.btn-upload`, `.btn-download`, `.btn-search-sm`
+
+**레이아웃 (info-group 패턴)**:
+```vue
+<div class="info-group">
+  <div class="info-group-header">
+    <i class="fas fa-building"></i>
+    <span>기본 정보</span>
+  </div>
+  <div class="info-grid grid-3">
+    <div class="form-field">
+      <label>회사명</label>
+      <input type="text" class="form-input" />
+    </div>
+    <!-- ... -->
+  </div>
+</div>
+```
+
+**Input Group**:
+```vue
+<div class="input-group">
+  <input type="text" class="form-input" readonly />
+  <button class="btn-search-sm">검색</button>
+</div>
+```
+
+### 📖 컴포넌트별 Import 가이드
+
+**Form 컴포넌트**:
+```vue
+<style scoped>
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-forms.css';
+@import '@/assets/css/admin-buttons.css';
+</style>
+```
+
+**List 페이지**:
+```vue
+<style scoped>
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-tables.css';
+@import '@/assets/css/admin-search.css';
+</style>
+```
+
+**Register/Edit 페이지**:
+```vue
+<style scoped>
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-forms.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-edit-register.css';
+</style>
+```
+
+### 📚 상세 가이드
+
+자세한 사용법은 [`docs/CSS_GUIDELINES.md`](docs/CSS_GUIDELINES.md) 참고
+
+---
 
 ## 🔧 Refactoring Strategy (리팩토링 전략)
 

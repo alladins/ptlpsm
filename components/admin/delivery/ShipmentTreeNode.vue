@@ -38,7 +38,7 @@
       <transition name="expand">
         <div v-if="expanded" class="shipment-body">
           <!-- 운송 정보가 있을 때 -->
-          <AdminDeliveryTransportDetailNode
+          <TransportDetailNode
             v-if="shipment.transport"
             :transport="shipment.transport"
             :level="level + 1"

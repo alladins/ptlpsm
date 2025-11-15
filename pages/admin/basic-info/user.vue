@@ -1,6 +1,6 @@
 <template>
   <div class="user-management">
-    <UiPageHeader
+    <PageHeader
       title="사용자관리"
       description="시스템 사용자 정보를 관리합니다."
     />
@@ -224,12 +224,13 @@
               </div>
               <div class="form-group">
                 <label>이메일 *</label>
-                <input 
-                  v-model="userForm.email" 
-                  type="email" 
+                <input
+                  v-model="userForm.email"
+                  type="email"
                   required
                   placeholder="이메일"
                   class="form-input"
+                  @blur="handleEmailBlur"
                 >
               </div>
             </div>
@@ -237,11 +238,12 @@
             <div class="form-row">
               <div class="form-group">
                 <label>연락처</label>
-                <input 
-                  v-model="userForm.phone" 
-                  type="tel" 
-                  placeholder="연락처"
+                <input
+                  v-model="userForm.phone"
+                  type="tel"
+                  placeholder="010-1234-5678"
                   class="form-input"
+                  @input="handlePhoneInput"
                 >
               </div>
               <div class="form-group">
@@ -311,18 +313,19 @@
             <div class="form-row">
               <div class="form-group">
                 <label>우편번호</label>
-                <input 
-                  v-model="userForm.zipCode" 
-                  type="text" 
-                  placeholder="우편번호"
+                <input
+                  v-model="userForm.zipCode"
+                  type="text"
+                  placeholder="우편번호 (5자리)"
                   class="form-input"
+                  @input="handleZipCodeInput"
                 >
               </div>
               <div class="form-group">
                 <label>주소</label>
-                <input 
-                  v-model="userForm.address" 
-                  type="text" 
+                <input
+                  v-model="userForm.address"
+                  type="text"
                   placeholder="주소"
                   class="form-input"
                 >
@@ -425,6 +428,7 @@ import { userService } from '~/services/user.service'
 import { codeService } from '~/services/code.service'
 import { companyService } from '~/services/company.service'
 import type { CompanyInfoResponse } from '~/types/company'
+import { formatPhoneNumberInput, normalizeEmail, formatPostalCodeInput } from '~/utils/format'
 
 // 반응형 데이터
 const users = ref<any[]>([])
@@ -545,6 +549,24 @@ const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('ko-KR')
 }
 
+// 전화번호 입력 포맷팅 (공통 함수 사용)
+const handlePhoneInput = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  userForm.value.phone = formatPhoneNumberInput(input.value)
+}
+
+// 이메일 정규화 (공통 함수 사용)
+const handleEmailBlur = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  userForm.value.email = normalizeEmail(input.value)
+}
+
+// 우편번호 입력 포맷팅 (공통 함수 사용 - 5자리 제한)
+const handleZipCodeInput = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  userForm.value.zipCode = formatPostalCodeInput(input.value)
+}
+
 // 목록 조회
 const loadUsers = async () => {
   loading.value = true
@@ -558,7 +580,7 @@ const loadUsers = async () => {
       sortBy: searchForm.value.sortBy,
       sortDirection: searchForm.value.sortDirection
     })
-    
+
     users.value = response.content
     totalElements.value = response.totalElements
     totalPages.value = response.totalPages

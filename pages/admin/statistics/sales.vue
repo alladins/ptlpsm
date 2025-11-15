@@ -1,6 +1,6 @@
 <template>
   <div class="statistics-sales">
-    <UiPageHeader
+    <PageHeader
       title="영업통계"
       description="영업 현황을 통계로 확인합니다."
     />

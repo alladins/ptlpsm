@@ -229,6 +229,7 @@ import { useRoute } from '#imports'
 import { consultationService } from '~/services/consultation.service'
 import { codeService } from '~/services/code.service'
 import type { CodeDetail } from '~/services/code.service'
+import { formatPhoneNumberInput } from '~/utils/format'
 
 // 상담 폼 데이터 인터페이스 정의
 interface ConsultationForm {
@@ -467,23 +468,10 @@ const privacyPolicyContent = ref(`
   5. 동의를 거부할 권리가 있으며, 동의 거부 시 서비스 이용이 제한될 수 있습니다.
 `)
 
-// 전화번호 형식 변환
+// 전화번호 형식 변환 (공통 함수 사용)
 const formatPhoneNumber = (event: Event) => {
   const input = event.target as HTMLInputElement
-  let value = input.value.replace(/[^0-9]/g, '') // 숫자만 추출
-
-  if (value.length > 11) {
-    value = value.slice(0, 11)
-  }
-
-  // 전화번호 형식으로 변환 (XXX-XXXX-XXXX)
-  if (value.length <= 3) {
-    form.value.phone = value
-  } else if (value.length <= 7) {
-    form.value.phone = `${value.slice(0, 3)}-${value.slice(3)}`
-  } else {
-    form.value.phone = `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7)}`
-  }
+  form.value.phone = formatPhoneNumberInput(input.value)
 }
 
 // 문의유형 변경 시 처리

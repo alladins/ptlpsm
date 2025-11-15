@@ -86,7 +86,7 @@
                 <p>{{ recipientName }}님, 안녕하세요.</p>
                 <p>
                   {{ deliveryDone.deliveryRequestNo }} 건에 대한
-                  {{ selectedRole === 'CONTRACTOR' ? '시공사 대표 인감' : '현장감리원 서명' }}이
+                  {{ selectedRole === 'CONTRACTOR' ? '현장 소장 서명' : '현장감리원 서명' }}이
                   필요합니다.
                 </p>
                 <p>아래 링크를 클릭하여 서명해 주시기 바랍니다.</p>
@@ -119,6 +119,7 @@
 import { ref, computed } from 'vue'
 import { sendSignatureMessage } from '~/services/delivery-done.service'
 import type { DeliveryDoneListItem, SignatureRole } from '~/types/delivery-done'
+import { formatPhoneNumberInput } from '~/utils/format'
 
 const props = defineProps<{
   deliveryDone: DeliveryDoneListItem
@@ -154,17 +155,9 @@ function selectRole(role: SignatureRole) {
   }
 }
 
+// 전화번호 포맷팅 (공통 함수 사용)
 function formatPhoneNumber() {
-  const cleaned = recipientPhone.value.replace(/[^0-9]/g, '')
-  if (cleaned.length <= 3) {
-    recipientPhone.value = cleaned
-  } else if (cleaned.length <= 7) {
-    recipientPhone.value = `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`
-  } else if (cleaned.length <= 11) {
-    recipientPhone.value = `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7)}`
-  } else {
-    recipientPhone.value = `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`
-  }
+  recipientPhone.value = formatPhoneNumberInput(recipientPhone.value)
 }
 
 async function handleSend() {

@@ -141,12 +141,12 @@
             <div class="form-row">
               <div class="form-group">
                 <label>이메일</label>
-                <input 
-                  v-model="profileForm.email" 
-                  type="email" 
+                <input
+                  v-model="profileForm.email"
+                  type="email"
                   placeholder="이메일을 입력하세요"
                   @input="validateField('email', profileForm.email)"
-                  @blur="validateField('email', profileForm.email)"
+                  @blur="handleEmailBlur"
                   :class="{ 'error': validationErrors.email }"
                 >
                 <span v-if="validationErrors.email" class="error-message">
@@ -350,7 +350,7 @@ definePageMeta({
 
 // API 서비스
 import { userService } from '~/services/user.service'
-import { formatPhoneNumber } from '~/utils/format'
+import { formatPhoneNumberInput, normalizeEmail } from '~/utils/format'
 
 // 반응형 데이터
 const currentUser = ref<any>({
@@ -432,11 +432,18 @@ const isValidPhone = (phone: string) => {
   return phoneRegex.test(phone)
 }
 
-// 전화번호 입력 처리 함수
+// 전화번호 입력 처리 함수 (공통 함수 사용 - 길이 제한 포함)
 const handlePhoneInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  const formattedValue = formatPhoneNumber(target.value)
-  profileForm.value.phone = formattedValue
+  profileForm.value.phone = formatPhoneNumberInput(target.value)
+}
+
+// 이메일 정규화 (공통 함수 사용 - 소문자 변환 및 공백 제거)
+const handleEmailBlur = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  profileForm.value.email = normalizeEmail(target.value)
+  // 정규화 후 유효성 검사 재실행
+  validateField('email', profileForm.value.email)
 }
 
 // 실시간 유효성 검사

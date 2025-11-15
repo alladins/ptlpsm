@@ -41,6 +41,8 @@ export interface OrderDetailResponse extends OrderResponse {
   partialDelivery?: string
   inspectionAgency?: string
   acceptanceAgency?: string
+  siteManagerId?: number
+  builder?: string
   pdfFile?: string
   items: OrderDetailItem[]
 }
@@ -95,6 +97,8 @@ export interface OrderCreateRequest {
   partialDelivery: string
   inspectionAgency: string
   acceptanceAgency: string
+  siteManagerId?: number
+  builder?: string
   items: OrderItemCreateRequest[]
 }
 

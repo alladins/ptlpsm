@@ -1,7 +1,7 @@
 <template>
   <div class="sales-list">
     <!-- 페이지 헤더 -->
-    <UiPageHeader
+    <PageHeader
       title="영업 관리"
       description="영업 정보를 조회하고 관리합니다."
     >
@@ -20,7 +20,7 @@
           등록
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <div class="content-section">
       <!-- 검색 조건 섹션 - 완전히 한 줄 -->
@@ -156,7 +156,7 @@
         </div>
 
         <!-- 페이지네이션 - 리팩토링: UiPagination 컴포넌트 사용 -->
-        <UiPagination
+        <Pagination
           v-if="totalPages > 0"
           :current-page="currentPage"
           :total-pages="totalPages"

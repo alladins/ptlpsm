@@ -37,6 +37,8 @@ export interface CompanyCreateRequest {
     annualSales: number;      // 연매출액
     businessType: string;     // 업태 (필수)
     businessCategory: string; // 업종 (필수)
+    sealImage?: string;       // 회사 직인 이미지 (Base64)
+    sealImageFileName?: string; // 직인 파일명
 }
 
 export interface CompanyUpdateRequest extends Partial<CompanyCreateRequest> {}
@@ -63,6 +65,9 @@ export interface CompanyInfoResponse {
   annualSales: number
   businessType: string
   businessCategory: string
+  sealImagePath: string | null  // 직인 이미지 서버 경로 (존재 여부 판단용)
+  sealImageUrl: string | null   // 직인 이미지 URL (하위 호환성)
+  sealImageFileName: string | null // 직인 파일명
   createdAt: string
   updatedAt: string
 }

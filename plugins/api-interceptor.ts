@@ -3,8 +3,9 @@
  *
  * 기능:
  * 1. 모든 fetch 요청에 Authorization 헤더 자동 추가
- * 2. 401/403 에러 발생 시 자동으로 로그인 페이지 리다이렉트
- * 3. 인증 데이터 자동 정리
+ * 2. 서버에서 제공하는 새 토큰 자동 갱신 (Sliding Session)
+ * 3. 401/403 에러 발생 시 자동으로 로그인 페이지 리다이렉트
+ * 4. 인증 데이터 자동 정리
  */
 
 import { useAuthStore } from '~/stores/auth'
@@ -40,6 +41,46 @@ export default defineNuxtPlugin(() => {
     try {
       // 실제 fetch 호출
       const response = await originalFetch(input, init)
+
+      // ⭐ Sliding Session: 서버에서 제공하는 새 토큰 자동 갱신
+      // 백엔드가 토큰 만료 임박 시 응답 헤더에 새 토큰 포함 (30분 경과 시)
+      const newAccessToken = response.headers.get('X-New-Access-Token')
+      const newRefreshToken = response.headers.get('X-New-Refresh-Token')
+
+      if (newAccessToken && newAccessToken.trim() !== '') {
+        console.log('🔄 토큰 자동 갱신 (서버 제공):', {
+          이전AccessToken: authStore.accessToken?.substring(0, 20) + '...',
+          새AccessToken: newAccessToken.substring(0, 20) + '...',
+          RefreshToken갱신: newRefreshToken ? '✅' : '❌',
+          갱신시각: new Date().toLocaleString()
+        })
+
+        // Access Token 갱신
+        authStore.accessToken = newAccessToken
+
+        // Refresh Token 갱신 (서버가 제공한 경우)
+        if (newRefreshToken && newRefreshToken.trim() !== '') {
+          authStore.refreshToken = newRefreshToken
+        }
+
+        // localStorage 업데이트
+        if (process.client) {
+          localStorage.setItem('auth_access_token', newAccessToken)
+
+          if (newRefreshToken && newRefreshToken.trim() !== '') {
+            localStorage.setItem('auth_refresh_token', newRefreshToken)
+          }
+
+          // 토큰 만료 시간 갱신 (1시간 = 3600초)
+          const newExpiry = Date.now() + 3600 * 1000
+          authStore.tokenExpiry = newExpiry
+          localStorage.setItem('auth_token_expiry', newExpiry.toString())
+
+          console.log('✅ 토큰 갱신 완료:', {
+            새만료시간: new Date(newExpiry).toLocaleString()
+          })
+        }
+      }
 
       // 401 Unauthorized 또는 403 Forbidden 처리
       if (response.status === 401 || response.status === 403) {

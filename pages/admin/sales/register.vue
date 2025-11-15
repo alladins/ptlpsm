@@ -1,7 +1,7 @@
 <template>
   <div class="sales-register">
     <!-- 페이지 헤더 -->
-    <UiPageHeader
+    <PageHeader
       title="영업 등록"
       description="새로운 영업 정보를 등록합니다."
     >
@@ -19,7 +19,7 @@
           {{ submitting ? '등록 중...' : '등록' }}
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <div class="content-section">
       <form @submit.prevent="handleSubmit" class="register-form">
@@ -237,7 +237,7 @@ import { useRouter } from '#imports'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { useItemManagement } from '~/composables/admin/useItemManagement'
-import { formatPhoneNumber } from '~/utils/format'
+import { formatPhoneNumberInput } from '~/utils/format'
 import { salesService, type SalesRequest } from '~/services/sales.service'
 import { type DemandOrganization } from '~/services/demand-organization.service'
 import { type SalesItemRequest } from '~/types/sales'
@@ -377,15 +377,10 @@ const handleOrganizationSelected = (organization: DemandOrganization) => {
   formData.dminsttNm = organization.dminsttNm
 }
 
-// 전화번호 입력 처리
+// 전화번호 입력 처리 (공통 함수 사용 - 길이 제한 포함)
 const handlePhoneInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  const formatted = formatPhoneNumber(target.value)
-  formData.customerTel = formatted
-
-  nextTick(() => {
-    target.value = formatted
-  })
+  formData.customerTel = formatPhoneNumberInput(target.value)
 }
 
 // 계약금액 입력 처리 (쉼표 제거 후 숫자로 변환)

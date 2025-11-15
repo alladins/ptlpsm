@@ -1,7 +1,7 @@
 <template>
   <div class="delivery-tree-list">
     <!-- 페이지 헤더 -->
-    <UiPageHeader
+    <PageHeader
       title="납품현황 관리"
       description="발주별 납품 현황을 트리 구조로 확인합니다."
     >
@@ -19,7 +19,7 @@
           등록
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <div class="content-section">
       <!-- 검색 조건 섹션 -->
@@ -86,7 +86,7 @@
 
         <!-- 트리 컨테이너 -->
         <div v-else class="tree-container">
-          <AdminDeliveryOrderTreeNode
+          <DeliveryOrderTreeNode
             v-for="order in orderList"
             :key="order.orderId"
             :order="order"
@@ -96,7 +96,7 @@
         </div>
 
         <!-- 페이지네이션 -->
-        <UiPagination
+        <Pagination
           v-if="totalPages > 0"
           :current-page="currentPage"
           :total-pages="totalPages"

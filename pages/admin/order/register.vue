@@ -1,7 +1,7 @@
 <template>
   <div class="order-register">
     <!-- 페이지 헤더 -->
-    <UiPageHeader
+    <PageHeader
       title="납품요구관리 - 분할납품요구서 등록"
       description="발주서 PDF를 업로드하여 분할납품요구서 정보를 등록합니다."
     >
@@ -18,7 +18,7 @@
           PDF 업로드
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <!-- 업로드 상태 표시 -->
     <div v-if="uploadStatus" class="upload-status">
@@ -122,6 +122,34 @@
             <i class="fas fa-clipboard-list"></i>
             <span>기타 정보</span>
           </div>
+          <!-- 현장소장 선택 -->
+          <div class="info-grid grid-2">
+            <FormField label="현장소장">
+              <select
+                v-model="contractForm.siteManagerId"
+                @change="handleSupervisorChange"
+                class="form-input-sm"
+              >
+                <option :value="null">선택하세요</option>
+                <option
+                  v-for="manager in siteManagers"
+                  :key="manager.id"
+                  :value="manager.id"
+                >
+                  {{ manager.userName }}
+                </option>
+              </select>
+            </FormField>
+            <FormField label="회사명">
+              <input
+                type="text"
+                :value="selectedSupervisorCompany"
+                class="form-input-sm"
+                readonly
+              >
+            </FormField>
+          </div>
+          <!-- 기존 필드들 -->
           <div class="info-grid grid-4">
             <FormField label="분할납품">
               <input type="text" v-model="contractForm.partialDelivery" class="form-input-xs" readonly>
@@ -236,14 +264,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { apiEnvironment } from '~/services/api'
 import { contractService } from '~/services/contract.service'
+import { userService } from '~/services/user.service'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import ErrorPopup from '~/components/admin/common/ErrorPopup.vue'
 import type { OrderItemCreateRequest } from '~/types/order'
+import type { UserByRole } from '~/types/user'
 
 definePageMeta({
   layout: 'admin',
@@ -259,6 +289,10 @@ const errorPopup = ref({
   title: '오류 발생',
   message: ''
 })
+
+// 현장소장 목록
+const siteManagers = ref<UserByRole[]>([])
+const selectedSupervisorCompany = ref('')
 
 // 파일 업로드
 const fileInput = ref<HTMLInputElement>()
@@ -294,6 +328,8 @@ const contractForm = ref({
   partialDelivery: '',
   inspectionAgency: '',
   acceptanceAgency: '',
+  siteManagerId: null as number | null,
+  builder: '',
   quantityTotal: '',
   preDiscountAmountTotal: '',
   pdfFilePath: ''
@@ -301,6 +337,28 @@ const contractForm = ref({
 
 // 납품 목록
 const items = ref<OrderItemCreateRequest[]>([])
+
+// 현장소장 목록 조회
+onMounted(async () => {
+  try {
+    const managers = await userService.getUsersByRoles(['SITE_MANAGER'])
+    siteManagers.value = managers
+  } catch (error) {
+    console.error('현장소장 목록 조회 실패:', error)
+  }
+})
+
+// 현장소장 선택 핸들러
+const handleSupervisorChange = () => {
+  const supervisor = siteManagers.value.find(m => m.id === contractForm.value.siteManagerId)
+  if (supervisor) {
+    contractForm.value.builder = supervisor.companyName || ''
+    selectedSupervisorCompany.value = supervisor.companyName || ''
+  } else {
+    contractForm.value.builder = ''
+    selectedSupervisorCompany.value = ''
+  }
+}
 
 // 파일 업로드 트리거
 const triggerFileUpload = () => {
@@ -470,7 +528,9 @@ const register = async () => {
         preDiscountAmountTotal: contractForm.value.preDiscountAmountTotal,
         partialDelivery: contractForm.value.partialDelivery,
         inspectionAgency: contractForm.value.inspectionAgency,
-        acceptanceAgency: contractForm.value.acceptanceAgency
+        acceptanceAgency: contractForm.value.acceptanceAgency,
+        siteManagerId: contractForm.value.siteManagerId,
+        builder: contractForm.value.builder || null
       },
       extractedDeliveryItems: items.value.map((item, index) => ({
         sequenceNumber: index + 1,

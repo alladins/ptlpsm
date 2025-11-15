@@ -1,7 +1,7 @@
 <template>
   <div class="order-list">
-    <!-- 페이지 헤더 - 리팩토링: UiPageHeader 컴포넌트 사용 -->
-    <UiPageHeader
+    <!-- 페이지 헤더 - 리팩토링: PageHeader 컴포넌트 사용 -->
+    <PageHeader
       title="납품요구 관리"
       description="납품요구 정보를 조회하고 관리합니다."
     >
@@ -20,7 +20,7 @@
           등록
         </button>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <div class="content-section">
       <!-- 통계 요약 카드 -->
@@ -147,7 +147,7 @@
                 v-for="(item, index) in orderData"
                 :key="item.orderId"
                 class="table-row"
-                @dblclick="editItem(item.orderId)"
+                @click="editItem(item.orderId)"
               >
                 <td>{{ startIndex + index }}</td>
                 <td>{{ item.deliveryRequestNo }}</td>
@@ -169,8 +169,8 @@
           </div>
         </div>
 
-        <!-- 페이지네이션 - 리팩토링: UiPagination 컴포넌트 사용 -->
-        <UiPagination
+        <!-- 페이지네이션 - 리팩토링: Pagination 컴포넌트 사용 -->
+        <Pagination
           v-if="totalPages > 0"
           :current-page="currentPage"
           :total-pages="totalPages"
@@ -358,9 +358,9 @@ const goToRegister = () => {
   router.push('/admin/order/register')
 }
 
-// 상세 페이지로 이동
+// 수정 페이지로 이동
 const editItem = (id: number) => {
-  router.push(`/admin/order/detail/${id}`)
+  router.push(`/admin/order/edit/${id}`)
 }
 
 // 컴포넌트 마운트 시 데이터 로드

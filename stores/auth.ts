@@ -165,15 +165,28 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * ⚠️ 더 이상 사용하지 않음 (Deprecated)
+   *
+   * 백엔드 Sliding Session 방식으로 변경됨:
+   * - 서버가 모든 API 응답 시 토큰 만료 임박(30분 경과) 체크
+   * - 응답 헤더 X-New-Access-Token, X-New-Refresh-Token으로 자동 갱신
+   * - plugins/api-interceptor.ts에서 자동 처리
+   *
+   * @deprecated 서버 주도 자동 갱신 방식으로 대체됨
+   */
   async function refreshAccessToken() {
+    console.warn('[Deprecated] refreshAccessToken() 호출됨. Sliding Session으로 자동 처리되므로 이 함수는 더 이상 필요하지 않습니다.')
+
     if (!refreshToken.value) {
       console.error('리프레시 토큰이 없습니다')
       return false
     }
 
     try {
-      // TODO: 실제 API 호출로 변경
-      const response = await fetch('/api/auth/refresh', {
+      // 호환성을 위해 코드 유지 (추후 제거 가능)
+      const { getApiBaseUrl } = await import('~/services/api')
+      const response = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -190,14 +203,14 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await response.json()
 
       accessToken.value = data.accessToken
-      tokenExpiry.value = Date.now() + data.expiresIn * 1000
+      tokenExpiry.value = Date.now() + (data.expiresIn || 3600) * 1000
 
       if (process.client) {
         localStorage.setItem('auth_access_token', data.accessToken)
         localStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
       }
 
-      console.log('액세스 토큰 갱신 성공')
+      console.log('액세스 토큰 갱신 성공 (Fallback 모드)')
       return true
     } catch (error) {
       console.error('토큰 갱신 실패:', error)

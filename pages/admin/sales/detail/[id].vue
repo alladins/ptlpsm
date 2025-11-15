@@ -1,7 +1,7 @@
 <template>
   <div class="sales-detail">
     <!-- 페이지 헤더 -->
-    <UiPageHeader
+    <PageHeader
       title="영업 상세"
       description="영업 정보를 상세히 조회합니다."
     >
@@ -35,7 +35,7 @@
           </button>
         </template>
       </template>
-    </UiPageHeader>
+    </PageHeader>
 
     <div v-if="loading" class="loading-container">
       <i class="fas fa-spinner fa-spin"></i>
