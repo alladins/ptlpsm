@@ -21,13 +21,22 @@
 
       <!-- 사진 추가 버튼 -->
       <div
-        v-if="photos.length < maxPhotos"
+        v-if="photos.length < maxPhotos && !isCompressing"
         class="photo-item add-photo"
         @click="triggerFileInput"
       >
         <i class="fas fa-camera"></i>
         <span>사진 추가</span>
         <span class="photo-count">{{ photos.length }}/{{ maxPhotos }}</span>
+      </div>
+
+      <!-- 압축 중 표시 -->
+      <div
+        v-if="isCompressing"
+        class="photo-item compressing"
+      >
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>처리 중...</span>
       </div>
     </div>
 
@@ -52,6 +61,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { compressImageIfNeeded } from '~/utils/image-compress'
 
 interface Props {
   maxPhotos?: number
@@ -69,6 +79,7 @@ interface Photo {
 // State
 const photos = ref<Photo[]>([])
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const isCompressing = ref(false)
 
 // 파일 입력 트리거
 const triggerFileInput = () => {
@@ -76,7 +87,7 @@ const triggerFileInput = () => {
 }
 
 // 파일 선택 처리
-const handleFileSelect = (e: Event) => {
+const handleFileSelect = async (e: Event) => {
   const input = e.target as HTMLInputElement
   const files = input.files
 
@@ -85,44 +96,74 @@ const handleFileSelect = (e: Event) => {
   const remainingSlots = props.maxPhotos - photos.value.length
   const filesToAdd = Array.from(files).slice(0, remainingSlots)
 
-  filesToAdd.forEach(file => {
-    // 이미지 파일 검증
-    if (!file.type.startsWith('image/')) {
-      console.warn('이미지 파일만 업로드 가능합니다:', file.name)
-      return
-    }
+  // 압축 중 표시
+  isCompressing.value = true
 
-    // 파일 크기 검증 (10MB 제한)
-    const maxSize = 10 * 1024 * 1024 // 10MB
-    if (file.size > maxSize) {
-      alert(`파일 크기가 너무 큽니다: ${file.name}\n최대 10MB까지 가능합니다.`)
-      return
-    }
+  try {
+    for (const file of filesToAdd) {
+      // 이미지 파일 검증
+      if (!file.type.startsWith('image/')) {
+        console.warn('이미지 파일만 업로드 가능합니다:', file.name)
+        continue
+      }
 
-    // 미리보기 생성
+      // 파일 크기 검증 (원본 기준 20MB 제한 - 압축 후 줄어듦)
+      const maxSize = 20 * 1024 * 1024 // 20MB
+      if (file.size > maxSize) {
+        alert(`파일 크기가 너무 큽니다: ${file.name}\n최대 20MB까지 가능합니다.`)
+        continue
+      }
+
+      try {
+        // 조건부 이미지 압축 (1MB 초과 또는 1920x1440 초과 시)
+        const processedFile = await compressImageIfNeeded(file, {
+          maxWidth: 1920,
+          maxHeight: 1440,
+          quality: 0.75,        // 75% 품질
+          maxSizeBytes: 1 * 1024 * 1024  // 1MB 초과 시 압축
+        })
+
+        // 미리보기 생성
+        const preview = await createPreview(processedFile)
+
+        photos.value.push({
+          file: processedFile,
+          preview
+        })
+      } catch (error) {
+        console.error('이미지 처리 실패:', file.name, error)
+        alert(`이미지 처리 실패: ${file.name}`)
+      }
+    }
+  } finally {
+    isCompressing.value = false
+
+    // Input 초기화 (같은 파일 재선택 가능하도록)
+    if (fileInputRef.value) {
+      fileInputRef.value.value = ''
+    }
+  }
+}
+
+// 미리보기 생성 헬퍼
+const createPreview = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader()
 
     reader.onload = (e) => {
       if (e.target?.result) {
-        photos.value.push({
-          file,
-          preview: e.target.result as string
-        })
+        resolve(e.target.result as string)
+      } else {
+        reject(new Error('미리보기 생성 실패'))
       }
     }
 
     reader.onerror = () => {
-      console.error('파일 읽기 실패:', file.name)
-      alert('파일을 읽는데 실패했습니다.')
+      reject(new Error('파일 읽기 실패'))
     }
 
     reader.readAsDataURL(file)
   })
-
-  // Input 초기화 (같은 파일 재선택 가능하도록)
-  if (fileInputRef.value) {
-    fileInputRef.value.value = ''
-  }
 }
 
 // 사진 삭제
@@ -257,6 +298,28 @@ defineExpose({
 .add-photo .photo-count {
   font-size: 0.75rem;
   color: #9ca3af;
+}
+
+/* 압축 중 표시 */
+.compressing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px solid #cbd5e1;
+  background: #f8fafc;
+}
+
+.compressing i {
+  font-size: 1.5rem;
+  color: #3b82f6;
+}
+
+.compressing span {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
 }
 
 .photo-guide {

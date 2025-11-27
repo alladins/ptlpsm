@@ -171,23 +171,23 @@
 
         <!-- 탭 네비게이션 -->
         <div class="tab-navigation">
-                     <button 
-             @click="activeTab = 'specs'" 
-             :class="['tab-button', { active: activeTab === 'specs' }]"
-             :disabled="!selectedItem"
-           >
-             <i class="fas fa-cogs"></i>
-             스펙정보
-             <span v-if="selectedItem" class="tab-count">({{ selectedItem.itemSpecs.length }})</span>
-           </button>
-           <button 
-             @click="activeTab = 'skus'" 
+           <button
+             @click="activeTab = 'skus'"
              :class="['tab-button', { active: activeTab === 'skus' }]"
              :disabled="!selectedItem"
            >
              <i class="fas fa-barcode"></i>
              SKU 정보
              <span v-if="selectedItem" class="tab-count">({{ selectedItem.itemSkus.length }})</span>
+           </button>
+           <button
+             @click="activeTab = 'specs'"
+             :class="['tab-button', { active: activeTab === 'specs' }]"
+             :disabled="!selectedItem"
+           >
+             <i class="fas fa-cogs"></i>
+             스펙정보
+             <span v-if="selectedItem" class="tab-count">({{ selectedItem.itemSpecs.length }})</span>
            </button>
         </div>
 
@@ -1031,7 +1031,7 @@ const {
 // 선택된 품목 및 탭 관리
 const selectedItem = ref<Item | null>(null)
 const selectedItemId = ref<string | null>(null)
-const activeTab = ref<'specs' | 'skus'>('specs')
+const activeTab = ref<'specs' | 'skus'>('skus')
 
 // 모달 상태
 const showAddModal = ref(false)
@@ -1110,7 +1110,7 @@ const skuForm = ref<SkuForm>({
 const selectItem = (item: Item) => {
   selectedItem.value = item
   selectedItemId.value = item.itemId?.toString() ?? ''
-  activeTab.value = 'specs'
+  activeTab.value = 'skus'
 }
 
 // 검색 기능 - 리팩토링: useDataTable의 search 사용

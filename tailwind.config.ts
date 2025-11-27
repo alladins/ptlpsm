@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 export default {
+  darkMode: 'class', // 자동 다크모드 비활성화 (class 기반으로만 작동)
   content: [
     './components/**/*.{js,vue,ts}',
     './layouts/**/*.vue',

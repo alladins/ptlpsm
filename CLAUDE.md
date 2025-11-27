@@ -154,7 +154,7 @@ When enabled, the auth middleware (`middleware/auth.ts`) checks:
 - User activity tracking
 - Automatic redirect to `/login` if unauthenticated
 
-Accepted admin roles: `ADMIN`, `ROLE_ADMIN`, `ADMINISTRATOR`, `ROLE_ADMINISTRATOR`
+Accepted admin roles: `ADMINISTRATOR`, `SYSTEM_ADMIN`
 
 ### Route Pre-rendering
 

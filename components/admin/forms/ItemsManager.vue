@@ -158,6 +158,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { formatQuantity } from '~/utils/format'
 
 interface ItemData {
   skuId?: number
@@ -204,10 +205,10 @@ const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('ko-KR').format(value)
 }
 
-// 숫자 포맷팅 (쉼표 추가)
+// 숫자 포맷팅 (쉼표 추가) - 수량 포맷팅은 공통 유틸 사용
 const formatNumber = (value: number | undefined): string => {
   if (!value) return ''
-  return value.toLocaleString()
+  return formatQuantity(value)
 }
 
 // 단가 입력 처리
@@ -219,11 +220,11 @@ const handleUnitPriceInput = (event: Event, index: number) => {
   emit('calculate-amount', index)
 }
 
-// 수량 입력 처리
+// 수량 입력 처리 (소수점 지원)
 const handleQuantityInput = (event: Event, index: number) => {
   const target = event.target as HTMLInputElement
   const numericValue = target.value.replace(/,/g, '')
-  const parsed = parseInt(numericValue) || 0
+  const parsed = parseFloat(numericValue) || 0
   props.items[index].quantity = parsed
   emit('calculate-amount', index)
 }

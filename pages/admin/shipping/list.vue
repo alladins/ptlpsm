@@ -111,7 +111,7 @@
               v-for="(item, index) in shippingData"
               :key="item.shipmentId"
               class="table-row"
-              @dblclick="editItem(item.shipmentId)"
+              @click="editItem(item.shipmentId)"
               style="cursor: pointer;"
             >
               <td>{{ startIndex + index }}</td>
@@ -126,14 +126,14 @@
                   {{ getStatusText(item.status) }}
                 </span>
               </td>
-              <td class="text-right">{{ formatNumber(item.shipmentQuantity) }}</td>
+              <td class="text-right">{{ formatQuantity(item.shipmentQuantity) }}</td>
               <td class="text-right">{{ formatCurrency(item.shipmentAmount) }}</td>
             </tr>
           </tbody>
           <tfoot v-if="shippingData.length > 0">
             <tr>
               <td colspan="8" class="text-right"><strong>총 출하수량</strong></td>
-              <td class="text-right"><strong>{{ formatNumber(totalShippingQuantity) }}</strong></td>
+              <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
               <td class="text-right"><strong>{{ formatCurrency(totalShippingAmount) }}</strong></td>
             </tr>
           </tfoot>
@@ -169,7 +169,7 @@ import type { ShipmentListItem } from '~/services/shipment.service'
 import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
 import type { OrderDetailResponse } from '~/types/order'
 // 리팩토링: 공통 모듈 import
-import { formatDate, formatDateTime, formatNumber, formatCurrency } from '~/utils/format'
+import { formatDate, formatDateTime, formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 
@@ -186,17 +186,29 @@ const { statusOptions, getStatusLabel, loadStatusCodes } = useCommonStatus()
 // 발주번호 조회 팝업 상태
 const showOrderSelectPopup = ref(false)
 
-// 3개월 전 날짜 계산 (페이지 특화 함수)
+// 오늘 날짜 (로컬 시간 기준 - UTC 시간대 문제 해결)
+const getTodayDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 3개월 전 날짜 계산 (로컬 시간 기준)
 const getThreeMonthsAgo = () => {
   const date = new Date()
   date.setMonth(date.getMonth() - 3)
-  return date.toISOString().split('T')[0]
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 // 검색 폼 데이터
 const searchForm = ref({
   startDate: getThreeMonthsAgo(),
-  endDate: new Date().toISOString().split('T')[0],
+  endDate: getTodayDate(),
   orderId: null as number | null,
   deliveryRequestNo: '',
   shipmentId: null as number | null,
@@ -282,7 +294,7 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.value = {
     startDate: getThreeMonthsAgo(),
-    endDate: new Date().toISOString().split('T')[0],
+    endDate: getTodayDate(),
     orderId: null,
     deliveryRequestNo: '',
     shipmentId: null,

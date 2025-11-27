@@ -4,16 +4,16 @@
     <div class="compact-layout">
       <!-- 수량 정보 (컴팩트) -->
       <div class="compact-quantity">
-        <span class="quantity-completed">{{ completed.toLocaleString() }}</span>
+        <span class="quantity-completed">{{ formatQuantity(completed) }}</span>
         <span class="quantity-separator">/</span>
-        <span class="quantity-total">{{ total.toLocaleString() }}</span>
+        <span class="quantity-total">{{ formatQuantity(total) }}</span>
         <span class="quantity-unit">{{ unit }}</span>
       </div>
 
       <!-- 진행중 정보 -->
       <div class="compact-in-progress" v-if="inProgress > 0">
         <i class="fas fa-truck-loading"></i>
-        <span>{{ inProgress.toLocaleString() }} {{ unit }}</span>
+        <span>{{ formatQuantity(inProgress) }} {{ unit }}</span>
       </div>
 
       <!-- 프로그레스 바 (컴팩트) -->
@@ -21,12 +21,12 @@
         <div
           class="progress-segment completed"
           :style="{ width: `${completedPercent}%` }"
-          :title="`납품완료: ${completed.toLocaleString()} ${unit} (${completedPercent.toFixed(1)}%)`"
+          :title="`납품완료: ${formatQuantity(completed)} ${unit} (${completedPercent.toFixed(1)}%)`"
         ></div>
         <div
           class="progress-segment in-progress"
           :style="{ width: `${inProgressPercent}%` }"
-          :title="`진행중: ${inProgress.toLocaleString()} ${unit} (${inProgressPercent.toFixed(1)}%)`"
+          :title="`진행중: ${formatQuantity(inProgress)} ${unit} (${inProgressPercent.toFixed(1)}%)`"
         ></div>
       </div>
     </div>
@@ -37,9 +37,9 @@
     <!-- 수량 정보 -->
     <div class="quantity-display">
       <div class="quantity-main">
-        <span class="quantity-completed">{{ completed.toLocaleString() }}</span>
+        <span class="quantity-completed">{{ formatQuantity(completed) }}</span>
         <span class="quantity-separator">/</span>
-        <span class="quantity-total">{{ total.toLocaleString() }}</span>
+        <span class="quantity-total">{{ formatQuantity(total) }}</span>
         <span class="quantity-unit">{{ unit }}</span>
       </div>
       <div class="quantity-rate" :class="getRateColorClass()">
@@ -54,14 +54,14 @@
         <div
           class="progress-segment completed"
           :style="{ width: `${completedPercent}%` }"
-          :title="`납품완료: ${completed.toLocaleString()} ${unit} (${completedPercent.toFixed(1)}%)`"
+          :title="`납품완료: ${formatQuantity(completed)} ${unit} (${completedPercent.toFixed(1)}%)`"
         ></div>
 
         <!-- 진행중 (주황색) -->
         <div
           class="progress-segment in-progress"
           :style="{ width: `${inProgressPercent}%` }"
-          :title="`진행중: ${inProgress.toLocaleString()} ${unit} (${inProgressPercent.toFixed(1)}%)`"
+          :title="`진행중: ${formatQuantity(inProgress)} ${unit} (${inProgressPercent.toFixed(1)}%)`"
         ></div>
 
         <!-- 미진행 (회색) - 자동으로 남은 공간 채움 -->
@@ -73,17 +73,17 @@
       <div class="status-item completed">
         <i class="fas fa-check-circle"></i>
         <span>납품완료</span>
-        <span class="status-value">{{ completed.toLocaleString() }} {{ unit }}</span>
+        <span class="status-value">{{ formatQuantity(completed) }} {{ unit }}</span>
       </div>
       <div class="status-item in-progress">
         <i class="fas fa-truck-loading"></i>
         <span>진행중</span>
-        <span class="status-value">{{ inProgress.toLocaleString() }} {{ unit }}</span>
+        <span class="status-value">{{ formatQuantity(inProgress) }} {{ unit }}</span>
       </div>
       <div class="status-item pending">
         <i class="fas fa-clock"></i>
         <span>미진행</span>
-        <span class="status-value">{{ pending.toLocaleString() }} {{ unit }}</span>
+        <span class="status-value">{{ formatQuantity(pending) }} {{ unit }}</span>
       </div>
     </div>
   </div>
@@ -91,6 +91,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { formatQuantity } from '~/utils/format'
 import { getDeliveryRateColor } from '~/utils/delivery'
 
 interface Props {

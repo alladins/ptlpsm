@@ -50,8 +50,8 @@
 
       <!-- 납품확인 정보 -->
       <div class="transport-body">
-        <!-- 납품확인 완료 -->
-        <div v-if="transport.deliveryConfirmation" class="delivery-confirmation-compact">
+        <!-- 납품확인 완료 (deliveryId가 있어야 실제 완료) -->
+        <div v-if="transport.deliveryConfirmation?.deliveryId" class="delivery-confirmation-compact">
           <div class="confirmation-header-compact">
             <i class="fas fa-check-circle"></i>
             <span>납품확인 완료</span>
@@ -71,9 +71,14 @@
 
             <!-- 사진 -->
             <PhotoGallery
-              :photo-urls="transport.deliveryConfirmation.photoUrls"
+              :photo-urls="getPhotoUrls(transport.deliveryConfirmation)"
               :photo-count="transport.deliveryConfirmation.photoCount"
+              :selection-mode="true"
+              :delivery-id="transport.deliveryConfirmation.deliveryId"
+              :photo-ids="getPhotoIds(transport.deliveryConfirmation)"
+              :initial-selected-indices="getSelectedIndices(transport.deliveryConfirmation)"
               compact
+              @saved="handlePhotoSelectionSaved"
             />
 
             <!-- 위치 정보 -->
@@ -111,9 +116,14 @@ import { useCommonStatus } from '~/composables/useCommonStatus'
 interface Props {
   transport: TransportDetailNode
   level: number
+  deliveryDoneId?: number  // 납품완료계 ID (사진 선택용)
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  refresh: []
+}>()
 
 // 공통 상태 코드 사용 (DB에서 관리)
 const { getStatusLabel } = useCommonStatus()
@@ -128,6 +138,36 @@ const getStatusText = (status: string): string => {
 const getStatusClass = (status: string): string => {
   const kebabCase = status.toLowerCase().replace(/_/g, '-')
   return `status-${kebabCase}`
+}
+
+// photos 배열에서 URL 추출
+const getPhotoUrls = (confirmation: TransportDetailNode['deliveryConfirmation']): string[] => {
+  if (!confirmation || !confirmation.photos) return []
+  return confirmation.photos.map(p => p.url)
+}
+
+// photos 배열에서 photoId 추출
+const getPhotoIds = (confirmation: TransportDetailNode['deliveryConfirmation']): number[] => {
+  if (!confirmation || !confirmation.photos) return []
+  return confirmation.photos.map(p => p.photoId)
+}
+
+// 초기 선택된 인덱스 추출
+const getSelectedIndices = (confirmation: TransportDetailNode['deliveryConfirmation']): number[] => {
+  if (!confirmation || !confirmation.photos) return []
+
+  return confirmation.photos
+    .map((photo, index) => ({ photo, index }))
+    .filter(({ photo }) => photo.isSelectedForPdf)
+    .sort((a, b) => (a.photo.pdfDisplayOrder || 0) - (b.photo.pdfDisplayOrder || 0))
+    .map(({ index }) => index)
+}
+
+// 사진 선택 저장 후 처리
+const handlePhotoSelectionSaved = () => {
+  console.log('Photo selection saved successfully')
+  // 부모 컴포넌트에 리프레시 요청
+  emit('refresh')
 }
 </script>
 

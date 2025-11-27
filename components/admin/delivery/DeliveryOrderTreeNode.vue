@@ -30,7 +30,7 @@
         <span class="separator">|</span>
 
         <span class="quantity-info">
-          {{ (order.totalDeliveredQuantity || 0).toLocaleString() }} / {{ (order.totalOrderedQuantity || 0).toLocaleString() }} {{ order.unit }}
+          {{ formatQuantity(order.totalDeliveredQuantity) }} / {{ formatQuantity(order.totalOrderedQuantity) }} {{ order.unit }}
         </span>
 
         <span class="delivery-rate-badge" :class="getRateColorClass()">
@@ -54,6 +54,7 @@
               :shipment="shipment"
               :level="level + 1"
               :default-expanded="false"
+              :delivery-done-id="order.deliveryDoneId || order.orderId"
             />
           </div>
 
@@ -71,7 +72,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { OrderTreeNode } from '~/types/delivery'
-import { formatDate } from '~/utils/format'
+import { formatDate, formatQuantity } from '~/utils/format'
 import { getDeliveryRateColor } from '~/utils/delivery'
 
 interface Props {

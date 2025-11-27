@@ -98,6 +98,38 @@ export function formatNumber(num?: number | string | null): string {
 }
 
 /**
+ * 수량을 소수점 포함하여 포맷팅 (BigDecimal 대응)
+ * @param qty - 수량 (숫자 또는 문자열)
+ * @param decimals - 소수점 자릿수 (기본값: 2)
+ * @param trimZero - 소수점 이하가 0일 때 생략 여부 (기본값: true)
+ * @returns 포맷팅된 수량 문자열 (예: "1,234.56" 또는 "1,234")
+ */
+export function formatQuantity(
+  qty?: number | string | null,
+  decimals: number = 2,
+  trimZero: boolean = true
+): string {
+  if (qty === null || qty === undefined || qty === '') return '-'
+
+  try {
+    const numericValue = typeof qty === 'string' ? parseFloat(qty) : qty
+
+    if (isNaN(numericValue)) return '-'
+
+    // 소수점 자릿수에 맞춰 포맷팅
+    const formatted = new Intl.NumberFormat('ko-KR', {
+      minimumFractionDigits: trimZero ? 0 : decimals,
+      maximumFractionDigits: decimals
+    }).format(numericValue)
+
+    return formatted
+  } catch (error) {
+    console.error('수량 포맷팅 오류:', error)
+    return '-'
+  }
+}
+
+/**
  * 날짜 파라미터를 API 전송용 ISO 형식으로 변환
  * @param dateString - 날짜 문자열
  * @param isEndDate - 종료일 여부 (종료일은 23:59:59로 설정)

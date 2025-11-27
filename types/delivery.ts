@@ -5,6 +5,17 @@
  */
 
 /**
+ * 납품 사진 아이템
+ */
+export interface DeliveryPhotoItem {
+  url: string
+  seq: number
+  photoId: number
+  isSelectedForPdf: boolean
+  pdfDisplayOrder: number | null
+}
+
+/**
  * 납품확인 정보 (최하위 노드)
  */
 export interface DeliveryConfirmationNode {
@@ -15,7 +26,7 @@ export interface DeliveryConfirmationNode {
   pdfFileUrl: string | null
   signatureUrl: string | null
   photoCount: number
-  photoUrls: string[]
+  photos: DeliveryPhotoItem[]
   latitude: number | null
   longitude: number | null
 }

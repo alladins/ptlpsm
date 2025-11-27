@@ -137,9 +137,7 @@ export const userService = {
       return await response.json()
     } catch (error) {
       console.error('사용자 목록 조회 실패:', error)
-      // 개발 환경에서는 목 데이터 반환
-      console.log('개발 환경: 사용자 목 데이터 반환')
-      return this.getMockUsers(params)
+      throw error
     }
   },
 
@@ -167,9 +165,7 @@ export const userService = {
       return await response.json()
     } catch (error) {
       console.error('사용자 상세 검색 실패:', error)
-      // 개발 환경에서는 목 데이터 반환
-      console.log('개발 환경: 사용자 목 데이터 반환')
-      return this.getMockUsers(searchRequest)
+      throw error
     }
   },
 
@@ -210,9 +206,7 @@ export const userService = {
       return await response.json()
     } catch (error) {
       console.error('사용자 간단 검색 실패:', error)
-      // 개발 환경에서는 목 데이터 반환
-      console.log('개발 환경: 사용자 목 데이터 반환')
-      return this.getMockUsers(params)
+      throw error
     }
   },
 
@@ -237,9 +231,7 @@ export const userService = {
       return await response.json()
     } catch (error) {
       console.error('사용자 상세 조회 실패:', error)
-      // 개발 환경에서는 목 데이터 반환
-      console.log('개발 환경: 사용자 목 데이터 반환')
-      return this.getMockUser(id)
+      throw error
     }
   },
 
@@ -419,9 +411,7 @@ export const userService = {
       }
     } catch (error) {
       console.error('비밀번호 변경 실패:', error)
-      // 개발 환경에서는 목 데이터 반환
-      console.log('개발 환경: 비밀번호 변경 목 데이터 반환')
-      return this.getMockPasswordChangeResponse(passwordData)
+      throw error
     }
   },
 
@@ -476,207 +466,6 @@ export const userService = {
       console.error('프로필 수정 실패:', error)
       throw error
     }
-  },
-
-  // 목 데이터 (개발 환경용)
-  getMockUsers(params: any = {}): UserSearchResponse {
-    const mockUsers: User[] = [
-      {
-        id: 1,
-        userId: 'admin',
-        userName: '시스템관리자',
-        email: 'admin@ptlpsm.com',
-        phone: '010-1234-5678',
-        department: 'IT팀',
-        position: '팀장',
-        employeeNumber: 'EMP001',
-        companyName: 'PTLPSM',
-        role: 'SYSTEM_ADMIN',
-        userType: 'ADMIN',
-        enabled: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      },
-      {
-        id: 2,
-        userId: 'sales1',
-        userName: '김영업',
-        email: 'sales1@ptlpsm.com',
-        phone: '010-1111-2222',
-        department: '영업팀',
-        position: '대리',
-        employeeNumber: 'EMP002',
-        companyName: 'PTLPSM',
-        role: 'SALES_MANAGER',
-        userType: 'INTERNAL',
-        enabled: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      },
-      {
-        id: 3,
-        userId: 'shipping1',
-        userName: '박출하',
-        email: 'shipping1@ptlpsm.com',
-        phone: '010-3333-4444',
-        department: '출하팀',
-        position: '사원',
-        employeeNumber: 'EMP003',
-        companyName: 'PTLPSM',
-        role: 'SHIPPING_MANAGER',
-        userType: 'INTERNAL',
-        enabled: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      },
-      {
-        id: 4,
-        userId: 'courier1',
-        userName: '이택배',
-        email: 'courier1@ptlpsm.com',
-        phone: '010-5555-6666',
-        department: '배송팀',
-        position: '기사',
-        employeeNumber: 'EMP004',
-        companyName: 'PTLPSM',
-        role: 'COURIER',
-        userType: 'EXTERNAL',
-        enabled: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      },
-      {
-        id: 5,
-        userId: 'viewer1',
-        userName: '최조회',
-        email: 'viewer1@ptlpsm.com',
-        phone: '010-7777-8888',
-        department: '기획팀',
-        position: '대리',
-        employeeNumber: 'EMP005',
-        companyName: 'PTLPSM',
-        role: 'VIEWER',
-        userType: 'INTERNAL',
-        enabled: false,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      }
-    ]
-
-    // 검색 필터링
-    let filteredUsers = mockUsers
-
-    if (params.searchKeyword) {
-      const keyword = params.searchKeyword.toLowerCase()
-      filteredUsers = filteredUsers.filter(user => 
-        user.userId.toLowerCase().includes(keyword) ||
-        user.userName.toLowerCase().includes(keyword) ||
-        user.email.toLowerCase().includes(keyword)
-      )
-    }
-
-    if (params.userName) {
-      const userName = params.userName.toLowerCase()
-      filteredUsers = filteredUsers.filter(user => 
-        user.userName.toLowerCase().includes(userName)
-      )
-    }
-
-    if (params.role) {
-      filteredUsers = filteredUsers.filter(user => user.role === params.role)
-    }
-
-    if (params.enabled) {
-      const enabled = params.enabled === 'true'
-      filteredUsers = filteredUsers.filter(user => user.enabled === enabled)
-    }
-
-    if (params.department) {
-      const department = params.department.toLowerCase()
-      filteredUsers = filteredUsers.filter(user => 
-        user.department?.toLowerCase().includes(department)
-      )
-    }
-
-    if (params.phone) {
-      const phone = params.phone.toLowerCase()
-      filteredUsers = filteredUsers.filter(user => 
-        user.phone?.toLowerCase().includes(phone)
-      )
-    }
-
-    if (params.userType) {
-      filteredUsers = filteredUsers.filter(user => user.userType === params.userType)
-    }
-
-    if (params.companyName) {
-      const companyName = params.companyName.toLowerCase()
-      filteredUsers = filteredUsers.filter(user => 
-        user.companyName?.toLowerCase().includes(companyName)
-      )
-    }
-
-    if (params.position) {
-      const position = params.position.toLowerCase()
-      filteredUsers = filteredUsers.filter(user => 
-        user.position?.toLowerCase().includes(position)
-      )
-    }
-
-    if (params.enabled) {
-      const enabled = params.enabled === 'Y'
-      filteredUsers = filteredUsers.filter(user => user.enabled === enabled)
-    }
-
-    // 페이징
-    const page = params.page || 0
-    const size = params.size || 10
-    const startIndex = page * size
-    const endIndex = startIndex + size
-    const paginatedUsers = filteredUsers.slice(startIndex, endIndex)
-
-    return {
-      content: paginatedUsers,
-      totalElements: filteredUsers.length,
-      totalPages: Math.ceil(filteredUsers.length / size),
-      size: size,
-      number: page,
-      first: page === 0,
-      last: endIndex >= filteredUsers.length,
-      empty: paginatedUsers.length === 0
-    }
-  },
-
-  getMockUser(id: number): User {
-    const mockUsers = this.getMockUsers().content
-    const user = mockUsers.find(u => u.id === id)
-    if (!user) {
-      throw new Error(`User with id ${id} not found`)
-    }
-    return user
-  },
-
-  /**
-   * 비밀번호 변경 목 데이터 응답
-   */
-  getMockPasswordChangeResponse(passwordData: PasswordChangeRequest): PasswordChangeResponse {
-    // 유효성 검사 시뮬레이션
-    if (!passwordData.newPassword || !passwordData.confirmPassword) {
-      throw new Error('새 비밀번호와 확인 비밀번호를 모두 입력해주세요.')
-    }
-
-    if (passwordData.newPassword.length < 6 || passwordData.newPassword.length > 100) {
-      throw new Error('비밀번호는 6~100자 사이여야 합니다.')
-    }
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      throw new Error('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.')
-    }
-
-    // 성공 응답
-    return {
-      status: 200,
-      message: '비밀번호가 성공적으로 변경되었습니다.'
-    }
   }
+
 }

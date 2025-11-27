@@ -66,9 +66,9 @@
       <!-- 검색 조건 섹션 - 완전히 한 줄 -->
       <div class="search-section-compact">
         <div class="search-row-single">
-          <!-- 계약일자 -->
+          <!-- 납품요구일자 -->
           <div class="search-item">
-            <label>계약일자:</label>
+            <label>납품요구일자:</label>
             <input type="date" v-model="searchForm.startDate" class="date-input">
             <span class="separator">~</span>
             <input type="date" v-model="searchForm.endDate" class="date-input">
@@ -206,10 +206,29 @@ const todayCount = ref(0)
 const totalContractAmount = ref(0)
 const pendingDeliveryCount = ref(0)
 
-// 검색 폼 데이터
+// 오늘 날짜 (로컬 시간 기준)
+const getTodayDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 2개월 전 날짜 계산 (로컬 시간 기준)
+const getTwoMonthsAgo = () => {
+  const date = new Date()
+  date.setMonth(date.getMonth() - 2)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 검색 폼 데이터 (납품요구일자 기본값: 최근 2개월)
 const searchForm = ref({
-  startDate: '',
-  endDate: '',
+  startDate: getTwoMonthsAgo(),
+  endDate: getTodayDate(),
   contractId: '',
   client: '',
   keyword: '',
@@ -218,8 +237,8 @@ const searchForm = ref({
 
 // 정렬 옵션
 const sortOptions = [
-  { value: 'contractDate,desc', label: '계약일자 최신순' },
-  { value: 'contractDate,asc', label: '계약일자 과거순' },
+  { value: 'deliveryRequestDate,desc', label: '납품요구일자 최신순' },
+  { value: 'deliveryRequestDate,asc', label: '납품요구일자 과거순' },
   { value: 'client,asc', label: '수요기관명 가나다순' },
   { value: 'client,desc', label: '수요기관명 역순' },
   { value: 'totalAmount,desc', label: '총계약금액 높은순' },
@@ -234,7 +253,7 @@ const activeFilters = computed(() => {
   if (searchForm.value.startDate || searchForm.value.endDate) {
     filters.push({
       key: 'date',
-      label: '계약일자',
+      label: '납품요구일자',
       value: `${searchForm.value.startDate || '시작'} ~ ${searchForm.value.endDate || '종료'}`
     })
   }
@@ -328,8 +347,8 @@ const handleSearch = () => {
 // 검색 초기화
 const handleReset = () => {
   searchForm.value = {
-    startDate: '',
-    endDate: '',
+    startDate: getTwoMonthsAgo(),
+    endDate: getTodayDate(),
     contractId: '',
     client: '',
     keyword: '',

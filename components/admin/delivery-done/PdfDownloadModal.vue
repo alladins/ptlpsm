@@ -35,7 +35,7 @@
             <!-- 납품확인서 -->
             <button
               class="pdf-button"
-              @click="downloadConfirmation"
+              @click="openPdfPreview('confirmation')"
             >
               <div class="pdf-icon">
                 <i class="fas fa-file-pdf"></i>
@@ -45,14 +45,14 @@
                 <p>계약물품 및 납품내역</p>
               </div>
               <div class="pdf-action">
-                <i class="fas fa-download"></i>
+                <i class="fas fa-eye"></i>
               </div>
             </button>
 
             <!-- 납품완료계 -->
             <button
               class="pdf-button"
-              @click="downloadCompletion"
+              @click="openPdfPreview('completion')"
             >
               <div class="pdf-icon">
                 <i class="fas fa-file-pdf"></i>
@@ -62,14 +62,14 @@
                 <p>납품 완료 증명서</p>
               </div>
               <div class="pdf-action">
-                <i class="fas fa-download"></i>
+                <i class="fas fa-eye"></i>
               </div>
             </button>
 
             <!-- 사진대지 -->
             <button
               class="pdf-button"
-              @click="downloadPhotoSheet"
+              @click="openPdfPreview('photo-sheet')"
             >
               <div class="pdf-icon">
                 <i class="fas fa-file-pdf"></i>
@@ -79,7 +79,7 @@
                 <p>납품 현장 사진</p>
               </div>
               <div class="pdf-action">
-                <i class="fas fa-download"></i>
+                <i class="fas fa-eye"></i>
               </div>
             </button>
           </div>
@@ -99,7 +99,7 @@
         <!-- 안내 메시지 -->
         <div class="notice-section">
           <i class="fas fa-info-circle"></i>
-          <p>PDF 파일은 새 창에서 열립니다. 파일을 저장하거나 인쇄할 수 있습니다.</p>
+          <p>PDF 버튼을 클릭하면 미리보기 창이 열립니다. 미리보기에서 다운로드할 수 있습니다.</p>
         </div>
       </div>
 
@@ -109,17 +109,34 @@
         </button>
       </div>
     </div>
+
+    <!-- PDF 미리보기 모달 -->
+    <PdfPreviewModal
+      :show="showPdfPreview"
+      :pdf-url="previewPdfUrl"
+      :delivery-id="deliveryDone.deliveryDoneId"
+      :file-name="previewFileName"
+      @close="closePdfPreview"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import {
-  downloadConfirmationPdf,
-  downloadCompletionPdf,
-  downloadPhotoSheetPdf,
-  downloadAllPdfs
+  downloadAllPdfs,
+  getPdfDownloadUrl
 } from '~/services/delivery-done.service'
 import type { DeliveryDoneListItem } from '~/types/delivery-done'
+import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
+
+type PdfType = 'confirmation' | 'completion' | 'photo-sheet'
+
+const pdfTypeNames: Record<PdfType, string> = {
+  'confirmation': '납품확인서',
+  'completion': '납품완료계',
+  'photo-sheet': '사진대지'
+}
 
 const props = defineProps<{
   deliveryDone: DeliveryDoneListItem
@@ -129,33 +146,33 @@ const emit = defineEmits<{
   close: []
 }>()
 
-async function downloadConfirmation() {
-  try {
-    await downloadConfirmationPdf(props.deliveryDone.deliveryDoneId)
-  } catch (error) {
-    console.error('Failed to download confirmation PDF:', error)
-    alert('납품확인서 다운로드 중 오류가 발생했습니다.')
-  }
+// PDF 미리보기 모달 상태
+const showPdfPreview = ref(false)
+const previewPdfUrl = ref('')
+const previewFileName = ref('')
+
+/**
+ * PDF 미리보기 모달 열기
+ */
+function openPdfPreview(pdfType: PdfType) {
+  const url = getPdfDownloadUrl(props.deliveryDone.deliveryDoneId, pdfType)
+  previewPdfUrl.value = url
+  previewFileName.value = `${pdfTypeNames[pdfType]}_${props.deliveryDone.deliveryRequestNo}.pdf`
+  showPdfPreview.value = true
 }
 
-async function downloadCompletion() {
-  try {
-    await downloadCompletionPdf(props.deliveryDone.deliveryDoneId)
-  } catch (error) {
-    console.error('Failed to download completion PDF:', error)
-    alert('납품완료계 다운로드 중 오류가 발생했습니다.')
-  }
+/**
+ * PDF 미리보기 모달 닫기
+ */
+function closePdfPreview() {
+  showPdfPreview.value = false
+  previewPdfUrl.value = ''
+  previewFileName.value = ''
 }
 
-async function downloadPhotoSheet() {
-  try {
-    await downloadPhotoSheetPdf(props.deliveryDone.deliveryDoneId)
-  } catch (error) {
-    console.error('Failed to download photo sheet PDF:', error)
-    alert('사진대지 다운로드 중 오류가 발생했습니다.')
-  }
-}
-
+/**
+ * 모든 PDF 일괄 다운로드
+ */
 async function downloadAll() {
   try {
     await downloadAllPdfs(props.deliveryDone.deliveryDoneId)

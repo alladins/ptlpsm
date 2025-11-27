@@ -100,7 +100,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in salesData" :key="item.id" class="table-row" @dblclick="viewItem(item.id)">
+              <tr v-for="(item, index) in salesData" :key="item.id" class="table-row" @click="editItem(item.id)" style="cursor: pointer;">
                 <td>{{ startIndex + index }}</td>
                 <td>{{ item.customerNm }}</td>
                 <td>
@@ -266,10 +266,10 @@ const goToRegister = () => {
   router.push('/admin/sales/register')
 }
 
-// 상세 페이지로 이동
-const viewItem = (id?: number) => {
+// 수정 페이지로 이동
+const editItem = (id?: number) => {
   if (id) {
-    router.push(`/admin/sales/detail/${id}`)
+    router.push(`/admin/sales/edit/${id}`)
   }
 }
 
@@ -286,6 +286,16 @@ onMounted(async () => {
  * 공통 스타일은 admin-common.css, admin-search.css, admin-tables.css에서 관리됩니다.
  * organization-info 스타일은 admin-tables.css로 이동됨
  */
+
+/* 행 클릭 가능 표시 */
+.table-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.table-row:hover {
+  background-color: #f9fafb;
+}
 
 /* 반응형 - 페이지 특화 스타일만 유지 */
 @media (max-width: 1024px) {

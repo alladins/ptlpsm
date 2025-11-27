@@ -30,10 +30,10 @@ export enum SignatureRole {
 export interface DeliveryDoneItem {
   itemId: number
   sequenceNumber: number
-  name: string
+  itemName: string
   specification: string
   unit: string
-  contractQuantity: number
+  orderedQuantity: number
   deliveredQuantity: number
   remainingQuantity: number
   isComplete: boolean
@@ -56,6 +56,8 @@ export interface DeliveryDonePhoto {
   photographerName: string | null
   photoDate: string
   needsPageBreak?: boolean  // PDF 생성 시 페이지 구분용 (2장마다)
+  isSelectedForPdf?: boolean  // 사진대지 포함 여부
+  pdfDisplayOrder?: number | null  // 사진대지 표시 순서
 }
 
 /**
@@ -64,16 +66,23 @@ export interface DeliveryDonePhoto {
 export interface ShipmentWithDelivery {
   shipmentId: number
   shipmentDate: string
-  shipmentQuantity: number
-  shipmentResponsible: string | null
-  itemSummary: string | null
-  transportId: number | null
-  trackingNumber: string | null
-  vehicleNo: string | null
-  driverName: string | null
-  deliveryDate: string | null
-  deliveryStatus: string
-  hasDeliveryConfirmation: boolean
+  shipmentNo: string | null
+  completedAt: string | null
+  status: string  // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
+  totalItemCount: number
+  totalQuantity: number
+
+  // Legacy 필드 (호환성 유지 - optional)
+  shipmentQuantity?: number
+  shipmentResponsible?: string | null
+  itemSummary?: string | null
+  transportId?: number | null
+  trackingNumber?: string | null
+  vehicleNo?: string | null
+  driverName?: string | null
+  deliveryDate?: string | null
+  deliveryStatus?: string
+  hasDeliveryConfirmation?: boolean
 }
 
 /**
@@ -150,9 +159,12 @@ export interface DeliveryDoneListItem {
   totalDeliveryCount: number
   builder?: string                     // 백엔드 응답 필드 (optional, 호환성)
   contractorCompanyName: string        // 프론트엔드 표준 필드
-  supervisorName: string | null
-  hasContractorSignature: boolean
-  hasSupervisorSignature: boolean
+  siteSupervisorName: string | null    // 시공사 현장소장 이름
+  siteSupervisorPhone: string | null   // 시공사 현장소장 전화번호
+  supervisorName: string | null        // 현장감리원 이름
+  supervisorPhone: string | null       // 현장감리원 전화번호
+  hasManagerSignature: boolean         // ✅ 시공사 현장소장 서명 여부
+  hasInspectorSignature: boolean       // ✅ 현장감리원 서명 여부
   createdAt: string
   updatedAt: string
 }
@@ -197,44 +209,88 @@ export interface DeliveryDoneToken {
 }
 
 /**
- * 모바일 서명 페이지용 간략 정보
+ * 모바일 서명 페이지용 간소화 타입 (UI 필수 데이터만)
  */
 export interface DeliveryDoneMobileInfo {
-  deliveryDoneId: number
+  // 발주 정보
   deliveryRequestNo: string
   contractNo: string
   client: string
   projectName: string
   deliveryLocation: string
-  role: SignatureRole
 
-  // 현재 서명 상태
+  // 서명 현황
+  recipientType: RecipientType
+  builder: string
+  representativeName: string
   hasContractorSignature: boolean
-  hasSupervisorSignature: boolean
-
-  // 역할별 정보
-  contractorCompanyName: string
-  contractorRepresentative: string
   supervisorName: string | null
   supervisorCompany: string | null
+  hasSupervisorSignature: boolean
 
-  // 품목 요약
-  itemCount: number
-  itemSummary: string
+  // 요약 정보
+  totalItemCount: number
   totalOrderedQuantity: number
   totalDeliveredQuantity: number
+
+  // 품목 리스트
+  items: DeliveryDoneItem[]
 }
 
 /**
- * 서명 제출 데이터
+ * 모바일용 간소화된 출하 정보
+ */
+export interface MobileShipmentInfo {
+  shipmentId: number
+  shipmentDate: string
+  completedAt: string | null
+  status: string  // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
+  totalItemCount: number
+  totalQuantity: number
+}
+
+/**
+ * 서명 제출 데이터 (Deprecated - FormData 방식으로 변경)
+ * @deprecated Use submitSignature(token, blob, recipientType) instead
  */
 export interface SignatureSubmitData {
-  role: SignatureRole
-  signatureImage: string  // Base64 encoded image
+  recipientType: RecipientType
+  signatureImage: string  // Base64 encoded image (더 이상 사용 안 함)
 }
 
 /**
- * 메시지 발송 요청
+ * 수신자 타입 (서명 URL 발송용)
+ */
+export type RecipientType = 'SITE_MANAGER' | 'SITE_INSPECTOR'
+
+/**
+ * 문서 타입 (서명 URL 발송용)
+ */
+export type DocumentType = 'CONFIRMATION' | 'COMPLETION' | 'PHOTO_SHEET'
+
+/**
+ * 서명 URL 수신자 정보
+ */
+export interface SignatureRecipient {
+  recipientType: RecipientType
+  recipientUserId: number          // 수신자 사용자 ID (DB 저장용)
+  recipientName: string
+  recipientPhone: string
+}
+
+/**
+ * 서명 URL 발송 요청 (다중 수신자 지원)
+ */
+export interface SendSignatureUrlRequest {
+  deliveryDoneId: number
+  documentType: DocumentType
+  recipients: SignatureRecipient[]
+  messageType: 'LMS' | 'SMS'
+}
+
+/**
+ * 메시지 발송 요청 (Legacy - 단일 수신자)
+ * @deprecated Use SendSignatureUrlRequest instead
  */
 export interface SendMessageRequest {
   deliveryDoneId: number
@@ -249,8 +305,8 @@ export interface SendMessageRequest {
 export interface SendMessageResponse {
   success: boolean
   message: string
-  tokenUrl: string
-  expiresAt: string
+  tokenUrl?: string
+  expiresAt?: string
 }
 
 /**
@@ -292,4 +348,43 @@ export interface DeliveryDoneStatusHistory {
   changedBy: string
   changedAt: string
   remarks: string | null
+}
+
+/**
+ * 납품 사진 정보 (delivery_done_photos 테이블)
+ */
+export interface DeliveryPhotoInfo {
+  photoId: number
+  deliveryDoneId: number
+  deliveryId: number
+  deliveryDate: string | null
+  deliveryRequestNo: string | null
+  seq: number
+  filePath: string
+  thumbnailPath: string | null
+  originalFilename: string | null
+  fileSize: number | null
+  capturedAt: string | null
+  photoDescription: string | null
+  latitude: number | null
+  longitude: number | null
+  isSelectedForPdf: boolean
+  pdfDisplayOrder: number | null
+}
+
+/**
+ * 사진 선택 업데이트 요청
+ */
+export interface UpdatePhotoSelectionRequest {
+  deliveryId: number
+  photoIds: number[]  // 최대 2개
+}
+
+/**
+ * 사진 선택 업데이트 응답
+ */
+export interface UpdatePhotoSelectionResponse {
+  success: boolean
+  message: string
+  updatedCount: number
 }

@@ -113,7 +113,7 @@
                   <FormField label="총 출하수량">
                     <input
                       type="text"
-                      :value="formatNumber(totalShippingQuantity)"
+                      :value="formatQuantity(totalShippingQuantity)"
                       class="form-input-xs text-right"
                       readonly
                     >
@@ -207,11 +207,11 @@
                     <td>{{ item.skuName }}</td>
                     <td>{{ item.specification }}</td>
                     <td>{{ item.unit }}</td>
-                    <td class="text-right">{{ formatNumber(item.orderQuantity) }}</td>
-                    <td class="text-right" :title="`다른 출하들의 합계: ${formatNumber(item.otherShipmentsQuantity)}`">
-                      {{ formatNumber(item.otherShipmentsQuantity) }}
+                    <td class="text-right">{{ formatQuantity(item.orderQuantity) }}</td>
+                    <td class="text-right" :title="`다른 출하들의 합계: ${formatQuantity(item.otherShipmentsQuantity)}`">
+                      {{ formatQuantity(item.otherShipmentsQuantity) }}
                     </td>
-                    <td class="text-right">{{ formatNumber(item.remainingQuantity) }}</td>
+                    <td class="text-right">{{ formatQuantity(item.remainingQuantity) }}</td>
                     <td class="text-right quantity-col">
                       <!-- 대기/준비 상태일 때만 수정 가능 -->
                       <input
@@ -224,7 +224,7 @@
                         @focus="saveOriginalQuantity(item)"
                         @change="validateQuantity(item)"
                       />
-                      <span v-else>{{ formatNumber(item.shippingQuantity) }}</span>
+                      <span v-else>{{ formatQuantity(item.shippingQuantity) }}</span>
                     </td>
                     <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
                     <td class="text-right">{{ formatCurrency(item.shippingQuantity * item.unitPrice) }}</td>
@@ -234,7 +234,7 @@
                   <tr>
                     <td colspan="7" class="text-right"></td>
                     <td colspan="2" class="text-right"><strong>총 출하수량</strong></td>
-                    <td class="text-right"><strong>{{ formatNumber(totalShippingQuantity) }}</strong></td>
+                    <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
                     <td class="text-right"><strong>총 금액</strong></td>
                     <td class="text-right"><strong>{{ formatCurrency(totalAmount) }}</strong></td>
                   </tr>
@@ -266,7 +266,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
 import type { ShipmentDetailWithOrder, ShipmentItemWithOrder } from '~/services/shipment.service'
-import { formatNumber, formatCurrency } from '~/utils/format'
+import { formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useEditForm } from '~/composables/admin/useEditForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { useCommonStatus } from '~/composables/useCommonStatus'
@@ -547,8 +547,8 @@ const validateQuantity = (item: OrderItem) => {
 
   if (item.shippingQuantity > item.maxEditableQuantity) {
     alert(
-      `출하수량은 최대 ${formatNumber(item.maxEditableQuantity)}개까지 가능합니다.\n` +
-      `(현재 출하분 ${formatNumber(item.shipmentQuantity)}개 + 잔여 ${formatNumber(item.remainingQuantity)}개)`
+      `출하수량은 최대 ${formatQuantity(item.maxEditableQuantity)}개까지 가능합니다.\n` +
+      `(현재 출하분 ${formatQuantity(item.shipmentQuantity)}개 + 잔여 ${formatQuantity(item.remainingQuantity)}개)`
     )
     item.shippingQuantity = originalValue  // 원래 값으로 복원
   }

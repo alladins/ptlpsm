@@ -40,7 +40,7 @@
 
         <div class="search-item">
           <label>메시지 타입</label>
-          <select v-model="searchParams.templateType" class="status-select">
+          <select v-model="searchParams.messageType" class="status-select">
             <option value="">전체</option>
             <option value="SMS">SMS</option>
             <option value="LMS">LMS</option>
@@ -112,7 +112,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="template in templates" :key="template.templateId">
+        <tr v-for="template in templates" :key="template.templateId" class="table-row" @click="goToEdit(template.templateId)" style="cursor: pointer;">
           <td>
             <code class="template-code">{{ template.templateCode }}</code>
           </td>
@@ -120,8 +120,8 @@
             <strong>{{ template.templateName }}</strong>
           </td>
           <td>
-            <span :class="['badge', `badge-${template.templateType.toLowerCase()}`]">
-              {{ template.templateType }}
+            <span :class="['badge', `badge-${template.messageType?.toLowerCase() || 'sms'}`]">
+              {{ template.messageType || '-' }}
             </span>
           </td>
           <td>
@@ -132,7 +132,7 @@
           <td>
             <button
               :class="['toggle-btn', template.useYn === 'Y' ? 'active' : 'inactive']"
-              @click="handleToggleUse(template)"
+              @click.stop="handleToggleUse(template)"
             >
               <i :class="template.useYn === 'Y' ? 'ri-check-line' : 'ri-close-line'"></i>
               {{ template.useYn === 'Y' ? '사용' : '미사용' }}
@@ -144,22 +144,8 @@
           <td>
             <div class="action-buttons">
               <button
-                class="btn-action-table btn-view"
-                @click="goToDetail(template.templateId)"
-              >
-                <i class="ri-eye-line"></i>
-                보기
-              </button>
-              <button
-                class="btn-action-table btn-edit"
-                @click="goToEdit(template.templateId)"
-              >
-                <i class="ri-edit-line"></i>
-                수정
-              </button>
-              <button
                 class="btn-action-table btn-delete"
-                @click="handleDelete(template)"
+                @click.stop="handleDelete(template)"
               >
                 <i class="ri-delete-bin-line"></i>
                 삭제
@@ -217,7 +203,7 @@ const pageSize = ref(20)
 const searchParams = reactive<MessageTemplateSearchParams>({
   templateCode: '',
   templateName: '',
-  templateType: undefined,
+  messageType: undefined,
   useYn: undefined,
   page: 0,
   size: 20,
@@ -239,7 +225,7 @@ const loadTemplates = async () => {
     // Remove empty params
     if (!params.templateCode) delete params.templateCode
     if (!params.templateName) delete params.templateName
-    if (!params.templateType) delete params.templateType
+    if (!params.messageType) delete params.messageType
     if (!params.useYn) delete params.useYn
 
     const response = await getMessageTemplateList(params)
@@ -266,7 +252,7 @@ const handleSearch = () => {
 const handleReset = () => {
   searchParams.templateCode = ''
   searchParams.templateName = ''
-  searchParams.templateType = undefined
+  searchParams.messageType = undefined
   searchParams.useYn = undefined
   currentPage.value = 0
   loadTemplates()
@@ -330,10 +316,6 @@ const goToRegister = () => {
   router.push('/admin/basic-info/message-templates/register')
 }
 
-const goToDetail = (id: number) => {
-  router.push(`/admin/basic-info/message-templates/detail/${id}`)
-}
-
 const goToEdit = (id: number) => {
   router.push(`/admin/basic-info/message-templates/edit/${id}`)
 }
@@ -363,6 +345,16 @@ onMounted(() => {
   color: #1f2937;
 }
 
+/* 행 클릭 가능 표시 */
+.table-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.table-row:hover {
+  background-color: #f9fafb;
+}
+
 /* 테이블 액션 버튼 */
 .btn-action-table {
   display: inline-flex;
@@ -381,30 +373,6 @@ onMounted(() => {
 
 .btn-action-table i {
   font-size: 14px;
-}
-
-.btn-action-table.btn-view {
-  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
-}
-
-.btn-action-table.btn-view:hover {
-  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.35);
-  transform: translateY(-2px);
-}
-
-.btn-action-table.btn-edit {
-  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.25);
-}
-
-.btn-action-table.btn-edit:hover {
-  background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
-  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.35);
-  transform: translateY(-2px);
 }
 
 .btn-action-table.btn-delete {

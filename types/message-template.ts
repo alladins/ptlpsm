@@ -8,7 +8,7 @@ export interface MessageTemplate {
   templateId: number
   templateCode: string
   templateName: string
-  templateType: MessageTemplateType
+  messageType: MessageTemplateType
   subject: string | null
   content: string | null
   description: string | null
@@ -22,7 +22,7 @@ export interface MessageTemplate {
 export interface MessageTemplateCreateRequest {
   templateCode: string
   templateName: string
-  templateType: MessageTemplateType
+  messageType: MessageTemplateType
   subject?: string
   content: string
   description?: string
@@ -34,7 +34,7 @@ export interface MessageTemplateUpdateRequest extends Partial<MessageTemplateCre
 export interface MessageTemplateSearchParams {
   templateCode?: string
   templateName?: string
-  templateType?: MessageTemplateType
+  messageType?: MessageTemplateType
   useYn?: 'Y' | 'N'
   page?: number
   size?: number

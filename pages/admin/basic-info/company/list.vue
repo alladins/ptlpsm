@@ -94,13 +94,9 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in companyList" :key="item.id" class="table-row" @click="goToDetail(item.id)">
+              <tr v-for="(item, index) in companyList" :key="item.id" class="table-row" @click="goToEdit(item.id)" style="cursor: pointer;">
                 <td>{{ startIndex + index }}</td>
-                <td>
-                  <a href="#" @click.prevent="goToDetail(item.id)" class="link-primary">
-                    {{ item.companyName }}
-                  </a>
-                </td>
+                <td>{{ item.companyName }}</td>
                 <td>{{ item.businessNumber }}</td>
                 <td>{{ item.representative }}</td>
                 <td>{{ item.tel }}</td>
@@ -231,8 +227,8 @@ function goToRegister() {
   router.push('/admin/basic-info/company/register')
 }
 
-function goToDetail(id: number) {
-  router.push(`/admin/basic-info/company/detail/${id}`)
+function goToEdit(id: number) {
+  router.push(`/admin/basic-info/company/edit/${id}`)
 }
 
 // 초기 로드

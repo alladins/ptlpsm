@@ -9,9 +9,10 @@ import type {
   DeliveryDoneListResponse,
   DeliveryDoneSearchParams,
   DeliveryDoneMobileInfo,
-  SignatureSubmitData,
   SendMessageRequest,
   SendMessageResponse,
+  SendSignatureUrlRequest,
+  RecipientType,
   SubmitToNaraRequest,
   SubmitToNaraResponse
 } from '~/types/delivery-done'
@@ -23,7 +24,7 @@ import type { StatusCode } from '~/types/common'
  *
  * API 엔드포인트:
  * - 관리자: /api/admin/delivery-done
- * - 모바일: /api/public/delivery-done
+ * - 모바일: /api/m/delivery-done
  */
 
 // ==================== 관리자 API ====================
@@ -61,11 +62,18 @@ export async function getDeliveryDoneList(
 
     const data = await response.json()
 
-    // 데이터 변환: builder → contractorCompanyName
+    // 데이터 변환: 서버 응답을 프론트엔드 타입으로 매핑
     if (data.content && Array.isArray(data.content)) {
       data.content = data.content.map((item: any) => ({
         ...item,
-        contractorCompanyName: item.builder || item.contractorCompanyName || '-'
+        contractorCompanyName: item.builder || item.contractorCompanyName || '-',
+        siteSupervisorName: item.siteSupervisorName || null,
+        siteSupervisorPhone: item.siteSupervisorPhone || null,
+        supervisorName: item.supervisorName || null,
+        supervisorPhone: item.supervisorPhone || null,
+        // 백엔드 필드명 매핑 (hasContractorSignature → hasManagerSignature)
+        hasManagerSignature: item.hasContractorSignature ?? item.hasManagerSignature ?? false,
+        hasInspectorSignature: item.hasSupervisorSignature ?? item.hasInspectorSignature ?? false
       }))
     }
 
@@ -103,34 +111,57 @@ export async function getDeliveryDoneDetail(
 }
 
 /**
- * 서명 URL 생성 및 메시지 발송
+ * 서명 URL 생성 및 메시지 발송 (다중 수신자 지원)
  */
-export async function sendSignatureMessage(
-  request: SendMessageRequest
+export async function sendSignatureUrl(
+  request: SendSignatureUrlRequest
 ): Promise<SendMessageResponse> {
   try {
-    const url = `${getApiBaseUrl()}/admin/delivery-done/${request.deliveryDoneId}/send-message`
+    const url = `${getApiBaseUrl()}/admin/delivery-done/${request.deliveryDoneId}/send-signature-url`
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        role: request.role,
-        recipientPhone: request.recipientPhone,
-        recipientName: request.recipientName
+        documentType: request.documentType,
+        recipients: request.recipients,
+        messageType: request.messageType
       })
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to send signature message: ${response.statusText}`)
+      throw new Error(`Failed to send signature URL: ${response.statusText}`)
     }
 
     return await response.json()
   } catch (error) {
-    console.error('Error sending signature message:', error)
+    console.error('Error sending signature URL:', error)
     throw error
   }
+}
+
+/**
+ * 서명 URL 생성 및 메시지 발송 (Legacy - 단일 수신자)
+ * @deprecated Use sendSignatureUrl instead
+ */
+export async function sendSignatureMessage(
+  request: SendMessageRequest
+): Promise<SendMessageResponse> {
+  // Legacy 요청을 새 포맷으로 변환
+  const recipientType: RecipientType = request.role === SignatureRole.CONTRACTOR ? 'SITE_MANAGER' : 'SITE_INSPECTOR'
+
+  return sendSignatureUrl({
+    deliveryDoneId: request.deliveryDoneId,
+    documentType: 'CONFIRMATION',
+    recipients: [{
+      recipientType,
+      recipientUserId: 0,  // Legacy: 사용자 ID 없음 (호환성 유지)
+      recipientName: request.recipientName,
+      recipientPhone: request.recipientPhone
+    }],
+    messageType: 'LMS'
+  })
 }
 
 /**
@@ -203,7 +234,7 @@ export async function downloadPhotoSheetPdf(deliveryDoneId: number): Promise<voi
  */
 export async function downloadAllPdfs(deliveryDoneId: number): Promise<void> {
   try {
-    const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/pdf/all`
+    const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/pdf/download-all`
     const response = await fetch(url, {
       method: 'GET'
     })
@@ -237,7 +268,7 @@ export async function getDeliveryDoneByToken(
   token: string
 ): Promise<DeliveryDoneMobileInfo> {
   try {
-    const url = `${getApiBaseUrl()}/public/delivery-done/${token}`
+    const url = `${getApiBaseUrl()}/m/delivery-done/${token}`
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -262,23 +293,24 @@ export async function getDeliveryDoneByToken(
 }
 
 /**
- * 서명 이미지 업로드 및 저장
+ * 서명 이미지 업로드 및 저장 (FormData 방식)
  */
 export async function submitSignature(
   token: string,
-  data: SignatureSubmitData
+  signatureBlob: Blob,
+  recipientType: string
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const url = `${getApiBaseUrl()}/public/delivery-done/${token}/signature`
+    const url = `${getApiBaseUrl()}/m/delivery-done/${token}/signature`
+
+    // FormData 생성 (운송장 서명과 동일한 방식)
+    const formData = new FormData()
+    formData.append('signatureImage', signatureBlob, 'signature.png')
+    formData.append('recipientType', recipientType)
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        role: data.role,
-        signatureImage: data.signatureImage
-      })
+      body: formData  // Content-Type은 브라우저가 자동으로 multipart/form-data로 설정
     })
 
     if (!response.ok) {
@@ -294,6 +326,7 @@ export async function submitSignature(
 
 /**
  * 서명 이미지를 Blob에서 Base64로 변환
+ * @deprecated No longer needed - submitSignature now accepts Blob directly
  */
 export async function convertSignatureBlobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -366,7 +399,7 @@ export async function getStatusClass(status: DeliveryDoneStatus): Promise<string
  */
 export function getRoleText(role: SignatureRole): string {
   const roleMap: Record<SignatureRole, string> = {
-    [SignatureRole.CONTRACTOR]: '시공사 대표',
+    [SignatureRole.CONTRACTOR]: '현장소장',
     [SignatureRole.SUPERVISOR]: '현장감리원'
   }
   return roleMap[role] || role
@@ -387,7 +420,7 @@ export function calculateDeliveryRate(
  * 서명 완료 여부 체크
  */
 export function isSignatureComplete(item: DeliveryDoneListItem): boolean {
-  return item.hasContractorSignature && item.hasSupervisorSignature
+  return item.hasManagerSignature && item.hasInspectorSignature
 }
 
 /**
@@ -409,4 +442,66 @@ export function canDownloadPdf(status: DeliveryDoneStatus): boolean {
  */
 export function canSubmitToNara(status: DeliveryDoneStatus): boolean {
   return status === DeliveryDoneStatus.COMPLETED
+}
+
+// ==================== 사진 선택 관리 API ====================
+
+/**
+ * 납품완료계 사진 목록 조회 (선택 정보 포함)
+ */
+export async function getDeliveryDonePhotos(
+  deliveryDoneId: number
+): Promise<import('~/types/delivery-done').DeliveryPhotoInfo[]> {
+  try {
+    const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/photos`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch delivery done photos: ${response.statusText}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching delivery done photos:', error)
+    throw error
+  }
+}
+
+/**
+ * 사진 선택 업데이트 (출하별 최대 2장)
+ */
+export async function updatePhotoSelection(
+  request: import('~/types/delivery-done').UpdatePhotoSelectionRequest
+): Promise<import('~/types/delivery-done').UpdatePhotoSelectionResponse> {
+  try {
+    // 검증: 최대 2장까지만
+    if (request.photoIds.length > 2) {
+      throw new Error('최대 2장까지만 선택 가능합니다.')
+    }
+
+    const url = `${getApiBaseUrl()}/admin/deliveries/${request.deliveryId}/photos/selection`
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        photoIds: request.photoIds
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to update photo selection: ${response.statusText}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error updating photo selection:', error)
+    throw error
+  }
 }

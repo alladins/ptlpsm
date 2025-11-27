@@ -98,11 +98,10 @@
           <th>템플릿명</th>
           <th>내용 미리보기</th>
           <th>상태</th>
-          <th>작업</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="message in messages" :key="message.id">
+        <tr v-for="message in messages" :key="message.id" class="table-row" @click="showDetail(message)" style="cursor: pointer;">
           <td>{{ formatDateTime(message.sentAt) }}</td>
           <td>
             <span :class="['badge', `badge-${message.messageType.toLowerCase()}`]">
@@ -122,15 +121,6 @@
               <i :class="getStatusIcon(message.status)"></i>
               {{ getStatusText(message.status) }}
             </span>
-          </td>
-          <td>
-            <button
-              class="btn-action-table btn-view"
-              @click="showDetail(message)"
-            >
-              <i class="ri-eye-line"></i>
-              상세
-            </button>
           </td>
         </tr>
       </tbody>
@@ -425,36 +415,14 @@ onMounted(() => {
 
 /* 페이지 전용 스타일 */
 
-/* 테이블 액션 버튼 */
-.btn-action-table {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  padding: 0.5rem 0.875rem;
-  border: none;
-  border-radius: 6px;
+/* 행 클릭 가능 표시 */
+.table-row {
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
+  transition: background-color 0.2s ease;
 }
 
-.btn-action-table i {
-  font-size: 14px;
-}
-
-.btn-action-table.btn-view {
-  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
-}
-
-.btn-action-table.btn-view:hover {
-  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.35);
-  transform: translateY(-2px);
+.table-row:hover {
+  background-color: #f9fafb;
 }
 
 /* 날짜 범위 검색 */

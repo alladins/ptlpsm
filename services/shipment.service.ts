@@ -35,6 +35,11 @@ export interface ShipmentListItem {
   client: string                // 수요기관명
   projectName: string           // 사업명
   shipmentAmount: number        // 출하금액 (모든 품목의 출하수량 × 단가 합계)
+  // 현장소장 정보
+  siteManagerId?: number        // 현장소장 ID
+  siteManagerName?: string      // 현장소장 이름
+  siteManagerPhone?: string     // 현장소장 연락처
+  siteManagerCompany?: string   // 현장소장 회사
 }
 
 export interface ShipmentDetail {

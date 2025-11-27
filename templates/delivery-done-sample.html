@@ -1,25 +1,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <!--
-  ★ 중요 ★ 환경별 이미지 경로 설정
+  ★ 기포단열재 납품확인서 - 실제 데이터 샘플 ★
 
-  1. 로고 이미지 경로:
-     - 개발 환경 (Windows): D:/dev/ptlpsmback/logo.png
-     - 운영 환경 (Linux):   /app/leadpower/www/images/common/logo.png
-     - 김광열 
-
-  2. 로고 파일 형식 주의:
-     - 반드시 PNG 형식이어야 함 (WEBP는 Java ImageIO에서 지원 안 됨)
-     - 파일명은 logo.png지만 실제 형식이 WEBP인 경우 PDF 생성 시 이미지가 안 보임
-
-  3. 이미지 처리 방식:
-     - PdfGenerationService.processImagesInHtml()이 로컬 경로를 자동으로 Base64로 변환
-     - 서명/인감 이미지는 Handlebars 변수로 이미 Base64 처리됨
-
-  4. Flying Saucer PDF 엔진 제약사항:
-     - XHTML 1.0 Strict 필수
-     - CSS 2.1만 지원 (Flexbox, transform 등 최신 CSS 불가)
-     - 모든 태그는 self-closing (예: <img />, <br />)
-     - 테이블 기반 레이아웃 사용 필수
+  레이아웃 확인용 - 원본 이미지 정확한 구조 재현
 -->
 <html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
 <head>
@@ -41,12 +24,14 @@
     * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
 
     body {
       font-family: 'MalgunGothic', serif;
       font-size: 10pt;
       line-height: 1.5;
+      color: #000;
     }
 
     /* ========== Document Title ========== */
@@ -59,7 +44,7 @@
       text-decoration: underline;
     }
 
-    /* ========== Header Section ========== */
+    /* ========== Header: 2단 구조 ========== */
     .header-container {
       width: 100%;
       margin-bottom: 20px;
@@ -70,6 +55,7 @@
       border-collapse: collapse;
     }
 
+    /* 좌측: 텍스트 정보 (45%) */
     .header-left {
       width: 45%;
       vertical-align: top;
@@ -113,32 +99,19 @@
       padding: 5px;
     }
 
-    /* ========== Info Box Table ========== */
     .info-box {
       width: 100%;
       border: 2px solid #000;
-      border-collapse: separate;
-      border-spacing: 0;
+      border-collapse: collapse;
       font-size: 7pt;
     }
 
     .info-box th,
     .info-box td {
-      border-left: 1px solid #000;
-      border-top: 1px solid #000;
+      border: 1px solid #000;
       padding: 5px 8px;
       text-align: center;
       vertical-align: middle;
-    }
-
-    .info-box tr th:first-child,
-    .info-box tr td:first-child {
-      border-left: none;
-    }
-
-    .info-box tr:first-child th,
-    .info-box tr:first-child td {
-      border-top: none;
     }
 
     .info-box th {
@@ -159,32 +132,21 @@
       padding-left: 3px;
     }
 
-    /* ========== Contract Table ========== */
+    /* ========== Contract Table (1. 계약물품) ========== */
     .contract-table {
       width: 100%;
       border: 2px solid #000;
-      border-collapse: separate;
-      border-spacing: 0;
+      border-collapse: collapse;
       margin-bottom: 20px;
     }
 
     .contract-table th,
     .contract-table td {
-      border-left: 1px solid #000;
-      border-top: 1px solid #000;
-      padding: 4px;
+      border: 1px solid #000;
+      padding: 2px;
       text-align: center;
       vertical-align: middle;
       font-size: 7pt;
-    }
-
-    .contract-table thead tr th:first-child,
-    .contract-table tbody tr td:first-child {
-      border-left: none;
-    }
-
-    .contract-table thead tr:first-child th {
-      border-top: none;
     }
 
     .contract-table th {
@@ -202,41 +164,26 @@
       padding-right: 10px;
     }
 
-    .contract-table td.text-center {
-      text-align: center;
-    }
-
     .contract-table .summary-row {
       font-weight: bold;
       background-color: #f5f5f5;
     }
 
-    /* ========== Delivery Table ========== */
+    /* ========== Delivery Table (2. 납품내역) ========== */
     .delivery-table {
       width: 100%;
       border: 2px solid #000;
-      border-collapse: separate;
-      border-spacing: 0;
-      margin-bottom: 0;
+      border-collapse: collapse;
+      margin-bottom: 20px;
     }
 
     .delivery-table th,
     .delivery-table td {
-      border-left: 1px solid #000;
-      border-top: 1px solid #000;
-      padding: 4px;
+      border: 1px solid #000;
+      padding: 2px;
       text-align: center;
       vertical-align: middle;
       font-size: 7pt;
-    }
-
-    .delivery-table thead tr th:first-child,
-    .delivery-table tbody tr td:first-child {
-      border-left: none;
-    }
-
-    .delivery-table thead tr:first-child th {
-      border-top: none;
     }
 
     .delivery-table th {
@@ -263,84 +210,71 @@
       height: 25px;
     }
 
-    /* ========== Signature Section (Notice 포함) ========== */
-    .signature-section {
-      width: 100%;
-      border: 2px solid #000;
-      border-collapse: separate;
-      border-spacing: 0;
-      margin-bottom: 20px;
-      table-layout: fixed;
-    }
-
-    .signature-section tr {
-      border: none;
-    }
-
-    .notice-cell {
+    /* ========== Notice Row ========== */
+    .notice-row td {
+      border-left: 2px solid #000;
+      border-right: 2px solid #000;
+      border-top: 1px solid #000;
+      border-bottom: 0 !important;
       text-align: center;
       padding: 15px 0;
       font-size: 10pt;
       line-height: 1.6;
-      border-left: none;
-      border-right: none;
-      border-top: none;
-      border-bottom: 1px solid #000;
     }
 
-    .signature-section td {
-      border-left: none;
-      border-right: none;
-      border-top: none;
-      border-bottom: none;
-      padding: 10px 15px;
-      vertical-align: middle;
+    /* ========== Signature Section (Inside Table) ========== */
+    .signature-row-container td {
+      border-left: 2px solid #000;
+      border-right: 2px solid #000;
+      border-top: 0 !important;
+      border-bottom: 2px solid #000;
+      padding: 0;
+    }
+
+    .signature-cell {
+      padding: 0 !important;
+    }
+
+    .inner-signature-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 0;
+    }
+
+    .inner-signature-table tr {
+      border: 0;
+    }
+
+    .inner-signature-table td {
+      border: 0;
+      padding: 8px 10px;
       font-size: 10pt;
       line-height: 2.0;
     }
 
-    .signature-row {
-      width: 100%;
-      border: none;
+    .sig-empty-cell {
+      border: 0;
+      padding: 8px 10px;
+      background-color: transparent;
     }
 
-    .signature-row td {
-      border-left: none;
-      border-right: none;
-      border-top: none;
-      border-bottom: none;
-    }
-
-    .sig-label {
+    .sig-label-cell {
       text-align: right;
       font-weight: bold;
-      padding-right: 10px;
-      width: 100px;
+      padding-right: 5px;
     }
 
-    .sig-content {
+    .sig-content-cell {
       text-align: left;
       padding-left: 15px;
-      position: relative;
-      width: 200px;
-      white-space: nowrap;
+      padding-right: 30px;
     }
 
-    .sig-stamp {
-      text-align: center;
+    .sig-stamp-cell {
+      text-align: left;
       color: #999;
-      width: 120px;
-      font-size: 9pt;
-      position: relative;
-    }
-
-    .sig-image {
-      position: absolute;
-      right: 10px;
-      top: -12px;
-      width: 90px;
-      height: 76px;
-      z-index: 10;
+      padding: 8px 5px 8px 80px;
+      width: 100px;
     }
 
     /* ========== Footer Date ========== */
@@ -360,24 +294,24 @@
   <div class="header-container">
     <table class="header-table">
       <tr>
-        <!-- 좌측: 텍스트 정보 (동적 데이터) -->
+        <!-- 좌측: 텍스트 정보 -->
         <td class="header-left">
           <table class="header-left-inner">
             <tr>
               <td class="label-col">납품요구번호 :</td>
-              <td class="data-col">{{deliveryRequestNo}}</td>
+              <td class="data-col">24-23-1-28399-01</td>
             </tr>
             <tr>
-              <td class="label-col">수&nbsp; 요&nbsp; 기&nbsp; 관 :</td>
-              <td class="data-col">{{demandAgency}}</td>
+              <td class="label-col">수 요 기 관 :</td>
+              <td class="data-col">전라남도 여수시</td>
             </tr>
             <tr>
-              <td class="label-col">공 &emsp;사 &emsp;명 :</td>
-              <td class="data-col">{{projectName}}</td>
+              <td class="label-col">공 사 명 :</td>
+              <td class="data-col">농업인지원센터건립공사관급자재구매</td>
             </tr>
             <tr>
-              <td class="label-col">납&nbsp; 품&nbsp; 기&nbsp; 한 :</td>
-              <td class="data-col">{{deliveryDeadline}}</td>
+              <td class="label-col">납&nbsp; 품&nbsp; 기&nbsp; 한 :
+              <td class="data-col">2025년 02월 28일</td>
             </tr>
           </table>
         </td>
@@ -387,13 +321,13 @@
           <table class="info-box">
             <tr>
               <th colspan="2">등록 번호</th>
-              <td colspan="3"><strong>129-86-71834</strong></td>
+              <td colspan="3"><strong>:129-86-71834</strong></td>
             </tr>
             <tr style="height: 40px;">
               <th rowspan="1">상 호</th>
               <td>주식회사 리드파워</td>
               <th>성 명</th>
-              <td colspan="2" style="position: relative;">김광렬{{#if companySealImage}}<img src="{{companySealImage}}" alt="직인" style="position: absolute; left: 80px; top: -19px; width: 80px; height: 80px; z-index: 10;" />{{/if}}</td>
+              <td colspan="2">김광렬</td>
             </tr>
             <tr>
               <th colspan="2">사업장주소</th>
@@ -429,18 +363,33 @@
       </tr>
     </thead>
     <tbody>
-      {{#each contractItems}}
+      <!-- 실제 데이터 -->
       <tr>
-        <td class="text-center">{{name}}</td>
-        <td class="text-right">{{thickness}}</td>
-        <td class="text-right">{{quantity}}</td>
-        <td class="text-right">{{unitPrice}}</td>
-        <td class="text-right">{{totalAmount}}</td>
-        <td>{{remark}}</td>
+        <td class="text-center">기포단열재, JYGB-60LG</td>
+        <td class="text-right">60</td>
+        <td class="text-right">48.00</td>
+        <td class="text-right">21,000</td>
+        <td class="text-right">1,008,000</td>
+        <td></td>
       </tr>
-      {{/each}}
+      <tr>
+        <td class="text-center">기포단열재, JYGB-90LG</td>
+        <td class="text-right">90</td>
+        <td class="text-right">10,858.00</td>
+        <td class="text-right">31,000</td>
+        <td class="text-right">336,598,000</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="text-center">기포단열재, JYGB-100LG</td>
+        <td class="text-right">100</td>
+        <td class="text-right">3,947.00</td>
+        <td class="text-right">34,000</td>
+        <td class="text-right">134,198,000</td>
+        <td></td>
+      </tr>
 
-      {{#unless hasEnoughRows}}
+      <!-- 빈 행들 -->
       <tr>
         <td>&nbsp;</td>
         <td></td>
@@ -449,6 +398,7 @@
         <td></td>
         <td></td>
       </tr>
+      <!-- 빈 행들 -->
       <tr class="empty-row">
         <td>&nbsp;</td>
         <td></td>
@@ -457,9 +407,8 @@
         <td></td>
         <td></td>
       </tr>
-      {{/unless}}
 
-      {{#if hasPriceAdjustment}}
+      <!-- 요약 행들 -->
       <tr class="summary-row">
         <td>단가정정</td>
         <td></td>
@@ -468,23 +417,20 @@
         <td></td>
         <td></td>
       </tr>
-      {{/if}}
-      {{#if discountRate}}
       <tr class="summary-row">
-        <td>할인율 {{discountRate}}%</td>
+        <td>할인율 2%</td>
         <td></td>
         <td></td>
         <td></td>
-        <td class="text-right">{{discountAmount}}</td>
+        <td class="text-right">9,436,080</td>
         <td></td>
       </tr>
-      {{/if}}
       <tr class="summary-row">
         <td>합 계</td>
         <td></td>
-        <td class="text-right">{{totalQuantity}}</td>
+        <td class="text-right">14,863.00</td>
         <td></td>
-        <td class="text-right">{{totalAmount}}</td>
+        <td class="text-right">482,367,920</td>
         <td></td>
       </tr>
     </tbody>
@@ -495,72 +441,116 @@
   <table class="delivery-table">
     <thead>
       <tr>
-        <th style="width: 20%;">규 격</th>
-        {{#each deliveryDates}}
-        <th>{{this}}</th>
-        {{/each}}
+        <th style="width: 20%;">제 품 명</th>
+        <th>2024-08-13</th>
+        <th>2024-08-16</th>
+        <th>2024-08-30</th>
+        <th>2024-12-16</th>
+        <th>2024-12-31</th>
+        <th>2025-01-24</th>
+        <th>2025-02-28</th>
+        <th>2025-02-28</th>
       </tr>
     </thead>
     <tbody>
-      {{#each productRows}}
+      <!-- 제품별 행 -->
       <tr>
-        <td class="text-left">{{productName}}</td>
-        {{#each quantities}}
-        <td class="text-right">{{this}}</td>
-        {{/each}}
+        <td class="text-left">기포단열재, JYGB-100LG</td>
+        <td class="text-right">384.0</td>
+        <td class="text-right">1,152.0</td>
+        <td class="text-right">2,411.0</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
       </tr>
-      {{/each}}
+      <tr>
+        <td class="text-left">기포단열재, JYGB-90LG</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="text-right">1,920.0</td>
+        <td class="text-right">5,760.0</td>
+        <td class="text-right">1,536.0</td>
+        <td></td>
+        <td class="text-right">1,642.0</td>
+      </tr>
+      <tr>
+        <td class="text-left">기포단열재, JYGB-60LG</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="text-right">48.0</td>
+        <td></td>
+      </tr>
 
+      <!-- 빈 행들 -->
       <tr class="empty-row">
-        <td colspan="{{columnCount}}"></td>
+        <td colspan="9"></td>
       </tr>
 
+      <!-- 합계 행 -->
       <tr class="total-row">
         <td class="text-center">합 계</td>
-        {{#each dateTotals}}
-        <td class="text-right">{{this}}</td>
-        {{/each}}
+        <td class="text-right">384.0</td>
+        <td class="text-right">1,152.0</td>
+        <td class="text-right">2,411.0</td>
+        <td class="text-right">1,920.0</td>
+        <td class="text-right">5,760.0</td>
+        <td class="text-right">1,536.0</td>
+        <td class="text-right">48.0</td>
+        <td class="text-right">1,642.0</td>
+      </tr>
+
+      <!-- Notice 행 -->
+      <tr class="notice-row">
+        <td colspan="9">상기 물품에 대하여 생산, 납품하였음을 확인 합니다.</td>
+      </tr>
+
+      <!-- 서명 섹션 행 -->
+      <tr class="signature-row-container">
+        <td colspan="9" class="signature-cell">
+          <table class="inner-signature-table">
+            <tr>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-label-cell">시 공 사 :</td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-stamp-cell">[인]</td>
+            </tr>
+            <tr>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-label-cell">현장감리원 :</td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-stamp-cell">[인]</td>
+            </tr>
+            <tr>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-label-cell">소속감리원 :</td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-stamp-cell">(인)</td>
+            </tr>
+          </table>
+        </td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Notice & Signature Section (통합) -->
-  <table class="signature-section">
-    <!-- Notice Row -->
-    <tr>
-      <td colspan="6" class="notice-cell">
-        상기 물품에 대하여 생산, 납품하였음을 확인 합니다.
-      </td>
-    </tr>
-    <tr class="signature-row">
-      <td class="sig-label"></td>
-      <td class="sig-label"></td>
-      <td class="sig-label"></td>
-      <td colspan="2" class="sig-label">시 공 사 :</td>
-      <td class="sig-content">현장소장 {{contractorName}}</td>
-      <td class="sig-stamp">{{#if managerSignatureImage}}<img src="{{managerSignatureImage}}" alt="서명" class="sig-image" />{{/if}}[인]</td>
-    </tr>
-    <tr class="signature-row">
-      <td class="sig-label"></td>
-      <td class="sig-label"></td>
-      <td class="sig-label"></td>
-      <td colspan="2" class="sig-label">현장감리원 :</td>
-      <td class="sig-content">감리원 {{supervisorName}}</td>
-      <td class="sig-stamp">{{#if inspectorSignatureImage}}<img src="{{inspectorSignatureImage}}" alt="서명" class="sig-image" />{{/if}}[인]</td>
-    </tr>
-    <tr class="signature-row">
-      <td class="sig-label"></td>
-      <td class="sig-label"></td>
-      <td class="sig-label"></td>
-      <td colspan="2" class="sig-label">소속감리원 :</td>
-      <td class="sig-content">{{inspectorName}}</td>
-      <td class="sig-stamp">(인)</td>
-    </tr>
-  </table>
-
   <!-- Footer Date -->
   <div class="footer-date">
-    {{submissionYear}}년   {{submissionMonth}}월   {{submissionDay}}일
+    2025년   ■월   ■일
   </div>
 </body>
 </html>

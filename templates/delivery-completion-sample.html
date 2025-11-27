@@ -1,8 +1,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <!--
-  ★ 납품완료계 - Handlebars 템플릿 ★
+  ★ 납품완료계 - 실제 데이터 샘플 ★
 
-  Flying Saucer PDF 생성용 템플릿
+  레이아웃 확인용 - 원본 이미지 정확한 구조 재현
   모든 레이아웃을 테이블 기반으로 구현 (PDF 변환 호환성)
 -->
 <html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
@@ -99,17 +99,23 @@
 
     .inspection-label {
       font-weight: bold;
-      width: 90px;
+      width: 110px;
     }
 
     .inspection-signature {
-      width: 230px;
+      width: 180px;
       text-align: center;
       font-style: italic;
     }
 
     .inspection-spacer {
-      width: 100px;
+      width: 50px;
+    }
+
+    .inspection-belong-label {
+      font-weight: bold;
+      width: 60px;
+      text-align: right;
     }
 
     .inspection-name-label {
@@ -190,10 +196,11 @@
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 30px;
+      border: 0; /* 임시 확인용 */
     }
 
     .submitter-section-table td {
-      border: 0;
+      border: 0; /* 임시 확인용 */
       padding: 3px 0;
       vertical-align: middle;
       line-height: 2.2;
@@ -235,12 +242,6 @@
       color: transparent;
     }
 
-    .seal-image {
-      width: 100px;
-      height: 100px;
-      vertical-align: middle;
-    }
-
     .recipient {
       padding: 0;
       font-size: 11pt;
@@ -260,35 +261,35 @@
   <table class="contract-info-table">
     <tr>
       <td class="info-diamond">◇</td>
-      <td class="info-label">건&emsp;&emsp;명 :</td>
-      <td class="info-value">{{projectName}}</td>
+      <td class="info-label">건&emsp;&emsp;&emsp;명 :</td>
+      <td class="info-value">여수시립박물관 건립공사(건축)-경질우레탄보드</td>
     </tr>
     <tr>
       <td class="info-diamond">◇</td>
-      <td class="info-label">계약금액 :</td>
+      <td class="info-label">계 약 금 액 :</td>
       <td class="info-value">
         <table style="border-collapse: collapse; border: 0; width: 100%;">
           <tr>
-            <td style="border: 0; padding: 0; width: auto;">금&emsp;{{contractAmountKorean}}</td>
-            <td class="amount-large" style="border: 0; padding: 0 0 0 20px;">₩ {{contractAmount}}</td>
+            <td style="border: 0; padding: 0; width: auto;">금&emsp;사억육천삼백육십칠만구백이십원정</td>
+            <td class="amount-large" style="border: 0; padding: 0 0 0 20px;">₩ 462,367,920</td>
           </tr>
         </table>
       </td>
     </tr>
     <tr>
       <td class="info-diamond">◇</td>
-      <td class="info-label">계약일자 :</td>
-      <td class="info-value">{{contractDate}}</td>
+      <td class="info-label">계 약 일 자 :</td>
+      <td class="info-value">2023.11.29</td>
     </tr>
     <tr>
       <td class="info-diamond">◇</td>
-      <td class="info-label">납품기한 :</td>
-      <td class="info-value">{{deliveryDeadline}}</td>
+      <td class="info-label">납 품 기 한 :</td>
+      <td class="info-value">2025.02.28</td>
     </tr>
     <tr>
       <td class="info-diamond">◇</td>
       <td class="info-label">납&emsp;품&emsp;일 :</td>
-      <td class="info-value">{{deliveryPeriod}}</td>
+      <td class="info-value">2024.08.13 ~ 2025.02.28</td>
     </tr>
   </table>
 
@@ -296,10 +297,11 @@
   <table class="inspection-table">
     <tr>
       <td class="inspection-label">검수확인</td>
-      <td class="inspection-signature">소속 {{inspectionCompany}}</td>
+      <td class="inspection-belong-label">소속</td>
+      <td class="inspection-signature">강성기업(주)</td>
       <td class="inspection-spacer"></td>
       <td class="inspection-name-label">성명</td>
-      <td class="inspection-name">{{inspectorName}}(서명)</td>
+      <td class="inspection-name">김성길(서명)</td>
     </tr>
   </table>
 
@@ -317,21 +319,36 @@
       </tr>
     </thead>
     <tbody>
-      <!-- 품목 반복 -->
-      {{#each items}}
+      <!-- 실제 데이터 -->
       <tr>
-        <td class="text-center">{{name}}</td>
-        <td class="text-center">{{specification}}</td>
-        <td class="text-center">{{unit}}</td>
-        <td class="text-right">{{quantity}}</td>
-        <td class="text-right">{{unitPrice}}</td>
-        <td class="text-right">{{totalAmount}}</td>
-        <td>{{remark}}</td>
+        <td class="text-left">기포단열재, JYGB-60LC</td>
+        <td class="text-center">60T</td>
+        <td class="text-center">m²</td>
+        <td class="text-right">48.00</td>
+        <td class="text-right">21,000</td>
+        <td class="text-right">1,008,000</td>
+        <td></td>
       </tr>
-      {{/each}}
+      <tr>
+        <td class="text-left">기포단열재, JYGB-90LC</td>
+        <td class="text-center">90T</td>
+        <td class="text-center">m²</td>
+        <td class="text-right">10,858.00</td>
+        <td class="text-right">31,000</td>
+        <td class="text-right">336,598,000</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="text-left">기포단열재, JYGB-100LC</td>
+        <td class="text-center">100T</td>
+        <td class="text-center">m²</td>
+        <td class="text-right">3,947.00</td>
+        <td class="text-right">34,000</td>
+        <td class="text-right">134,198,000</td>
+        <td></td>
+      </tr>
 
       <!-- 빈 행들 -->
-      {{#unless hasEnoughRows}}
       <tr class="empty-row">
         <td>&nbsp;</td>
         <td></td>
@@ -350,38 +367,35 @@
         <td></td>
         <td></td>
       </tr>
-      {{/unless}}
 
-      <!-- 할인율 행 (조건부) -->
-      {{#if discountRate}}
+      <!-- 할인율 행 -->
       <tr class="summary-row">
-        <td class="text-left">할인율 {{discountRate}}%</td>
+        <td class="text-left">할인율 2%</td>
         <td></td>
         <td></td>
         <td></td>
         <td></td>
-        <td class="text-right">{{discountAmount}}</td>
+        <td class="text-right">9,436,080</td>
         <td></td>
       </tr>
-      {{/if}}
 
       <!-- 합계 행 -->
       <tr class="summary-row">
         <td class="text-center">계</td>
         <td></td>
         <td></td>
-        <td class="text-right">{{totalQuantity}}</td>
+        <td class="text-right">14,853.0</td>
         <td></td>
-        <td class="text-right">{{totalAmount}}</td>
+        <td class="text-right">462,367,920</td>
         <td></td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Footer Date (제출자 섹션 위에 위치) -->
+  <!-- Footer Date -->
   <table class="footer-date-table">
     <tr>
-      <td>{{submissionYear}}년&emsp;{{submissionMonth}}&emsp;월&emsp;{{submissionDay}}일</td>
+      <td>2025년&emsp;3&emsp;월&emsp;○일</td>
     </tr>
   </table>
 
@@ -400,11 +414,8 @@
       <td class="submitter-spacer"></td>
       <td class="submitter-spacer"></td>
       <td class="submitter-label">상&emsp;&emsp;호 :</td>
-      <td class="submitter-value">{{companyName}}</td>
+      <td class="submitter-value">주식회사 리드파워</td>
       <td class="seal-cell">
-        {{#if sealImage}}
-        <img src="{{sealImage}}" alt="인감" class="seal-image" />
-        {{/if}}
       </td>
     </tr>
 
@@ -413,7 +424,7 @@
       <td class="submitter-spacer"></td>
       <td class="submitter-spacer"></td>
       <td class="submitter-label">대 표 자 :</td>
-      <td class="submitter-value" colspan="2">{{representative}}</td>
+      <td class="submitter-value" colspan="2">김 광 열</td>
     </tr>
 
     <!-- 주소 -->
@@ -421,7 +432,7 @@
       <td class="submitter-spacer"></td>
       <td class="submitter-spacer"></td>
       <td class="submitter-label">주&emsp;&emsp;소 :</td>
-      <td class="submitter-value" colspan="2">{{address}}</td>
+      <td class="submitter-value" colspan="2">경기도 안성시 서운면 서미로 21-10</td>
     </tr>
 
     <!-- 빈 행 (간격) -->
@@ -431,7 +442,7 @@
 
     <!-- 수신자 -->
     <tr>
-      <td colspan="4" class="recipient">{{recipient}} 귀하</td>
+      <td colspan="4" class="recipient">전라남도 여수시 귀하</td>
     </tr>
   </table>
 </body>

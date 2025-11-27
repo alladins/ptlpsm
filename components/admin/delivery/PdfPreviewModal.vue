@@ -6,7 +6,7 @@
         <div class="modal-header">
           <h3>
             <i class="fas fa-file-pdf"></i>
-            납품 영수증 PDF
+            납품 인수증 PDF
           </h3>
           <button class="btn-close" @click="$emit('close')">
             <i class="fas fa-times"></i>

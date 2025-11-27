@@ -21,6 +21,10 @@
       <div class="completed-info">
         <p><strong>완료 시각:</strong> {{ completedAt }}</p>
       </div>
+      <p v-if="autoCloseCountdown > 0" class="auto-close-notice">
+        <i class="fas fa-clock"></i>
+        {{ autoCloseCountdown }}초 후 자동으로 닫힙니다...
+      </p>
       <button class="btn-close-page" @click="closePage">
         <i class="fas fa-times"></i>
         닫기
@@ -87,7 +91,7 @@
             <tr v-for="(item, index) in deliveryData?.items" :key="index">
               <td>{{ item?.itemName ?? '-' }}</td>
               <td>{{ item?.specification ?? '-' }}</td>
-              <td>{{ item?.quantity?.toLocaleString() ?? 0 }} {{ item?.unit ?? '' }}</td>
+              <td>{{ formatQuantity(item?.quantity) }} {{ item?.unit ?? '' }}</td>
             </tr>
           </tbody>
         </table>
@@ -136,6 +140,10 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from '#imports'
 import { deliveryService } from '~/services/delivery.service'
 import type { DeliveryInfo } from '~/services/delivery.service'
+import { formatQuantity } from '~/utils/format'
+// 명시적 import (SSG 빌드 문제 해결)
+import UiMobileSignatureCanvas from '~/components/ui/mobile/SignatureCanvas.vue'
+import UiMobilePhotoUploader from '~/components/ui/mobile/PhotoUploader.vue'
 
 definePageMeta({
   layout: false, // 모바일 전용 레이아웃이므로 기본 레이아웃 사용 안 함
@@ -152,6 +160,7 @@ const deliveryData = ref<DeliveryInfo | null>(null)
 const isCompleted = ref(false)
 const completedAt = ref('')
 const submitting = ref(false)
+const autoCloseCountdown = ref(0) // 자동 닫기 카운트다운
 
 // 컴포넌트 ref
 const signatureRef = ref<any>(null)
@@ -295,6 +304,16 @@ const handleSubmit = async () => {
 
     // 화면 맨 위로 스크롤
     window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    // 3초 후 자동 닫기 (카운트다운 표시)
+    autoCloseCountdown.value = 3
+    const countdownInterval = setInterval(() => {
+      autoCloseCountdown.value--
+      if (autoCloseCountdown.value <= 0) {
+        clearInterval(countdownInterval)
+        closePage()
+      }
+    }, 1000)
   } catch (err) {
     console.error('납품 확인 실패:', err)
     alert(`납품 확인에 실패했습니다.\n${err instanceof Error ? err.message : '알 수 없는 오류'}`)
@@ -315,4 +334,7 @@ const closePage = () => {
 }
 </script>
 
-<!-- 스타일은 assets/css/mobile-delivery.css에 정의되어 있습니다 -->
+<style>
+@import '@/assets/css/mobile-common.css';
+@import '@/assets/css/mobile-delivery.css';
+</style>

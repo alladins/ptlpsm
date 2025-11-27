@@ -28,6 +28,7 @@ export type UserRole =
   | 'LEADPOWER_MANAGER'
   | 'OEM_MANAGER'
   | 'SITE_MANAGER'
+  | 'SITE_INSPECTOR'
   | 'SALES_MANAGER'
   | 'COURIER'
   | 'READ_ONLY'

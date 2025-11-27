@@ -83,13 +83,14 @@
             <span>현장 담당자 정보</span>
           </div>
           <div class="info-grid grid-2">
-            <FormField label="현장담당자(포기공)">
+            <FormField label="현장소장">
               <select
-                v-model="formData.siteSupervisorName"
+                v-model="selectedSupervisorId"
+                @change="handleSupervisorChange"
                 class="form-input-md"
               >
-                <option value="">현장담당자를 선택하세요</option>
-                <option v-for="manager in siteManagers" :key="manager.id" :value="manager.userName">
+                <option value="">현장소장을 선택하세요</option>
+                <option v-for="manager in siteManagers" :key="manager.id" :value="manager.id">
                   {{ manager.userName }} ({{ manager.companyName || '회사 정보 없음' }})
                 </option>
               </select>
@@ -212,8 +213,7 @@
                 type="text"
                 v-model="formData.carrierName"
                 class="form-input-md"
-                placeholder="기사 선택 시 자동 입력"
-                readonly
+                placeholder="직접 입력 또는 기사 선택 시 자동 입력"
               >
             </FormField>
             <FormField label="기사 연락처">
@@ -221,8 +221,7 @@
                 type="tel"
                 v-model="formData.driverPhone"
                 class="form-input-md"
-                placeholder="기사 선택 시 자동 입력"
-                readonly
+                placeholder="직접 입력 또는 기사 선택 시 자동 입력"
               >
             </FormField>
             <FormField label="차량번호" required :error="errors.vehicleNo">
@@ -318,8 +317,9 @@ const siteManagers = ref<UserByRole[]>([])  // SITE_MANAGER (현장소장/현장
 const couriers = ref<UserByRole[]>([])       // COURIER (배송 기사)
 
 // 선택된 사용자 ID
-const selectedReceiverId = ref<number | ''>('')
-const selectedDriverId = ref<number | ''>('')
+const selectedSupervisorId = ref<number | ''>('')  // 현장소장
+const selectedReceiverId = ref<number | ''>('')    // 현장 인수자
+const selectedDriverId = ref<number | ''>('')      // 기사
 
 // useRegisterForm 사용
 const {
@@ -464,11 +464,48 @@ const closeShipmentPopup = () => {
 // 출하 선택 처리
 const handleShipmentSelect = async (shipment: ShipmentListItem) => {
   try {
-    const detail = await shipmentService.getShipmentDetail(shipment.shipmentId)
+    // 출하 상세 정보 조회 (발주 정보 + 현장소장 정보 포함)
+    const detail = await shipmentService.getShipmentDetail(shipment.shipmentId) as any
+
     formData.shipmentId = detail.shipmentId.toString()
     formData.projectName = detail.projectName || ''
     formData.deliveryRequestNo = detail.deliveryRequestNo || ''
     formData.clientName = detail.client || ''
+
+    // 현장소장 정보 매핑 (상세 조회 응답에서 가져옴)
+    const siteManagerId = detail.siteManagerId
+    const siteManagerName = detail.siteManagerName
+    const siteManagerPhone = detail.siteManagerPhone
+
+    console.log('출하 상세 - 현장소장 정보:', { siteManagerId, siteManagerName, siteManagerPhone })
+
+    // 연락처는 서버에서 오는 siteManagerPhone 우선 사용
+    formData.siteSupervisorPhone = formatPhoneNumber(siteManagerPhone || '')
+
+    if (siteManagerId) {
+      const matchedManager = siteManagers.value.find(m => m.id === siteManagerId)
+
+      if (matchedManager) {
+        // 현장소장 셀렉트 박스 매핑
+        selectedSupervisorId.value = matchedManager.id
+        formData.siteSupervisorName = matchedManager.userName
+
+        // 현장 인수자 셀렉트 박스도 동일하게 매핑 (기본값, 사용자가 변경 가능)
+        selectedReceiverId.value = matchedManager.id
+        formData.receiverName = matchedManager.userName
+      } else {
+        // 목록에 없는 경우 직접 값 설정
+        formData.siteSupervisorName = siteManagerName || ''
+        formData.receiverName = siteManagerName || ''
+      }
+
+      console.log('현장소장 매핑 완료:', {
+        siteManagerId,
+        matchedManager,
+        selectedSupervisorId: selectedSupervisorId.value,
+        selectedReceiverId: selectedReceiverId.value
+      })
+    }
 
     closeShipmentPopup()
   } catch (error) {
@@ -488,13 +525,25 @@ const searchAddress = () => {
   }).open()
 }
 
+// 현장소장 선택 시 자동 입력
+const handleSupervisorChange = () => {
+  if (selectedSupervisorId.value) {
+    const supervisor = siteManagers.value.find(m => m.id === selectedSupervisorId.value)
+    if (supervisor) {
+      formData.siteSupervisorName = supervisor.userName
+    }
+  } else {
+    formData.siteSupervisorName = ''
+  }
+}
+
 // 현장 인수자 선택 시 자동 입력
 const handleReceiverChange = () => {
   if (selectedReceiverId.value) {
     const receiver = siteManagers.value.find(m => m.id === selectedReceiverId.value)
     if (receiver) {
       formData.receiverName = receiver.userName
-      formData.siteSupervisorPhone = receiver.phone || ''
+      formData.siteSupervisorPhone = formatPhoneNumber(receiver.phone || '')
     }
   } else {
     formData.receiverName = ''
@@ -509,7 +558,7 @@ const handleDriverChange = () => {
     if (driver) {
       formData.driverName = driver.userName
       formData.carrierName = driver.companyName || ''
-      formData.driverPhone = driver.phone || ''
+      formData.driverPhone = formatPhoneNumber(driver.phone || '')
     }
   } else {
     formData.driverName = ''

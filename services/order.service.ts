@@ -21,6 +21,7 @@ export interface OrderSearchRequest {
   page?: number
   size?: number
   sort?: string
+  shippableOnly?: boolean  // 출하 가능한 발주만 조회
 }
 
 export const orderService = {
@@ -37,6 +38,7 @@ export const orderService = {
       if (params.contractId) queryParams.append('contractId', params.contractId)
       if (params.client) queryParams.append('client', params.client)
       if (params.salesId) queryParams.append('salesId', params.salesId.toString())
+      if (params.shippableOnly) queryParams.append('shippableOnly', 'true')
 
       // 페이징 파라미터
       const page = params.page || 1

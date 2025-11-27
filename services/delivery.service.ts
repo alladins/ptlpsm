@@ -375,7 +375,7 @@ class DeliveryService {
       if (params.endDate) queryParams.append('endDate', params.endDate)
       if (params.deliveryRequestNo) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
       if (params.status) queryParams.append('status', params.status)
-      queryParams.append('sort', params.sort || 'contractDate,desc')
+      queryParams.append('sort', params.sort || 'deliveryRequestDate,desc')
       queryParams.append('page', params.page.toString())
       queryParams.append('size', params.size.toString())
 

@@ -32,7 +32,7 @@
         <div class="form-row">
           <div class="form-group">
             <label class="required">메시지 타입</label>
-            <select v-model="formData.templateType" required>
+            <select v-model="formData.messageType" required>
               <option value="">선택</option>
               <option value="SMS">SMS (단문, 최대 80자)</option>
               <option value="LMS">LMS (장문, 최대 2,000자)</option>
@@ -63,15 +63,15 @@
       <div class="form-section">
         <h3 class="section-title">메시지 내용</h3>
 
-        <div v-if="formData.templateType === 'LMS' || formData.templateType === 'MMS'" class="form-group">
-          <label :class="{ required: formData.templateType === 'LMS' || formData.templateType === 'MMS' }">
+        <div v-if="formData.messageType === 'LMS' || formData.messageType === 'MMS'" class="form-group">
+          <label :class="{ required: formData.messageType === 'LMS' || formData.messageType === 'MMS' }">
             제목
           </label>
           <input
             v-model="formData.subject"
             type="text"
             placeholder="LMS/MMS 메시지 제목"
-            :required="formData.templateType === 'LMS' || formData.templateType === 'MMS'"
+            :required="formData.messageType === 'LMS' || formData.messageType === 'MMS'"
           />
         </div>
 
@@ -103,7 +103,7 @@
 
           <div v-if="isContentTooLong" class="error-message">
             <i class="ri-error-warning-line"></i>
-            {{ formData.templateType }}는 최대 {{ maxLength }}자까지 입력할 수 있습니다
+            {{ formData.messageType }}는 최대 {{ maxLength }}자까지 입력할 수 있습니다
           </div>
 
           <!-- 미리보기 -->
@@ -148,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import type {
   MessageTemplateCreateRequest,
   MessageTemplateUpdateRequest,
@@ -180,7 +180,7 @@ const isSubmitting = ref(false)
 const formData = ref<MessageTemplateCreateRequest>({
   templateCode: props.initialData?.templateCode || '',
   templateName: props.initialData?.templateName || '',
-  templateType: props.initialData?.templateType || ('' as MessageTemplateType),
+  messageType: props.initialData?.messageType || ('' as MessageTemplateType),
   subject: props.initialData?.subject || '',
   content: props.initialData?.content || '',
   description: props.initialData?.description || '',
@@ -193,7 +193,7 @@ const contentLength = computed(() => {
 })
 
 const maxLength = computed(() => {
-  switch (formData.value.templateType) {
+  switch (formData.value.messageType) {
     case 'SMS':
       return 80
     case 'LMS':
@@ -208,9 +208,9 @@ const isContentTooLong = computed(() => {
   return contentLength.value > maxLength.value
 })
 
-// Watch for template type changes
+// Watch for message type changes
 watch(
-  () => formData.value.templateType,
+  () => formData.value.messageType,
   (newType) => {
     // SMS는 제목 필요 없음
     if (newType === 'SMS') {
@@ -271,11 +271,6 @@ const handleCancel = () => {
   if (confirm('작성 중인 내용이 있습니다. 취소하시겠습니까?')) {
     emit('cancel')
   }
-}
-
-// nextTick helper
-const nextTick = (callback: () => void) => {
-  setTimeout(callback, 0)
 }
 </script>
 

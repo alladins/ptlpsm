@@ -51,6 +51,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
+  // 공개 모바일 페이지는 인증 불필요 (토큰 기반 접근)
+  if (to.path.startsWith('/m/')) {
+    return
+  }
+
   // admin 경로에 대한 접근 제한
   if (to.path.startsWith('/admin')) {
     // 토큰 만료 확인 및 갱신 시도 (결과를 기다림)
@@ -137,17 +142,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
     });
 
     // 다양한 형태의 관리자 역할 검사
-    const isAdmin = userRole === 'ADMIN' ||
-                   userRole === 'ROLE_ADMIN' ||
-                   userRole === 'ADMINISTRATOR' ||
-                   userRole === 'ROLE_ADMINISTRATOR';
+    const isAdmin = userRole === 'ADMINISTRATOR' ||
+                    userRole === 'SYSTEM_ADMIN';
 
     if (!isAdmin) {
       console.warn('관리자 권한이 필요합니다:', {
         현재역할: authStore.role,
         정규화된역할: userRole,
         요청경로: to.path,
-        허용되는역할: ['ADMIN', 'ROLE_ADMIN', 'ADMINISTRATOR', 'ROLE_ADMINISTRATOR']
+        허용되는역할: ['ADMINISTRATOR', 'SYSTEM_ADMIN']
       })
 
       // 권한 부족 메시지 표시

@@ -6,7 +6,7 @@
         class="progress-fill"
         :class="getRateClass(rate)"
         :style="{ width: `${rate}%` }"
-        :title="`납품율: ${rate.toFixed(1)}% (${completed.toLocaleString()} / ${total.toLocaleString()} ${unit})`"
+        :title="`납품율: ${rate.toFixed(1)}% (${formatQuantity(completed)} / ${formatQuantity(total)} ${unit})`"
       ></div>
     </div>
 
@@ -18,7 +18,7 @@
           {{ rate.toFixed(1) }}%
         </span>
         <span v-if="showLabel" class="rate-detail">
-          ({{ completed.toLocaleString() }} / {{ total.toLocaleString() }} {{ unit }})
+          ({{ formatQuantity(completed) }} / {{ formatQuantity(total) }} {{ unit }})
         </span>
       </div>
       <div class="progress-bar">
@@ -35,6 +35,8 @@
 </template>
 
 <script setup lang="ts">
+import { formatQuantity } from '~/utils/format'
+
 interface Props {
   rate: number          // 납품율 (0-100)
   total: number         // 전체 수량

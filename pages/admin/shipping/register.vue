@@ -93,18 +93,19 @@
                     >
                   </FormField>
 
-                  <FormField label="상태" required :error="errors.status">
-                    <select v-model="formData.status" class="form-select-sm text-center">
-                      <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-                        {{ option.label }}
-                      </option>
-                    </select>
+                  <FormField label="상태">
+                    <input
+                      type="text"
+                      value="대기"
+                      class="form-input-sm text-center"
+                      readonly
+                    >
                   </FormField>
 
                   <FormField label="총 출하수량">
                     <input
                       type="text"
-                      :value="formatNumber(totalShippingQuantity)"
+                      :value="formatQuantity(totalShippingQuantity)"
                       class="form-input-xs text-right"
                       readonly
                     >
@@ -199,14 +200,14 @@
                     <td>{{ item.skuName }}</td>
                     <td>{{ item.specification }}</td>
                     <td>{{ item.unit }}</td>
-                    <td class="text-right">{{ formatNumber(item.quantity) }}</td>
+                    <td class="text-right">{{ formatQuantity(item.quantity) }}</td>
                     <td class="text-right">
-                      {{ formatNumber(item.remainingQuantity) }}
+                      {{ formatQuantity(item.remainingQuantity) }}
                       <button
                         type="button"
                         class="btn-max-quantity"
                         @click="setMaxQuantity(item)"
-                        :title="'전체수량 입력 (' + formatNumber(item.remainingQuantity) + ')'"
+                        :title="'전체수량 입력 (' + formatQuantity(item.remainingQuantity) + ')'"
                       >
                         <i class="fas fa-angle-right"></i>
                       </button>
@@ -229,7 +230,7 @@
                   <tr>
                     <td colspan="6" class="text-right"></td>
                     <td colspan="2" class="text-right"><strong>총 출하수량</strong></td>
-                    <td class="text-right"><strong>{{ formatNumber(totalShippingQuantity) }}</strong></td>
+                    <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
                     <td class="text-right"><strong>총 금액</strong></td>
                     <td class="text-right"><strong>{{ formatCurrency(totalAmount) }}</strong></td>
                   </tr>
@@ -245,6 +246,7 @@
     <OrderSelectPopup
       v-if="showOrderSelectPopup"
       :show="showOrderSelectPopup"
+      :shippable-only="true"
       @close="closeOrderSelectPopup"
       @select="handleOrderSelect"
     />
@@ -257,10 +259,9 @@ import { useRouter } from '#imports'
 import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
 import type { OrderDetailResponse } from '~/types/order'
 import { shipmentService } from '~/services/shipment.service'
-import { formatNumber, formatCurrency } from '~/utils/format'
+import { formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
-import { useCommonStatus } from '~/composables/useCommonStatus'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 
@@ -271,8 +272,7 @@ definePageMeta({
 
 const router = useRouter()
 
-// 상태 관리 (DB 기반)
-const { statusOptions } = useCommonStatus()
+// 상태 관리 (등록 시에는 항상 '대기' 상태로 고정)
 
 // 품목 인터페이스
 interface OrderItem {

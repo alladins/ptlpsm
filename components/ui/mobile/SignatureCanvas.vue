@@ -228,6 +228,7 @@ onBeforeUnmount(() => {
 
 .signature-canvas {
   width: 100%;
+  margin: 0;
   height: 200px;
   border: 2px dashed #cbd5e1;
   border-radius: 0.5rem;
@@ -235,6 +236,7 @@ onBeforeUnmount(() => {
   touch-action: none; /* 터치 스크롤 방지 */
   cursor: crosshair;
   transition: opacity 0.2s, filter 0.2s;
+  box-sizing: border-box; /* border를 width에 포함 */
 }
 
 .signature-canvas.canvas-disabled {
@@ -261,22 +263,24 @@ onBeforeUnmount(() => {
 
 .signature-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  justify-content: center;
 }
 
 .signature-actions button {
   flex: 1;
-  padding: 0.875rem;
+  padding: 0.625rem 1rem;
   border: none;
   border-radius: 0.5rem;
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
+  white-space: nowrap;
 }
 
 .btn-clear {
@@ -331,11 +335,12 @@ onBeforeUnmount(() => {
   }
 
   .signature-actions {
-    flex-direction: column;
+    gap: 0.375rem;
   }
 
   .signature-actions button {
-    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
   }
 }
 </style>

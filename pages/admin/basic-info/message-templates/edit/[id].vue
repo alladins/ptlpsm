@@ -2,9 +2,9 @@
   <div class="message-template-edit-page">
     <PageHeader title="메시지 템플릿 수정" description="메시지 템플릿 정보를 수정합니다">
       <template #actions>
-        <button class="btn-secondary" @click="goToDetail">
+        <button class="btn-secondary" @click="goToList">
           <i class="ri-arrow-left-line"></i>
-          상세로
+          목록으로
         </button>
       </template>
     </PageHeader>
@@ -31,7 +31,7 @@
       mode="edit"
       :initial-data="template"
       @submit="handleSubmit"
-      @cancel="goToDetail"
+      @cancel="goToList"
     />
   </div>
 </template>
@@ -85,7 +85,7 @@ const handleSubmit = async (data: MessageTemplateUpdateRequest) => {
   try {
     await updateMessageTemplate(template.value.templateId, data)
     alert('메시지 템플릿이 수정되었습니다')
-    router.push(`/admin/basic-info/message-templates/detail/${template.value.templateId}`)
+    router.push('/admin/basic-info/message-templates/list')
   } catch (err: any) {
     alert(err.message || '템플릿 수정에 실패했습니다')
     console.error('Update template error:', err)
@@ -93,12 +93,8 @@ const handleSubmit = async (data: MessageTemplateUpdateRequest) => {
 }
 
 // Navigation
-const goToDetail = () => {
-  if (!template.value) {
-    router.push('/admin/basic-info/message-templates/list')
-    return
-  }
-  router.push(`/admin/basic-info/message-templates/detail/${template.value.templateId}`)
+const goToList = () => {
+  router.push('/admin/basic-info/message-templates/list')
 }
 
 // Lifecycle

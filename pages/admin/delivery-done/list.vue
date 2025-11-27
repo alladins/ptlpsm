@@ -98,16 +98,15 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 10%;">납품요구번호</th>
-                <th style="width: 15%;">수요기관</th>
-                <th style="width: 18%;">사업명</th>
-                <th style="width: 10%;">시공사</th>
-                <th style="width: 8%;">납품률</th>
-                <th style="width: 6%;">출하횟수</th>
-                <th style="width: 8%;">상태</th>
-                <th style="width: 10%;">서명현황</th>
-                <th style="width: 8%;">납품요구일자</th>
-                <th style="width: 10%;">액션</th>
+                <th style="width: 12%;">납품요구번호</th>
+                <th style="width: 16%;">수요기관</th>
+                <th style="width: 20%;">사업명</th>
+                <th style="width: 12%;">시공사</th>
+                <th style="width: 9%;">납품률</th>
+                <th style="width: 7%;">출하횟수</th>
+                <th style="width: 9%;">상태</th>
+                <th style="width: 10%;">문자발송</th>
+                <th style="width: 5%;">문서보기</th>
               </tr>
             </thead>
             <tbody>
@@ -148,76 +147,54 @@
                 <!-- 상태 -->
                 <td>
                   <span class="status-badge" :class="getStatusBadgeClass(item.status)">
-                    {{ getStatusLabel(item.status) }}
+                    {{ getStatusLabelWithFallback(item.status) }}
                   </span>
                 </td>
 
-                <!-- 서명현황 -->
+                <!-- 문자발송: 납품확인서 + 납품완료계 -->
                 <td>
-                  <div class="signature-status">
-                    <div class="signature-item">
-                      <i
-                        class="fas fa-stamp"
-                        :class="item.hasContractorSignature ? 'text-success' : 'text-muted'"
-                      ></i>
-                      <span :class="item.hasContractorSignature ? 'text-success' : 'text-muted'">
-                        시공사
-                      </span>
-                    </div>
-                    <div class="signature-item">
-                      <i
-                        class="fas fa-signature"
-                        :class="item.hasSupervisorSignature ? 'text-success' : 'text-muted'"
-                      ></i>
-                      <span :class="item.hasSupervisorSignature ? 'text-success' : 'text-muted'">
-                        감리원
-                      </span>
-                    </div>
+                  <div class="message-buttons">
+                    <!-- 납품확인서 메시지 (현장소장 + 감리원 서명 요청) -->
+                    <button
+                      @click.stop="openConfirmationMessageModal(item)"
+                      class="btn-message btn-primary"
+                      :disabled="!canSendConfirmationMessage(item)"
+                      :title="canSendConfirmationMessage(item)
+                        ? '납품확인서 서명 URL 발송 (현장소장 + 감리원)'
+                        : '서명 대기 상태에서만 가능합니다'"
+                    >
+                      <i class="fas fa-file-signature"></i>
+                      <span>확인서</span>
+                    </button>
+
+                    <!-- 납품완료계 메시지 (감리원 서명 요청) -->
+                    <button
+                      @click.stop="openCompletionMessageModal(item)"
+                      class="btn-message btn-info"
+                      :disabled="!canSendCompletionMessage(item)"
+                      :title="canSendCompletionMessage(item)
+                        ? '납품완료계 서명 URL 발송 (감리원)'
+                        : '납품확인서 서명 완료 후 가능합니다'"
+                    >
+                      <i class="fas fa-clipboard-check"></i>
+                      <span>완료계</span>
+                    </button>
                   </div>
                 </td>
 
-                <!-- 납품요구일자 -->
-                <td>{{ formatDate(item.deliveryRequestDate) }}</td>
-
-                <!-- 액션 -->
+                <!-- 문서보기: PDF -->
                 <td>
-                  <div class="action-buttons">
-                    <!-- 메시지 발송 버튼 (항상 표시, PENDING_SIGNATURE 상태가 아니면 비활성화) -->
-                    <button
-                      @click="openMessageModal(item)"
-                      class="btn-icon btn-primary"
-                      :disabled="!canSendMessage(item.status)"
-                      :title="canSendMessage(item.status)
-                        ? '서명 URL 발송'
-                        : '서명 대기 상태에서만 가능합니다'"
-                    >
-                      <i class="fas fa-paper-plane"></i>
-                    </button>
-
-                    <!-- PDF 다운로드 버튼 (항상 표시, COMPLETED/SUBMITTED 상태가 아니면 비활성화) -->
-                    <button
-                      @click="openPdfModal(item)"
-                      class="btn-icon btn-success"
-                      :disabled="!canDownloadPdf(item.status)"
-                      :title="canDownloadPdf(item.status)
-                        ? 'PDF 다운로드'
-                        : '완료 또는 제출 상태에서만 가능합니다'"
-                    >
-                      <i class="fas fa-file-pdf"></i>
-                    </button>
-
-                    <!-- 조달청 제출 버튼 (항상 표시, COMPLETED 상태가 아니면 비활성화) -->
-                    <button
-                      @click="openSubmitModal(item)"
-                      class="btn-icon btn-warning"
-                      :disabled="!canSubmitToNara(item.status)"
-                      :title="canSubmitToNara(item.status)
-                        ? '조달청 제출'
-                        : '완료 상태에서만 가능합니다'"
-                    >
-                      <i class="fas fa-upload"></i>
-                    </button>
-                  </div>
+                  <button
+                    @click.stop="openPdfModal(item)"
+                    class="btn-pdf btn-success"
+                    :disabled="!canDownloadPdf(item.status)"
+                    :title="canDownloadPdf(item.status)
+                      ? 'PDF 다운로드 (납품확인서, 납품완료계, 사진대지)'
+                      : '완료 또는 제출 상태에서만 가능합니다'"
+                  >
+                    <i class="fas fa-file-pdf"></i>
+                    <span>PDF</span>
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -235,11 +212,21 @@
       </div>
     </div>
 
-    <!-- 메시지 발송 모달 -->
+    <!-- 납품확인서 메시지 모달 (현장소장 + 감리원) -->
     <MessageSendModal
-      v-if="showMessageModal && selectedItem"
-      :delivery-done="selectedItem"
-      @close="closeMessageModal"
+      v-if="showConfirmationMessageModal && selectedConfirmationItem"
+      :delivery-done="selectedConfirmationItem"
+      document-type="CONFIRMATION"
+      @close="closeConfirmationMessageModal"
+      @sent="handleMessageSent"
+    />
+
+    <!-- 납품완료계 메시지 모달 (감리원만) -->
+    <MessageSendModal
+      v-if="showCompletionMessageModal && selectedCompletionItem"
+      :delivery-done="selectedCompletionItem"
+      document-type="COMPLETION"
+      @close="closeCompletionMessageModal"
       @sent="handleMessageSent"
     />
 
@@ -249,14 +236,6 @@
       :delivery-done="selectedItem"
       @close="closePdfModal"
     />
-
-    <!-- 조달청 제출 모달 -->
-    <SubmitToNaraModal
-      v-if="showSubmitModal && selectedItem"
-      :delivery-done="selectedItem"
-      @close="closeSubmitModal"
-      @submitted="handleSubmitted"
-    />
   </div>
 </template>
 
@@ -265,9 +244,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from '#imports'
 import {
   getDeliveryDoneList,
-  canSendMessage,
-  canDownloadPdf,
-  canSubmitToNara
+  canDownloadPdf
 } from '~/services/delivery-done.service'
 import type {
   DeliveryDoneListItem,
@@ -287,17 +264,44 @@ const router = useRouter()
 // DB 기반 상태 관리
 const { statusOptions, loadStatusCodes, getStatusLabel, getStatusClass: getStatusBadgeClass } = useCommonStatus()
 
-// 1개월 전 날짜 계산
-const getOneMonthAgo = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() - 1)
-  return date.toISOString().split('T')[0]
+// 상태 한글 변환 (DB 실패 시 로컬 fallback)
+const statusLabelMap: Record<string, string> = {
+  'PENDING': '대기',
+  'IN_PROGRESS': '진행중',
+  'PENDING_SIGNATURE': '서명대기',
+  'COMPLETED': '완료',
+  'SUBMITTED': '제출완료'
 }
 
-// 검색 폼
+const getStatusLabelWithFallback = (status: string): string => {
+  const dbLabel = getStatusLabel(status)
+  // DB 조회 성공 시 (한글) 반환, 실패 시 로컬 매핑 사용
+  return dbLabel !== status ? dbLabel : (statusLabelMap[status] || status)
+}
+
+// 오늘 날짜 (로컬 시간 기준 - UTC 시간대 문제 해결)
+const getTodayDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 2개월 전 날짜 계산 (로컬 시간 기준)
+const getTwoMonthsAgo = () => {
+  const date = new Date()
+  date.setMonth(date.getMonth() - 2)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 검색 폼 (기본값: 최근 2개월)
 const searchForm = ref<DeliveryDoneSearchParams>({
-  startDate: getOneMonthAgo(),
-  endDate: new Date().toISOString().split('T')[0],
+  startDate: getTwoMonthsAgo(),
+  endDate: getTodayDate(),
   deliveryRequestNo: '',
   contractNo: '',
   client: '',
@@ -316,10 +320,12 @@ const totalElements = ref(0)
 const pageSize = ref(20)
 
 // 모달 상태
-const showMessageModal = ref(false)
+const showConfirmationMessageModal = ref(false)  // 납품확인서 메시지 모달
+const showCompletionMessageModal = ref(false)    // 납품완료계 메시지 모달
 const showPdfModal = ref(false)
-const showSubmitModal = ref(false)
-const selectedItem = ref<DeliveryDoneListItem | null>(null)
+const selectedConfirmationItem = ref<DeliveryDoneListItem | null>(null)
+const selectedCompletionItem = ref<DeliveryDoneListItem | null>(null)
+const selectedItem = ref<DeliveryDoneListItem | null>(null)  // PDF용
 
 // 계산된 값
 const startIndex = computed(() => {
@@ -363,8 +369,8 @@ function handleSearch() {
 // 초기화
 function handleReset() {
   searchForm.value = {
-    startDate: getOneMonthAgo(),
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: getTwoMonthsAgo(),
+    endDate: getTodayDate(),
     deliveryRequestNo: '',
     contractNo: '',
     client: '',
@@ -397,19 +403,32 @@ function getRateClass(rate: number): string {
   return 'rate-low'
 }
 
-// 메시지 발송 모달 열기
-function openMessageModal(item: DeliveryDoneListItem) {
-  selectedItem.value = item
-  showMessageModal.value = true
+// 납품확인서 메시지 모달 (현장소장 + 감리원)
+function openConfirmationMessageModal(item: DeliveryDoneListItem) {
+  selectedConfirmationItem.value = item
+  showConfirmationMessageModal.value = true
 }
 
-function closeMessageModal() {
-  showMessageModal.value = false
-  selectedItem.value = null
+function closeConfirmationMessageModal() {
+  showConfirmationMessageModal.value = false
+  selectedConfirmationItem.value = null
 }
 
+// 납품완료계 메시지 모달 (감리원만)
+function openCompletionMessageModal(item: DeliveryDoneListItem) {
+  selectedCompletionItem.value = item
+  showCompletionMessageModal.value = true
+}
+
+function closeCompletionMessageModal() {
+  showCompletionMessageModal.value = false
+  selectedCompletionItem.value = null
+}
+
+// 메시지 발송 성공 핸들러 (공통)
 function handleMessageSent() {
-  closeMessageModal()
+  closeConfirmationMessageModal()
+  closeCompletionMessageModal()
   loadData()
 }
 
@@ -424,20 +443,19 @@ function closePdfModal() {
   selectedItem.value = null
 }
 
-// 조달청 제출 모달 열기
-function openSubmitModal(item: DeliveryDoneListItem) {
-  selectedItem.value = item
-  showSubmitModal.value = true
+// 버튼 활성화 조건 (상호 배타적)
+function canSendConfirmationMessage(item: DeliveryDoneListItem): boolean {
+  // 납품확인서: 서명대기 상태 AND 서명 미완료
+  return item.status === 'PENDING_SIGNATURE' &&
+         !(item.hasManagerSignature && item.hasInspectorSignature)
 }
 
-function closeSubmitModal() {
-  showSubmitModal.value = false
-  selectedItem.value = null
-}
-
-function handleSubmitted() {
-  closeSubmitModal()
-  loadData()
+function canSendCompletionMessage(item: DeliveryDoneListItem): boolean {
+  // 납품완료계: 서명 완료 AND 아직 최종 완료 아님 (중복 발송 방지)
+  return item.hasManagerSignature &&
+         item.hasInspectorSignature &&
+         item.status !== 'COMPLETED' &&
+         item.status !== 'SUBMITTED'
 }
 
 // 초기 로드
@@ -690,29 +708,100 @@ onMounted(async () => {
   color: #9ca3af;
 }
 
-/* 액션 버튼 */
-.action-buttons {
+/* 문자발송 버튼 그룹 (2개 버튼 가로 배치) */
+.message-buttons {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   justify-content: center;
+  align-items: center;
 }
 
-.btn-icon {
-  padding: 6px 10px;
+/* 문자발송 버튼 스타일 (확인서, 완료계) */
+.btn-message {
+  flex: 1;
+  padding: 0.5rem 0.5rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 14px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+  min-width: 0;
 }
 
-.btn-icon:hover {
-  opacity: 0.8;
+.btn-message i {
+  font-size: 0.875rem;
+  flex-shrink: 0;
 }
 
+.btn-message span {
+  font-size: 0.75rem;
+}
+
+.btn-message:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-message:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* PDF 버튼 스타일 */
+.btn-pdf {
+  width: 100%;
+  padding: 0.5rem 0.5rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.btn-pdf i {
+  font-size: 0.875rem;
+}
+
+.btn-pdf span {
+  font-size: 0.75rem;
+}
+
+.btn-pdf:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-pdf:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* 버튼 색상 */
 .btn-primary {
   background-color: #2563eb;
   color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.btn-info {
+  background-color: #0ea5e9;
+  color: white;
+}
+
+.btn-info:hover:not(:disabled) {
+  background-color: #0284c7;
 }
 
 .btn-success {
@@ -720,26 +809,23 @@ onMounted(async () => {
   color: white;
 }
 
-.btn-warning {
-  background-color: #f59e0b;
-  color: white;
+.btn-success:hover:not(:disabled) {
+  background-color: #059669;
 }
 
-.btn-secondary {
-  background-color: #6b7280;
-  color: white;
-}
-
-/* 비활성화된 버튼 스타일 */
-.btn-icon:disabled {
-  opacity: 0.4;
+/* 비활성화된 버튼 */
+.btn-message:disabled,
+.btn-pdf:disabled {
+  background-color: #e5e7eb;
+  color: #9ca3af;
   cursor: not-allowed;
-  background-color: #9ca3af;
+  opacity: 0.6;
 }
 
-.btn-icon:disabled:hover {
-  opacity: 0.4;
+.btn-message:disabled:hover,
+.btn-pdf:disabled:hover {
   transform: none;
+  opacity: 0.6;
 }
 
 /* 메시지 */

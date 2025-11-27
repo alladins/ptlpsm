@@ -88,6 +88,7 @@ import { orderService } from '~/services/order.service'
 
 const props = defineProps<{
   show: boolean
+  shippableOnly?: boolean  // 출하 가능한 발주만 조회
 }>()
 
 const emit = defineEmits<{
@@ -122,7 +123,8 @@ const loadOrders = async () => {
       client: searchParams.value.client,
       page: currentPage.value,
       size: 10,
-      sort: 'createdAt,desc'
+      sort: 'createdAt,desc',
+      shippableOnly: props.shippableOnly
     })
     
     orders.value = response.content

@@ -91,31 +91,38 @@
             <i class="fas fa-user-hard-hat"></i>
             <span>현장 담당자 정보</span>
           </div>
-          <div class="info-grid grid-3">
-            <FormField label="현장담당자(포기공)">
-              <input
-                type="text"
-                v-model="formData.siteSupervisorName"
+          <div class="info-grid grid-2">
+            <FormField label="현장소장">
+              <select
+                v-model="selectedSupervisorId"
+                @change="handleSupervisorChange"
                 class="form-input-md"
-                placeholder="현장담당자명을 입력하세요"
               >
+                <option value="">현장소장을 선택하세요</option>
+                <option v-for="manager in siteManagers" :key="manager.id" :value="manager.id">
+                  {{ manager.userName }} ({{ manager.companyName || '회사 정보 없음' }})
+                </option>
+              </select>
             </FormField>
             <FormField label="현장 인수자">
-              <input
-                type="text"
-                v-model="formData.receiverName"
+              <select
+                v-model="selectedReceiverId"
+                @change="handleReceiverChange"
                 class="form-input-md"
-                placeholder="인수자명을 입력하세요"
               >
+                <option value="">현장 인수자를 선택하세요</option>
+                <option v-for="manager in siteManagers" :key="manager.id" :value="manager.id">
+                  {{ manager.userName }} ({{ manager.companyName || '회사 정보 없음' }})
+                </option>
+              </select>
             </FormField>
             <FormField label="인수자 연락처">
               <input
                 type="tel"
                 v-model="formData.siteSupervisorPhone"
-                @input="handlesiteSupervisorPhoneInput"
                 class="form-input-md"
-                placeholder="010-0000-0000"
-                maxlength="13"
+                placeholder="현장 인수자 선택 시 자동 입력"
+                readonly
               >
             </FormField>
           </div>
@@ -326,6 +333,8 @@ import { useRouter, useRoute } from '#imports'
 import { transportService } from '~/services/transport.service'
 import { shipmentService } from '~/services/shipment.service'
 import { deliveryService } from '~/services/delivery.service'
+import { userService } from '~/services/user.service'
+import type { UserByRole } from '~/types/user'
 import { DELIVERY_ENDPOINTS } from '~/services/api/endpoints/delivery.endpoints'
 import { TRANSPORT_ENDPOINTS } from '~/services/api/endpoints/transport.endpoints'
 import FormField from '~/components/admin/forms/FormField.vue'
@@ -333,7 +342,7 @@ import FormSection from '~/components/admin/forms/FormSection.vue'
 import { getApiBaseUrl } from '~/services/api'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
-import { formatPhoneNumberInput } from '~/utils/format'
+import { formatPhoneNumberInput, formatPhoneNumber } from '~/utils/format'
 
 
 definePageMeta({
@@ -355,6 +364,13 @@ const transportDeliveryId = ref<number | undefined>(undefined)
 
 // 서명 이미지 URL (납품확인에서 가져옴)
 const receiverSignatureUrl = ref<string | null>(null)
+
+// 사용자 목록
+const siteManagers = ref<UserByRole[]>([])  // SITE_MANAGER (현장소장/현장담당자)
+
+// 선택된 사용자 ID
+const selectedSupervisorId = ref<number | ''>('')  // 현장소장
+const selectedReceiverId = ref<number | ''>('')    // 현장 인수자
 
 // 운송장 정보 폼 (등록 페이지와 동일하게 formData 사용)
 const formData = ref({
@@ -405,9 +421,40 @@ const searchAddress = () => {
   }).open()
 }
 
+// 현장소장 선택 시 자동 입력
+const handleSupervisorChange = () => {
+  if (selectedSupervisorId.value) {
+    const supervisor = siteManagers.value.find(m => m.id === selectedSupervisorId.value)
+    if (supervisor) {
+      formData.value.siteSupervisorName = supervisor.userName
+    }
+  } else {
+    formData.value.siteSupervisorName = ''
+  }
+}
+
+// 현장 인수자 선택 시 자동 입력
+const handleReceiverChange = () => {
+  if (selectedReceiverId.value) {
+    const receiver = siteManagers.value.find(m => m.id === selectedReceiverId.value)
+    if (receiver) {
+      formData.value.receiverName = receiver.userName
+      formData.value.siteSupervisorPhone = formatPhoneNumber(receiver.phone || '')
+    }
+  } else {
+    formData.value.receiverName = ''
+    formData.value.siteSupervisorPhone = ''
+  }
+}
+
 // 초기 데이터 로드
 onMounted(async () => {
   try {
+    // 사용자 목록 로드 (SITE_MANAGER)
+    const managers = await userService.getUsersByRoles(['SITE_MANAGER'])
+    siteManagers.value = managers
+    console.log('현장소장 목록:', siteManagers.value)
+
     const transportId = Number(route.params.id)
     if (!transportId) {
       alert('잘못된 접근입니다.')
@@ -417,8 +464,8 @@ onMounted(async () => {
 
     const transportDetail = await transportService.getTransportDetail(transportId)
 
-    // 출하 상세 정보 조회 (사업명, 납품요구번호, 수요기관 정보 획득)
-    let shipmentDetail = null
+    // 출하 상세 정보 조회 (사업명, 납품요구번호, 수요기관 정보 획득 + 현장소장 ID)
+    let shipmentDetail: any = null
     if (transportDetail.shipmentId) {
       try {
         shipmentDetail = await shipmentService.getShipmentDetail(transportDetail.shipmentId)
@@ -442,10 +489,10 @@ onMounted(async () => {
       addressDetail: transportDetail.addressDetail || '',
       siteSupervisorName: transportDetail.siteSupervisorName || '',
       receiverName: transportDetail.receiverName || '',
-      siteSupervisorPhone: transportDetail.siteSupervisorPhone || '',
+      siteSupervisorPhone: formatPhoneNumber(transportDetail.siteSupervisorPhone || ''),
       carrierName: transportDetail.carrierName || '',
       driverName: transportDetail.driverName || '',
-      driverPhone: transportDetail.driverPhone || '',
+      driverPhone: formatPhoneNumber(transportDetail.driverPhone || ''),
       dispatchAt: transportDetail.dispatchAt?.slice(0, 16) || '',
       expectedArrival: transportDetail.expectedArrival?.slice(0, 16) || '',
       deliveryMemo: transportDetail.deliveryMemo || '',
@@ -453,7 +500,35 @@ onMounted(async () => {
       trackingNumber: transportDetail.trackingNumber || ''
     }
 
+    // 현장소장/인수자 셀렉트 박스 매핑 (출하 상세에서 siteManagerId 사용)
+    if (shipmentDetail?.siteManagerId) {
+      const matchedManager = siteManagers.value.find(m => m.id === shipmentDetail.siteManagerId)
+      if (matchedManager) {
+        selectedSupervisorId.value = matchedManager.id
+        selectedReceiverId.value = matchedManager.id
+      }
+      // 연락처는 서버에서 오는 siteManagerPhone 우선 사용
+      if (shipmentDetail.siteManagerPhone) {
+        formData.value.siteSupervisorPhone = formatPhoneNumber(shipmentDetail.siteManagerPhone)
+      }
+    } else {
+      // siteManagerId가 없으면 이름으로 매칭 시도
+      if (formData.value.siteSupervisorName) {
+        const matchedByName = siteManagers.value.find(m => m.userName === formData.value.siteSupervisorName)
+        if (matchedByName) {
+          selectedSupervisorId.value = matchedByName.id
+        }
+      }
+      if (formData.value.receiverName) {
+        const matchedByName = siteManagers.value.find(m => m.userName === formData.value.receiverName)
+        if (matchedByName) {
+          selectedReceiverId.value = matchedByName.id
+        }
+      }
+    }
+
     console.log('운송 정보 로드:', formData.value)
+    console.log('현장소장 매핑:', { selectedSupervisorId: selectedSupervisorId.value, selectedReceiverId: selectedReceiverId.value })
   } catch (error) {
     console.error('운송 정보 로드 실패:', error)
     alert('운송 정보를 불러오는데 실패했습니다.')

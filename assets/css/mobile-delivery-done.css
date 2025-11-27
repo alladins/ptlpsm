@@ -1,0 +1,490 @@
+/**
+ * 모바일 납품완료계 서명 페이지 전용 스타일
+ *
+ * 사용처: pages/m/delivery-done/[token].vue
+ * 생성일: 2025-01-19
+ */
+
+/* ========== 역할 배지 (Role Badge) ========== */
+
+.role-badge {
+  margin: 15px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.role-badge i {
+  font-size: 20px;
+}
+
+/* RecipientType 배지 */
+.role-site-manager {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.role-site-inspector {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+/* Legacy role 배지 (호환성 유지) */
+.role-contractor {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.role-supervisor {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+/* ========== 요약 카드 (Summary Cards) ========== */
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.summary-card {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-left: 4px solid #2563eb;
+  padding: 20px 15px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s;
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+  border-left-color: #1d4ed8;
+}
+
+.card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2563eb;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.card-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ========== 발주 정보 그리드 (Simple Layout) ========== */
+
+.info-grid-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-grid-simple .info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  background: transparent;
+}
+
+.info-grid-simple .info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-grid-simple .info-row.full-width {
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ========== 서명 현황 카드 (Signature Status) ========== */
+
+.signature-status-single {
+  display: block;
+}
+
+.signature-status-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.signature-status-card {
+  padding: 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: #f9fafb;
+}
+
+.signature-status-card.completed {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.signature-status-card > i {
+  font-size: 32px;
+  color: #9ca3af;
+}
+
+.signature-status-card.completed > i {
+  color: #10b981;
+}
+
+.status-info {
+  flex: 1;
+}
+
+.status-label {
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.status-company {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.status-name {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.status-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-badge i {
+  font-size: 24px;
+  color: #d1d5db;
+}
+
+.signature-status-card.completed .status-badge i {
+  color: #10b981;
+}
+
+.status-badge span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.signature-status-card.completed .status-badge span {
+  color: #10b981;
+}
+
+/* ========== 서명 섹션 ========== */
+
+.signature-section {
+  display: block !important;
+  width: auto !important;
+  margin: 15px !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+}
+
+/* 서명 안내 메시지 */
+.signature-section .signature-notice {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-top: 15px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding: 15px 18px;
+  background: #eff6ff;
+  border-left: 4px solid #2563eb;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+  clear: both !important;
+  float: none !important;
+  position: relative !important;
+  box-sizing: border-box;
+}
+
+.signature-section .signature-notice p {
+  margin: 0;
+  font-size: 14px;
+  color: #1e40af;
+  line-height: 1.6;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.signature-section .signature-notice i {
+  font-size: 16px;
+  color: #2563eb;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* 서명 가이드 (Legacy) */
+.signature-guide {
+  margin-top: 20px;
+}
+
+.guide-box {
+  display: flex;
+  gap: 15px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-left: 4px solid #0284c7;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.1);
+}
+
+.guide-box > i {
+  font-size: 28px;
+  color: #0284c7;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.guide-text {
+  flex: 1;
+}
+
+.guide-text p {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: #0c4a6e;
+  line-height: 1.6;
+}
+
+.guide-text strong {
+  color: #075985;
+  font-weight: 600;
+}
+
+.guide-text ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.guide-text li {
+  font-size: 13px;
+  color: #0369a1;
+  line-height: 1.8;
+  margin-bottom: 4px;
+}
+
+.guide-text li:last-child {
+  margin-bottom: 0;
+}
+
+/* Legacy: 서명 안내 (호환성) */
+.signature-description {
+  margin-bottom: 15px;
+  padding: 12px;
+  background: #eff6ff;
+  border-left: 4px solid #2563eb;
+  border-radius: 4px;
+}
+
+.signature-description p {
+  margin: 0;
+  font-size: 13px;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+/* ========== 안내사항 섹션 ========== */
+
+.notice-section h3 {
+  font-size: 14px;
+  color: #2563eb;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notice-section ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.notice-section li {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+/* ========== 출하 이력 (Shipment History) ========== */
+
+.shipment-list {
+  display: grid;
+  gap: 12px;
+}
+
+.shipment-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.shipment-header {
+  background: #2563eb;
+  color: white;
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.shipment-badge {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.shipment-date {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.shipment-body {
+  padding: 12px 15px;
+}
+
+.shipment-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.shipment-row:last-child {
+  margin-bottom: 0;
+}
+
+.shipment-row .label {
+  color: #6b7280;
+  font-weight: 600;
+  min-width: 70px;
+}
+
+.shipment-row .value {
+  color: #1f2937;
+  flex: 1;
+}
+
+/* ========== 상태 배지 ========== */
+
+.status-badge.status-pending {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.status-progress {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.status-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.status-cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ========== 서명 캔버스 스크롤 방지 강화 ========== */
+
+.signature-section .signature-canvas-wrapper {
+  touch-action: none;
+}
+
+.signature-section .signature-canvas {
+  touch-action: none;
+}
+
+/* ========== 반응형 스타일 ========== */
+
+@media (max-width: 640px) {
+  .summary-cards {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .summary-card {
+    padding: 15px 10px;
+  }
+
+  .card-value {
+    font-size: 20px;
+  }
+
+  .card-label {
+    font-size: 11px;
+  }
+
+  /* 서명 섹션 강제 블록 레이아웃 */
+  .signature-section {
+    display: block !important;
+    width: auto !important;
+  }
+
+  /* 서명 안내 메시지 - 모바일에서 버튼 아래 배치 강제 */
+  .signature-section .signature-notice {
+    display: block !important;
+    width: 100% !important;
+    margin-top: 15px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    float: none !important;
+    clear: both !important;
+  }
+}
+
+@media (max-width: 375px) {
+  .summary-cards {
+    gap: 6px;
+  }
+
+  .summary-card {
+    padding: 12px 8px;
+  }
+
+  .card-value {
+    font-size: 18px;
+  }
+}

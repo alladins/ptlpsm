@@ -23,7 +23,7 @@
         <span class="info-separator">·</span>
         <span class="shipment-quantity">
           <i class="fas fa-boxes"></i>
-          {{ shipment.shipmentQuantity.toLocaleString() }}
+          {{ formatQuantity(shipment.shipmentQuantity) }}
         </span>
         <span class="info-separator">·</span>
         <span
@@ -42,6 +42,7 @@
             v-if="shipment.transport"
             :transport="shipment.transport"
             :level="level + 1"
+            :delivery-done-id="deliveryDoneId"
           />
 
           <!-- 운송 정보가 없을 때 -->
@@ -58,13 +59,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { ShipmentTreeNode } from '~/types/delivery'
-import { formatDate } from '~/utils/format'
+import { formatDate, formatQuantity } from '~/utils/format'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 
 interface Props {
   shipment: ShipmentTreeNode
   level: number
   defaultExpanded?: boolean
+  deliveryDoneId?: number  // 납품완료계 ID (사진 선택용)
 }
 
 const props = withDefaults(defineProps<Props>(), {

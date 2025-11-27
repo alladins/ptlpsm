@@ -25,9 +25,9 @@
       <!-- 검색 조건 섹션 -->
       <div class="search-section-compact">
         <div class="search-row-single">
-          <!-- 납품일자 -->
+          <!-- 납품요구일자 -->
           <div class="search-item">
-            <label>납품일자:</label>
+            <label>납품요구일자:</label>
             <input type="date" v-model="searchForm.startDate" class="date-input">
             <span class="separator">~</span>
             <input type="date" v-model="searchForm.endDate" class="date-input">
@@ -126,17 +126,29 @@ const router = useRouter()
 // 상태 관리 (DB 기반)
 const { statusOptions } = useCommonStatus()
 
-// 1개월 전 날짜 계산
-const getOneMonthAgo = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() - 1)
-  return date.toISOString().split('T')[0]
+// 오늘 날짜 (로컬 시간 기준 - UTC 시간대 문제 해결)
+const getTodayDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-// 검색 폼
+// 2개월 전 날짜 계산 (로컬 시간 기준)
+const getTwoMonthsAgo = () => {
+  const date = new Date()
+  date.setMonth(date.getMonth() - 2)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 검색 폼 (기본값: 최근 2개월)
 const searchForm = ref({
-  startDate: getOneMonthAgo(),
-  endDate: new Date().toISOString().split('T')[0],
+  startDate: getTwoMonthsAgo(),
+  endDate: getTodayDate(),
   deliveryRequestNo: '', // NEW field
   status: ''
 })
@@ -164,12 +176,12 @@ const {
       status: searchForm.value.status,
       page: params.page || 0,
       size: params.size || 10,
-      sort: params.sort || 'contractDate,desc'
+      sort: params.sort || 'deliveryRequestDate,desc'
     })
     return response
   },
   initialPageSize: 10,
-  initialSort: 'contractDate,desc'
+  initialSort: 'deliveryRequestDate,desc'
 })
 
 // 검색
@@ -180,8 +192,8 @@ const handleSearch = () => {
 // 초기화
 const handleReset = () => {
   searchForm.value = {
-    startDate: getOneMonthAgo(),
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: getTwoMonthsAgo(),
+    endDate: getTodayDate(),
     deliveryRequestNo: '',
     status: ''
   }

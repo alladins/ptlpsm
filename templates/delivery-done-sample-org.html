@@ -1,0 +1,592 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+  ★ 기포단열재 납품확인서 - 실제 데이터 샘플 ★
+
+  레이아웃 확인용 - 원본 이미지 정확한 구조 재현
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>기포단열재 납품확인서</title>
+  <style>
+    @font-face {
+      font-family: 'MalgunGothic';
+      src: url('file:///C:/Windows/Fonts/malgun.ttf');
+      -fs-pdf-font-embed: embed;
+      -fs-pdf-font-encoding: Identity-H;
+    }
+
+    @page {
+      size: A4;
+      margin: 12mm 15mm;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'MalgunGothic', serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #000;
+    }
+
+    /* ========== Document Title ========== */
+    .document-title {
+      text-align: center;
+      font-size: 20pt;
+      font-weight: bold;
+      letter-spacing: 10px;
+      margin: 15px 0 20px 0;
+      text-decoration: underline;
+    }
+
+    /* ========== Header: 2단 구조 ========== */
+    .header-container {
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    /* 좌측: 텍스트 정보 (45%) */
+    .header-left {
+      width: 45%;
+      vertical-align: top;
+      padding: 10px 15px;
+      font-size: 10pt;
+      line-height: 1.8;
+    }
+
+    .header-left div {
+      margin-bottom: 3px;
+    }
+
+    .header-left strong {
+      font-weight: bold;
+      display: inline-block;
+      width: 110px;
+    }
+
+    /* 우측: 정보박스 (55%) */
+    .header-right {
+      width: 55%;
+      vertical-align: top;
+      padding: 5px;
+    }
+
+    .info-box {
+      width: 100%;
+      border: 2px solid #000;
+      border-collapse: collapse;
+      font-size: 7pt;
+    }
+
+    .info-box th,
+    .info-box td {
+      border: 1px solid #000;
+      padding: 5px 8px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .info-box th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+
+    .info-box td.text-left {
+      text-align: left;
+      padding-left: 10px;
+    }
+
+    /* ========== Section Title ========== */
+    .section-title {
+      font-size: 11pt;
+      font-weight: bold;
+      margin: 15px 0 8px 0;
+      padding-left: 3px;
+    }
+
+    /* ========== Contract Table (1. 계약물품) ========== */
+    .contract-table {
+      width: 100%;
+      border: 2px solid #000;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .contract-table th,
+    .contract-table td {
+      border: 1px solid #000;
+      padding: 2px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 7pt;
+    }
+
+    .contract-table th {
+      background-color: #e8e8e8;
+      font-weight: bold;
+    }
+
+    .contract-table td.text-left {
+      text-align: left;
+      padding-left: 10px;
+    }
+
+    .contract-table td.text-right {
+      text-align: right;
+      padding-right: 10px;
+    }
+
+    .contract-table .summary-row {
+      font-weight: bold;
+      background-color: #f5f5f5;
+    }
+
+    /* ========== Delivery Table (2. 납품내역) ========== */
+    .delivery-table {
+      width: 100%;
+      border: 2px solid #000;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .delivery-table th,
+    .delivery-table td {
+      border: 1px solid #000;
+      padding: 2px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 7pt;
+    }
+
+    .delivery-table th {
+      background-color: #e8e8e8;
+      font-weight: bold;
+    }
+
+    .delivery-table td.text-left {
+      text-align: left;
+      padding-left: 10px;
+    }
+
+    .delivery-table td.text-right {
+      text-align: right;
+      padding-right: 10px;
+    }
+
+    .delivery-table .total-row {
+      font-weight: bold;
+      background-color: #f0f0f0;
+    }
+
+    .delivery-table .empty-row {
+      height: 25px;
+    }
+
+    /* ========== Notice Row ========== */
+    .notice-row td {
+      border-left: 2px solid #000;
+      border-right: 2px solid #000;
+      border-top: 1px solid #000;
+      border-bottom: 0 !important;
+      text-align: center;
+      padding: 15px 0;
+      font-size: 10pt;
+      line-height: 1.6;
+    }
+
+    /* ========== Signature Section (Inside Table) ========== */
+    .signature-row-container td {
+      border-left: 2px solid #000;
+      border-right: 2px solid #000;
+      border-top: 0 !important;
+      border-bottom: 2px solid #000;
+      padding: 0;
+    }
+
+    .signature-cell {
+      padding: 0 !important;
+    }
+
+    .inner-signature-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 0;
+    }
+
+    .inner-signature-table tr {
+      border: 0;
+    }
+
+    .inner-signature-table td {
+      border: 0;
+      padding: 8px 10px;
+      font-size: 10pt;
+      line-height: 2.0;
+    }
+
+    .sig-empty-cell {
+      border: 0;
+      padding: 8px 10px;
+      background-color: transparent;
+    }
+
+    .sig-label-cell {
+      text-align: right;
+      font-weight: bold;
+      padding-right: 5px;
+    }
+
+    .sig-content-cell {
+      text-align: left;
+      padding-left: 15px;
+      padding-right: 30px;
+    }
+
+    .sig-stamp-cell {
+      text-align: left;
+      color: #999;
+      padding: 8px 5px 8px 80px;
+      width: 100px;
+    }
+
+    /* ========== Footer Date ========== */
+    .footer-date {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12pt;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <!-- Document Title -->
+  <div class="document-title">기포단열재납품확인서</div>
+
+  <!-- Header: 2단 구조 -->
+  <div class="header-container">
+    <table class="header-table">
+      <tr>
+        <!-- 좌측: 텍스트 정보 -->
+        <td class="header-left">
+          <div><strong>납품요구번호 :</strong> 24-23-1-28399-01</div>
+          <div><strong>수&nbsp; 요&nbsp; 기&nbsp; 관 :</strong> 전라남도 여수시</div>
+          <div><strong>공 &emsp;사 &emsp;명 :</strong> 여수시립박물관 건립공사</div>
+          <div><strong>납&nbsp; 품&nbsp; 기&nbsp; 한 :</strong> 2025년 02월 28일</div>
+        </td>
+
+        <!-- 우측: 정보박스 -->
+        <td class="header-right">
+          <table class="info-box">
+            <tr>
+              <th colspan="2">등록 번호</th>
+              <td colspan="3"><strong>:129-86-71834</strong></td>
+            </tr>
+            <tr style="height: 40px;">
+              <th rowspan="1">상 호</th>
+              <td>주식회사 리드파워</td>
+              <th>성 명</th>
+              <td colspan="2">김광렬</td>
+            </tr>
+            <tr>
+              <th colspan="2">사업장주소</th>
+              <td colspan="3" class="text-left">경기도 안성시 서운면 서미로 21-10</td>
+            </tr>
+            <tr>
+              <th>업 태</th>
+              <td>제조업</td>
+              <th>종 목</th>
+              <td colspan="2" class="text-left">플라스틱발포성형제품제조업</td>
+            </tr>
+            <tr>
+              <th colspan="2">연락 번호</th>
+              <td colspan="3">T:031-671-9322, F:031-671-9323</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Section 1: 계약물품 -->
+  <div class="section-title">1. 계약물량</div>
+  <table class="contract-table">
+    <thead>
+      <tr>
+        <th style="width: 35%;">품 명</th>
+        <th style="width: 10%;">두 께<br />(㎜)</th>
+        <th style="width: 12%;">품 목<br />(㎡)</th>
+        <th style="width: 13%;">단 가</th>
+        <th style="width: 15%;">금 액</th>
+        <th style="width: 15%;">비 고</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- 실제 데이터 -->
+      <tr>
+        <td class="text-center">기포단열재, JYGB-60LG</td>
+        <td class="text-right">60</td>
+        <td class="text-right">48.00</td>
+        <td class="text-right">21,000</td>
+        <td class="text-right">1,008,000</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="text-center">기포단열재, JYGB-90LG</td>
+        <td class="text-right">90</td>
+        <td class="text-right">10,858.00</td>
+        <td class="text-right">31,000</td>
+        <td class="text-right">336,598,000</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="text-center">기포단열재, JYGB-100LG</td>
+        <td class="text-right">100</td>
+        <td class="text-right">3,947.00</td>
+        <td class="text-right">34,000</td>
+        <td class="text-right">134,198,000</td>
+        <td></td>
+      </tr>
+
+      <!-- 빈 행들 -->
+      <tr>
+        <td>&nbsp;</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <!-- 빈 행들 -->
+      <tr class="empty-row">
+        <td>&nbsp;</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+
+      <!-- 요약 행들 -->
+      <tr class="summary-row">
+        <td>단가정정</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr class="summary-row">
+        <td>할인율 2%</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="text-right">9,436,080</td>
+        <td></td>
+      </tr>
+      <tr class="summary-row">
+        <td>합 계</td>
+        <td></td>
+        <td class="text-right">14,863.00</td>
+        <td></td>
+        <td class="text-right">482,367,920</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Section 2: 납품내역 -->
+  <div class="section-title">2. 납품내역</div>
+  <table class="delivery-table">
+    <thead>
+      <tr>
+        <th style="width: 13%;">No.</th>
+        <th style="width: 24%;">제 품 명</th>
+        <th style="width: 8%;">두 께<br />(㎜)</th>
+        <th style="width: 9%;">가 로<br />(㎜)</th>
+        <th style="width: 9%;">세 로<br />(㎜)</th>
+        <th style="width: 9%;">매 수</th>
+        <th style="width: 10%;">물 량<br />(㎡)</th>
+        <th style="width: 18%;">비 고</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- 실제 데이터 -->
+      <tr>
+        <td>2024-08-13</td>
+        <td class="text-left">기포단열재, JYGB-100LG</td>
+        <td class="text-right">100</td>
+        <td class="text-right">1,000</td>
+        <td class="text-right">2,000</td>
+        <td class="text-right">192.0</td>
+        <td class="text-right">384.0</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>2024-08-16</td>
+        <td class="text-left">기포단열재, JYGB-100LG</td>
+        <td class="text-right">100</td>
+        <td class="text-right">1,000</td>
+        <td class="text-right">2,000</td>
+        <td class="text-right">576.0</td>
+        <td class="text-right">1,152.0</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>2024-08-30</td>
+        <td class="text-left">기포단열재, JYGB-100LG</td>
+        <td class="text-right">100</td>
+        <td class="text-right">1,000</td>
+        <td class="text-right">2,000</td>
+        <td class="text-right">1,205.5</td>
+        <td class="text-right">2,411.0</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>2024-12-16</td>
+        <td class="text-left">기포단열재, JYGB-90LG</td>
+        <td class="text-right">90</td>
+        <td class="text-right">1,000</td>
+        <td class="text-right">2,000</td>
+        <td class="text-right">960.0</td>
+        <td class="text-right">1,920.0</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>2024-12-31</td>
+        <td class="text-left">기포단열재, JYGB-90LG</td>
+        <td class="text-right">90</td>
+        <td class="text-right">1,000</td>
+        <td class="text-right">2,000</td>
+        <td class="text-right">2,880.0</td>
+        <td class="text-right">5,760.0</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>2025-01-24</td>
+        <td class="text-left">기포단열재, JYGB-90LG</td>
+        <td class="text-right">90</td>
+        <td class="text-right">1,000</td>
+        <td class="text-right">2,000</td>
+        <td class="text-right">768.0</td>
+        <td class="text-right">1,536.0</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>2025-02-28</td>
+        <td class="text-left">기포단열재, JYGB-60LG</td>
+        <td class="text-right">60</td>
+        <td class="text-right">1,000</td>
+        <td class="text-right">2,000</td>
+        <td class="text-right">24.0</td>
+        <td class="text-right">48.0</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>2025-02-28</td>
+        <td class="text-left">기포단열재, JYGB-90LG</td>
+        <td class="text-right">90</td>
+        <td class="text-right">1,000</td>
+        <td class="text-right">2,000</td>
+        <td class="text-right">821.0</td>
+        <td class="text-right">1,642.0</td>
+        <td></td>
+      </tr>
+
+      <!-- 빈 행들 -->
+      <tr class="empty-row">
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <!-- 빈 행들 -->
+      <tr class="empty-row">
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <!-- 빈 행들 -->
+      <tr class="empty-row">
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+
+      <!-- 합계 행 -->
+      <tr class="total-row">
+        <td  colspan="7" class="text-center">합 계</td>
+        <td class="text-right">-</td>
+      </tr>
+
+      <!-- Notice 행 -->
+      <tr class="notice-row">
+        <td colspan="8">상기 물품에 대하여 생산, 납품하였음을 확인 합니다.</td>
+      </tr>
+
+      <!-- 서명 섹션 행 -->
+      <tr class="signature-row-container">
+        <td colspan="8" class="signature-cell">
+          <table class="inner-signature-table">
+            <tr>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-label-cell">시 공 사 :</td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-stamp-cell">[인]</td>
+            </tr>
+            <tr>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-label-cell">현장감리원 :</td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-stamp-cell">[인]</td>
+            </tr>
+            <tr>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-label-cell">소속감리원 :</td>
+              <td class="sig-empty-cell"></td>
+              <td class="sig-stamp-cell">(인)</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Footer Date -->
+  <div class="footer-date">
+    2025년   ■월   ■일
+  </div>
+</body>
+</html>

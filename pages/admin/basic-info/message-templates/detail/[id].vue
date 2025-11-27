@@ -50,8 +50,8 @@
           <div class="info-item">
             <label>메시지 타입</label>
             <div class="value">
-              <span :class="['badge', `badge-${template.templateType.toLowerCase()}`]">
-                {{ template.templateType }}
+              <span :class="['badge', `badge-${template.messageType?.toLowerCase() || 'sms'}`]">
+                {{ template.messageType || '-' }}
               </span>
             </div>
           </div>
@@ -85,9 +85,9 @@
         <div class="info-item">
           <label>
             내용
-            <span class="char-count">({{ template.content.length }}자)</span>
+            <span class="char-count">({{ template.content?.length || 0 }}자)</span>
           </label>
-          <div class="value content">{{ template.content }}</div>
+          <div class="value content">{{ template.content || '' }}</div>
         </div>
 
         <!-- 미리보기 -->
@@ -101,7 +101,7 @@
               {{ template.subject }}
             </div>
             <div class="preview-body">
-              {{ template.content }}
+              {{ template.content || '' }}
             </div>
           </div>
         </div>

@@ -2,22 +2,8 @@
 <!--
   ★ 사진대지 - PDF 변환용 템플릿 ★
 
-  Handlebars 템플릿 - 서버에서 데이터 주입
+  레이아웃 확인용 - 원본 이미지 정확한 구조 재현
   모든 레이아웃을 테이블 기반으로 구현 (PDF 변환 호환성)
-
-  [플레이스홀더]
-  - {{projectName}} : 공사명
-  - {{photos}} : 사진 목록 (List)
-    - {{photoUrl}} : 이미지 URL (Base64)
-    - {{description}} : 내용 설명
-    - {{deliveryLocation}} : 납품장소
-    - {{isFirst}} : 첫 번째 사진 여부 (공사명 표시용)
-
-  [Flying Saucer PDF 엔진 제약사항]
-  - XHTML 1.0 Strict 필수
-  - CSS 2.1만 지원 (Flexbox, transform 등 최신 CSS 불가)
-  - 모든 태그는 self-closing (예: <img />, <br />)
-  - 테이블 기반 레이아웃 사용 필수
 -->
 <html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
 <head>
@@ -96,6 +82,7 @@
     .photo-row img {
       max-width: 98%;
       max-height: 290px;
+      object-fit: contain;
     }
 
     /* 내용 행 */
@@ -130,34 +117,50 @@
     </tr>
   </table>
 
-  <!-- ========== 사진 섹션 반복 ========== -->
-  {{#each photos}}
+  <!-- ========== 첫 번째 사진 섹션 ========== -->
   <table class="photo-section-table">
-    <!-- 공사명 행 (첫 번째 사진에만 표시) -->
-    {{#if isFirst}}
+    <!-- 공사명 행 -->
     <tr class="project-name-row">
-      <td colspan="4">■ 공 사 명 : {{../projectName}}</td>
+      <td colspan="4">■ 공 사 명 : 여수시립박물관 건립공사</td>
     </tr>
-    {{/if}}
     <!-- 사진 영역 -->
     <tr class="photo-row">
       <td colspan="4">
-        {{#if photoUrl}}
-        <img src="{{photoUrl}}" alt="납품 사진" />
-        {{/if}}
+        <!-- 이미지 삽입 위치 -->
+        <!-- <img src="photo1.jpg" alt="납품 사진 1" /> -->
       </td>
     </tr>
     <!-- 내용 행 -->
     <tr class="content-row">
-      <td class="label-cell">내&#8195;&#8195;용</td>
-      <td colspan="3">{{description}}</td>
+      <td class="label-cell">내&emsp;&emsp; 용</td>
+      <td colspan="3">경질 우레탄 기포 단열재 납품</td>
     </tr>
     <!-- 납품장소 -->
     <tr class="content-row">
       <td class="label-cell">납품장소</td>
-      <td colspan="3">{{deliveryLocation}}</td>
+      <td colspan="3">경기도 시흥시 원곡로 32</td>
     </tr>
   </table>
-  {{/each}}
+
+  <!-- ========== 두 번째 사진 섹션 ========== -->
+  <table class="photo-section-table">
+    <!-- 사진 영역 -->
+    <tr class="photo-row">
+      <td colspan="4">
+        <!-- 이미지 삽입 위치 -->
+        <!-- <img src="photo2.jpg" alt="납품 사진 2" /> -->
+      </td>
+    </tr>
+    <!-- 내용 행 -->
+    <tr class="content-row">
+      <td class="label-cell">내&emsp;&emsp; 용</td>
+      <td colspan="3">경질 우레탄 기포 단열재 납품</td>
+    </tr>
+    <!-- 납품장소 -->
+    <tr class="content-row">
+      <td class="label-cell">납품장소</td>
+      <td colspan="3">경기도 시흥시 원곡로 32</td>
+    </tr>
+  </table>
 </body>
 </html>
