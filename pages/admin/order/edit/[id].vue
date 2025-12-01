@@ -400,6 +400,18 @@ const goBack = () => {
 // 컴포넌트 마운트
 onMounted(async () => {
   await Promise.all([loadData(), loadSiteManagers()])
+
+  // 현장소장 목록 로드 후 시공사명 매핑
+  if (formData.value.siteManagerId) {
+    const supervisor = siteManagers.value.find(m => m.id === formData.value.siteManagerId)
+    if (supervisor) {
+      selectedSupervisorCompany.value = supervisor.companyName || ''
+      // builder가 비어있으면 companyName으로 설정
+      if (!formData.value.builder) {
+        formData.value.builder = supervisor.companyName || ''
+      }
+    }
+  }
 })
 </script>
 

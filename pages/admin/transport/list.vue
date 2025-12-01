@@ -102,7 +102,6 @@
             <thead>
                 <tr>
                   <th>No</th>
-                  <th>출하ID</th>
                   <th>납품요구번호</th>
                   <th>배송지</th>
                   <th>배송예정일</th>
@@ -119,7 +118,6 @@
             <tbody>
                 <tr v-for="(item, index) in transportList" :key="item.transportId" class="table-row" @click="goToEdit(item.transportId)" style="cursor: pointer;">
                   <td>{{ startIndex + index }}</td>
-                  <td>{{ item.shipmentId }}</td>
                   <td>{{ item.deliveryRequestNo }}</td>
                   <td>
                     <span class="address-text" :title="item.addressDetail">

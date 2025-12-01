@@ -17,6 +17,7 @@ export interface OrderSearchRequest {
   endDate?: string
   contractId?: string
   client?: string
+  keyword?: string  // 검색어 (프로젝트명, 담당자명 등)
   salesId?: number
   page?: number
   size?: number
@@ -37,6 +38,7 @@ export const orderService = {
       if (params.endDate) queryParams.append('endDate', params.endDate)
       if (params.contractId) queryParams.append('contractId', params.contractId)
       if (params.client) queryParams.append('client', params.client)
+      if (params.keyword) queryParams.append('keyword', params.keyword)
       if (params.salesId) queryParams.append('salesId', params.salesId.toString())
       if (params.shippableOnly) queryParams.append('shippableOnly', 'true')
 

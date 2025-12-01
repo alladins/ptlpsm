@@ -105,24 +105,34 @@
               </select>
             </FormField>
             <FormField label="현장 인수자">
-              <select
-                v-model="selectedReceiverId"
-                @change="handleReceiverChange"
-                class="form-input-md"
-              >
-                <option value="">현장 인수자를 선택하세요</option>
-                <option v-for="manager in siteManagers" :key="manager.id" :value="manager.id">
-                  {{ manager.userName }} ({{ manager.companyName || '회사 정보 없음' }})
-                </option>
-              </select>
+              <div class="input-with-select">
+                <select
+                  v-model="selectedReceiverId"
+                  @change="handleReceiverChange"
+                  class="form-input-sm"
+                >
+                  <option value="direct">직접 입력</option>
+                  <option v-for="manager in siteManagers" :key="manager.id" :value="manager.id">
+                    {{ manager.userName }}
+                  </option>
+                </select>
+                <input
+                  type="text"
+                  v-model="formData.receiverName"
+                  class="form-input-md"
+                  placeholder="인수자명을 입력하세요"
+                  :disabled="selectedReceiverId !== 'direct'"
+                >
+              </div>
             </FormField>
             <FormField label="인수자 연락처">
               <input
                 type="tel"
-                v-model="formData.siteSupervisorPhone"
+                v-model="formData.receiverPhone"
                 class="form-input-md"
-                placeholder="현장 인수자 선택 시 자동 입력"
-                readonly
+                placeholder="010-0000-0000"
+                @input="handleReceiverPhoneInput"
+                :disabled="selectedReceiverId !== 'direct'"
               >
             </FormField>
           </div>
@@ -370,7 +380,7 @@ const siteManagers = ref<UserByRole[]>([])  // SITE_MANAGER (현장소장/현장
 
 // 선택된 사용자 ID
 const selectedSupervisorId = ref<number | ''>('')  // 현장소장
-const selectedReceiverId = ref<number | ''>('')    // 현장 인수자
+const selectedReceiverId = ref<number | 'direct'>('direct')    // 현장 인수자 ('direct' = 직접입력)
 
 // 운송장 정보 폼 (등록 페이지와 동일하게 formData 사용)
 const formData = ref({
@@ -385,9 +395,8 @@ const formData = ref({
   zipcode: '',
   deliveryAddress: '',
   addressDetail: '',
-  siteSupervisorName: '',
   receiverName: '',
-  siteSupervisorPhone: '',
+  receiverPhone: '',
   carrierName: '',
   driverName: '',
   driverPhone: '',
@@ -399,9 +408,8 @@ const formData = ref({
 })
 
 // 인수자 연락처 포맷팅 (공통 함수 사용)
-const handlesiteSupervisorPhoneInput = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  formData.value.siteSupervisorPhone = formatPhoneNumberInput(input.value)
+const handleReceiverPhoneInput = () => {
+  formData.value.receiverPhone = formatPhoneNumber(formData.value.receiverPhone || '')
 }
 
 // 기사 연락처 포맷팅 (공통 함수 사용)
@@ -421,29 +429,34 @@ const searchAddress = () => {
   }).open()
 }
 
-// 현장소장 선택 시 자동 입력
+// 현장소장 선택 시 인수자 기본값 자동 입력
 const handleSupervisorChange = () => {
   if (selectedSupervisorId.value) {
     const supervisor = siteManagers.value.find(m => m.id === selectedSupervisorId.value)
     if (supervisor) {
-      formData.value.siteSupervisorName = supervisor.userName
+      // 인수자가 비어있으면 현장소장으로 기본값 설정
+      if (!formData.value.receiverName) {
+        selectedReceiverId.value = supervisor.id
+        formData.value.receiverName = supervisor.userName
+        formData.value.receiverPhone = formatPhoneNumber(supervisor.phone || '')
+      }
     }
-  } else {
-    formData.value.siteSupervisorName = ''
   }
 }
 
 // 현장 인수자 선택 시 자동 입력
 const handleReceiverChange = () => {
-  if (selectedReceiverId.value) {
+  if (selectedReceiverId.value === 'direct') {
+    // 직접 입력 선택 시 입력창 초기화
+    formData.value.receiverName = ''
+    formData.value.receiverPhone = ''
+  } else {
+    // 현장소장 선택 시 자동 입력
     const receiver = siteManagers.value.find(m => m.id === selectedReceiverId.value)
     if (receiver) {
       formData.value.receiverName = receiver.userName
-      formData.value.siteSupervisorPhone = formatPhoneNumber(receiver.phone || '')
+      formData.value.receiverPhone = formatPhoneNumber(receiver.phone || '')
     }
-  } else {
-    formData.value.receiverName = ''
-    formData.value.siteSupervisorPhone = ''
   }
 }
 
@@ -487,9 +500,8 @@ onMounted(async () => {
       zipcode: transportDetail.zipcode || '',
       deliveryAddress: transportDetail.deliveryAddress || '',
       addressDetail: transportDetail.addressDetail || '',
-      siteSupervisorName: transportDetail.siteSupervisorName || '',
       receiverName: transportDetail.receiverName || '',
-      siteSupervisorPhone: formatPhoneNumber(transportDetail.siteSupervisorPhone || ''),
+      receiverPhone: formatPhoneNumber(transportDetail.receiverPhone || ''),
       carrierName: transportDetail.carrierName || '',
       driverName: transportDetail.driverName || '',
       driverPhone: formatPhoneNumber(transportDetail.driverPhone || ''),
@@ -500,31 +512,33 @@ onMounted(async () => {
       trackingNumber: transportDetail.trackingNumber || ''
     }
 
-    // 현장소장/인수자 셀렉트 박스 매핑 (출하 상세에서 siteManagerId 사용)
-    if (shipmentDetail?.siteManagerId) {
+    // 현장소장 셀렉트 박스 매핑 (운송 상세에서 siteManagerId 우선 사용)
+    if (transportDetail.siteManagerId) {
+      const matchedManager = siteManagers.value.find(m => m.id === transportDetail.siteManagerId)
+      if (matchedManager) {
+        selectedSupervisorId.value = matchedManager.id
+      }
+    } else if (shipmentDetail?.siteManagerId) {
+      // 운송에 없으면 출하 상세에서 가져오기
       const matchedManager = siteManagers.value.find(m => m.id === shipmentDetail.siteManagerId)
       if (matchedManager) {
         selectedSupervisorId.value = matchedManager.id
-        selectedReceiverId.value = matchedManager.id
       }
-      // 연락처는 서버에서 오는 siteManagerPhone 우선 사용
-      if (shipmentDetail.siteManagerPhone) {
-        formData.value.siteSupervisorPhone = formatPhoneNumber(shipmentDetail.siteManagerPhone)
+    }
+
+    // 인수자 매핑: 저장된 인수자명으로 현장소장 목록에서 찾기
+    if (formData.value.receiverName) {
+      const matchedByName = siteManagers.value.find(m => m.userName === formData.value.receiverName)
+      if (matchedByName) {
+        // 현장소장 목록에 있으면 해당 ID 선택
+        selectedReceiverId.value = matchedByName.id
+      } else {
+        // 현장소장 목록에 없으면 직접 입력으로 설정
+        selectedReceiverId.value = 'direct'
       }
     } else {
-      // siteManagerId가 없으면 이름으로 매칭 시도
-      if (formData.value.siteSupervisorName) {
-        const matchedByName = siteManagers.value.find(m => m.userName === formData.value.siteSupervisorName)
-        if (matchedByName) {
-          selectedSupervisorId.value = matchedByName.id
-        }
-      }
-      if (formData.value.receiverName) {
-        const matchedByName = siteManagers.value.find(m => m.userName === formData.value.receiverName)
-        if (matchedByName) {
-          selectedReceiverId.value = matchedByName.id
-        }
-      }
+      // 인수자명이 없으면 직접 입력 모드
+      selectedReceiverId.value = 'direct'
     }
 
     console.log('운송 정보 로드:', formData.value)
@@ -565,9 +579,9 @@ const saveTransport = async () => {
       zipcode: formData.value.zipcode,
       deliveryAddress: formData.value.deliveryAddress,
       addressDetail: formData.value.addressDetail,
-      siteSupervisorName: formData.value.siteSupervisorName,
+      siteManagerId: selectedSupervisorId.value || null,
       receiverName: formData.value.receiverName,
-      siteSupervisorPhone: formData.value.siteSupervisorPhone,
+      receiverPhone: formData.value.receiverPhone,
       carrierName: formData.value.carrierName,
       driverName: formData.value.driverName,
       driverPhone: formData.value.driverPhone,
@@ -820,5 +834,21 @@ const sendMessageToDriver = async () => {
   width: auto;
   height: auto;
   object-fit: contain;
+}
+
+/* 인수자 선택 + 입력 복합 필드 */
+.input-with-select {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.input-with-select select {
+  flex-shrink: 0;
+  width: 120px;
+}
+
+.input-with-select input {
+  flex: 1;
 }
 </style>

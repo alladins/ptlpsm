@@ -74,32 +74,16 @@
             <input type="date" v-model="searchForm.endDate" class="date-input">
           </div>
 
-          <!-- 계약번호 -->
-          <div class="search-item">
-            <label>계약번호:</label>
-            <input type="text" v-model="searchForm.contractId" placeholder="계약번호" class="text-input" @keyup.enter="handleSearch">
-          </div>
-
           <!-- 수요기관 -->
           <div class="search-item">
             <label>수요기관:</label>
             <input type="text" v-model="searchForm.client" placeholder="수요기관명" class="text-input" @keyup.enter="handleSearch">
           </div>
 
-          <!-- 정렬 -->
-          <div class="search-item">
-            <label>정렬:</label>
-            <select v-model="searchForm.sort" @change="handleSortChange" class="sort-select">
-              <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-
           <!-- 검색어 -->
           <div class="search-item search-keyword">
             <label>검색어:</label>
-            <input type="text" v-model="searchForm.keyword" placeholder="계약번호, 수요기관명, 프로젝트명" class="keyword-input" @keyup.enter="handleSearch">
+            <input type="text" v-model="searchForm.keyword" placeholder="프로젝트명, 담당자명" class="keyword-input" @keyup.enter="handleSearch">
           </div>
         </div>
       </div>
@@ -229,23 +213,10 @@ const getTwoMonthsAgo = () => {
 const searchForm = ref({
   startDate: getTwoMonthsAgo(),
   endDate: getTodayDate(),
-  contractId: '',
   client: '',
   keyword: '',
   sort: 'createdAt,desc'
 })
-
-// 정렬 옵션
-const sortOptions = [
-  { value: 'deliveryRequestDate,desc', label: '납품요구일자 최신순' },
-  { value: 'deliveryRequestDate,asc', label: '납품요구일자 과거순' },
-  { value: 'client,asc', label: '수요기관명 가나다순' },
-  { value: 'client,desc', label: '수요기관명 역순' },
-  { value: 'totalAmount,desc', label: '총계약금액 높은순' },
-  { value: 'totalAmount,asc', label: '총계약금액 낮은순' },
-  { value: 'createdAt,desc', label: '등록일시 최신순' },
-  { value: 'createdAt,asc', label: '등록일시 과거순' }
-]
 
 // 활성 필터 계산
 const activeFilters = computed(() => {
@@ -255,13 +226,6 @@ const activeFilters = computed(() => {
       key: 'date',
       label: '납품요구일자',
       value: `${searchForm.value.startDate || '시작'} ~ ${searchForm.value.endDate || '종료'}`
-    })
-  }
-  if (searchForm.value.contractId) {
-    filters.push({
-      key: 'contractId',
-      label: '계약번호',
-      value: searchForm.value.contractId
     })
   }
   if (searchForm.value.client) {
@@ -293,7 +257,6 @@ const {
   endIndex,
   changePage,
   changePageSize,
-  changeSort,
   search,
   reset
 } = useDataTable<OrderDetailResponse>({
@@ -301,8 +264,8 @@ const {
     const response = await orderService.getOrders({
       startDate: searchForm.value.startDate,
       endDate: searchForm.value.endDate,
-      contractId: searchForm.value.contractId,
       client: searchForm.value.client,
+      keyword: searchForm.value.keyword,
       salesId: 0,
       page: params.page || 0,
       size: params.size || 10,
@@ -326,9 +289,6 @@ const removeFilter = (key: string) => {
       searchForm.value.startDate = ''
       searchForm.value.endDate = ''
       break
-    case 'contractId':
-      searchForm.value.contractId = ''
-      break
     case 'client':
       searchForm.value.client = ''
       break
@@ -349,17 +309,11 @@ const handleReset = () => {
   searchForm.value = {
     startDate: getTwoMonthsAgo(),
     endDate: getTodayDate(),
-    contractId: '',
     client: '',
     keyword: '',
     sort: 'createdAt,desc'
   }
   reset()
-}
-
-// 정렬 변경
-const handleSortChange = () => {
-  changeSort(searchForm.value.sort)
 }
 
 // 페이지 변경 - 리팩토링: useDataTable의 changePage 사용

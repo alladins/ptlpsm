@@ -30,9 +30,9 @@ export interface TransportDetail {
   zipcode: string
   deliveryAddress: string
   addressDetail: string
-  siteSupervisorName: string
-  receiverName: string
-  siteSupervisorPhone: string
+  siteManagerId?: number | null   // 현장소장 ID
+  receiverName: string            // 인수자 성명
+  receiverPhone?: string          // 인수자 연락처
   deliveryDate: string
   carrierName: string
   trackingNumber: string
@@ -58,9 +58,9 @@ export interface TransportCreateRequest {
   zipcode?: string                  // 우편번호
   deliveryAddress?: string          // 배송지 주소
   addressDetail?: string            // 상세주소
-  siteSupervisorName?: string       // 현장담당자
-  receiverName?: string             // 현장 인수자
-  siteSupervisorPhone?: string            // 현장 인수자 연락처
+  siteManagerId?: number | null     // 현장소장 ID
+  receiverName?: string             // 인수자 성명
+  receiverPhone?: string            // 인수자 연락처
   carrierName?: string              // 운송사명
   driverName?: string               // 기사명
   driverPhone?: string              // 기사 연락처

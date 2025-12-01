@@ -139,47 +139,6 @@
 
         <!-- 푸터 영역 -->
         <div class="modal-footer">
-          <!-- 선택 모드: 슬롯 기반 상태 카드 -->
-          <div v-if="selectionMode" class="selection-status-card">
-            <div class="status-header">
-              <i class="fas fa-file-image"></i>
-              <span class="status-title">사진대지 선택</span>
-              <span class="selection-count" :class="{ 'complete': selectedIndices.length === 2 }">
-                {{ selectedIndices.length }} / 2
-              </span>
-            </div>
-
-            <div class="selection-slots">
-              <!-- 슬롯 1 -->
-              <div class="selection-slot" :class="{ filled: selectedIndices.length >= 1 }">
-                <span class="slot-number">1</span>
-                <div v-if="selectedIndices.length >= 1" class="slot-preview">
-                  <UiSecureImage :src="photoUrls[selectedIndices[0]]" alt="선택 1" />
-                  <button class="btn-remove-selection" @click.stop="removeSelection(0)">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-                <div v-else class="slot-empty">
-                  <i class="fas fa-plus"></i>
-                </div>
-              </div>
-
-              <!-- 슬롯 2 -->
-              <div class="selection-slot" :class="{ filled: selectedIndices.length >= 2 }">
-                <span class="slot-number">2</span>
-                <div v-if="selectedIndices.length >= 2" class="slot-preview">
-                  <UiSecureImage :src="photoUrls[selectedIndices[1]]" alt="선택 2" />
-                  <button class="btn-remove-selection" @click.stop="removeSelection(1)">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-                <div v-else class="slot-empty">
-                  <i class="fas fa-plus"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- 썸네일 네비게이션 -->
           <div v-if="photoCount > 1" class="thumbnail-nav">
             <div
@@ -312,13 +271,6 @@ const canSelectMore = computed(() => {
 // 선택 순서 가져오기 (1 또는 2)
 const getSelectionOrder = (index: number): number => {
   return selectedIndices.value.indexOf(index) + 1
-}
-
-// 슬롯에서 선택 제거
-const removeSelection = (slotIndex: number) => {
-  if (slotIndex < selectedIndices.value.length) {
-    selectedIndices.value.splice(slotIndex, 1)
-  }
 }
 
 // 사진 선택 토글
@@ -841,152 +793,6 @@ if (typeof window !== 'undefined') {
   gap: 1rem;
 }
 
-/* 슬롯 기반 상태 카드 */
-.selection-status-card {
-  background: white;
-  border: 2px solid #d1fae5;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.08);
-}
-
-.status-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 1rem;
-}
-
-.status-header i {
-  color: #10b981;
-  font-size: 1.125rem;
-}
-
-.status-title {
-  font-weight: 600;
-  color: #374151;
-  flex: 1;
-}
-
-.selection-count {
-  background: #f3f4f6;
-  color: #6b7280;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-weight: 700;
-  font-size: 0.875rem;
-  transition: all 0.2s;
-}
-
-.selection-count.complete {
-  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-  color: white;
-}
-
-.selection-slots {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.selection-slot {
-  position: relative;
-  width: 100px;
-  height: 100px;
-  border: 2px dashed #d1d5db;
-  border-radius: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.25s ease;
-  background: #fafafa;
-}
-
-.selection-slot.filled {
-  border-style: solid;
-  border-color: #10b981;
-  background: #f0fdf4;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-}
-
-.slot-number {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 24px;
-  height: 24px;
-  background: #9ca3af;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.875rem;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
-}
-
-.selection-slot.filled .slot-number {
-  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
-}
-
-.slot-preview {
-  position: relative;
-  width: calc(100% - 8px);
-  height: calc(100% - 8px);
-  border-radius: 0.5rem;
-  overflow: hidden;
-}
-
-.slot-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.btn-remove-selection {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 24px;
-  height: 24px;
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.btn-remove-selection:hover {
-  background: #dc2626;
-  transform: scale(1.15);
-}
-
-.slot-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  color: #9ca3af;
-}
-
-.slot-empty i {
-  font-size: 1.5rem;
-}
-
 /* 썸네일 네비게이션 */
 .thumbnail-nav {
   display: flex;
@@ -1185,26 +991,6 @@ if (typeof window !== 'undefined') {
     padding: 1rem;
   }
 
-  .selection-status-card {
-    padding: 0.875rem;
-  }
-
-  .selection-slots {
-    gap: 0.75rem;
-  }
-
-  .selection-slot {
-    width: 85px;
-    height: 85px;
-  }
-
-  .slot-number {
-    width: 22px;
-    height: 22px;
-    font-size: 0.75rem;
-    top: -10px;
-  }
-
   .thumb-item {
     width: 50px;
     height: 50px;
@@ -1234,10 +1020,4 @@ if (typeof window !== 'undefined') {
   }
 }
 
-@media (max-width: 480px) {
-  .selection-slot {
-    width: 75px;
-    height: 75px;
-  }
-}
 </style>
