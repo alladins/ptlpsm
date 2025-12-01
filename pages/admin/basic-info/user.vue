@@ -87,8 +87,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in users" :key="user.id" class="table-row">
-                <td>{{ user.userId }}</td>
+              <tr v-for="user in users" :key="user.userid" class="table-row">
+                <td>{{ user.loginId }}</td>
                 <td>{{ user.userName }}</td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.phone || '-' }}</td>
@@ -182,9 +182,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label>사용자 ID *</label>
-                <input 
-                  v-model="userForm.userId" 
-                  type="text" 
+                <input
+                  v-model="userForm.loginId"
+                  type="text"
                   required
                   placeholder="사용자 ID"
                   :disabled="showEditModal"
@@ -528,11 +528,14 @@ const visiblePages = computed(() => {
 // 권한 클래스 반환
 const getRoleClass = (role: string) => {
   switch (role) {
-    case 'SYSTEM_ADMIN': return 'role-admin'
-    case 'SALES_MANAGER': return 'role-sales'
-    case 'SHIPPING_MANAGER': return 'role-shipping'
-    case 'COURIER': return 'role-courier'
-    case 'VIEWER': return 'role-viewer'
+    case 'SYSTEM_ADMIN': return 'role-admin'           // 빨강 - 시스템 관리자
+    case 'LEADPOWER_MANAGER': return 'role-leadpower'  // 주황 - 리드파워담당자
+    case 'OEM_MANAGER': return 'role-oem'              // 보라 - OEM담당자
+    case 'SITE_MANAGER': return 'role-site-manager'    // 파랑 - 현장소장
+    case 'SITE_INSPECTOR': return 'role-inspector'     // 초록 - 감리원
+    case 'SALES_MANAGER': return 'role-sales'          // 남색 - 영업담당자
+    case 'COURIER': return 'role-courier'              // 청록 - 배송기사
+    case 'READ_ONLY': return 'role-readonly'           // 회색 - 조회자
     default: return 'role-default'
   }
 }
@@ -710,8 +713,8 @@ const validateForm = (): boolean => {
 
   let isValid = true
 
-  if (!userForm.value.userId) {
-    validationErrors.value.userId = '사용자 ID를 입력해주세요.'
+  if (!userForm.value.loginId) {
+    validationErrors.value.loginId = '사용자 ID를 입력해주세요.'
     isValid = false
   }
 
@@ -825,7 +828,7 @@ const deleteUser = async (user: any) => {
   if (!confirm('정말 삭제하시겠습니까?')) return
   
   try {
-    await userService.deleteUser(user.id)
+    await userService.deleteUser(user.userid)
     loadUsers()
     alert('사용자가 성공적으로 삭제되었습니다.')
   } catch (error) {
@@ -1119,12 +1122,16 @@ onMounted(() => {
   text-align: center;
 }
 
-.role-admin { background: #dc2626; color: white; }
-.role-sales { background: #2563eb; color: white; }
-.role-shipping { background: #7c3aed; color: white; }
-.role-courier { background: #059669; color: white; }
-.role-viewer { background: #f59e0b; color: white; }
-.role-default { background: #f3f4f6; color: #374151; }
+/* 역할별 배지 색상 */
+.role-admin { background: #dc2626; color: white; }           /* 빨강 - 시스템 관리자 */
+.role-leadpower { background: #f59e0b; color: white; }       /* 주황 - 리드파워담당자 */
+.role-oem { background: #7c3aed; color: white; }             /* 보라 - OEM담당자 */
+.role-site-manager { background: #2563eb; color: white; }    /* 파랑 - 현장소장 */
+.role-inspector { background: #059669; color: white; }       /* 초록 - 감리원 */
+.role-sales { background: #1e40af; color: white; }           /* 남색 - 영업담당자 */
+.role-courier { background: #0891b2; color: white; }         /* 청록 - 배송기사 */
+.role-readonly { background: #6b7280; color: white; }        /* 회색 - 조회자 */
+.role-default { background: #f3f4f6; color: #374151; }       /* 기본 */
 
 .status-badge {
   padding: 0.25rem 0.5rem;

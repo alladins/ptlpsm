@@ -4,9 +4,16 @@ import type { UserByRole, UserRole } from '~/types/user'
 
 // MIGRATED: 2025-01-25 - URL을 USER_ENDPOINTS로 이전
 
+/**
+ * 사용자 인터페이스
+ *
+ * 스키마 변경:
+ * - userid: 숫자 (Primary Key, 기존 id)
+ * - loginId: 문자열 (로그인용 ID, 기존 userId)
+ */
 export interface User {
-  id?: number
-  userId: string
+  userid: number       // PK (숫자, 기존 id)
+  loginId: string      // 로그인 ID (문자열, 기존 userId)
   userName: string
   email: string
   phone?: string

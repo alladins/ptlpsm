@@ -26,6 +26,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { getApiBaseUrl } from '~/services/api'
 
 interface Props {
   src: string
@@ -47,6 +48,29 @@ const imageClass = ref(props.class)
 const loadingStrategy = ref(props.loading)
 
 /**
+ * 상대 경로 URL을 전체 URL로 변환
+ * /api/... 형태의 URL에 API base URL을 추가
+ */
+const getFullUrl = (url: string): string => {
+  if (!url) return ''
+
+  // 이미 절대 URL인 경우 그대로 반환
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+
+  // /api/로 시작하는 상대 경로인 경우 base URL 추가
+  if (url.startsWith('/api/')) {
+    const baseUrl = getApiBaseUrl()
+    // baseUrl이 이미 /api로 끝나면 /api 부분 제거
+    // 예: http://localhost:9031/api + /api/admin/... → http://localhost:9031/api/admin/...
+    return baseUrl.replace(/\/api$/, '') + url
+  }
+
+  return url
+}
+
+/**
  * JWT 인증이 필요한 이미지 로드
  * fetch를 사용하여 Authorization 헤더를 포함시킴
  * api-interceptor.ts가 자동으로 헤더를 추가함
@@ -62,8 +86,11 @@ const loadImage = async () => {
     loading.value = true
     error.value = false
 
+    // 상대 경로를 전체 URL로 변환
+    const fullUrl = getFullUrl(props.src)
+
     // fetch는 plugins/api-interceptor.ts에서 자동으로 Authorization 헤더 추가
-    const response = await fetch(props.src)
+    const response = await fetch(fullUrl)
 
     if (!response.ok) {
       throw new Error(`Image fetch failed: ${response.status} ${response.statusText}`)
@@ -79,7 +106,8 @@ const loadImage = async () => {
     blobUrl.value = URL.createObjectURL(blob)
   } catch (err) {
     console.error('SecureImage load error:', {
-      src: props.src,
+      originalSrc: props.src,
+      fullUrl: getFullUrl(props.src),
       error: err
     })
     error.value = true

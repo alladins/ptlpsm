@@ -22,7 +22,7 @@
         <div class="info-grid">
           <div class="info-item">
             <label>사용자 ID</label>
-            <span>{{ currentUser.userId }}</span>
+            <span>{{ currentUser.loginId }}</span>
           </div>
           <div class="info-item">
             <label>이름</label>
@@ -113,9 +113,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label>사용자 ID</label>
-                <input 
-                  v-model="profileForm.userId" 
-                  type="text" 
+                <input
+                  v-model="profileForm.loginId"
+                  type="text"
                   disabled
                   class="disabled-input"
                 >
@@ -548,7 +548,7 @@ const loadCurrentUser = async () => {
 
 const openEditModal = () => {
   profileForm.value = {
-    userId: currentUser.value.userId,
+    loginId: currentUser.value.loginId,
     userName: currentUser.value.userName,
     email: currentUser.value.email,
     phone: currentUser.value.phone || '',
@@ -588,9 +588,9 @@ const submitProfileUpdate = async () => {
   try {
     // 실제 API 호출
     const updateData: any = { ...profileForm.value }
-    delete updateData.userId // 사용자 ID는 변경 불가
-    
-    const updatedUser = await userService.updateProfile(currentUser.value.id, updateData)
+    delete updateData.loginId // 로그인 ID는 변경 불가
+
+    const updatedUser = await userService.updateProfile(currentUser.value.userid, updateData)
     currentUser.value = updatedUser
     
     showAlert('내 정보가 수정되었습니다.', 'success')

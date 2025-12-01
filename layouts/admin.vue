@@ -194,15 +194,15 @@ const handleLogout = async () => {
     const authStore = useAuthStore()
     
     console.log('로그아웃 시작...', {
-      userId: authStore.user?.userId || authStore.user?.userId,
+      userid: authStore.user?.userid,
       hasToken: !!authStore.accessToken
     })
-    
+
     // 서버에 로그아웃 요청
     if (authStore.accessToken && authStore.user) {
-      const userId = authStore.user.userId
-      if (userId) {
-        await authService.logout(userId, authStore.accessToken)
+      const userid = authStore.user.userid
+      if (userid) {
+        await authService.logout(userid, authStore.accessToken)
       }
     }
     

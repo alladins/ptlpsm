@@ -626,8 +626,9 @@ export const menuService = {
 
   /**
    * 메뉴 권한 업데이트
+   * @param userId 사용자 ID (숫자)
    */
-  async updateMenuAuth(userId: number | string, menuId: number, auth: MenuAuth): Promise<boolean> {
+  async updateMenuAuth(userId: number, menuId: number, auth: MenuAuth): Promise<boolean> {
     try {
       const response = await fetch(MENU_ENDPOINTS.updateMenuAuth(userId, menuId), {
         method: 'PUT',

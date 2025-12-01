@@ -15,9 +15,9 @@ export const AUTH_ENDPOINTS = {
   /**
    * 로그아웃
    * @method POST
-   * @param userId 사용자 ID
+   * @param userId 사용자 ID (숫자)
    */
-  logout: (userId: string | number) => `${getApiBaseUrl()}/auth/logout/${userId}`,
+  logout: (userId: number) => `${getApiBaseUrl()}/auth/logout/${userId}`,
 
   /**
    * 토큰 갱신
@@ -38,11 +38,11 @@ export const AUTH_ENDPOINTS = {
   /**
    * 대리 로그인 시작
    * @method POST
-   * @param targetUserId 대리 로그인 대상 사용자 ID
+   * @param targetUserId 대리 로그인 대상 사용자 ID (숫자)
    * @permission SYSTEM_ADMIN만 가능
    * @response { success: true, data: { accessToken, refreshToken, impersonating, originalUserId, originalUserName, targetUserId, targetUserName, targetRole } }
    */
-  impersonate: (targetUserId: string | number) =>
+  impersonate: (targetUserId: number) =>
     `${getApiBaseUrl()}/common/auth/impersonate/${targetUserId}`,
 
   /**

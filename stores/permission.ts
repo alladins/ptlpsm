@@ -107,7 +107,7 @@ export const usePermissionStore = defineStore('permission', () => {
   async function fetchUserMenus(forceRefresh = false): Promise<Menu[]> {
     const authStore = useAuthStore()
 
-    if (!authStore.user?.userId) {
+    if (!authStore.user?.userid) {
       console.warn('사용자 정보가 없습니다')
       return []
     }
@@ -123,7 +123,7 @@ export const usePermissionStore = defineStore('permission', () => {
     try {
       const { MENU_ENDPOINTS } = await import('~/services/api/endpoints/menu.endpoints')
 
-      const response = await fetch(MENU_ENDPOINTS.userMenus(authStore.user.userId), {
+      const response = await fetch(MENU_ENDPOINTS.userMenus(authStore.user.userid), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
           'Content-Type': 'application/json'
@@ -192,7 +192,7 @@ export const usePermissionStore = defineStore('permission', () => {
   async function fetchMenuAuth(menuId: number): Promise<MenuAuth> {
     const authStore = useAuthStore()
 
-    if (!authStore.user?.userId) {
+    if (!authStore.user?.userid) {
       console.warn('사용자 정보가 없습니다')
       return getDefaultAuth()
     }
@@ -206,7 +206,7 @@ export const usePermissionStore = defineStore('permission', () => {
     try {
       const { MENU_ENDPOINTS } = await import('~/services/api/endpoints/menu.endpoints')
 
-      const response = await fetch(MENU_ENDPOINTS.menuAuth(authStore.user.userId, menuId), {
+      const response = await fetch(MENU_ENDPOINTS.menuAuth(authStore.user.userid, menuId), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
           'Content-Type': 'application/json'
@@ -311,7 +311,7 @@ export const usePermissionStore = defineStore('permission', () => {
     if (isFullAccess.value) return true
 
     const authStore = useAuthStore()
-    const userId = Number(authStore.user?.userId)
+    const userId = authStore.user?.userid
 
     // 시공사 담당자 또는 감리원
     if (isSiteManager.value || isSiteInspector.value) {
@@ -331,7 +331,7 @@ export const usePermissionStore = defineStore('permission', () => {
     if (isFullAccess.value) return true
 
     const authStore = useAuthStore()
-    const userId = Number(authStore.user?.userId)
+    const userId = authStore.user?.userid
 
     // OEM 담당자
     if (isOemManager.value) {
@@ -353,7 +353,7 @@ export const usePermissionStore = defineStore('permission', () => {
     if (isFullAccess.value) return true
 
     const authStore = useAuthStore()
-    const userId = Number(authStore.user?.userId)
+    const userId = authStore.user?.userid
 
     // 운송기사
     if (isCourier.value) {

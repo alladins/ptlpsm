@@ -5,10 +5,14 @@
 /**
  * 역할별 사용자 조회 API 응답
  * GET /api/common/users/by-roles?roles=OEM_MANAGER&roles=COURIER
+ *
+ * 스키마 변경:
+ * - userid: 숫자 (Primary Key, 기존 id)
+ * - loginId: 문자열 (로그인용 ID, 기존 userId)
  */
 export interface UserByRole {
-  id: number
-  userId: string
+  userid: number       // PK (숫자, 기존 id)
+  loginId: string      // 로그인 ID (문자열, 기존 userId)
   userName: string
   email: string
   phone: string
@@ -37,7 +41,7 @@ export type UserRole =
  * 드롭다운용 간소화 타입
  */
 export interface UserOption {
-  id: number
+  userid: number       // PK (숫자, 기존 id)
   userName: string
   phone: string
   companyName: string | null

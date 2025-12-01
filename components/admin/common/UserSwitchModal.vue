@@ -67,9 +67,9 @@
           <div v-else class="user-list">
             <div
               v-for="user in filteredUsers"
-              :key="user.userId"
+              :key="user.userid"
               class="user-item"
-              :class="{ selected: selectedUser?.userId === user.userId }"
+              :class="{ selected: selectedUser?.userid === user.userid }"
               @click="selectUser(user)"
             >
               <div class="user-avatar">
@@ -78,11 +78,11 @@
               <div class="user-info">
                 <div class="user-name">{{ user.userName }}</div>
                 <div class="user-details">
-                  <span class="user-id">{{ user.userId }}</span>
+                  <span class="user-id">{{ user.loginId }}</span>
                   <span class="user-role">{{ getRoleLabel(user.role) }}</span>
                 </div>
               </div>
-              <div v-if="selectedUser?.userId === user.userId" class="check-icon">
+              <div v-if="selectedUser?.userid === user.userid" class="check-icon">
                 <i class="fas fa-check-circle"></i>
               </div>
             </div>
@@ -138,8 +138,16 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { AUTH_ENDPOINTS } from '~/services/api/endpoints'
 
+/**
+ * 사용자 아이템 인터페이스
+ *
+ * 스키마 변경:
+ * - userid: 숫자 (Primary Key, 기존 id)
+ * - loginId: 문자열 (로그인용 ID, 기존 userId)
+ */
 interface UserItem {
-  userId: string
+  userid: number       // PK (숫자, 기존 id)
+  loginId: string      // 로그인 ID (문자열, 기존 userId)
   userName: string
   email?: string
   role: string
@@ -151,7 +159,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  switched: [userId: string]
+  switched: [userId: number]
 }>()
 
 const authStore = useAuthStore()
@@ -199,7 +207,7 @@ function getRoleLabel(role: string | undefined | null): string {
 // 필터링된 사용자 목록
 const filteredUsers = computed(() => {
   // 자기 자신 제외
-  return users.value.filter(user => user.userId !== authStore.user?.userId)
+  return users.value.filter(user => user.userid !== authStore.user?.userid)
 })
 
 // 모달 열릴 때 사용자 목록 로드
@@ -267,12 +275,12 @@ async function fetchUsers() {
 
     // Mock 데이터 (개발용)
     users.value = [
-      { userId: '2', userName: '김영업', role: 'SALES_MANAGER' },
-      { userId: '3', userName: '이OEM', role: 'OEM_MANAGER' },
-      { userId: '4', userName: '박시공', role: 'SITE_MANAGER' },
-      { userId: '5', userName: '최감리', role: 'SITE_INSPECTOR' },
-      { userId: '6', userName: '정운송', role: 'COURIER' },
-      { userId: '7', userName: '한조회', role: 'READ_ONLY' }
+      { userid: 2, loginId: 'sales01', userName: '김영업', role: 'SALES_MANAGER' },
+      { userid: 3, loginId: 'oem01', userName: '이OEM', role: 'OEM_MANAGER' },
+      { userid: 4, loginId: 'site01', userName: '박시공', role: 'SITE_MANAGER' },
+      { userid: 5, loginId: 'inspector01', userName: '최감리', role: 'SITE_INSPECTOR' },
+      { userid: 6, loginId: 'courier01', userName: '정운송', role: 'COURIER' },
+      { userid: 7, loginId: 'readonly01', userName: '한조회', role: 'READ_ONLY' }
     ]
     totalPages.value = 1
     error.value = null // Mock 데이터 사용 시 에러 숨김
@@ -322,10 +330,10 @@ async function handleConfirm() {
   switching.value = true
 
   try {
-    const success = await authStore.startImpersonation(selectedUser.value.userId)
+    const success = await authStore.startImpersonation(selectedUser.value.userid)
 
     if (success) {
-      emit('switched', selectedUser.value.userId)
+      emit('switched', selectedUser.value.userid)
       emit('close')
       // 페이지 새로고침하여 권한 및 메뉴 갱신
       window.location.reload()

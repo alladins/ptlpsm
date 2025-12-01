@@ -529,7 +529,7 @@ const loadMenus = async () => {
     }
 
     // 3. 사용자별 메뉴 권한 조회
-    if (authStore.isLoggedIn && authStore.user?.userId) {
+    if (authStore.isLoggedIn && authStore.user?.userid) {
       try {
         const userMenusWithAuth = await permissionStore.fetchUserMenus()
 
@@ -765,8 +765,8 @@ const closeUserSwitchModal = () => {
 }
 
 // 사용자 전환 완료 처리
-const handleUserSwitched = (userId: string) => {
-  console.log('사용자 전환 완료:', userId)
+const handleUserSwitched = (userid: number) => {
+  console.log('사용자 전환 완료:', userid)
   closeUserSwitchModal()
 }
 

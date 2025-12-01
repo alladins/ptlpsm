@@ -150,7 +150,7 @@ const handleLogin = async () => {
 
   try {
     const response = await authService.login({
-      userId: form.value.loginId,
+      loginId: form.value.loginId,
       password: form.value.password,
       rememberMe: form.value.rememberMe
     })

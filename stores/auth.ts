@@ -1,8 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
+/**
+ * 사용자 인터페이스
+ *
+ * 스키마 변경:
+ * - userid: 숫자 (Primary Key, 기존 id)
+ * - loginId: 문자열 (로그인용 ID, 기존 userId)
+ */
 interface User {
-  userId: string
+  userid: number       // PK (숫자, 기존 id)
+  loginId: string      // 로그인 ID (문자열, 기존 userId)
   userName: string
   email: string
   role: string
@@ -10,7 +18,7 @@ interface User {
 
 interface ImpersonationState {
   isImpersonating: boolean
-  originalUserId: string | null
+  originalUserid: number | null     // 숫자
   originalUserName: string | null
   originalRole: string | null
 }
@@ -35,7 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Impersonation State (대리 로그인 상태)
   const impersonation = ref<ImpersonationState>({
     isImpersonating: false,
-    originalUserId: null,
+    originalUserid: null,
     originalUserName: null,
     originalRole: null
   })
@@ -69,7 +77,7 @@ export const useAuthStore = defineStore('auth', () => {
   const originalUser = computed(() => {
     if (!impersonation.value.isImpersonating) return null
     return {
-      userId: impersonation.value.originalUserId,
+      userid: impersonation.value.originalUserid,
       userName: impersonation.value.originalUserName,
       role: impersonation.value.originalRole
     }
@@ -114,7 +122,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Impersonation 상태 초기화
     impersonation.value = {
       isImpersonating: false,
-      originalUserId: null,
+      originalUserid: null,
       originalUserName: null,
       originalRole: null
     }
@@ -133,15 +141,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * 대리 로그인 시작
-   * @param targetUserId 대리 로그인 대상 사용자 ID
+   * @param targetUserId 대리 로그인 대상 사용자 ID (숫자)
    */
-  async function startImpersonation(targetUserId: string): Promise<boolean> {
+  async function startImpersonation(targetUserId: number): Promise<boolean> {
     if (!canImpersonate.value) {
       console.error('대리 로그인 권한이 없습니다')
       return false
     }
 
-    if (user.value?.userId === targetUserId) {
+    if (user.value?.userid === targetUserId) {
       console.error('자기 자신에게는 대리 로그인할 수 없습니다')
       return false
     }
@@ -172,7 +180,7 @@ export const useAuthStore = defineStore('auth', () => {
       // 원래 사용자 정보 저장
       impersonation.value = {
         isImpersonating: true,
-        originalUserId: result.originalUserId?.toString() || user.value?.userId || null,
+        originalUserid: result.originalUserid ?? user.value?.userid ?? null,
         originalUserName: result.originalUserName || user.value?.userName || null,
         originalRole: user.value?.role || null
       }
@@ -184,7 +192,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       // 대상 사용자 정보로 변경
       user.value = {
-        userId: result.targetUserId?.toString() || '',
+        userid: result.targetUserid ?? 0,
+        loginId: result.targetLoginId || '',
         userName: result.targetUserName || '',
         email: '', // API 응답에 없으면 빈값
         role: result.targetRole || ''
@@ -251,7 +260,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       // 원래 사용자 정보 복원
       user.value = {
-        userId: result.userId?.toString() || impersonation.value.originalUserId || '',
+        userid: result.userid ?? impersonation.value.originalUserid ?? 0,
+        loginId: result.loginId || '',
         userName: result.userName || impersonation.value.originalUserName || '',
         email: result.email || '',
         role: result.role || impersonation.value.originalRole || ''
@@ -260,7 +270,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Impersonation 상태 초기화
       impersonation.value = {
         isImpersonating: false,
-        originalUserId: null,
+        originalUserid: null,
         originalUserName: null,
         originalRole: null
       }
@@ -319,7 +329,7 @@ export const useAuthStore = defineStore('auth', () => {
         } catch {
           impersonation.value = {
             isImpersonating: false,
-            originalUserId: null,
+            originalUserid: null,
             originalUserName: null,
             originalRole: null
           }

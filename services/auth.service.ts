@@ -1,7 +1,7 @@
 import { getApiBaseUrl } from './api'
 
 interface LoginRequest {
-  userId: string
+  loginId: string      // 로그인 ID (문자열)
   password: string
   rememberMe?: boolean
 }
@@ -10,7 +10,8 @@ interface LoginResponse {
   success: boolean
   data: {
     userInfo: {
-      userId: string
+      userid: number       // PK (숫자)
+      loginId: string      // 로그인 ID (문자열)
       userName: string
       email: string
       role: string
@@ -89,8 +90,9 @@ class AuthService {
 
   /**
    * 로그아웃
+   * @param userid 사용자 ID (숫자)
    */
-  async logout(userId: string, token: string): Promise<void> {
+  async logout(userid: number, token: string): Promise<void> {
     try {
       const response = await fetch(`${getApiBaseUrl()}/auth/logout`, {
         method: 'POST',
@@ -99,7 +101,7 @@ class AuthService {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          userId: userId
+          userid: userid
         })
       })
   
