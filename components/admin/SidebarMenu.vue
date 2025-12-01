@@ -2,10 +2,10 @@
   <div class="sidebar-menu" :class="{ 'mobile-open': mobileOpen }">
     <!-- 로고 영역 -->
     <div class="sidebar-header">
-      <div class="sidebar-logo">
+      <NuxtLink to="/admin" class="sidebar-logo">
         <img src="/images/common/logo.png" alt="PTPLPSM" class="sidebar-logo-img">
         <span class="sidebar-logo-text">출하시스템</span>
-      </div>
+      </NuxtLink>
       <!-- 모바일 닫기 버튼 -->
       <button class="mobile-close-btn" @click="$emit('close-mobile')">
         <i class="fas fa-times"></i>
@@ -94,6 +94,15 @@
           <i class="fas fa-cog"></i>
           <span>설정</span>
         </NuxtLink>
+        <!-- 사용자 전환 (SYSTEM_ADMIN만 표시) -->
+        <button
+          v-if="authStore.canImpersonate"
+          @click="openUserSwitchModal"
+          class="user-menu-item user-switch-item"
+        >
+          <i class="fas fa-user-secret"></i>
+          <span>사용자 전환</span>
+        </button>
         <div class="user-menu-divider"></div>
         <button @click="handleLogout" class="user-menu-item logout-item">
           <i class="fas fa-sign-out-alt"></i>
@@ -101,14 +110,23 @@
         </button>
       </div>
     </div>
+
+    <!-- 사용자 전환 모달 -->
+    <UserSwitchModal
+      :show="isUserSwitchModalOpen"
+      @close="closeUserSwitchModal"
+      @switched="handleUserSwitched"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from '#imports'
-import type { Menu } from '~/types/menu'
-import { menuService } from '~/services/menu.service'
+import type { Menu, MenuAuth } from '~/types/menu'
+import { usePermissionStore } from '~/stores/permission'
+import { useAuthStore } from '~/stores/auth'
+import UserSwitchModal from '~/components/admin/common/UserSwitchModal.vue'
 
 // Props
 interface Props {
@@ -127,8 +145,18 @@ const emit = defineEmits<{
   'close-mobile': []
 }>()
 
+// Stores
+const permissionStore = usePermissionStore()
+const authStore = useAuthStore()
+
+// 메뉴 + 권한 타입
+interface MenuWithAuth extends Menu {
+  auth?: MenuAuth
+  children?: MenuWithAuth[]
+}
+
 // 수동으로 정의한 메뉴 구조
-const manualMenus = ref<Menu[]>([
+const manualMenus = ref<MenuWithAuth[]>([
   {
     menuId: 1,
     menuCode: 'SALES',
@@ -228,6 +256,18 @@ const manualMenus = ref<Menu[]>([
         menuIcon: 'fas fa-map-marker-alt',
         menuLevel: 2,
         sortOrder: 2,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 73,
+        menuCode: 'STAT_SHIPMENT',
+        menuName: '출하현황통계',
+        menuUrl: '/admin/statistics/shipment',
+        menuIcon: 'fas fa-truck-loading',
+        menuLevel: 2,
+        sortOrder: 3,
         visible: 'Y',
         useYn: 'Y',
         children: []
@@ -396,7 +436,7 @@ const manualMenus = ref<Menu[]>([
 ])
 
 // Reactive data
-const menus = ref<Menu[]>([])
+const rawMenus = ref<MenuWithAuth[]>([])
 const expandedMenus = ref<number[]>([])
 const userInfo = ref({
   name: '관리자',
@@ -407,64 +447,172 @@ const userInfo = ref({
 const route = useRoute()
 const router = useRouter()
 
+/**
+ * 권한 필터링된 메뉴 목록
+ * - readAuth가 'Y'인 메뉴만 표시
+ * - 전체 접근 권한(SYSTEM_ADMIN, LEADPOWER_MANAGER)은 모든 메뉴 표시
+ */
+const menus = computed(() => {
+  // 전체 접근 권한이 있으면 필터링 없이 모두 표시
+  if (permissionStore.isFullAccess) {
+    return rawMenus.value
+  }
+
+  // 권한 기반 필터링
+  return filterMenusByPermission(rawMenus.value)
+})
+
+/**
+ * 메뉴 권한 필터링 (재귀)
+ */
+function filterMenusByPermission(menuList: MenuWithAuth[]): MenuWithAuth[] {
+  return menuList
+    .filter(menu => {
+      // auth 정보가 없으면 기본적으로 표시 (호환성)
+      if (!menu.auth) return true
+      // readAuth가 'Y'인 경우만 표시
+      return menu.auth.readAuth === 'Y'
+    })
+    .map(menu => {
+      // 하위 메뉴가 있으면 재귀적으로 필터링
+      if (menu.children && menu.children.length > 0) {
+        const filteredChildren = filterMenusByPermission(menu.children)
+        return {
+          ...menu,
+          children: filteredChildren
+        }
+      }
+      return menu
+    })
+    .filter(menu => {
+      // 1차 메뉴 중 하위 메뉴가 있었는데 필터링 후 비어있으면 제외
+      if (menu.children !== undefined && menu.children.length === 0) {
+        // 원래 children이 있었는지 확인 (manualMenus에서)
+        const originalMenu = findOriginalMenu(menu.menuId)
+        if (originalMenu?.children && originalMenu.children.length > 0) {
+          return false
+        }
+      }
+      return true
+    })
+}
+
+/**
+ * 원본 메뉴 찾기
+ */
+function findOriginalMenu(menuId: number): MenuWithAuth | null {
+  function search(menus: MenuWithAuth[]): MenuWithAuth | null {
+    for (const menu of menus) {
+      if (menu.menuId === menuId) return menu
+      if (menu.children) {
+        const found = search(menu.children)
+        if (found) return found
+      }
+    }
+    return null
+  }
+  return search(manualMenus.value)
+}
+
 // Methods
 const loadMenus = async () => {
   try {
-    // 수동으로 정의한 메뉴를 기본으로 사용
-    menus.value = manualMenus.value
-    
-    // TODO: 사용자별 권한 기능은 추후 구현 예정
-    // 백엔드에서 사용자별 권한 정보를 가져와서 메뉴 필터링 (선택사항)
-    /*
-    try {
-      const userId = 1 // 실제 구현에서는 인증 상태에서 가져옴
-      const userMenus = await menuService.getUserMenus(userId)
-      
-      // 권한 정보를 기반으로 메뉴 필터링
-      if (userMenus && userMenus.length > 0) {
-        menus.value = filterMenusByAuth(manualMenus.value, userMenus)
+    // 1. 기본 메뉴 구조 설정
+    rawMenus.value = manualMenus.value
+
+    // 2. 사용자 정보 업데이트
+    if (authStore.user) {
+      userInfo.value = {
+        name: authStore.user.userName || '관리자',
+        role: getRoleDisplayName(authStore.user.role)
       }
-      
-      console.log('사용자 권한 메뉴 정보:', userMenus)
-    } catch (error) {
-      console.log('권한 정보 로딩 실패 (수동 메뉴 사용):', error)
     }
-    */
+
+    // 3. 사용자별 메뉴 권한 조회
+    if (authStore.isLoggedIn && authStore.user?.userId) {
+      try {
+        const userMenusWithAuth = await permissionStore.fetchUserMenus()
+
+        if (userMenusWithAuth && userMenusWithAuth.length > 0) {
+          // 서버에서 받은 메뉴 사용 (권한 정보 포함)
+          rawMenus.value = mergeMenuPermissions(manualMenus.value, userMenusWithAuth)
+          console.log('사용자 권한 메뉴 로드 완료:', userMenusWithAuth.length, '개')
+        }
+      } catch (error) {
+        console.warn('권한 정보 로딩 실패 (기본 메뉴 사용):', error)
+        // API 실패 시 수동 메뉴 유지 (전체 접근 권한 허용)
+      }
+    }
   } catch (error) {
     console.error('메뉴 로딩 실패:', error)
-    // 에러 발생 시에도 수동 메뉴 사용
-    menus.value = manualMenus.value
+    rawMenus.value = manualMenus.value
   }
 }
 
 /**
- * 사용자 권한에 따라 메뉴 필터링 (추후 구현 예정)
+ * 역할 표시명 변환
  */
-/*
-const filterMenusByAuth = (allMenus: Menu[], userMenus: Menu[]): Menu[] => {
-  return allMenus.filter(menu => {
-    // 사용자가 해당 메뉴에 접근 권한이 있는지 확인
-    const hasAccess = userMenus.some(userMenu => 
-      userMenu.menuCode === menu.menuCode && userMenu.useYn === 'Y'
-    )
-    
-    if (!hasAccess) return false
-    
-    // 하위 메뉴가 있는 경우 재귀적으로 필터링
-    if (menu.children && menu.children.length > 0) {
-      const filteredChildren = filterMenusByAuth(menu.children, userMenus)
-      if (filteredChildren.length === 0) return false
-      
-      return {
-        ...menu,
-        children: filteredChildren
+function getRoleDisplayName(role: string): string {
+  const roleNames: Record<string, string> = {
+    'SYSTEM_ADMIN': '시스템 관리자',
+    'LEADPOWER_MANAGER': '리드파워 담당자',
+    'OEM_MANAGER': 'OEM 담당자',
+    'SITE_MANAGER': '시공사 담당자',
+    'SITE_INSPECTOR': '감리원',
+    'SALES_MANAGER': '영업 담당자',
+    'COURIER': '운송기사',
+    'READ_ONLY': '조회 전용',
+    'ADMINISTRATOR': '관리자'
+  }
+  return roleNames[role] || role || '사용자'
+}
+
+/**
+ * 수동 메뉴와 서버 권한 정보 병합
+ */
+function mergeMenuPermissions(
+  manualMenuList: MenuWithAuth[],
+  serverMenus: (Menu & { auth?: MenuAuth })[]
+): MenuWithAuth[] {
+  // 서버 메뉴를 menuCode로 맵핑
+  const serverMenuMap = new Map<string, Menu & { auth?: MenuAuth }>()
+
+  function mapServerMenus(menus: (Menu & { auth?: MenuAuth })[]) {
+    for (const menu of menus) {
+      if (menu.menuCode) {
+        serverMenuMap.set(menu.menuCode, menu)
+      }
+      if (menu.children) {
+        mapServerMenus(menu.children as (Menu & { auth?: MenuAuth })[])
       }
     }
-    
-    return true
-  })
+  }
+  mapServerMenus(serverMenus)
+
+  // 수동 메뉴에 서버 권한 정보 병합
+  function merge(menus: MenuWithAuth[]): MenuWithAuth[] {
+    return menus.map(menu => {
+      const serverMenu = serverMenuMap.get(menu.menuCode)
+      const mergedMenu: MenuWithAuth = {
+        ...menu,
+        auth: serverMenu?.auth || {
+          readAuth: 'Y',  // 기본값: 조회 허용
+          writeAuth: 'N',
+          editAuth: 'N',
+          deleteAuth: 'N'
+        }
+      }
+
+      if (menu.children && menu.children.length > 0) {
+        mergedMenu.children = merge(menu.children)
+      }
+
+      return mergedMenu
+    })
+  }
+
+  return merge(manualMenuList)
 }
-*/
 
 /**
  * 메뉴 활성화/비활성화 토글
@@ -594,6 +742,7 @@ const handleLogout = () => {
 // User menu state
 const isUserMenuOpen = ref(false)
 const showAvatarFallback = ref(false)
+const isUserSwitchModalOpen = ref(false)
 
 const toggleUserMenu = () => {
   isUserMenuOpen.value = !isUserMenuOpen.value
@@ -604,41 +753,68 @@ const closeUserMenu = () => {
   isUserMenuOpen.value = false
 }
 
+// 사용자 전환 모달 열기
+const openUserSwitchModal = () => {
+  closeUserMenu()
+  isUserSwitchModalOpen.value = true
+}
+
+// 사용자 전환 모달 닫기
+const closeUserSwitchModal = () => {
+  isUserSwitchModalOpen.value = false
+}
+
+// 사용자 전환 완료 처리
+const handleUserSwitched = (userId: string) => {
+  console.log('사용자 전환 완료:', userId)
+  closeUserSwitchModal()
+}
+
 // Lifecycle
 onMounted(() => {
   loadMenus()
-  
+
   // 외부 클릭 시 사용자 메뉴 닫기
   document.addEventListener('click', (event) => {
     const userInfoElement = document.querySelector('.user-info')
     const userMenuElement = document.querySelector('.user-menu-dropdown')
-    
+
     if (userInfoElement && userMenuElement) {
-      if (!userInfoElement.contains(event.target as Node) && 
+      if (!userInfoElement.contains(event.target as Node) &&
           !userMenuElement.contains(event.target as Node)) {
         closeUserMenu()
       }
     }
   })
-  
-  // 개발자 도구에서 메뉴 관리 함수 노출 (개발용) - 비활성화됨
-  /*
-  if (process.dev) {
-    ;(window as any).menuManager = {
-      toggleMenuVisibility,
-      addMenu,
-      removeMenu,
-      getMenus: () => manualMenus.value,
-      resetMenus: () => {
-        // 수동 메뉴로 리셋
-        menus.value = manualMenus.value
+})
+
+// 사용자 로그인 상태 변경 감시 - 메뉴 권한 다시 로드
+watch(
+  () => authStore.isLoggedIn,
+  (newValue) => {
+    if (newValue) {
+      loadMenus()
+    } else {
+      // 로그아웃 시 메뉴 초기화
+      rawMenus.value = manualMenus.value
+      permissionStore.clearCache()
+    }
+  }
+)
+
+// 사용자 정보 변경 감시 - 표시명 업데이트
+watch(
+  () => authStore.user,
+  (newUser) => {
+    if (newUser) {
+      userInfo.value = {
+        name: newUser.userName || '관리자',
+        role: getRoleDisplayName(newUser.role)
       }
     }
-    console.log('🔧 메뉴 관리자 도구가 활성화되었습니다.')
-    console.log('사용법: window.menuManager.toggleMenuVisibility("SALES")')
-  }
-  */
-})
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>
@@ -669,6 +845,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .sidebar-logo-img {
@@ -945,6 +1123,26 @@ onMounted(() => {
 .logout-item:hover {
   background-color: #fef2f2;
   color: #991b1b;
+}
+
+/* 사용자 전환 버튼 스타일 */
+.user-switch-item {
+  background: none;
+  border: none;
+  color: #6366f1;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.user-switch-item:hover {
+  background-color: #eef2ff;
+  color: #4f46e5;
+}
+
+.user-switch-item i {
+  color: #6366f1 !important;
 }
 
 /* 반응형 */

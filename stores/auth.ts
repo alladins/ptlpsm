@@ -8,12 +8,20 @@ interface User {
   role: string
 }
 
+interface ImpersonationState {
+  isImpersonating: boolean
+  originalUserId: string | null
+  originalUserName: string | null
+  originalRole: string | null
+}
+
 interface AuthState {
   user: User | null
   accessToken: string | null
   refreshToken: string | null
   tokenExpiry: number | null
   lastActivity: number | null
+  impersonation: ImpersonationState
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -23,6 +31,14 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshToken = ref<string | null>(null)
   const tokenExpiry = ref<number | null>(null)
   const lastActivity = ref<number | null>(null)
+
+  // Impersonation State (대리 로그인 상태)
+  const impersonation = ref<ImpersonationState>({
+    isImpersonating: false,
+    originalUserId: null,
+    originalUserName: null,
+    originalRole: null
+  })
 
   // Constants
   const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000 // 5분 (밀리초)
@@ -46,6 +62,23 @@ export const useAuthStore = defineStore('auth', () => {
   const isUserInactive = computed(() => {
     if (!lastActivity.value) return false
     return Date.now() - lastActivity.value > USER_INACTIVITY_TIMEOUT
+  })
+
+  // Impersonation Computed (대리 로그인)
+  const isImpersonating = computed(() => impersonation.value.isImpersonating)
+  const originalUser = computed(() => {
+    if (!impersonation.value.isImpersonating) return null
+    return {
+      userId: impersonation.value.originalUserId,
+      userName: impersonation.value.originalUserName,
+      role: impersonation.value.originalRole
+    }
+  })
+
+  // SYSTEM_ADMIN만 대리 로그인 가능
+  const canImpersonate = computed(() => {
+    if (impersonation.value.isImpersonating) return false // 이미 대리 로그인 중이면 불가
+    return user.value?.role === 'SYSTEM_ADMIN'
   })
 
   // Actions
@@ -78,6 +111,14 @@ export const useAuthStore = defineStore('auth', () => {
     tokenExpiry.value = null
     lastActivity.value = null
 
+    // Impersonation 상태 초기화
+    impersonation.value = {
+      isImpersonating: false,
+      originalUserId: null,
+      originalUserName: null,
+      originalRole: null
+    }
+
     // localStorage 정리
     if (process.client) {
       localStorage.removeItem('auth_user')
@@ -85,7 +126,160 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('auth_refresh_token')
       localStorage.removeItem('auth_token_expiry')
       localStorage.removeItem('auth_last_activity')
+      localStorage.removeItem('auth_impersonation')
       localStorage.removeItem('redirectAfterLogin')
+    }
+  }
+
+  /**
+   * 대리 로그인 시작
+   * @param targetUserId 대리 로그인 대상 사용자 ID
+   */
+  async function startImpersonation(targetUserId: string): Promise<boolean> {
+    if (!canImpersonate.value) {
+      console.error('대리 로그인 권한이 없습니다')
+      return false
+    }
+
+    if (user.value?.userId === targetUserId) {
+      console.error('자기 자신에게는 대리 로그인할 수 없습니다')
+      return false
+    }
+
+    try {
+      const { getApiBaseUrl } = await import('~/services/api')
+      const response = await fetch(`${getApiBaseUrl()}/common/auth/impersonate/${targetUserId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken.value}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `대리 로그인 실패: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.success || !data.data) {
+        throw new Error(data.message || '대리 로그인 응답 형식 오류')
+      }
+
+      const result = data.data
+
+      // 원래 사용자 정보 저장
+      impersonation.value = {
+        isImpersonating: true,
+        originalUserId: result.originalUserId?.toString() || user.value?.userId || null,
+        originalUserName: result.originalUserName || user.value?.userName || null,
+        originalRole: user.value?.role || null
+      }
+
+      // 새 토큰으로 교체
+      accessToken.value = result.accessToken
+      refreshToken.value = result.refreshToken
+      tokenExpiry.value = Date.now() + 3600 * 1000 // 1시간
+
+      // 대상 사용자 정보로 변경
+      user.value = {
+        userId: result.targetUserId?.toString() || '',
+        userName: result.targetUserName || '',
+        email: '', // API 응답에 없으면 빈값
+        role: result.targetRole || ''
+      }
+
+      // localStorage 업데이트
+      if (process.client) {
+        localStorage.setItem('auth_user', JSON.stringify(user.value))
+        localStorage.setItem('auth_access_token', result.accessToken)
+        localStorage.setItem('auth_refresh_token', result.refreshToken)
+        localStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
+        localStorage.setItem('auth_impersonation', JSON.stringify(impersonation.value))
+      }
+
+      console.log('대리 로그인 성공:', {
+        원래사용자: impersonation.value.originalUserName,
+        대상사용자: user.value.userName,
+        대상역할: user.value.role
+      })
+
+      return true
+    } catch (error) {
+      console.error('대리 로그인 실패:', error)
+      return false
+    }
+  }
+
+  /**
+   * 대리 로그인 종료 (원래 계정으로 복귀)
+   */
+  async function stopImpersonation(): Promise<boolean> {
+    if (!impersonation.value.isImpersonating) {
+      console.warn('대리 로그인 중이 아닙니다')
+      return false
+    }
+
+    try {
+      const { getApiBaseUrl } = await import('~/services/api')
+      const response = await fetch(`${getApiBaseUrl()}/common/auth/impersonate/revert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken.value}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `대리 로그인 종료 실패: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.success || !data.data) {
+        throw new Error(data.message || '대리 로그인 종료 응답 형식 오류')
+      }
+
+      const result = data.data
+
+      // 토큰 복원
+      accessToken.value = result.accessToken
+      refreshToken.value = result.refreshToken
+      tokenExpiry.value = Date.now() + 3600 * 1000
+
+      // 원래 사용자 정보 복원
+      user.value = {
+        userId: result.userId?.toString() || impersonation.value.originalUserId || '',
+        userName: result.userName || impersonation.value.originalUserName || '',
+        email: result.email || '',
+        role: result.role || impersonation.value.originalRole || ''
+      }
+
+      // Impersonation 상태 초기화
+      impersonation.value = {
+        isImpersonating: false,
+        originalUserId: null,
+        originalUserName: null,
+        originalRole: null
+      }
+
+      // localStorage 업데이트
+      if (process.client) {
+        localStorage.setItem('auth_user', JSON.stringify(user.value))
+        localStorage.setItem('auth_access_token', result.accessToken)
+        localStorage.setItem('auth_refresh_token', result.refreshToken)
+        localStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
+        localStorage.removeItem('auth_impersonation')
+      }
+
+      console.log('대리 로그인 종료, 원래 계정으로 복귀:', user.value.userName)
+
+      return true
+    } catch (error) {
+      console.error('대리 로그인 종료 실패:', error)
+      return false
     }
   }
 
@@ -116,6 +310,21 @@ export const useAuthStore = defineStore('auth', () => {
       refreshToken.value = storedRefreshToken
       tokenExpiry.value = storedTokenExpiry ? parseInt(storedTokenExpiry) : null
       lastActivity.value = storedLastActivity ? parseInt(storedLastActivity) : null
+
+      // Impersonation 상태 복원
+      const storedImpersonation = localStorage.getItem('auth_impersonation')
+      if (storedImpersonation) {
+        try {
+          impersonation.value = JSON.parse(storedImpersonation)
+        } catch {
+          impersonation.value = {
+            isImpersonating: false,
+            originalUserId: null,
+            originalUserName: null,
+            originalRole: null
+          }
+        }
+      }
 
       // ✅ 서버에 토큰 유효성 검증 (백엔드 재시작 감지)
       try {
@@ -225,6 +434,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken,
     tokenExpiry,
     lastActivity,
+    impersonation,
 
     // Computed
     isLoggedIn,
@@ -232,12 +442,17 @@ export const useAuthStore = defineStore('auth', () => {
     isTokenExpired,
     isTokenExpiringSoon,
     isUserInactive,
+    isImpersonating,
+    originalUser,
+    canImpersonate,
 
     // Actions
     setAuthData,
     clearAuthData,
     updateLastActivity,
     checkAuth,
-    refreshAccessToken
+    refreshAccessToken,
+    startImpersonation,
+    stopImpersonation
   }
 })

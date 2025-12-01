@@ -1,7 +1,13 @@
 <template>
-  <div class="admin-layout" :class="{ 'mobile-menu-open': isMobileMenuOpen }">
+  <div class="admin-layout" :class="{ 'mobile-menu-open': isMobileMenuOpen, 'has-impersonation-banner': authStore.isImpersonating }">
+    <!-- 대리 로그인 배너 -->
+    <ImpersonationBanner
+      v-if="authStore.isImpersonating"
+      @revert="handleRevertImpersonation"
+    />
+
     <!-- 사이드바 -->
-    <SidebarMenu 
+    <SidebarMenu
       :collapsed="sidebarCollapsed"
       :mobile-open="isMobileMenuOpen"
       @logout="handleLogout"
@@ -68,6 +74,10 @@ import { useRoute, useRouter } from '#imports'
 import { useAuthStore } from '~/stores/auth'
 import { authService } from '~/services/auth.service'
 import SidebarMenu from '~/components/admin/SidebarMenu.vue'
+import ImpersonationBanner from '~/components/admin/common/ImpersonationBanner.vue'
+
+// Stores
+const authStore = useAuthStore()
 
 // Reactive data
 const sidebarCollapsed = ref(false)
@@ -163,6 +173,22 @@ const markAllAsRead = () => {
   showNotifications.value = false
 }
 
+// 대리 로그인 복귀 처리
+const handleRevertImpersonation = async () => {
+  try {
+    const success = await authStore.stopImpersonation()
+    if (success) {
+      // 페이지 새로고침하여 권한 및 메뉴 갱신
+      window.location.reload()
+    } else {
+      alert('원래 계정으로 복귀하는데 실패했습니다.')
+    }
+  } catch (error) {
+    console.error('대리 로그인 복귀 실패:', error)
+    alert('원래 계정으로 복귀하는데 실패했습니다.')
+  }
+}
+
 const handleLogout = async () => {
   try {
     const authStore = useAuthStore()
@@ -220,6 +246,15 @@ onUnmounted(() => {
   display: flex;
   height: 100vh;
   background-color: #f8f9fa;
+}
+
+/* 대리 로그인 배너가 있을 때 레이아웃 조정 */
+.admin-layout.has-impersonation-banner {
+  padding-top: 44px;
+}
+
+.admin-layout.has-impersonation-banner .main-content {
+  height: calc(100vh - 44px);
 }
 
 /* PC에서 사이드바와 메인 콘텐츠 레이아웃 */
