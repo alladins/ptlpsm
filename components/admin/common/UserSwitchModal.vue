@@ -177,29 +177,29 @@ const totalPages = ref(1)
 const pageSize = 10
 const searchInput = ref<HTMLInputElement | null>(null)
 
-// 역할 필터 옵션
+// 역할 필터 옵션 (서버 USER_ROLE 코드 기준)
 const roleFilters = [
   { value: '', label: '전체' },
-  { value: 'LEADPOWER_MANAGER', label: '리드파워 담당자' },
-  { value: 'OEM_MANAGER', label: 'OEM 담당자' },
-  { value: 'SITE_MANAGER', label: '시공사 담당자' },
-  { value: 'SITE_INSPECTOR', label: '감리원' },
-  { value: 'SALES_MANAGER', label: '영업 담당자' },
-  { value: 'COURIER', label: '운송기사' },
-  { value: 'READ_ONLY', label: '조회 전용' }
+  { value: 'LEAD_POWER', label: '리드파워담당자' },
+  { value: 'OEM_MANAGER', label: 'OEM담당자' },
+  { value: 'COURIER', label: '배송기사' },
+  { value: 'SITE_MANAGER', label: '현장소장' },
+  { value: 'SALES_MANAGER', label: '영업담당자' },
+  { value: 'VIEWER', label: '조회자' },
+  { value: 'SITE_INSPECTOR', label: '감리원' }
 ]
 
-// 역할 라벨 변환
+// 역할 라벨 변환 (서버 USER_ROLE 코드 기준)
 function getRoleLabel(role: string | undefined | null): string {
   const roleMap: Record<string, string> = {
     'SYSTEM_ADMIN': '시스템관리자',
-    'LEADPOWER_MANAGER': '리드파워 담당자',
-    'OEM_MANAGER': 'OEM 담당자',
-    'SITE_MANAGER': '시공사 담당자',
-    'SITE_INSPECTOR': '감리원',
-    'SALES_MANAGER': '영업 담당자',
-    'COURIER': '운송기사',
-    'READ_ONLY': '조회 전용'
+    'LEAD_POWER': '리드파워담당자',
+    'OEM_MANAGER': 'OEM담당자',
+    'COURIER': '배송기사',
+    'SITE_MANAGER': '현장소장',
+    'SALES_MANAGER': '영업담당자',
+    'VIEWER': '조회자',
+    'SITE_INSPECTOR': '감리원'
   }
   return roleMap[role || ''] || role || '알 수 없음'
 }
@@ -273,14 +273,15 @@ async function fetchUsers() {
     console.error('사용자 목록 조회 실패:', err)
     error.value = err instanceof Error ? err.message : '사용자 목록을 불러올 수 없습니다.'
 
-    // Mock 데이터 (개발용)
+    // Mock 데이터 (개발용, 서버 USER_ROLE 코드 기준)
     users.value = [
-      { userid: 2, loginId: 'sales01', userName: '김영업', role: 'SALES_MANAGER' },
+      { userid: 2, loginId: 'leadpower01', userName: '김리드', role: 'LEAD_POWER' },
       { userid: 3, loginId: 'oem01', userName: '이OEM', role: 'OEM_MANAGER' },
-      { userid: 4, loginId: 'site01', userName: '박시공', role: 'SITE_MANAGER' },
-      { userid: 5, loginId: 'inspector01', userName: '최감리', role: 'SITE_INSPECTOR' },
-      { userid: 6, loginId: 'courier01', userName: '정운송', role: 'COURIER' },
-      { userid: 7, loginId: 'readonly01', userName: '한조회', role: 'READ_ONLY' }
+      { userid: 4, loginId: 'courier01', userName: '박배송', role: 'COURIER' },
+      { userid: 5, loginId: 'site01', userName: '최현장', role: 'SITE_MANAGER' },
+      { userid: 6, loginId: 'sales01', userName: '정영업', role: 'SALES_MANAGER' },
+      { userid: 7, loginId: 'viewer01', userName: '한조회', role: 'VIEWER' },
+      { userid: 8, loginId: 'inspector01', userName: '윤감리', role: 'SITE_INSPECTOR' }
     ]
     totalPages.value = 1
     error.value = null // Mock 데이터 사용 시 에러 숨김

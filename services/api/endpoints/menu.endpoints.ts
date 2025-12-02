@@ -20,19 +20,19 @@ export const MENU_ENDPOINTS = {
 
   /**
    * 사용자별 메뉴 목록 조회 (권한 포함)
-   * @param userId - 사용자 ID (숫자)
-   * @returns GET /common/menus/users/{userId}
+   * @param loginId - 사용자 로그인 ID (문자열)
+   * @returns GET /common/menus/users/{loginId}
    */
-  userMenus: (userId: number) => `${baseUrl}/common/menus/users/${userId}`,
+  userMenus: (loginId: string) => `${baseUrl}/common/menus/users/${loginId}`,
 
   /**
    * 사용자의 특정 메뉴 권한 조회
-   * @param userId - 사용자 ID (숫자)
+   * @param loginId - 사용자 로그인 ID (문자열)
    * @param menuId - 메뉴 ID
-   * @returns GET /common/menus/users/{userId}/menus/{menuId}/auth
+   * @returns GET /common/menus/users/{loginId}/menus/{menuId}/auth
    */
-  menuAuth: (userId: number, menuId: number) =>
-    `${baseUrl}/common/menus/users/${userId}/menus/${menuId}/auth`,
+  menuAuth: (loginId: string, menuId: number) =>
+    `${baseUrl}/common/menus/users/${loginId}/menus/${menuId}/auth`,
 
   /**
    * URL로 메뉴 조회

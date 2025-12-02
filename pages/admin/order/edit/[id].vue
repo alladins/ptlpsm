@@ -107,8 +107,8 @@
                 <option :value="null">선택하세요</option>
                 <option
                   v-for="manager in siteManagers"
-                  :key="manager.id"
-                  :value="manager.id"
+                  :key="manager.userid"
+                  :value="manager.userid"
                 >
                   {{ manager.userName }}
                 </option>
@@ -314,7 +314,7 @@ const loadSiteManagers = async () => {
 
 // 현장소장 선택 핸들러
 const handleSupervisorChange = () => {
-  const supervisor = siteManagers.value.find(m => m.id === formData.value.siteManagerId)
+  const supervisor = siteManagers.value.find(m => m.userid === formData.value.siteManagerId)
   if (supervisor) {
     formData.value.builder = supervisor.companyName || ''
     selectedSupervisorCompany.value = supervisor.companyName || ''
@@ -403,7 +403,7 @@ onMounted(async () => {
 
   // 현장소장 목록 로드 후 시공사명 매핑
   if (formData.value.siteManagerId) {
-    const supervisor = siteManagers.value.find(m => m.id === formData.value.siteManagerId)
+    const supervisor = siteManagers.value.find(m => m.userid === formData.value.siteManagerId)
     if (supervisor) {
       selectedSupervisorCompany.value = supervisor.companyName || ''
       // builder가 비어있으면 companyName으로 설정

@@ -133,8 +133,8 @@
                 <option :value="null">선택하세요</option>
                 <option
                   v-for="manager in siteManagers"
-                  :key="manager.id"
-                  :value="manager.id"
+                  :key="manager.userid"
+                  :value="manager.userid"
                 >
                   {{ manager.userName }}
                 </option>
@@ -350,7 +350,7 @@ onMounted(async () => {
 
 // 현장소장 선택 핸들러
 const handleSupervisorChange = () => {
-  const supervisor = siteManagers.value.find(m => m.id === contractForm.value.siteManagerId)
+  const supervisor = siteManagers.value.find(m => m.userid === contractForm.value.siteManagerId)
   if (supervisor) {
     contractForm.value.builder = supervisor.companyName || ''
     selectedSupervisorCompany.value = supervisor.companyName || ''

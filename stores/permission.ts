@@ -123,7 +123,7 @@ export const usePermissionStore = defineStore('permission', () => {
     try {
       const { MENU_ENDPOINTS } = await import('~/services/api/endpoints/menu.endpoints')
 
-      const response = await fetch(MENU_ENDPOINTS.userMenus(authStore.user.userid), {
+      const response = await fetch(MENU_ENDPOINTS.userMenus(authStore.user.loginId), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
           'Content-Type': 'application/json'
@@ -206,7 +206,7 @@ export const usePermissionStore = defineStore('permission', () => {
     try {
       const { MENU_ENDPOINTS } = await import('~/services/api/endpoints/menu.endpoints')
 
-      const response = await fetch(MENU_ENDPOINTS.menuAuth(authStore.user.userid, menuId), {
+      const response = await fetch(MENU_ENDPOINTS.menuAuth(authStore.user.loginId, menuId), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
           'Content-Type': 'application/json'
