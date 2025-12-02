@@ -430,6 +430,18 @@ const manualMenus = ref<MenuWithAuth[]>([
         visible: 'Y',
         useYn: 'Y',
         children: []
+      },
+      {
+        menuId: 94,
+        menuCode: 'BANK_ACCOUNT',
+        menuName: '계좌조회',
+        menuUrl: '/admin/system/bank-account',
+        menuIcon: 'fas fa-university',
+        menuLevel: 2,
+        sortOrder: 4,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
       }
     ]
   }
