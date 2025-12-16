@@ -260,6 +260,15 @@
       :message="errorPopup.message"
       @close="errorPopup.isOpen = false"
     />
+
+    <!-- 계약 유형 선택 모달 -->
+    <ContractTypeSelectModal
+      :is-open="showContractTypeModal"
+      :existing-contract-no="contractTypeCheckResult?.existingContractNo || ''"
+      :new-contract-no="contractTypeCheckResult?.newContractNo || ''"
+      @confirm="handleContractTypeConfirm"
+      @close="handleContractTypeCancel"
+    />
   </div>
 </template>
 
@@ -272,7 +281,8 @@ import { userService } from '~/services/user.service'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import ErrorPopup from '~/components/admin/common/ErrorPopup.vue'
-import type { OrderItemCreateRequest } from '~/types/order'
+import ContractTypeSelectModal from '~/components/admin/order/ContractTypeSelectModal.vue'
+import type { OrderItemCreateRequest, ContractTypeCheckResult, ContractType } from '~/types/order'
 import type { UserByRole } from '~/types/user'
 
 definePageMeta({
@@ -332,8 +342,18 @@ const contractForm = ref({
   builder: '',
   quantityTotal: '',
   preDiscountAmountTotal: '',
-  pdfFilePath: ''
+  pdfFilePath: '',
+  contractType: '' as ContractType | ''
 })
+
+// 계약 유형 선택 관련 상태
+const showContractTypeModal = ref(false)
+const contractTypeCheckResult = ref<ContractTypeCheckResult | null>(null)
+const pendingExtractedData = ref<{
+  contractInfo: any
+  deliveryItems: any[]
+  savedFilePath?: string
+} | null>(null)
 
 // 납품 목록
 const items = ref<OrderItemCreateRequest[]>([])
@@ -409,40 +429,44 @@ const handleFileUpload = async (event: Event) => {
     const result = await response.json()
 
     if (result.success) {
-      fillFormWithExtractedData(result.extractedContractInfo)
+      const contractCheck = result.contractTypeCheck as ContractTypeCheckResult | undefined
 
-      if (result.savedFilePath) {
-        contractForm.value.pdfFilePath = result.savedFilePath
-      }
+      // 계약 유형 체크: 본계약이 아니면 (접미사 01, 02, ...) 팝업으로 선택
+      if (contractCheck && !contractCheck.isOriginalContract) {
+        // 데이터 임시 저장 (모달 확인 후 사용)
+        pendingExtractedData.value = {
+          contractInfo: result.extractedContractInfo,
+          deliveryItems: result.extractedDeliveryItems || [],
+          savedFilePath: result.savedFilePath
+        }
+        contractTypeCheckResult.value = contractCheck
+        showContractTypeModal.value = true
 
-      if (result.extractedDeliveryItems && result.extractedDeliveryItems.length > 0) {
-        items.value = result.extractedDeliveryItems.map((item: any, index: number) => ({
-          itemOrder: item.sequenceNumber || (index + 1),
-          skuId: '',
-          itemId: '',
-          itemName: '',
-          skuName: '',
-          name: item.name || '',
-          specification: item.specification || '',
-          unit: item.unit || '',
-          unitPrice: String(item.unitPrice || ''),
-          quantity: item.quantity || 0,
-          totalAmount: String(item.totalAmount || ''),
-          deliveryLocation: item.deliveryLocation || '',
-          deliveryDeadline: item.deliveryDeadline || '',
-          deliveryTerms: item.deliveryTerms || '',
-          optionItemNumber: item.optionItemNumber || '',
-          itemClassificationNumber: item.itemClassificationNumber || '',
-          itemIdentificationNumber: item.itemIdentificationNumber || '',
-          inspectionExemption: item.inspectionExemption || 'N',
-          midTermCompetitionItem: item.midTermCompetitionItem || 'N',
-          sortOrder: item.sequenceNumber || (index + 1)
-        }))
-      }
+        uploadStatus.value = {
+          success: true,
+          message: 'PDF 데이터 추출 완료. 계약 유형을 선택해주세요.'
+        }
+      } else {
+        // 본계약 (접미사 00) 또는 체크 결과 없음 → 바로 폼 채우기
+        fillFormWithExtractedData(result.extractedContractInfo)
 
-      uploadStatus.value = {
-        success: true,
-        message: `PDF 업로드 및 데이터 추출 완료 (${result.processingTime}ms)`
+        if (result.savedFilePath) {
+          contractForm.value.pdfFilePath = result.savedFilePath
+        }
+
+        if (result.extractedDeliveryItems && result.extractedDeliveryItems.length > 0) {
+          fillItemsWithExtractedData(result.extractedDeliveryItems)
+        }
+
+        // 본계약이면 contractType을 ORIGINAL로 설정
+        if (contractCheck?.isOriginalContract) {
+          contractForm.value.contractType = 'ORIGINAL'
+        }
+
+        uploadStatus.value = {
+          success: true,
+          message: `PDF 업로드 및 데이터 추출 완료 (${result.processingTime}ms)`
+        }
       }
     } else {
       throw new Error(result.message || '데이터 추출에 실패했습니다.')
@@ -456,6 +480,31 @@ const handleFileUpload = async (event: Event) => {
   }
 
   target.value = ''
+}
+
+// 추출된 품목 데이터로 items 배열 채우기
+const fillItemsWithExtractedData = (deliveryItems: any[]) => {
+  items.value = deliveryItems.map((item, index) => ({
+    itemOrder: index + 1,
+    skuId: '',
+    itemId: '',
+    itemName: item.name || '',
+    skuName: '',
+    name: item.name || '',
+    specification: item.specification || '',
+    unit: item.unit || '',
+    unitPrice: String(item.unitPrice || ''),
+    quantity: Number(item.quantity) || 0,
+    totalAmount: String(item.totalAmount || ''),
+    deliveryLocation: item.deliveryLocation || '',
+    deliveryDeadline: item.deliveryDeadline || '',
+    deliveryTerms: item.deliveryTerms || '',
+    optionItemNumber: item.optionItemNumber || '',
+    itemClassificationNumber: item.itemClassificationNumber || '',
+    itemIdentificationNumber: item.itemIdentificationNumber || '',
+    inspectionExemption: item.inspectionExemption || 'N',
+    midTermCompetitionItem: item.midTermCompetitionItem || 'N'
+  }))
 }
 
 // 추출된 데이터로 폼 채우기
@@ -484,6 +533,43 @@ const fillFormWithExtractedData = (data: any) => {
   if (data.acceptanceAgency) contractForm.value.acceptanceAgency = data.acceptanceAgency
   if (data.quantityTotal) contractForm.value.quantityTotal = String(data.quantityTotal)
   if (data.preDiscountAmountTotal) contractForm.value.preDiscountAmountTotal = String(data.preDiscountAmountTotal)
+}
+
+// 계약 유형 선택 확인 핸들러
+const handleContractTypeConfirm = (type: ContractType) => {
+  showContractTypeModal.value = false
+
+  // 임시 저장된 데이터로 폼 채우기
+  if (pendingExtractedData.value) {
+    fillFormWithExtractedData(pendingExtractedData.value.contractInfo)
+
+    if (pendingExtractedData.value.savedFilePath) {
+      contractForm.value.pdfFilePath = pendingExtractedData.value.savedFilePath
+    }
+
+    if (pendingExtractedData.value.deliveryItems?.length > 0) {
+      fillItemsWithExtractedData(pendingExtractedData.value.deliveryItems)
+    }
+
+    // 선택된 계약 유형 설정 (AMENDMENT 또는 ADDITIONAL)
+    contractForm.value.contractType = type
+
+    pendingExtractedData.value = null
+    contractTypeCheckResult.value = null
+
+    uploadStatus.value = {
+      success: true,
+      message: `PDF 데이터 추출 완료. 계약 유형: ${type === 'AMENDMENT' ? '변경계약' : '추가계약'}`
+    }
+  }
+}
+
+// 계약 유형 선택 취소 핸들러
+const handleContractTypeCancel = () => {
+  showContractTypeModal.value = false
+  pendingExtractedData.value = null
+  contractTypeCheckResult.value = null
+  uploadStatus.value = null
 }
 
 // 등록
@@ -550,7 +636,9 @@ const register = async () => {
         midTermCompetitionItem: item.midTermCompetitionItem || 'N'
       })),
       createdBy: '',
-      pdfFilePath: contractForm.value.pdfFilePath
+      pdfFilePath: contractForm.value.pdfFilePath,
+      // 계약 유형 (ORIGINAL, AMENDMENT, ADDITIONAL)
+      contractType: contractForm.value.contractType || null
     }
 
     const result = await contractService.registerContract(contractData)

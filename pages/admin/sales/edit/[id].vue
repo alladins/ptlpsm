@@ -6,8 +6,8 @@
       description="영업 정보를 수정합니다."
     />
 
-    <AdminCommonLoadingSection v-if="loading" />
-    <AdminCommonErrorSection v-else-if="!salesData" message="영업 정보를 찾을 수 없습니다." />
+    <LoadingSection v-if="loading" />
+    <ErrorSection v-else-if="!salesData" message="영업 정보를 찾을 수 없습니다." />
 
     <div v-else class="content-section">
       <form @submit.prevent="handleSubmit" class="edit-form">

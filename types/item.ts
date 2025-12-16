@@ -22,9 +22,32 @@ export interface ItemSku {
     width?: number;          // 너비
     height?: number;         // 높이
     thickness?: number;      // 두께
-    unitPrice: number;       // 단가
+    unitPrice: number;       // 단가 (납품단가)
+    costPrice?: number;      // 원가 (OEM 계약 단가)
     createdAt: string;       // 생성일시
     updatedAt: string;       // 수정일시
+}
+
+/**
+ * 원가 수정 요청
+ */
+export interface CostPriceUpdateRequest {
+    costPrice: number;       // 새 원가
+    reason: string;          // 변경 사유 (필수)
+}
+
+/**
+ * 원가 변경 이력
+ */
+export interface CostPriceHistory {
+    historyId: number;       // 이력 ID
+    itemId: string;          // 품목 ID
+    skuId?: string;          // SKU ID (선택)
+    previousCostPrice: number; // 이전 원가
+    newCostPrice: number;    // 변경 원가
+    changeReason: string;    // 변경 사유
+    changedAt: string;       // 변경 일시
+    changedBy: string;       // 변경자
 }
 
 // 품목 선택 결과

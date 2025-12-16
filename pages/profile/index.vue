@@ -354,8 +354,8 @@ import { formatPhoneNumberInput, normalizeEmail } from '~/utils/format'
 
 // 반응형 데이터
 const currentUser = ref<any>({
-  id: 1,
-  userId: 'admin',
+  userid: 1,
+  loginId: 'admin',
   userName: '시스템관리자',
   email: 'admin@ptlpsm.com',
   phone: '010-1234-5678',
@@ -640,13 +640,13 @@ const submitPasswordChange = async () => {
   
   try {
     console.log('비밀번호 변경 시도:', {
-      userId: currentUser.value.id,
+      userid: currentUser.value.userid,
       newPassword: passwordForm.value.newPassword,
       confirmPassword: passwordForm.value.confirmPassword
     })
-    
+
     // 실제 API 호출
-    const response = await userService.changePassword(currentUser.value.id, passwordForm.value)
+    const response = await userService.changePassword(currentUser.value.userid, passwordForm.value)
     console.log('비밀번호 변경 성공:', response)
     
     showAlert(response.message || '비밀번호가 성공적으로 변경되었습니다.', 'success')

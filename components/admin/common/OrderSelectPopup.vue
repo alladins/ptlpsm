@@ -35,22 +35,20 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>납품요구번호</th>
-                <th>수요기관</th>
-                <th>계약일자</th>
-                <th>납품요구일자</th>
-                <th>사업명</th>
-                <th>선택</th>
+                <th class="col-delivery-no">납품요구번호</th>
+                <th class="col-client">수요기관</th>
+                <th class="col-date">납품요구일자</th>
+                <th class="col-project">사업명</th>
+                <th class="col-action">선택</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="order in orders" :key="order.orderId">
-                <td>{{ order.deliveryRequestNo }}</td>
-                <td>{{ order.client }}</td>
-                <td>{{ formatDate(order.contractDate) }}</td>
-                <td>{{ formatDate(order.deliveryRequestDate) }}</td>
-                <td>{{ order.projectName }}</td>
-                <td>
+                <td class="col-delivery-no">{{ order.deliveryRequestNo }}</td>
+                <td class="col-client">{{ order.client }}</td>
+                <td class="col-date">{{ formatDate(order.deliveryRequestDate) }}</td>
+                <td class="col-project" :title="order.projectName">{{ order.projectName }}</td>
+                <td class="col-action">
                   <button class="btn-success" @click="selectOrder(order)">
                     선택
                   </button>
@@ -229,5 +227,39 @@ onMounted(() => {
   flex: 1;
 }
 
-/* 페이지별 특화 스타일 없음 - 모두 공통 클래스 사용 */
+/* 행 간격 축소 */
+.data-table td {
+  padding: 0.4rem 0.75rem;
+}
+
+/* 컬럼별 너비 설정 - 한 줄 표시 */
+.col-delivery-no {
+  width: 130px;
+  min-width: 130px;
+  white-space: nowrap;
+}
+
+.col-client {
+  width: 200px;
+  min-width: 200px;
+  white-space: nowrap;
+}
+
+.col-date {
+  width: 90px;
+  min-width: 90px;
+  white-space: nowrap;
+}
+
+.col-project {
+  max-width: 380px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-action {
+  width: 70px;
+  min-width: 70px;
+}
 </style>

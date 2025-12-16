@@ -294,6 +294,16 @@
   border-color: var(--gray-200);
 }
 
+/* 테이블 인풋 크기 변형 클래스 */
+.items-table input.input-w80 { width: 80% !important; }
+.items-table input.input-w75 { width: 75% !important; }
+.items-table input.input-w66 { width: 66% !important; }
+.items-table input.input-w50 { width: 50% !important; }
+
+/* 테이블 인풋 정렬 클래스 */
+.items-table input.text-center { text-align: center !important; }
+.items-table input.text-right { text-align: right !important; }
+
 /*
  * 테이블 섹션 및 헤더 스타일은 admin-tables.css로 이동되었습니다 (삭제됨)
  * - table-section: 테이블 래퍼

@@ -1,5 +1,12 @@
 import { apiEnvironment } from './api'
 import { SHIPMENT_ENDPOINTS } from './api/endpoints/shipment.endpoints'
+import type {
+  AdditionalChangeRequest,
+  AdditionalChangeResponse,
+  QuantityChangeHistoryRaw,
+  QuantityChangeHistory,
+  PreviousReceipt
+} from '~/types/shipment-change'
 
 export interface ShipmentOrderStatus {
   deliveryRequestNo: string
@@ -24,22 +31,25 @@ export interface ShipmentListItem {
   shipmentDate: string
   shipmentQuantity: number
   trackingNumber: string
-  status: string
+  status: string                      // 출하 상태 (PENDING, IN_PROGRESS, COMPLETED 등)
   createdBy: string
   createdAt: string
   updatedBy: string
   updatedAt: string
   // 추가 필드 (백엔드 API에서 제공)
-  contractDate: string          // 계약일자
-  deliveryRequestDate: string   // 납품요구일자
-  client: string                // 수요기관명
-  projectName: string           // 사업명
-  shipmentAmount: number        // 출하금액 (모든 품목의 출하수량 × 단가 합계)
+  contractId?: string             // 계약번호
+  contractDate: string            // 계약일자
+  deliveryRequestDate: string     // 납품요구일자
+  client: string                  // 수요기관명
+  clientNo?: string               // 수요기관 번호
+  clientManagerName?: string      // 수요기관 담당자
+  projectName: string             // 사업명
+  shipmentAmount: number          // 출하금액 (모든 품목의 출하수량 × 단가 합계)
   // 현장소장 정보
-  siteManagerId?: number        // 현장소장 ID
-  siteManagerName?: string      // 현장소장 이름
-  siteManagerPhone?: string     // 현장소장 연락처
-  siteManagerCompany?: string   // 현장소장 회사
+  siteManagerId?: number          // 현장소장 ID
+  siteManagerName?: string        // 현장소장 이름
+  siteManagerPhone?: string       // 현장소장 연락처
+  siteManagerCompany?: string     // 현장소장 회사
 }
 
 export interface ShipmentDetail {
@@ -87,6 +97,10 @@ export interface ShipmentDetailWithOrder {
   shipmentDate: string
   trackingNumber: string
   status: string
+
+  // 추가변경 판단용 필드
+  isBilled: boolean                 // 기성 포함 여부 (true면 추가변경 불가)
+  deliveryDoneStatus?: string       // 납품완료계 상태 (참고용: PENDING, IN_PROGRESS, PENDING_SIGNATURE, COMPLETED)
 
   // 발주 정보 (평탄화)
   contractId: string
@@ -326,6 +340,167 @@ class ShipmentService {
     })
     if (!response.ok) {
       throw new Error(`출하 삭제 실패: ${response.status}`)
+    }
+  }
+
+  // ========================================
+  // 추가변경 관련 메서드
+  // ========================================
+
+  /**
+   * 추가변경 실행
+   * @param request - 추가변경 요청 데이터
+   * @returns 추가변경 응답
+   */
+  async executeAdditionalChange(request: AdditionalChangeRequest): Promise<AdditionalChangeResponse> {
+    try {
+      const url = SHIPMENT_ENDPOINTS.additionalChange(request.shipmentId)
+      console.log('[shipment.service] executeAdditionalChange 호출:', {
+        url,
+        request
+      })
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: request.items,
+          changeReason: request.changeReason
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[shipment.service] 추가변경 실패:', {
+          status: response.status,
+          error: errorText
+        })
+        return {
+          success: false,
+          requiresResign: false,
+          shipmentStatus: '',
+          changedItems: [],
+          errorMessage: `추가변경 실패: ${response.status} - ${errorText}`
+        }
+      }
+
+      const data = await response.json()
+      console.log('[shipment.service] 추가변경 응답:', data)
+      return data
+    } catch (error) {
+      console.error('[shipment.service] executeAdditionalChange 에러:', error)
+      return {
+        success: false,
+        requiresResign: false,
+        shipmentStatus: '',
+        changedItems: [],
+        errorMessage: error instanceof Error ? error.message : '추가변경 중 오류가 발생했습니다.'
+      }
+    }
+  }
+
+  /**
+   * 수량 변경 이력 조회
+   * @param shipmentId - 출하 ID
+   * @returns 수량 변경 이력 목록 (changedAt + changeReason 기준으로 그룹화)
+   */
+  async getChangeHistory(shipmentId: number): Promise<QuantityChangeHistory[]> {
+    try {
+      const url = SHIPMENT_ENDPOINTS.getChangeHistory(shipmentId)
+      console.log('[shipment.service] getChangeHistory 호출:', { shipmentId, url })
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        console.error('[shipment.service] 변경 이력 조회 실패:', response.status)
+        return []
+      }
+
+      const rawData: QuantityChangeHistoryRaw[] = await response.json()
+      console.log('[shipment.service] 변경 이력 원본 응답:', rawData)
+
+      if (!Array.isArray(rawData) || rawData.length === 0) {
+        return []
+      }
+
+      // changedAt + changeReason 기준으로 그룹화
+      const groupedMap = new Map<string, QuantityChangeHistory>()
+
+      for (const raw of rawData) {
+        const groupKey = `${raw.changedAt}_${raw.changeReason}`
+
+        if (!groupedMap.has(groupKey)) {
+          groupedMap.set(groupKey, {
+            groupKey,
+            shipmentId: raw.shipmentId,
+            changedAt: raw.changedAt,
+            changedBy: raw.changedByName || raw.changedBy,
+            changeReason: raw.changeReason,
+            items: []
+          })
+        }
+
+        const group = groupedMap.get(groupKey)!
+        group.items.push({
+          skuId: raw.skuId,
+          itemName: raw.itemName,
+          skuName: raw.skuName,
+          beforeQuantity: raw.oldQuantity,
+          afterQuantity: raw.newQuantity
+        })
+      }
+
+      // Map을 배열로 변환하고 changedAt 기준 내림차순 정렬
+      const result = Array.from(groupedMap.values()).sort((a, b) => {
+        return new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+      })
+
+      console.log('[shipment.service] 변경 이력 그룹화 결과:', result)
+      return result
+    } catch (error) {
+      console.error('[shipment.service] getChangeHistory 에러:', error)
+      return []
+    }
+  }
+
+  /**
+   * 이전 인수증 목록 조회 (관리자용)
+   * @param shipmentId - 출하 ID
+   * @returns 이전 인수증 목록
+   */
+  async getPreviousReceipts(shipmentId: number): Promise<PreviousReceipt[]> {
+    try {
+      const url = SHIPMENT_ENDPOINTS.getPreviousReceipts(shipmentId)
+      console.log('[shipment.service] getPreviousReceipts 호출:', { shipmentId, url })
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        console.error('[shipment.service] 이전 인수증 조회 실패:', response.status)
+        return []
+      }
+
+      const data = await response.json()
+      console.log('[shipment.service] 이전 인수증 응답:', data)
+      return Array.isArray(data) ? data : []
+    } catch (error) {
+      console.error('[shipment.service] getPreviousReceipts 에러:', error)
+      return []
     }
   }
 }

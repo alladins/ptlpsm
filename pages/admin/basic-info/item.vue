@@ -267,14 +267,16 @@
                    <th>너비</th>
                    <th>높이</th>
                    <th>두께</th>
-                   <th>단가</th>
+                   <th>납품단가</th>
+                   <th>원가</th>
+                   <th>마진율</th>
                    <th>재고수량</th>
                    <th>관리</th>
                  </tr>
                </thead>
               <tbody>
                                  <tr v-if="!selectedItem" class="no-selection-row">
-                   <td colspan="8" class="no-selection-message">
+                   <td colspan="10" class="no-selection-message">
                      <div class="empty-state">
                        <i class="fas fa-info-circle"></i>
                        <span>품목을 선택해주세요</span>
@@ -282,7 +284,7 @@
                    </td>
                  </tr>
                  <tr v-else-if="selectedItem.itemSkus.length === 0" class="no-data-row">
-                   <td colspan="8" class="no-data-message">
+                   <td colspan="10" class="no-data-message">
                      <div class="empty-state">
                        <i class="fas fa-inbox"></i>
                        <span>등록된 SKU가 없습니다</span>
@@ -295,9 +297,32 @@
                    <td>{{ sku.width || '-' }}</td>
                    <td>{{ sku.height || '-' }}</td>
                    <td>{{ sku.thickness || '-' }}</td>
-                   <td>{{ sku.unitPrice?.toLocaleString() || '-' }}</td>
+                   <td>{{ formatCurrency(sku.unitPrice) }}</td>
+                   <td>
+                     <span v-if="sku.costPrice !== undefined && sku.costPrice !== null">
+                       {{ formatCurrency(sku.costPrice) }}
+                     </span>
+                     <button v-else class="btn-cost-edit" @click.stop="openCostPriceModal(sku)" title="원가 설정">
+                       <i class="fas fa-edit"></i>
+                       <span>설정</span>
+                     </button>
+                   </td>
+                   <td>
+                     <span
+                       v-if="calculateMarginRate(sku.unitPrice, sku.costPrice) !== null"
+                       class="margin-badge"
+                       :class="getMarginRateClass(calculateMarginRate(sku.unitPrice, sku.costPrice))"
+                     >
+                       {{ calculateMarginRate(sku.unitPrice, sku.costPrice)?.toFixed(1) }}%
+                     </span>
+                     <span v-else class="margin-badge margin-none">-</span>
+                   </td>
                    <td>{{ sku.stockQty || '-' }}</td>
                    <td class="action-buttons">
+                     <button @click="openCostPriceModal(sku)" class="btn-cost" title="원가 수정">
+                       <i class="fas fa-won-sign"></i>
+                       <span>원가</span>
+                     </button>
                      <button @click="openSkuModal('edit', sku)" class="btn-edit" title="수정">
                        <i class="fas fa-edit"></i>
                        <span>수정</span>
@@ -675,7 +700,9 @@
                        <th>너비</th>
                        <th>높이</th>
                        <th>두께</th>
-                       <th>단가</th>
+                       <th>납품단가</th>
+                       <th>원가</th>
+                       <th>마진율</th>
                        <th>재고수량</th>
                      </tr>
                    </thead>
@@ -686,7 +713,18 @@
                        <td>{{ sku.width || '-' }}</td>
                        <td>{{ sku.height || '-' }}</td>
                        <td>{{ sku.thickness || '-' }}</td>
-                       <td>{{ sku.unitPrice?.toLocaleString() || '-' }}</td>
+                       <td>{{ formatCurrency(sku.unitPrice) }}</td>
+                       <td>{{ sku.costPrice !== undefined && sku.costPrice !== null ? formatCurrency(sku.costPrice) : '미설정' }}</td>
+                       <td>
+                         <span
+                           v-if="calculateMarginRate(sku.unitPrice, sku.costPrice) !== null"
+                           class="margin-badge"
+                           :class="getMarginRateClass(calculateMarginRate(sku.unitPrice, sku.costPrice))"
+                         >
+                           {{ calculateMarginRate(sku.unitPrice, sku.costPrice)?.toFixed(1) }}%
+                         </span>
+                         <span v-else>-</span>
+                       </td>
                        <td>{{ sku.stockQty || '-' }}</td>
                      </tr>
                    </tbody>
@@ -961,6 +999,18 @@
         </div>
       </div>
     </div>
+
+    <!-- 원가 수정 모달 -->
+    <CostPriceEditModal
+      v-if="costPriceEditTarget"
+      :is-open="showCostPriceModal"
+      :item-id="costPriceEditTarget.itemId"
+      :item-name="costPriceEditTarget.itemName"
+      :unit-price="costPriceEditTarget.unitPrice"
+      :current-cost-price="costPriceEditTarget.currentCostPrice"
+      @close="closeCostPriceModal"
+      @saved="handleCostPriceSaved"
+    />
   </div>
 </template>
 
@@ -969,6 +1019,9 @@ import { ref, computed, onMounted } from 'vue'
 import { itemService, type Item, type ItemCreateRequest, type ItemUpdateRequest } from '~/services/item.service'
 // 리팩토링: 공통 composable import
 import { useDataTable } from '~/composables/useDataTable'
+import { formatCurrency } from '~/utils/format'
+// 원가 수정 모달 컴포넌트
+import CostPriceEditModal from '~/components/item/CostPriceEditModal.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -1041,6 +1094,15 @@ const showSpecModal = ref(false)
 const showSkuModal = ref(false)
 const editingItem = ref<Item | null>(null)
 const viewingItem = ref<Item | null>(null)
+
+// 원가 수정 모달 상태
+const showCostPriceModal = ref(false)
+const costPriceEditTarget = ref<{
+  itemId: string
+  itemName: string
+  unitPrice: number
+  currentCostPrice?: number
+} | null>(null)
 
 // 모달 모드
 const specModalMode = ref<'create' | 'edit'>('create')
@@ -1719,6 +1781,67 @@ const isItemDeletable = (item: Item): boolean => {
   const hasSpecs = item.itemSpecs && item.itemSpecs.length > 0
   const hasSkus = item.itemSkus && item.itemSkus.length > 0
   return !hasSpecs && !hasSkus
+}
+
+// ========== 원가 관련 함수 ==========
+
+/**
+ * 마진율 계산
+ * @param unitPrice 납품단가
+ * @param costPrice 원가
+ * @returns 마진율 (%) 또는 null
+ */
+const calculateMarginRate = (unitPrice?: number, costPrice?: number): number | null => {
+  if (!unitPrice || unitPrice <= 0 || costPrice === undefined || costPrice === null) {
+    return null
+  }
+  const margin = unitPrice - costPrice
+  return (margin / unitPrice) * 100
+}
+
+/**
+ * 마진율에 따른 CSS 클래스 반환
+ */
+const getMarginRateClass = (marginRate: number | null): string => {
+  if (marginRate === null) return ''
+  if (marginRate >= 30) return 'margin-high'
+  if (marginRate >= 15) return 'margin-normal'
+  if (marginRate >= 0) return 'margin-low'
+  return 'margin-negative'
+}
+
+/**
+ * 원가 수정 모달 열기
+ */
+const openCostPriceModal = (sku: any) => {
+  if (!selectedItem.value) return
+
+  costPriceEditTarget.value = {
+    itemId: selectedItem.value.itemId,
+    itemName: `${selectedItem.value.itemNm} - ${sku.skuNm}`,
+    unitPrice: sku.unitPrice || 0,
+    currentCostPrice: sku.costPrice
+  }
+  showCostPriceModal.value = true
+}
+
+/**
+ * 원가 수정 모달 닫기
+ */
+const closeCostPriceModal = () => {
+  showCostPriceModal.value = false
+  costPriceEditTarget.value = null
+}
+
+/**
+ * 원가 수정 완료 처리
+ */
+const handleCostPriceSaved = async () => {
+  closeCostPriceModal()
+  // 선택된 품목 정보 새로고침
+  if (selectedItem.value) {
+    await refreshItemDetail(selectedItem.value.itemId)
+  }
 }
 
 // 초기 데이터 로드
@@ -2626,6 +2749,71 @@ onMounted(() => {
 
 .tab-content .empty-state i {
   font-size: 2rem;
+}
+
+/* 마진율 배지 스타일 */
+.margin-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.margin-high {
+  background: #dcfce7;
+  color: #059669;
+}
+
+.margin-normal {
+  background: #dbeafe;
+  color: #0284c7;
+}
+
+.margin-low {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.margin-negative {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.margin-none {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+/* 원가 버튼 스타일 */
+.btn-cost {
+  background: #8b5cf6;
+  color: white;
+}
+
+.btn-cost:hover {
+  background: #7c3aed;
+}
+
+.btn-cost-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: #f3f4f6;
+  border: 1px dashed #9ca3af;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cost-edit:hover {
+  background: #e5e7eb;
+  border-color: #6b7280;
+  color: #374151;
 }
 
 /* 반응형 */

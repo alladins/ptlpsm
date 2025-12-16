@@ -85,12 +85,12 @@ export const MENU_ENDPOINTS = {
 
   /**
    * 메뉴 권한 업데이트
-   * @param userId - 사용자 ID (숫자)
+   * @param loginId - 사용자 로그인 ID (문자열)
    * @param menuId - 메뉴 ID
-   * @returns PUT /common/menus/users/{userId}/menus/{menuId}/auth
+   * @returns PUT /common/menus/users/{loginId}/menus/{menuId}/auth
    */
-  updateMenuAuth: (userId: number, menuId: number) =>
-    `${baseUrl}/common/menus/users/${userId}/menus/${menuId}/auth`,
+  updateMenuAuth: (loginId: string, menuId: number) =>
+    `${baseUrl}/common/menus/users/${loginId}/menus/${menuId}/auth`,
 
   /**
    * 역할별 메뉴 권한 조회

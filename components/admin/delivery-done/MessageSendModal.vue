@@ -43,8 +43,8 @@
                 <option value="">{{ loading ? '로딩 중...' : '선택하세요' }}</option>
                 <option
                   v-for="supervisor in siteSupervisorList"
-                  :key="supervisor.id"
-                  :value="supervisor.id"
+                  :key="supervisor.userid"
+                  :value="supervisor.userid"
                 >
                   {{ supervisor.userName }} ({{ supervisor.phone }})
                   <template v-if="supervisor.companyName"> - {{ supervisor.companyName }}</template>
@@ -64,8 +64,8 @@
                 <option value="">{{ loading ? '로딩 중...' : '선택하세요' }}</option>
                 <option
                   v-for="inspector in inspectorList"
-                  :key="inspector.id"
-                  :value="inspector.id"
+                  :key="inspector.userid"
+                  :value="inspector.userid"
                 >
                   {{ inspector.userName }} ({{ inspector.phone }})
                   <template v-if="inspector.companyName"> - {{ inspector.companyName }}</template>
@@ -182,12 +182,12 @@ const inspectorList = ref<UserByRole[]>([])
 // 선택된 담당자 정보
 const selectedSupervisorInfo = computed(() => {
   if (!selectedSiteSupervisorId.value) return null
-  return siteSupervisorList.value.find(s => s.id === selectedSiteSupervisorId.value) || null
+  return siteSupervisorList.value.find(s => s.userid === selectedSiteSupervisorId.value) || null
 })
 
 const selectedInspectorInfo = computed(() => {
   if (!selectedInspectorId.value) return null
-  return inspectorList.value.find(i => i.id === selectedInspectorId.value) || null
+  return inspectorList.value.find(i => i.userid === selectedInspectorId.value) || null
 })
 
 // 선택된 인원 수
@@ -251,7 +251,7 @@ async function handleSend() {
     if (selectedSupervisorInfo.value) {
       recipients.push({
         recipientType: 'SITE_MANAGER',
-        recipientUserId: selectedSupervisorInfo.value.id,
+        recipientUserId: selectedSupervisorInfo.value.userid,
         recipientName: selectedSupervisorInfo.value.userName,
         recipientPhone: selectedSupervisorInfo.value.phone.replace(/[^0-9]/g, '')
       })
@@ -261,7 +261,7 @@ async function handleSend() {
     if (selectedInspectorInfo.value) {
       recipients.push({
         recipientType: 'SITE_INSPECTOR',
-        recipientUserId: selectedInspectorInfo.value.id,
+        recipientUserId: selectedInspectorInfo.value.userid,
         recipientName: selectedInspectorInfo.value.userName,
         recipientPhone: selectedInspectorInfo.value.phone.replace(/[^0-9]/g, '')
       })

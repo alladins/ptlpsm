@@ -87,7 +87,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in users" :key="user.id" class="table-row">
+              <tr v-for="user in users" :key="user.userid" class="table-row">
                 <td>{{ user.loginId }}</td>
                 <td>{{ user.userName }}</td>
                 <td>{{ user.email }}</td>
@@ -811,9 +811,9 @@ const submitAdd = async () => {
 // 수정
 const submitEdit = async () => {
   if (!validateForm() || !editingUser.value) return
-  
+
   try {
-    await userService.updateUser(editingUser.value.id, userForm.value)
+    await userService.updateUser(editingUser.value.userid, userForm.value)
     closeModal()
     loadUsers()
     alert('사용자가 성공적으로 수정되었습니다.')
@@ -826,9 +826,9 @@ const submitEdit = async () => {
 // 삭제
 const deleteUser = async (user: any) => {
   if (!confirm('정말 삭제하시겠습니까?')) return
-  
+
   try {
-    await userService.deleteUser(user.id)
+    await userService.deleteUser(user.userid)
     loadUsers()
     alert('사용자가 성공적으로 삭제되었습니다.')
   } catch (error) {
@@ -840,9 +840,9 @@ const deleteUser = async (user: any) => {
 // 비밀번호 변경
 const submitPasswordChange = async () => {
   if (!validatePasswordForm() || !editingUser.value) return
-  
+
   try {
-    await userService.changePassword(editingUser.value.id, passwordForm.value)
+    await userService.changePassword(editingUser.value.userid, passwordForm.value)
     closePasswordModal()
     alert('비밀번호가 성공적으로 변경되었습니다.')
   } catch (error) {

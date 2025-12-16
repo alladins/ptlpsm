@@ -30,8 +30,8 @@
       </template>
     </PageHeader>
 
-    <AdminCommonLoadingSection v-if="loading" message="데이터를 불러오는 중..." />
-    <AdminCommonErrorSection v-else-if="!shipmentData && !loading" message="출하 정보를 찾을 수 없습니다." />
+    <LoadingSection v-if="loading" message="데이터를 불러오는 중..." />
+    <ErrorSection v-else-if="!shipmentData && !loading" message="출하 정보를 찾을 수 없습니다." />
 
     <div v-else class="content-section">
       <form @submit.prevent="handleSubmit" class="edit-form">
@@ -80,7 +80,7 @@
                   <i class="fas fa-truck"></i>
                   <span>출하 정보</span>
                 </div>
-                <div class="info-grid grid-5">
+                <div class="info-grid grid-3">
                   <FormField label="출하일자" required :error="errors.shippingDate">
                     <input
                       type="date"
@@ -90,17 +90,7 @@
                     >
                   </FormField>
 
-                  <FormField label="운송장번호" :error="errors.trackingNumber">
-                    <input
-                      type="text"
-                      v-model="formData.trackingNumber"
-                      class="form-input-md text-center"
-                      placeholder="운송장번호"
-                      :readonly="!canEdit"
-                    >
-                  </FormField>
-
-                  <FormField label="상태" required :error="errors.status">
+                  <FormField label="출하상태" required :error="errors.status">
                     <input
                       type="text"
                       :value="getStatusLabel(formData.status)"
@@ -110,6 +100,18 @@
                     >
                   </FormField>
 
+                  <FormField label="납품완료계 상태">
+                    <input
+                      type="text"
+                      :value="getDeliveryDoneStatusLabel(shipmentData?.deliveryDoneStatus)"
+                      class="form-input-sm text-center"
+                      readonly
+                      :style="getDeliveryDoneStatusStyle(shipmentData?.deliveryDoneStatus)"
+                    >
+                  </FormField>
+                </div>
+
+                <div class="info-grid grid-3" style="margin-top: 0.25rem;">
                   <FormField label="총 출하수량">
                     <input
                       type="text"
@@ -126,6 +128,14 @@
                       style="font-weight: bold; font-size: 1.125rem;"
                       readonly
                     >
+                  </FormField>
+                  <FormField label="기성포함">
+                    <span
+                      class="billing-badge"
+                      :class="shipmentData?.isBilled ? 'billed' : 'not-billed'"
+                    >
+                      {{ shipmentData?.isBilled ? '포함' : '미포함' }}
+                    </span>
                   </FormField>
                 </div>
               </div>
@@ -172,11 +182,49 @@
 
         <FormSection style="margin-top: -20px">
           <div class="items-section-wrapper">
-            <div class="items-section-header">
-              <i class="fas fa-box"></i>
-              <span>품목 정보</span>
+            <!-- 탭 헤더 -->
+            <div class="items-section-header with-tabs">
+              <div class="header-left">
+                <i class="fas fa-box"></i>
+                <span>품목 정보</span>
+              </div>
+              <div class="header-tabs">
+                <button
+                  type="button"
+                  class="tab-btn"
+                  :class="{ active: activeTab === 'current' }"
+                  @click="handleTabChange('current')"
+                >
+                  현재 품목
+                </button>
+                <button
+                  type="button"
+                  class="tab-btn"
+                  :class="{ active: activeTab === 'history' }"
+                  @click="handleTabChange('history')"
+                >
+                  변경 이력
+                </button>
+              </div>
+              <div class="header-right">
+                <!-- 추가변경 버튼 (항상 표시) -->
+                <div class="btn-wrapper" :title="additionalChangeDisabledReason">
+                  <button
+                    type="button"
+                    class="btn-additional-change"
+                    :class="{ disabled: !canAdditionalChange }"
+                    :disabled="!canAdditionalChange"
+                    @click="canAdditionalChange && (showAdditionalChangeModal = true)"
+                  >
+                    <i class="fas fa-edit"></i>
+                    추가변경
+                  </button>
+                </div>
+              </div>
             </div>
-            <div class="items-table-wrapper">
+
+            <!-- 현재 품목 탭 -->
+            <div v-show="activeTab === 'current'" class="items-table-wrapper">
               <table class="items-table">
                 <thead>
                   <tr>
@@ -205,13 +253,22 @@
                     <td>{{ item.itemName }}</td>
                     <td>{{ item.skuId }}</td>
                     <td>{{ item.skuName }}</td>
-                    <td>{{ item.specification }}</td>
+                    <td class="specification-cell" :title="item.specification">{{ item.specification }}</td>
                     <td>{{ item.unit }}</td>
                     <td class="text-right">{{ formatQuantity(item.orderQuantity) }}</td>
                     <td class="text-right" :title="`다른 출하들의 합계: ${formatQuantity(item.otherShipmentsQuantity)}`">
                       {{ formatQuantity(item.otherShipmentsQuantity) }}
                     </td>
-                    <td class="text-right">{{ formatQuantity(item.remainingQuantity) }}</td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.remainingQuantity) }}
+                      <button
+                        v-if="canEdit && canEditQuantity && item.remainingQuantity > 0"
+                        type="button"
+                        class="btn-max-quantity"
+                        @click="setMaxQuantity(item)"
+                        :title="'전체수량 입력 (' + formatQuantity(item.remainingQuantity) + ')'"
+                      >▶</button>
+                    </td>
                     <td class="text-right quantity-col">
                       <!-- 대기/준비 상태일 때만 수정 가능 -->
                       <input
@@ -220,7 +277,7 @@
                         v-model.number="item.shippingQuantity"
                         :min="0"
                         :max="item.maxEditableQuantity"
-                        class="table-input text-right"
+                        class="table-input text-right input-w66"
                         @focus="saveOriginalQuantity(item)"
                         @change="validateQuantity(item)"
                       />
@@ -241,10 +298,109 @@
                 </tfoot>
               </table>
             </div>
+
+            <!-- 변경 이력 탭 -->
+            <div v-show="activeTab === 'history'" class="history-tab-content">
+              <!-- 로딩 -->
+              <div v-if="loadingHistory" class="loading-container">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>변경 이력을 불러오는 중...</p>
+              </div>
+
+              <!-- 이력 없음 -->
+              <div v-else-if="changeHistory.length === 0" class="no-history">
+                <i class="fas fa-history"></i>
+                <p>변경 이력이 없습니다.</p>
+              </div>
+
+              <!-- 이력 목록 -->
+              <div v-else class="history-list">
+                <div v-for="history in changeHistory" :key="history.groupKey" class="history-item">
+                  <table class="history-table">
+                    <thead>
+                      <tr class="history-info-row">
+                        <th colspan="4">
+                          <div class="history-info-line">
+                            <span class="history-info-item">
+                              <span class="history-label">변경일시</span>
+                              <span class="history-value">{{ formatDateTime(history.changedAt) }}</span>
+                            </span>
+                            <span class="history-info-item">
+                              <span class="history-label">변경자</span>
+                              <span class="history-value">{{ history.changedBy }}</span>
+                            </span>
+                            <span class="history-info-item">
+                              <span class="history-label">변경사유</span>
+                              <span class="history-value">{{ history.changeReason }}</span>
+                            </span>
+                            <button
+                              type="button"
+                              v-if="history.previousReceiptUrl"
+                              class="btn-view-receipt"
+                              @click="showPreviousReceiptsModal = true"
+                            >
+                              <i class="fas fa-file-pdf"></i>
+                              이전 인수증
+                            </button>
+                          </div>
+                        </th>
+                      </tr>
+                      <tr>
+                        <th>품목명</th>
+                        <th class="text-right" style="width: 120px;">변경 전</th>
+                        <th class="text-right" style="width: 120px;">변경 후</th>
+                        <th class="text-right" style="width: 100px;">차이</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="item in history.items" :key="item.skuId">
+                        <td>{{ item.itemName }} ({{ item.skuName }})</td>
+                        <td class="text-right">{{ formatNumber(item.beforeQuantity) }}</td>
+                        <td class="text-right">{{ formatNumber(item.afterQuantity) }}</td>
+                        <td class="text-right">
+                          <span :class="item.afterQuantity - item.beforeQuantity > 0 ? 'text-success' : 'text-danger'">
+                            {{ item.afterQuantity - item.beforeQuantity > 0 ? '+' : '' }}{{ formatNumber(item.afterQuantity - item.beforeQuantity) }}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         </FormSection>
       </form>
     </div>
+
+    <!-- 추가변경 모달 -->
+    <AdditionalChangeModal
+      :is-open="showAdditionalChangeModal"
+      :shipment-id="shipmentId"
+      :shipment-status="formData.status"
+      :items="items.map(item => ({
+        skuId: item.skuId,
+        itemName: item.itemName,
+        specification: item.specification,
+        shipmentQuantity: item.shippingQuantity
+      }))"
+      @close="showAdditionalChangeModal = false"
+      @complete="handleAdditionalChangeComplete"
+    />
+
+    <!-- 이전 인수증 모달 -->
+    <PreviousReceiptsModal
+      :is-open="showPreviousReceiptsModal"
+      :shipment-id="shipmentId"
+      @close="showPreviousReceiptsModal = false"
+    />
+
+    <!-- 재서명 안내 모달 -->
+    <ResignRequiredModal
+      :is-open="showResignRequiredModal"
+      @close="showResignRequiredModal = false"
+      @send-message="handleSendMessage"
+    />
   </div>
 </template>
 
@@ -266,12 +422,18 @@ import { ref, computed } from 'vue'
 import { useRouter } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
 import type { ShipmentDetailWithOrder, ShipmentItemWithOrder } from '~/services/shipment.service'
+import type { AdditionalChangeResponse, QuantityChangeHistory } from '~/types/shipment-change'
 import { formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useEditForm } from '~/composables/admin/useEditForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
+import LoadingSection from '~/components/admin/common/LoadingSection.vue'
+import ErrorSection from '~/components/admin/common/ErrorSection.vue'
+import AdditionalChangeModal from '~/components/shipment/AdditionalChangeModal.vue'
+import PreviousReceiptsModal from '~/components/shipment/PreviousReceiptsModal.vue'
+import ResignRequiredModal from '~/components/shipment/ResignRequiredModal.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -508,6 +670,126 @@ const canEdit = computed(() => {
   return !['COMPLETED', 'CANCELLED'].includes(formData.status)
 })
 
+// 추가변경 가능 여부
+// - 출하가 취소 상태면 불가
+// - 기성에 포함된 출하(isBilled=true)면 불가
+// - 납품완료계가 완료 상태(deliveryDoneStatus=COMPLETED)면 불가
+const canAdditionalChange = computed(() => {
+  // 1. 출하가 취소 상태면 불가
+  if (formData.status === 'CANCELLED') return false
+
+  // 2. 기성에 포함된 출하면 불가
+  if (shipmentData.value?.isBilled) return false
+
+  // 3. 납품완료계가 완료 상태면 불가
+  if (shipmentData.value?.deliveryDoneStatus === 'COMPLETED') return false
+
+  return true
+})
+
+// 추가변경 비활성화 사유 (툴팁용)
+const additionalChangeDisabledReason = computed(() => {
+  if (formData.status === 'CANCELLED') {
+    return '취소된 출하는 변경할 수 없습니다.'
+  }
+  if (shipmentData.value?.isBilled) {
+    return '기성에 포함된 출하는 변경할 수 없습니다.'
+  }
+  if (shipmentData.value?.deliveryDoneStatus === 'COMPLETED') {
+    return '납품완료계가 완료된 상태입니다. 새로운 발주를 등록해주세요.'
+  }
+  return ''
+})
+
+// ========================================
+// 추가변경 관련 상태 및 메서드
+// ========================================
+const activeTab = ref<'current' | 'history'>('current')
+const showAdditionalChangeModal = ref(false)
+const showPreviousReceiptsModal = ref(false)
+const showResignRequiredModal = ref(false)
+const changeHistory = ref<QuantityChangeHistory[]>([])
+const loadingHistory = ref(false)
+
+// 변경 이력 로드
+const loadChangeHistory = async () => {
+  if (!shipmentId.value) return
+
+  loadingHistory.value = true
+  try {
+    changeHistory.value = await shipmentService.getChangeHistory(shipmentId.value)
+  } catch (error) {
+    console.error('변경 이력 로드 실패:', error)
+    changeHistory.value = []
+  } finally {
+    loadingHistory.value = false
+  }
+}
+
+// 탭 변경 핸들러
+const handleTabChange = (tab: 'current' | 'history') => {
+  activeTab.value = tab
+  if (tab === 'history' && changeHistory.value.length === 0) {
+    loadChangeHistory()
+  }
+}
+
+// 추가변경 완료 핸들러
+const handleAdditionalChangeComplete = async (response: AdditionalChangeResponse) => {
+  showAdditionalChangeModal.value = false
+
+  // 데이터 새로고침
+  if (shipmentId.value) {
+    try {
+      const data = await shipmentService.getShipmentDetail(shipmentId.value)
+      shipmentData.value = data
+
+      // 품목 데이터 다시 매핑
+      items.value = data.items.map((item) => ({
+        ...item,
+        shippingQuantity: item.shipmentQuantity || 0,
+        maxEditableQuantity: (item.shipmentQuantity || 0) + (item.remainingQuantity || 0),
+        orderId: data.orderId,
+        orderItemId: item.skuId
+      }))
+
+      // formData 업데이트
+      formData.status = data.status
+    } catch (error) {
+      console.error('데이터 새로고침 실패:', error)
+    }
+  }
+
+  // 변경 이력 새로고침
+  await loadChangeHistory()
+
+  // 재서명 필요한 경우 안내 모달 표시
+  if (response.requiresResign) {
+    showResignRequiredModal.value = true
+  } else {
+    alert('추가변경이 완료되었습니다.')
+  }
+}
+
+// 메시지 발송 핸들러
+const handleSendMessage = () => {
+  // TODO: 메시지 발송 모달 열기 또는 메시지 발송 로직
+  alert('메시지 발송 기능은 운송 등록 후 사용할 수 있습니다.')
+}
+
+// 변경 이력 날짜 포맷
+const formatDateTime = (dateStr: string): string => {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 // 상태 라벨 변환 (DB 기반)
 const getStatusLabel = (status: string): string => {
   return getStatusLabelFromDB(status)
@@ -527,6 +809,32 @@ const getStatusStyle = (status: string): string => {
   }
 
   return styleMap[badgeClass] || 'color: #6b7280; font-weight: 500;'
+}
+
+// 납품완료계 상태 라벨 변환
+const getDeliveryDoneStatusLabel = (status?: string): string => {
+  if (!status) return '-'
+  const statusMap: Record<string, string> = {
+    'PENDING': '대기',
+    'IN_PROGRESS': '납품중',
+    'PENDING_SIGNATURE': '서명대기',
+    'COMPLETED': '완료',
+    'CANCELLED': '취소'
+  }
+  return statusMap[status] || status
+}
+
+// 납품완료계 상태별 스타일
+const getDeliveryDoneStatusStyle = (status?: string): string => {
+  if (!status) return 'color: #6b7280; font-weight: 500;'
+  const styleMap: Record<string, string> = {
+    'PENDING': 'color: #6b7280; font-weight: 500;',
+    'IN_PROGRESS': 'color: #2563eb; font-weight: 600;',
+    'PENDING_SIGNATURE': 'color: #d97706; font-weight: 600;',
+    'COMPLETED': 'color: #059669; font-weight: 600;',
+    'CANCELLED': 'color: #dc2626; font-weight: 500;'
+  }
+  return styleMap[status] || 'color: #6b7280; font-weight: 500;'
 }
 
 // 포커스 시 원래 값 저장
@@ -552,6 +860,11 @@ const validateQuantity = (item: OrderItem) => {
     )
     item.shippingQuantity = originalValue  // 원래 값으로 복원
   }
+}
+
+// 잔여수량 전체 입력
+const setMaxQuantity = (item: OrderItem) => {
+  item.shippingQuantity = item.maxEditableQuantity
 }
 
 // 제출 처리
@@ -636,5 +949,295 @@ const handleDelete = async () => {
 .table-input:disabled {
   background-color: #f3f4f6;
   cursor: not-allowed;
+}
+
+/* 규격 셀 스타일 - 한 줄로 제한, 넘치면 ... 표시 */
+.specification-cell {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 탭 헤더 스타일 */
+.items-section-header.with-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.header-left i {
+  color: #6b7280;
+}
+
+.header-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tab-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.tab-btn.active {
+  background: #2563eb;
+  color: white;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.btn-additional-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-additional-change:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.btn-additional-change:disabled,
+.btn-additional-change.disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.btn-wrapper {
+  display: inline-block;
+}
+
+/* 변경 이력 탭 컨텐츠 */
+.history-tab-content {
+  padding: 1rem;
+  min-height: 200px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.loading-container i {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.no-history {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #9ca3af;
+}
+
+.no-history i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.no-history p {
+  margin: 0;
+}
+
+/* 변경 이력 목록 */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.history-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.history-info-row th {
+  padding: 0;
+  background: #f0f9ff;
+  border-bottom: 1px solid #bfdbfe;
+}
+
+.history-info-line {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 0.875rem 1rem;
+}
+
+.history-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.history-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #3b82f6;
+  background: #dbeafe;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.history-value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.btn-view-receipt {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-view-receipt:hover {
+  background: #b91c1c;
+}
+
+.history-table th {
+  padding: 0.625rem 1rem;
+  text-align: left;
+  background: #f9fafb;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.history-table th.text-right,
+.history-table td.text-right {
+  text-align: right;
+}
+
+.history-table td {
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+.history-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.text-success {
+  color: #059669;
+  font-weight: 500;
+}
+
+.text-danger {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* 기성포함 배지 스타일 */
+.billing-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.billing-badge.billed {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.billing-badge.not-billed {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+/* 전체수량 입력 버튼 */
+.btn-max-quantity {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  line-height: 18px;
+  background: #3b82f6;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.btn-max-quantity:hover {
+  background: #1d4ed8;
+}
+
+/* 출하수량 입력 폭 조절 */
+.input-w66 {
+  width: 66% !important;
 }
 </style>

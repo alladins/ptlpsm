@@ -13,8 +13,8 @@
       </template>
     </PageHeader>
 
-    <AdminCommonLoadingSection v-if="loading" />
-    <AdminCommonErrorSection v-else-if="!orderData && !loading" message="납품요구 정보를 찾을 수 없습니다." />
+    <LoadingSection v-if="loading" />
+    <ErrorSection v-else-if="!orderData && !loading" message="납품요구 정보를 찾을 수 없습니다." />
 
     <div v-else class="content-section">
       <!-- 분할납품요구서 정보 -->

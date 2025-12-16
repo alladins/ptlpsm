@@ -30,7 +30,7 @@
     </PageHeader>
 
     <!-- 로딩 섹션 -->
-    <AdminCommonLoadingSection v-if="loading" message="데이터를 불러오는 중..." />
+    <LoadingSection v-if="loading" message="데이터를 불러오는 중..." />
 
     <div v-else class="content-section">
       <!-- 운송장 정보 입력 폼 -->
@@ -99,7 +99,7 @@
                 class="form-input-md"
               >
                 <option value="">현장소장을 선택하세요</option>
-                <option v-for="manager in siteManagers" :key="manager.id" :value="manager.id">
+                <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
                   {{ manager.userName }} ({{ manager.companyName || '회사 정보 없음' }})
                 </option>
               </select>
@@ -112,7 +112,7 @@
                   class="form-input-sm"
                 >
                   <option value="direct">직접 입력</option>
-                  <option v-for="manager in siteManagers" :key="manager.id" :value="manager.id">
+                  <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
                     {{ manager.userName }}
                   </option>
                 </select>
@@ -432,11 +432,11 @@ const searchAddress = () => {
 // 현장소장 선택 시 인수자 기본값 자동 입력
 const handleSupervisorChange = () => {
   if (selectedSupervisorId.value) {
-    const supervisor = siteManagers.value.find(m => m.id === selectedSupervisorId.value)
+    const supervisor = siteManagers.value.find(m => m.userid === selectedSupervisorId.value)
     if (supervisor) {
       // 인수자가 비어있으면 현장소장으로 기본값 설정
       if (!formData.value.receiverName) {
-        selectedReceiverId.value = supervisor.id
+        selectedReceiverId.value = supervisor.userid
         formData.value.receiverName = supervisor.userName
         formData.value.receiverPhone = formatPhoneNumber(supervisor.phone || '')
       }
@@ -452,7 +452,7 @@ const handleReceiverChange = () => {
     formData.value.receiverPhone = ''
   } else {
     // 현장소장 선택 시 자동 입력
-    const receiver = siteManagers.value.find(m => m.id === selectedReceiverId.value)
+    const receiver = siteManagers.value.find(m => m.userid === selectedReceiverId.value)
     if (receiver) {
       formData.value.receiverName = receiver.userName
       formData.value.receiverPhone = formatPhoneNumber(receiver.phone || '')
@@ -514,15 +514,15 @@ onMounted(async () => {
 
     // 현장소장 셀렉트 박스 매핑 (운송 상세에서 siteManagerId 우선 사용)
     if (transportDetail.siteManagerId) {
-      const matchedManager = siteManagers.value.find(m => m.id === transportDetail.siteManagerId)
+      const matchedManager = siteManagers.value.find(m => m.userid === transportDetail.siteManagerId)
       if (matchedManager) {
-        selectedSupervisorId.value = matchedManager.id
+        selectedSupervisorId.value = matchedManager.userid
       }
     } else if (shipmentDetail?.siteManagerId) {
       // 운송에 없으면 출하 상세에서 가져오기
-      const matchedManager = siteManagers.value.find(m => m.id === shipmentDetail.siteManagerId)
+      const matchedManager = siteManagers.value.find(m => m.userid === shipmentDetail.siteManagerId)
       if (matchedManager) {
-        selectedSupervisorId.value = matchedManager.id
+        selectedSupervisorId.value = matchedManager.userid
       }
     }
 
@@ -531,7 +531,7 @@ onMounted(async () => {
       const matchedByName = siteManagers.value.find(m => m.userName === formData.value.receiverName)
       if (matchedByName) {
         // 현장소장 목록에 있으면 해당 ID 선택
-        selectedReceiverId.value = matchedByName.id
+        selectedReceiverId.value = matchedByName.userid
       } else {
         // 현장소장 목록에 없으면 직접 입력으로 설정
         selectedReceiverId.value = 'direct'

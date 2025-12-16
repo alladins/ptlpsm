@@ -195,7 +195,7 @@ const manualMenus = ref<MenuWithAuth[]>([
   {
     menuId: 4,
     menuCode: 'TRANSPORT',
-    menuName: '운송장관리',
+    menuName: '운송관리',
     menuUrl: '/admin/transport/list',
     menuIcon: 'fas fa-route',
     menuLevel: 1,
@@ -226,13 +226,61 @@ const manualMenus = ref<MenuWithAuth[]>([
     useYn: 'Y'
   },
   {
+    menuId: 11,
+    menuCode: 'FUNDS',
+    menuName: '자금관리',
+    menuUrl: '/admin/funds',
+    menuIcon: 'fas fa-coins',
+    menuLevel: 1,
+    sortOrder: 7,
+    visible: 'Y',
+    useYn: 'Y',
+    children: [
+      {
+        menuId: 111,
+        menuCode: 'FUND_LIST',
+        menuName: '자금 목록',
+        menuUrl: '/admin/funds',
+        menuIcon: 'fas fa-list',
+        menuLevel: 2,
+        sortOrder: 1,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 112,
+        menuCode: 'FUND_STATISTICS',
+        menuName: '자금 통계',
+        menuUrl: '/admin/funds/statistics',
+        menuIcon: 'fas fa-chart-pie',
+        menuLevel: 2,
+        sortOrder: 2,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      }
+    ]
+  },
+  {
+    menuId: 12,
+    menuCode: 'ORDER_REQUESTS',
+    menuName: '주문요청관리',
+    menuUrl: '/admin/order-requests',
+    menuIcon: 'fas fa-clipboard-list',
+    menuLevel: 1,
+    sortOrder: 8,
+    visible: 'Y',
+    useYn: 'Y'
+  },
+  {
     menuId: 7,
     menuCode: 'STATISTICS',
     menuName: '통계',
     menuUrl: '/admin/statistics',
     menuIcon: 'fas fa-chart-bar',
     menuLevel: 1,
-    sortOrder: 7,
+    sortOrder: 9,
     visible: 'Y',
     useYn: 'Y',
     children: [
@@ -281,7 +329,7 @@ const manualMenus = ref<MenuWithAuth[]>([
     menuUrl: '/admin/message',
     menuIcon: 'fas fa-envelope',
     menuLevel: 1,
-    sortOrder: 8,
+    sortOrder: 10,
     visible: 'Y',
     useYn: 'Y',
     children: [
@@ -318,7 +366,7 @@ const manualMenus = ref<MenuWithAuth[]>([
     menuUrl: '/admin/basic-info',
     menuIcon: 'fas fa-cogs',
     menuLevel: 1,
-    sortOrder: 9,
+    sortOrder: 11,
     visible: 'Y',
     useYn: 'Y',
     children: [
@@ -391,7 +439,7 @@ const manualMenus = ref<MenuWithAuth[]>([
     menuUrl: '/admin/system',
     menuIcon: 'fas fa-tools',
     menuLevel: 1,
-    sortOrder: 10,
+    sortOrder: 12,
     visible: 'Y',
     useYn: 'Y',
     children: [
@@ -630,8 +678,8 @@ function mergeMenuPermissions(
  * 메뉴 활성화/비활성화 토글
  */
 const toggleMenuVisibility = (menuCode: string) => {
-  const toggleMenu = (menus: Menu[]): Menu[] => {
-    return menus.map(menu => {
+  const toggleMenu = (menuList: Menu[]): Menu[] => {
+    return menuList.map(menu => {
       if (menu.menuCode === menuCode) {
         return {
           ...menu,
@@ -647,9 +695,9 @@ const toggleMenuVisibility = (menuCode: string) => {
       return menu
     })
   }
-  
+
   manualMenus.value = toggleMenu(manualMenus.value)
-  menus.value = manualMenus.value
+  rawMenus.value = manualMenus.value
 }
 
 /**
@@ -660,14 +708,14 @@ const addMenu = (parentMenuCode: string | null, newMenu: Omit<Menu, 'menuId'>) =
     ...newMenu,
     menuId: Date.now() // 임시 ID 생성
   }
-  
+
   if (!parentMenuCode) {
     // 최상위 메뉴 추가
     manualMenus.value.push(newMenuWithId)
   } else {
     // 하위 메뉴 추가
-    const addToParent = (menus: Menu[]): Menu[] => {
-      return menus.map(menu => {
+    const addToParent = (menuList: Menu[]): Menu[] => {
+      return menuList.map(menu => {
         if (menu.menuCode === parentMenuCode) {
           return {
             ...menu,
@@ -683,19 +731,19 @@ const addMenu = (parentMenuCode: string | null, newMenu: Omit<Menu, 'menuId'>) =
         return menu
       })
     }
-    
+
     manualMenus.value = addToParent(manualMenus.value)
   }
-  
-  menus.value = manualMenus.value
+
+  rawMenus.value = manualMenus.value
 }
 
 /**
  * 메뉴 삭제 (개발용)
  */
 const removeMenu = (menuCode: string) => {
-  const removeFromMenus = (menus: Menu[]): Menu[] => {
-    return menus.filter(menu => {
+  const removeFromMenus = (menuList: Menu[]): Menu[] => {
+    return menuList.filter(menu => {
       if (menu.menuCode === menuCode) {
         return false
       }
@@ -705,9 +753,9 @@ const removeMenu = (menuCode: string) => {
       return true
     })
   }
-  
+
   manualMenus.value = removeFromMenus(manualMenus.value)
-  menus.value = manualMenus.value
+  rawMenus.value = manualMenus.value
 }
 
 const toggleSubmenu = (menu: Menu) => {

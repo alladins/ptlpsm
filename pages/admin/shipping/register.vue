@@ -208,9 +208,7 @@
                         class="btn-max-quantity"
                         @click="setMaxQuantity(item)"
                         :title="'전체수량 입력 (' + formatQuantity(item.remainingQuantity) + ')'"
-                      >
-                        <i class="fas fa-angle-right"></i>
-                      </button>
+                      >▶</button>
                     </td>
                     <td class="text-right quantity-col">
                       <input
@@ -218,7 +216,7 @@
                         v-model.number="item.shippingQuantity"
                         :min="0"
                         :max="item.remainingQuantity"
-                        class="table-input text-right"
+                        class="table-input text-right input-w75"
                         @change="updateShippingQuantity(item)"
                       />
                     </td>
@@ -536,18 +534,23 @@ const handleSubmit = async () => {
 
 /* Page-specific: Max quantity button */
 .btn-max-quantity {
-  background: none;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  line-height: 18px;
+  background: #3b82f6;
   border: none;
-  color: #3b82f6;
+  color: white;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  margin-left: 0.5rem;
-  border-radius: 0.25rem;
-  transition: all 0.2s;
+  padding: 0;
+  margin-left: 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .btn-max-quantity:hover {
-  background: #3b82f6;
-  color: white;
+  background: #1d4ed8;
 }
 </style>

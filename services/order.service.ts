@@ -42,8 +42,8 @@ export const orderService = {
       if (params.salesId) queryParams.append('salesId', params.salesId.toString())
       if (params.shippableOnly) queryParams.append('shippableOnly', 'true')
 
-      // 페이징 파라미터
-      const page = params.page || 1
+      // 페이징 파라미터 (Spring은 0-based)
+      const page = params.page ?? 0
       const size = params.size || 10
       queryParams.append('page', page.toString())
       queryParams.append('size', size.toString())
@@ -112,8 +112,8 @@ export const orderService = {
       if (params.client) queryParams.append('client', params.client)
       if (params.itemKeyword) queryParams.append('itemKeyword', params.itemKeyword)
 
-      // 페이징 파라미터
-      const page = params.page || 1
+      // 페이징 파라미터 (Spring은 0-based)
+      const page = params.page ?? 0
       const size = params.size || 10
       queryParams.append('page', page.toString())
       queryParams.append('size', size.toString())

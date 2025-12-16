@@ -1,3 +1,35 @@
+/**
+ * 계약 유형 상수
+ */
+export const CONTRACT_TYPE = {
+  ORIGINAL: 'ORIGINAL',      // 본계약 (00)
+  AMENDMENT: 'AMENDMENT',    // 변경계약 (기존 수량 대체)
+  ADDITIONAL: 'ADDITIONAL'   // 추가계약 (기존 수량에 합산, 별도계약 포함)
+} as const
+
+export type ContractType = typeof CONTRACT_TYPE[keyof typeof CONTRACT_TYPE]
+
+/**
+ * 계약 유형 한글 표시명
+ */
+export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
+  ORIGINAL: '본계약',
+  AMENDMENT: '변경계약',
+  ADDITIONAL: '추가계약'
+}
+
+/**
+ * 서버 PDF 업로드 응답에 포함될 계약 유형 체크 결과
+ */
+export interface ContractTypeCheckResult {
+  /** 본계약 여부 (접미사 00이면 true) */
+  isOriginalContract: boolean
+  /** 기존 본계약 납품요구번호 (예: R25TB01181972-00) */
+  existingContractNo?: string
+  /** 신규 계약 납품요구번호 (예: R25TB01181972-01) */
+  newContractNo: string
+}
+
 export interface OrderResponse {
   orderId: number
   salesId: number
@@ -11,6 +43,12 @@ export interface OrderResponse {
   totalAmount: string
   deliveryRequestNo: string
   deliveryRequestDate: string
+  /** 분할순번 (00=기준, 01~=분할) */
+  splitSeq?: string
+  /** 계약유형 (ORIGINAL/AMENDMENT/SEPARATE) */
+  contractType?: ContractType
+  /** 기준 주문 ID (변경/별도 계약인 경우) */
+  baseOrderId?: number
   createdBy: string
   createdAt: string
   updatedBy: string

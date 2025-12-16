@@ -174,7 +174,7 @@ export function getMockMenuData(): Menu[] {
     {
       menuId: 4,
       menuCode: 'TRANSPORT',
-      menuName: '운송장관리',
+      menuName: '운송관리',
       menuUrl: '/admin/transport',
       menuIcon: 'fas fa-route',
       menuLevel: 1,
@@ -186,7 +186,7 @@ export function getMockMenuData(): Menu[] {
         {
           menuId: 41,
           menuCode: 'TRANSPORT_LIST',
-          menuName: '운송장관리 목록',
+          menuName: '운송관리 목록',
           parentMenuId: 4,
           menuUrl: '/admin/transport/list',
           menuIcon: 'fas fa-list',
@@ -505,10 +505,11 @@ export const menuService = {
 
   /**
    * 사용자별 메뉴 목록 조회 (실제 API 연동)
+   * @param loginId - 사용자 로그인 ID (문자열)
    */
-  async getUserMenus(userId: number): Promise<Menu[]> {
+  async getUserMenus(loginId: string): Promise<Menu[]> {
     try {
-      const response = await fetch(MENU_ENDPOINTS.userMenus(userId), {
+      const response = await fetch(MENU_ENDPOINTS.userMenus(loginId), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
           'Content-Type': 'application/json'
@@ -534,10 +535,12 @@ export const menuService = {
 
   /**
    * 메뉴별 권한 조회 (실제 API 연동)
+   * @param loginId - 사용자 로그인 ID (문자열)
+   * @param menuId - 메뉴 ID
    */
-  async getMenuAuth(userId: number, menuId: number): Promise<MenuAuth> {
+  async getMenuAuth(loginId: string, menuId: number): Promise<MenuAuth> {
     try {
-      const response = await fetch(MENU_ENDPOINTS.menuAuth(userId, menuId), {
+      const response = await fetch(MENU_ENDPOINTS.menuAuth(loginId, menuId), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
           'Content-Type': 'application/json'
@@ -626,11 +629,13 @@ export const menuService = {
 
   /**
    * 메뉴 권한 업데이트
-   * @param userId 사용자 ID (숫자)
+   * @param loginId - 사용자 로그인 ID (문자열)
+   * @param menuId - 메뉴 ID
+   * @param auth - 권한 정보
    */
-  async updateMenuAuth(userId: number, menuId: number, auth: MenuAuth): Promise<boolean> {
+  async updateMenuAuth(loginId: string, menuId: number, auth: MenuAuth): Promise<boolean> {
     try {
-      const response = await fetch(MENU_ENDPOINTS.updateMenuAuth(userId, menuId), {
+      const response = await fetch(MENU_ENDPOINTS.updateMenuAuth(loginId, menuId), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
@@ -653,8 +658,10 @@ export const menuService = {
 
   /**
    * 페이지별 권한 조회
+   * @param loginId - 사용자 로그인 ID (문자열)
+   * @param pageId - 페이지 ID
    */
-  async getPageAuth(userId: number, pageId: number): Promise<MenuAuth> {
+  async getPageAuth(loginId: string, pageId: number): Promise<MenuAuth> {
     try {
       // 임시로 모든 권한 허용
       return {

@@ -82,5 +82,39 @@ export const SHIPMENT_ENDPOINTS = {
   delete: (shipmentId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/shipments/${shipmentId}`
+  },
+
+  // ========================================
+  // 추가변경 관련 API
+  // ========================================
+
+  /**
+   * 추가변경 실행
+   * @param shipmentId - 출하 ID
+   * @returns POST /admin/shipments/{shipmentId}/additional-change
+   */
+  additionalChange: (shipmentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/shipments/${shipmentId}/additional-change`
+  },
+
+  /**
+   * 수량 변경 이력 조회
+   * @param shipmentId - 출하 ID
+   * @returns GET /admin/shipments/{shipmentId}/quantity-history
+   */
+  getChangeHistory: (shipmentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/shipments/${shipmentId}/quantity-history`
+  },
+
+  /**
+   * 이전 인수증 목록 조회 (관리자용)
+   * @param shipmentId - 출하 ID
+   * @returns GET /admin/shipments/{shipmentId}/previous-receipts
+   */
+  getPreviousReceipts: (shipmentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/shipments/${shipmentId}/previous-receipts`
   }
 } as const

@@ -613,6 +613,83 @@ const getMockItems = (params: any): PageResponse<Item> => {
   }
 }
 
+// 원가 변경 이력 타입
+export interface CostPriceHistory {
+  historyId: number
+  itemId: string
+  skuId?: string
+  previousCostPrice: number
+  newCostPrice: number
+  changeReason: string
+  changedAt: string
+  changedBy: string
+}
+
+// 원가 수정
+export const updateCostPrice = async (
+  itemId: string,
+  costPrice: number,
+  reason: string
+): Promise<void> => {
+  try {
+    const response = await fetch(ITEM_ENDPOINTS.updateCost(itemId), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify({
+        costPrice,
+        reason
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+    }
+
+    console.log('updateCostPrice 성공')
+  } catch (error) {
+    console.error('원가 수정 실패:', error)
+    throw error
+  }
+}
+
+// 원가 변경 이력 조회
+export const getCostHistory = async (itemId: string): Promise<CostPriceHistory[]> => {
+  try {
+    const response = await fetch(ITEM_ENDPOINTS.costHistory(itemId), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const result = await response.json()
+
+    // 배열 응답 처리
+    if (Array.isArray(result)) {
+      return result
+    }
+
+    // data 래핑 처리
+    if (result.data) {
+      return Array.isArray(result.data) ? result.data : []
+    }
+
+    return []
+  } catch (error) {
+    console.error('원가 변경 이력 조회 실패:', error)
+    return []
+  }
+}
+
 export const itemService = {
   getItems,
   searchItems,
@@ -625,5 +702,7 @@ export const itemService = {
   createSpec,
   deleteSpec,
   createSku,
-  deleteSku
+  deleteSku,
+  updateCostPrice,
+  getCostHistory
 }

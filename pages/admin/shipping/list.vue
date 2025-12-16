@@ -241,9 +241,16 @@ const {
       size: params.size || 10
     })
 
+    // 납품요구일자 내림차순 정렬 (프론트엔드 정렬)
+    const sortedContent = [...(response.content || [])].sort((a, b) => {
+      const dateA = a.deliveryRequestDate ? new Date(a.deliveryRequestDate).getTime() : 0
+      const dateB = b.deliveryRequestDate ? new Date(b.deliveryRequestDate).getTime() : 0
+      return dateB - dateA // 내림차순 (최신순)
+    })
+
     // shipmentService 응답을 Spring Page 형식으로 변환
     return {
-      content: response.content || [],
+      content: sortedContent,
       number: response.pageNumber !== undefined ? response.pageNumber : 0, // 1-based → 0-based
       size: response.pageSize || params.size || 10,
       totalElements: response.totalElements || 0,

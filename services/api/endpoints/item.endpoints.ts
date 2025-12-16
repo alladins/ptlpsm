@@ -140,5 +140,25 @@ export const ITEM_ENDPOINTS = {
   deleteSku: (itemId: string, skuId: string) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/basic/items/${itemId}/skus/${skuId}`
+  },
+
+  /**
+   * 원가 수정
+   * @param itemId - 품목 ID
+   * @returns PUT /admin/items/{itemId}/cost
+   */
+  updateCost: (itemId: string) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/items/${itemId}/cost`
+  },
+
+  /**
+   * 원가 변경 이력 조회
+   * @param itemId - 품목 ID
+   * @returns GET /admin/items/{itemId}/cost-history
+   */
+  costHistory: (itemId: string) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/items/${itemId}/cost-history`
   }
 } as const

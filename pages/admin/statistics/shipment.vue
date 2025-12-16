@@ -1116,7 +1116,7 @@ onMounted(() => {
 .data-table th {
   background: #f9fafb;
   padding: 0.75rem 1rem;
-  text-align: left;
+  text-align: center;
   font-weight: 600;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;

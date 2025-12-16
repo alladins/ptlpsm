@@ -95,7 +95,7 @@ const currentPageTitle = computed(() => {
     '/admin/sales': '영업관리',
     '/admin/order': '납품요구관리',
     '/admin/shipping': '출하관리',
-    '/admin/transport': '운송장관리',
+    '/admin/transport': '운송관리',
     '/admin/delivery': '납품확인관리',
     '/admin/delivery-done': '납품완료계',
     '/admin/statistics': '통계',
