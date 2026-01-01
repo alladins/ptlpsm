@@ -282,15 +282,16 @@
               <div class="form-group">
                 <label>소속회사</label>
                 <select
-                  v-model="userForm.companyName"
+                  v-model="userForm.companyId"
                   class="form-select"
                   :disabled="loadingCompanies"
+                  @change="onCompanyChange"
                 >
-                  <option value="">선택 안 함</option>
+                  <option :value="null">선택 안 함</option>
                   <option
                     v-for="company in companies"
                     :key="company.id"
-                    :value="company.companyName"
+                    :value="company.id"
                   >
                     {{ company.companyName }}
                   </option>
@@ -470,6 +471,7 @@ const userForm = ref({
   department: '',
   position: '',
   employeeNumber: '',
+  companyId: null as number | null,
   companyName: '',
   role: '',
   address: '',
@@ -529,13 +531,13 @@ const visiblePages = computed(() => {
 const getRoleClass = (role: string) => {
   switch (role) {
     case 'SYSTEM_ADMIN': return 'role-admin'           // 빨강 - 시스템관리자
-    case 'LEAD_POWER': return 'role-leadpower'         // 주황 - 리드파워담당자
-    case 'OEM_MANAGER': return 'role-oem'              // 보라 - OEM담당자
-    case 'COURIER': return 'role-courier'              // 청록 - 배송기사
-    case 'SITE_MANAGER': return 'role-site-manager'    // 파랑 - 현장소장
-    case 'SALES_MANAGER': return 'role-sales'          // 남색 - 영업담당자
-    case 'VIEWER': return 'role-viewer'                // 회색 - 조회자
-    case 'SITE_INSPECTOR': return 'role-inspector'     // 초록 - 감리원
+    case 'LEADPOWER_MANAGER': return 'role-leadpower'  // 주황 - 리드파워 담당자
+    case 'OEM_MANAGER': return 'role-oem'              // 보라 - OEM 담당자
+    case 'SITE_MANAGER': return 'role-site-manager'    // 파랑 - 시공사 담당자
+    case 'SITE_INSPECTOR': return 'role-inspector'     // 초록 - 시공사 감리원
+    case 'SALES_MANAGER': return 'role-sales'          // 남색 - 영업 담당자
+    case 'DELIVERY_DRIVER': return 'role-driver'       // 청록 - 운송기사
+    case 'READ_ONLY': return 'role-readonly'           // 회색 - 조회 전용
     default: return 'role-default'
   }
 }
@@ -640,6 +642,7 @@ const openAddModal = () => {
     department: '',
     position: '',
     employeeNumber: '',
+    companyId: null,
     companyName: '',
     role: '',
     address: '',
@@ -660,7 +663,20 @@ const openAddModal = () => {
 // 수정 모달 열기
 const openEditModal = (user: any) => {
   editingUser.value = user
-  userForm.value = { ...user }
+
+  // companyName으로 companyId 찾기
+  let companyId = user.companyId || null
+  if (!companyId && user.companyName) {
+    const foundCompany = companies.value.find(c => c.companyName === user.companyName)
+    if (foundCompany) {
+      companyId = foundCompany.id
+    }
+  }
+
+  userForm.value = {
+    ...user,
+    companyId
+  }
   validationErrors.value = {
     userId: '',
     password: '',
@@ -670,6 +686,16 @@ const openEditModal = (user: any) => {
     phone: ''
   }
   showEditModal.value = true
+}
+
+// 회사 선택 변경 시 companyName도 업데이트
+const onCompanyChange = () => {
+  if (userForm.value.companyId) {
+    const selectedCompany = companies.value.find(c => c.id === userForm.value.companyId)
+    userForm.value.companyName = selectedCompany?.companyName || ''
+  } else {
+    userForm.value.companyName = ''
+  }
 }
 
 // 모달 닫기
@@ -1122,15 +1148,15 @@ onMounted(() => {
   text-align: center;
 }
 
-/* 역할별 배지 색상 (서버 USER_ROLE 코드 순서) */
+/* 역할별 배지 색상 */
 .role-admin { background: #dc2626; color: white; }           /* 빨강 - 시스템관리자 (SYSTEM_ADMIN) */
-.role-leadpower { background: #f59e0b; color: white; }       /* 주황 - 리드파워담당자 (LEAD_POWER) */
-.role-oem { background: #7c3aed; color: white; }             /* 보라 - OEM담당자 (OEM_MANAGER) */
-.role-courier { background: #0891b2; color: white; }         /* 청록 - 배송기사 (COURIER) */
-.role-site-manager { background: #2563eb; color: white; }    /* 파랑 - 현장소장 (SITE_MANAGER) */
-.role-sales { background: #1e40af; color: white; }           /* 남색 - 영업담당자 (SALES_MANAGER) */
-.role-viewer { background: #6b7280; color: white; }          /* 회색 - 조회자 (VIEWER) */
-.role-inspector { background: #059669; color: white; }       /* 초록 - 감리원 (SITE_INSPECTOR) */
+.role-leadpower { background: #f59e0b; color: white; }       /* 주황 - 리드파워 담당자 (LEADPOWER_MANAGER) */
+.role-oem { background: #7c3aed; color: white; }             /* 보라 - OEM 담당자 (OEM_MANAGER) */
+.role-site-manager { background: #2563eb; color: white; }    /* 파랑 - 시공사 담당자 (SITE_MANAGER) */
+.role-inspector { background: #059669; color: white; }       /* 초록 - 시공사 감리원 (SITE_INSPECTOR) */
+.role-sales { background: #1e40af; color: white; }           /* 남색 - 영업 담당자 (SALES_MANAGER) */
+.role-driver { background: #0891b2; color: white; }          /* 청록 - 운송기사 (DELIVERY_DRIVER) */
+.role-readonly { background: #6b7280; color: white; }        /* 회색 - 조회 전용 (READ_ONLY) */
 .role-default { background: #f3f4f6; color: #374151; }       /* 기본 */
 
 .status-badge {

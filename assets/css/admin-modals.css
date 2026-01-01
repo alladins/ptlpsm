@@ -1,0 +1,788 @@
+/**
+ * 프리미엄 모달 공통 스타일
+ *
+ * CollectionConfirmModal, OemPaymentModal 기준으로 통합
+ * 사용: @import '@/assets/css/admin-modals.css';
+ *
+ * 클래스 프리픽스: ccm- (Collection Confirm Modal)
+ */
+
+/* ============================================
+   1. 모달 오버레이 & 컨테이너
+   ============================================ */
+
+.ccm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.ccm-modal-container {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* 사이즈 변형 */
+.ccm-modal-container.ccm-modal-small {
+  max-width: 380px;
+}
+
+.ccm-modal-container.ccm-modal-medium {
+  max-width: 520px;
+}
+
+.ccm-modal-container.ccm-modal-large {
+  max-width: 640px;
+}
+
+.ccm-modal-container.ccm-modal-xlarge {
+  max-width: 800px;
+}
+
+/* ============================================
+   2. 모달 헤더
+   ============================================ */
+
+.ccm-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(to right, #f8fafc, #ffffff);
+}
+
+.ccm-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.ccm-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.ccm-header-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* 헤더 아이콘 색상 변형 */
+.ccm-header-icon.ccm-icon-blue {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #2563eb;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.ccm-header-icon.ccm-icon-orange {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #d97706;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.ccm-header-icon.ccm-icon-green {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #059669;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.ccm-header-icon.ccm-icon-purple {
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  color: #7c3aed;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+}
+
+.ccm-header-icon.ccm-icon-red {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+.ccm-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.ccm-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.ccm-modal-subtitle {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* 타입 배지 */
+.ccm-type-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ccm-type-badge.ccm-badge-blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.ccm-type-badge.ccm-badge-orange {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.ccm-type-badge.ccm-badge-green {
+  background: #d1fae5;
+  color: #047857;
+}
+
+/* 닫기 버튼 */
+.ccm-close-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ccm-close-button:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.ccm-close-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ccm-close-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================
+   3. 모달 바디
+   ============================================ */
+
+.ccm-modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ============================================
+   4. 금액 정보 카드
+   ============================================ */
+
+.ccm-amount-info-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.ccm-amount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ccm-amount-row + .ccm-amount-row {
+  margin-top: 0.625rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ccm-amount-row .ccm-amount-label {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+}
+
+.ccm-amount-row .ccm-amount-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  font-feature-settings: 'tnum';
+  letter-spacing: -0.01em;
+}
+
+.ccm-amount-row.ccm-approved .ccm-amount-value {
+  color: #34d399;
+}
+
+.ccm-amount-row .ccm-amount-value.ccm-highlight {
+  color: #fbbf24;
+  font-size: 1.125rem;
+}
+
+/* 연결 정보 카드 (OEM 등) */
+.ccm-linked-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ccm-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ccm-card-header i {
+  font-size: 0.875rem;
+}
+
+.ccm-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ccm-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ccm-info-item .ccm-label {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+}
+
+.ccm-info-item .ccm-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  font-feature-settings: 'tnum';
+}
+
+.ccm-info-item .ccm-value.ccm-highlight {
+  color: #fbbf24;
+  font-size: 1.125rem;
+}
+
+/* ============================================
+   5. 폼 스타일
+   ============================================ */
+
+.ccm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.ccm-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ccm-form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.ccm-form-label.required::after {
+  content: '*';
+  color: #ef4444;
+  margin-left: 0.125rem;
+}
+
+.ccm-label-icon {
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+}
+
+.ccm-label-icon.ccm-currency-icon {
+  width: auto;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.ccm-label-icon.ccm-currency-icon.ccm-blue {
+  color: #3b82f6;
+}
+
+.ccm-label-icon.ccm-currency-icon.ccm-orange {
+  color: #f59e0b;
+}
+
+.ccm-optional-tag {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #94a3b8;
+  background: #f8fafc;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  margin-left: auto;
+}
+
+.ccm-input-wrapper {
+  position: relative;
+}
+
+.ccm-form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.ccm-form-input::placeholder {
+  color: #94a3b8;
+}
+
+/* 포커스 색상 변형 - 기본 파란색 */
+.ccm-form-input:focus {
+  border-color: #3b82f6;
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* 포커스 색상 변형 - 오렌지 */
+.ccm-form-input.ccm-focus-orange:focus {
+  border-color: #f59e0b;
+  box-shadow:
+    0 0 0 3px rgba(245, 158, 11, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ccm-form-input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.ccm-form-input.ccm-textarea {
+  resize: none;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+/* 날짜 입력 */
+.ccm-date-input {
+  cursor: pointer;
+}
+
+.ccm-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.ccm-date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* 금액 입력 */
+.ccm-amount-wrapper {
+  position: relative;
+}
+
+.ccm-amount-input {
+  padding-right: 2.5rem;
+  font-weight: 600;
+  font-feature-settings: 'tnum';
+  text-align: right;
+}
+
+.ccm-input-suffix {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  pointer-events: none;
+}
+
+/* 금액 액션 버튼 영역 */
+.ccm-amount-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.375rem;
+}
+
+.ccm-amount-preset-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.ccm-amount-preset-btn.ccm-blue {
+  color: #3b82f6;
+}
+
+.ccm-amount-preset-btn.ccm-blue:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.ccm-amount-preset-btn.ccm-orange {
+  color: #d97706;
+}
+
+.ccm-amount-preset-btn.ccm-orange:hover {
+  color: #b45309;
+  text-decoration: underline;
+}
+
+.ccm-amount-preset-btn:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.ccm-amount-diff {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #10b981;
+  font-feature-settings: 'tnum';
+}
+
+.ccm-amount-diff.ccm-negative {
+  color: #ef4444;
+}
+
+/* 에러 메시지 */
+.ccm-error-message {
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
+}
+
+/* ============================================
+   6. 모달 푸터
+   ============================================ */
+
+.ccm-modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.ccm-btn-cancel,
+.ccm-btn-confirm {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.ccm-btn-cancel {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  color: #334155;
+}
+
+.ccm-btn-cancel:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #64748b;
+}
+
+/* 확인 버튼 - 파란색 */
+.ccm-btn-confirm {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.ccm-btn-confirm:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+/* 확인 버튼 - 오렌지 */
+.ccm-btn-confirm.ccm-orange {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.ccm-btn-confirm.ccm-orange:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+}
+
+/* 확인 버튼 - 녹색 */
+.ccm-btn-confirm.ccm-green {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.ccm-btn-confirm.ccm-green:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.ccm-btn-confirm:disabled {
+  background: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================
+   7. 로딩 스피너
+   ============================================ */
+
+.ccm-loading-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: ccm-spin 0.8s linear infinite;
+}
+
+@keyframes ccm-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   8. 성공 오버레이
+   ============================================ */
+
+.ccm-success-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 16px;
+}
+
+/* 성공 오버레이 색상 변형 */
+.ccm-success-overlay.ccm-green {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.ccm-success-overlay.ccm-orange {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.ccm-success-overlay.ccm-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.ccm-success-content {
+  text-align: center;
+  color: #ffffff;
+}
+
+.ccm-success-icon {
+  width: 72px;
+  height: 72px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  animation: ccm-success-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.ccm-success-icon svg {
+  width: 36px;
+  height: 36px;
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: ccm-check-draw 0.4s ease-out 0.2s forwards;
+}
+
+@keyframes ccm-success-pop {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ccm-check-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.ccm-success-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.ccm-success-message {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* ============================================
+   9. 모달 트랜지션
+   ============================================ */
+
+.ccm-modal-enter-active,
+.ccm-modal-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.ccm-modal-enter-active .ccm-modal-container,
+.ccm-modal-leave-active .ccm-modal-container {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+}
+
+.ccm-modal-enter-from,
+.ccm-modal-leave-to {
+  opacity: 0;
+}
+
+.ccm-modal-enter-from .ccm-modal-container,
+.ccm-modal-leave-to .ccm-modal-container {
+  transform: scale(0.95) translateY(10px);
+  opacity: 0;
+}
+
+/* 성공 페이드 트랜지션 */
+.ccm-success-fade-enter-active {
+  transition: opacity 0.3s ease;
+}
+
+.ccm-success-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.ccm-success-fade-enter-from,
+.ccm-success-fade-leave-to {
+  opacity: 0;
+}
+
+/* Vue Transition 이름: modal (기존 호환성) */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.modal-enter-active .modal-container,
+.modal-leave-active .modal-container,
+.modal-enter-active .ccm-modal-container,
+.modal-leave-active .ccm-modal-container {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal-container,
+.modal-leave-to .modal-container,
+.modal-enter-from .ccm-modal-container,
+.modal-leave-to .ccm-modal-container {
+  transform: scale(0.95) translateY(10px);
+  opacity: 0;
+}
+
+/* Vue Transition 이름: success-fade (기존 호환성) */
+.success-fade-enter-active {
+  transition: opacity 0.3s ease;
+}
+
+.success-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.success-fade-enter-from,
+.success-fade-leave-to {
+  opacity: 0;
+}
+
+/* ============================================
+   10. 반응형
+   ============================================ */
+
+@media (max-width: 480px) {
+  .ccm-modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .ccm-modal-container {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .ccm-modal-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .ccm-modal-body {
+    padding: 1.25rem;
+  }
+
+  .ccm-modal-footer {
+    padding: 1rem 1.25rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+  }
+}

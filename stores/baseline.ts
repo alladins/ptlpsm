@@ -13,9 +13,11 @@ import type {
   Baseline,
   BaselineListItem,
   BaselineCreateRequest,
+  BaselineCreateRequestV2,
   CurrentQuantitySnapshot,
   QuantityChangeRecord,
-  DeliveryConfirmation
+  DeliveryConfirmation,
+  AvailableShipment
 } from '~/types/baseline'
 
 export const useBaselineStore = defineStore('baseline', () => {
@@ -35,6 +37,9 @@ export const useBaselineStore = defineStore('baseline', () => {
 
   /** 납품확인서 정보 */
   const deliveryConfirmation = ref<DeliveryConfirmation | null>(null)
+
+  /** 청구 가능 출하 목록 */
+  const availableShipments = ref<AvailableShipment[]>([])
 
   /** 로딩 상태 */
   const loading = ref(false)
@@ -62,6 +67,19 @@ export const useBaselineStore = defineStore('baseline', () => {
 
   /** 수량 변경이 있는지 여부 */
   const hasQuantityChanges = computed(() => quantityChanges.value.length > 0)
+
+  /** 청구 가능한 출하가 있는지 여부 */
+  const hasAvailableShipments = computed(() => availableShipments.value.length > 0)
+
+  /** 청구 가능 출하의 총 수량 */
+  const availableShipmentsTotalQuantity = computed(() => {
+    return availableShipments.value.reduce((sum, s) => sum + (s.totalQuantity || 0), 0)
+  })
+
+  /** 청구 가능 출하의 총 금액 */
+  const availableShipmentsTotalAmount = computed(() => {
+    return availableShipments.value.reduce((sum, s) => sum + (s.totalAmount || 0), 0)
+  })
 
   // ============ Actions ============
 
@@ -133,7 +151,27 @@ export const useBaselineStore = defineStore('baseline', () => {
   }
 
   /**
-   * 기성/납품완료 차수 생성
+   * 청구 가능 출하 목록 조회
+   */
+  async function fetchAvailableShipments(orderId: number) {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await baselineService.getAvailableShipments(orderId)
+      availableShipments.value = response
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '청구 가능 출하 조회 실패'
+      console.error('청구 가능 출하 조회 실패:', err)
+      availableShipments.value = []
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 기성/납품완료 차수 생성 (기존 방식)
+   * @deprecated createBaselineV2 사용 권장
    */
   async function createBaseline(orderId: number, data: BaselineCreateRequest): Promise<Baseline | null> {
     loading.value = true
@@ -143,6 +181,29 @@ export const useBaselineStore = defineStore('baseline', () => {
       const response = await baselineService.createBaseline(orderId, data)
       // 목록 새로고침
       await fetchList(orderId)
+      return response
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '차수 생성 실패'
+      console.error('차수 생성 실패:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 기성/납품완료 차수 생성 (새 버전 - 출하 선택 방식)
+   */
+  async function createBaselineV2(data: BaselineCreateRequestV2): Promise<Baseline | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await baselineService.createBaselineV2(data)
+      // 목록 새로고침
+      await fetchList(data.orderId)
+      // 청구 가능 출하 목록 새로고침
+      await fetchAvailableShipments(data.orderId)
       return response
     } catch (err) {
       error.value = err instanceof Error ? err.message : '차수 생성 실패'
@@ -167,8 +228,8 @@ export const useBaselineStore = defineStore('baseline', () => {
   }
 
   /**
-   * 기성 청구 모달용 데이터 로드
-   * @description 기성 청구 모달에서 필요한 모든 데이터를 한번에 로드
+   * 기성 청구 모달용 데이터 로드 (기존 방식)
+   * @deprecated loadProgressPaymentDataV2 사용 권장
    */
   async function loadProgressPaymentData(orderId: number) {
     loading.value = true
@@ -209,6 +270,38 @@ export const useBaselineStore = defineStore('baseline', () => {
   }
 
   /**
+   * 기성 청구 모달용 데이터 로드 (새 버전 - 출하 선택 방식)
+   * @description 청구 가능 출하 목록 기반으로 데이터 로드
+   */
+  async function loadProgressPaymentDataV2(orderId: number) {
+    loading.value = true
+    error.value = null
+
+    try {
+      // 병렬로 데이터 조회
+      const [baselines, shipments] = await Promise.all([
+        baselineService.getBaselinesByOrderId(orderId),
+        baselineService.getAvailableShipments(orderId)
+      ])
+
+      // 차수 목록 설정
+      list.value = baselines.map(item => ({
+        ...item,
+        displayName: getBaselineDisplayName(item.baselineType, item.baselineSeq)
+      }))
+
+      // 청구 가능 출하 목록 설정
+      availableShipments.value = shipments
+
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '데이터 로드 실패'
+      console.error('기성 청구 데이터 로드 실패:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
    * 상태 초기화
    */
   function reset() {
@@ -217,6 +310,7 @@ export const useBaselineStore = defineStore('baseline', () => {
     currentQuantities.value = null
     quantityChanges.value = []
     deliveryConfirmation.value = null
+    availableShipments.value = []
     loading.value = false
     error.value = null
   }
@@ -228,6 +322,7 @@ export const useBaselineStore = defineStore('baseline', () => {
     currentQuantities,
     quantityChanges,
     deliveryConfirmation,
+    availableShipments,
     loading,
     error,
 
@@ -236,15 +331,21 @@ export const useBaselineStore = defineStore('baseline', () => {
     latestBaseline,
     nextBaselineSeq,
     hasQuantityChanges,
+    hasAvailableShipments,
+    availableShipmentsTotalQuantity,
+    availableShipmentsTotalAmount,
 
     // Actions
     fetchList,
     fetchDetail,
     fetchCurrentQuantities,
     fetchQuantityChanges,
+    fetchAvailableShipments,
     createBaseline,
+    createBaselineV2,
     fetchDeliveryConfirmation,
     loadProgressPaymentData,
+    loadProgressPaymentDataV2,
     reset
   }
 })

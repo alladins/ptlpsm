@@ -1,0 +1,23 @@
+{
+  "name": "terminology-dictionary",
+  "version": "1.0.0",
+  "description": "프로젝트 코드베이스를 분석하여 표준 용어 사전(Standard Terminology Dictionary)을 자동 생성하는 플러그인. TypeScript 타입, Vue 컴포넌트, 서비스 레이어에서 한영 용어 매핑을 추출합니다.",
+  "author": {
+    "name": "PTLPSM Team"
+  },
+  "keywords": [
+    "terminology",
+    "dictionary",
+    "glossary",
+    "documentation",
+    "i18n",
+    "korean",
+    "english",
+    "mapping"
+  ],
+  "license": "MIT",
+
+  "commands": "./commands/",
+  "agents": "./agents/",
+  "skills": "./skills/"
+}

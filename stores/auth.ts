@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { safeStorage } from '~/utils/storage'
 
 /**
  * 사용자 인터페이스
@@ -14,6 +15,8 @@ interface User {
   userName: string
   email: string
   role: string
+  companyId: number | null     // 회사 ID (FK)
+  companyName: string | null   // 회사명
 }
 
 interface ImpersonationState {
@@ -103,13 +106,11 @@ export const useAuthStore = defineStore('auth', () => {
     lastActivity.value = Date.now()
 
     // localStorage에 저장
-    if (process.client) {
-      localStorage.setItem('auth_user', JSON.stringify(data.userInfo))
-      localStorage.setItem('auth_access_token', data.accessToken)
-      localStorage.setItem('auth_refresh_token', data.refreshToken)
-      localStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
-      localStorage.setItem('auth_last_activity', lastActivity.value.toString())
-    }
+    safeStorage.setJSON('auth_user', data.userInfo)
+    safeStorage.setItem('auth_access_token', data.accessToken)
+    safeStorage.setItem('auth_refresh_token', data.refreshToken)
+    safeStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
+    safeStorage.setItem('auth_last_activity', lastActivity.value.toString())
   }
 
   function clearAuthData() {
@@ -128,15 +129,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     // localStorage 정리
-    if (process.client) {
-      localStorage.removeItem('auth_user')
-      localStorage.removeItem('auth_access_token')
-      localStorage.removeItem('auth_refresh_token')
-      localStorage.removeItem('auth_token_expiry')
-      localStorage.removeItem('auth_last_activity')
-      localStorage.removeItem('auth_impersonation')
-      localStorage.removeItem('redirectAfterLogin')
-    }
+    safeStorage.removeItem('auth_user')
+    safeStorage.removeItem('auth_access_token')
+    safeStorage.removeItem('auth_refresh_token')
+    safeStorage.removeItem('auth_token_expiry')
+    safeStorage.removeItem('auth_last_activity')
+    safeStorage.removeItem('auth_impersonation')
+    safeStorage.removeItem('redirectAfterLogin')
   }
 
   /**
@@ -171,11 +170,19 @@ export const useAuthStore = defineStore('auth', () => {
 
       const data = await response.json()
 
-      if (!data.success || !data.data) {
-        throw new Error(data.message || '대리 로그인 응답 형식 오류')
+      // 서버 응답 형식: { accessToken, refreshToken, originalUserid, targetUserid, ... }
+      // (success/data 래핑 없이 직접 응답)
+      let result = data
+
+      // 기존 래핑 형식도 지원: { success: true, data: {...} }
+      if (data.success && data.data) {
+        result = data.data
       }
 
-      const result = data.data
+      // 필수 필드 확인
+      if (!result.accessToken) {
+        throw new Error(data.message || '대리 로그인 응답 형식 오류: accessToken 누락')
+      }
 
       // 원래 사용자 정보 저장
       impersonation.value = {
@@ -191,28 +198,41 @@ export const useAuthStore = defineStore('auth', () => {
       tokenExpiry.value = Date.now() + 3600 * 1000 // 1시간
 
       // 대상 사용자 정보로 변경
+      // 두 가지 응답 형식 지원:
+      // 1. 일반 형식: { userid, loginId, userName, role, ... }
+      // 2. target 접두어 형식: { targetUserid, targetLoginId, targetUserName, targetRole, ... }
       user.value = {
-        userid: result.targetUserid ?? 0,
-        loginId: result.targetLoginId || '',
-        userName: result.targetUserName || '',
-        email: '', // API 응답에 없으면 빈값
-        role: result.targetRole || ''
+        userid: result.userid ?? result.targetUserid ?? 0,
+        loginId: result.loginId || result.targetLoginId || '',
+        userName: result.userName || result.targetUserName || '',
+        email: result.email || '',
+        role: result.role || result.targetRole || '',
+        companyId: result.companyId ?? null,
+        companyName: result.companyName ?? null
       }
 
       // localStorage 업데이트
-      if (process.client) {
-        localStorage.setItem('auth_user', JSON.stringify(user.value))
-        localStorage.setItem('auth_access_token', result.accessToken)
-        localStorage.setItem('auth_refresh_token', result.refreshToken)
-        localStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
-        localStorage.setItem('auth_impersonation', JSON.stringify(impersonation.value))
-      }
+      safeStorage.setJSON('auth_user', user.value)
+      safeStorage.setItem('auth_access_token', result.accessToken)
+      safeStorage.setItem('auth_refresh_token', result.refreshToken)
+      safeStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
+      safeStorage.setJSON('auth_impersonation', impersonation.value)
 
       console.log('대리 로그인 성공:', {
         원래사용자: impersonation.value.originalUserName,
         대상사용자: user.value.userName,
         대상역할: user.value.role
       })
+
+      // ✅ 권한 캐시 초기화 - 새 사용자의 권한으로 다시 로드되도록
+      try {
+        const { usePermissionStore } = await import('./permission')
+        const permissionStore = usePermissionStore()
+        permissionStore.clearCache()
+        console.log('권한 캐시 초기화 완료 (대리 로그인)')
+      } catch (err) {
+        console.warn('권한 캐시 초기화 실패:', err)
+      }
 
       return true
     } catch (error) {
@@ -247,24 +267,35 @@ export const useAuthStore = defineStore('auth', () => {
 
       const data = await response.json()
 
-      if (!data.success || !data.data) {
-        throw new Error(data.message || '대리 로그인 종료 응답 형식 오류')
+      // 서버 응답 형식: { accessToken, impersonating, originalUserId, targetUserId, ... }
+      // (success/data 래핑 없이 직접 응답)
+      let result = data
+
+      // 기존 래핑 형식도 지원: { success: true, data: {...} }
+      if (data.success && data.data) {
+        result = data.data
       }
 
-      const result = data.data
+      // 필수 필드 확인
+      if (!result.accessToken) {
+        throw new Error(data.message || '대리 로그인 종료 응답 형식 오류: accessToken 누락')
+      }
 
       // 토큰 복원
       accessToken.value = result.accessToken
-      refreshToken.value = result.refreshToken
+      refreshToken.value = result.refreshToken || null
       tokenExpiry.value = Date.now() + 3600 * 1000
 
       // 원래 사용자 정보 복원
+      // 서버 응답 필드: originalUserId, originalUserName, targetUserId, targetUserName, targetRole
       user.value = {
-        userid: result.userid ?? impersonation.value.originalUserid ?? 0,
-        loginId: result.loginId || '',
-        userName: result.userName || impersonation.value.originalUserName || '',
+        userid: result.originalUserId ?? result.targetUserId ?? impersonation.value.originalUserid ?? 0,
+        loginId: result.originalLoginId || result.targetLoginId || '',
+        userName: result.originalUserName ?? result.targetUserName ?? impersonation.value.originalUserName ?? '',
         email: result.email || '',
-        role: result.role || impersonation.value.originalRole || ''
+        role: result.targetRole ?? impersonation.value.originalRole ?? '',
+        companyId: result.companyId ?? null,
+        companyName: result.companyName ?? null
       }
 
       // Impersonation 상태 초기화
@@ -276,15 +307,23 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       // localStorage 업데이트
-      if (process.client) {
-        localStorage.setItem('auth_user', JSON.stringify(user.value))
-        localStorage.setItem('auth_access_token', result.accessToken)
-        localStorage.setItem('auth_refresh_token', result.refreshToken)
-        localStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
-        localStorage.removeItem('auth_impersonation')
-      }
+      safeStorage.setJSON('auth_user', user.value)
+      safeStorage.setItem('auth_access_token', result.accessToken)
+      safeStorage.setItem('auth_refresh_token', result.refreshToken)
+      safeStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
+      safeStorage.removeItem('auth_impersonation')
 
       console.log('대리 로그인 종료, 원래 계정으로 복귀:', user.value.userName)
+
+      // ✅ 권한 캐시 초기화 - 원래 사용자의 권한으로 다시 로드되도록
+      try {
+        const { usePermissionStore } = await import('./permission')
+        const permissionStore = usePermissionStore()
+        permissionStore.clearCache()
+        console.log('권한 캐시 초기화 완료 (대리 로그인 종료)')
+      } catch (err) {
+        console.warn('권한 캐시 초기화 실패:', err)
+      }
 
       return true
     } catch (error) {
@@ -295,20 +334,19 @@ export const useAuthStore = defineStore('auth', () => {
 
   function updateLastActivity() {
     lastActivity.value = Date.now()
-    if (process.client) {
-      localStorage.setItem('auth_last_activity', lastActivity.value.toString())
-    }
+    safeStorage.setItem('auth_last_activity', lastActivity.value.toString())
   }
 
   async function checkAuth() {
-    if (!process.client) return false
+    // SSR에서는 인증 체크 스킵
+    if (typeof window === 'undefined') return false
 
     try {
-      const storedUser = localStorage.getItem('auth_user')
-      const storedAccessToken = localStorage.getItem('auth_access_token')
-      const storedRefreshToken = localStorage.getItem('auth_refresh_token')
-      const storedTokenExpiry = localStorage.getItem('auth_token_expiry')
-      const storedLastActivity = localStorage.getItem('auth_last_activity')
+      const storedUser = safeStorage.getItem('auth_user')
+      const storedAccessToken = safeStorage.getItem('auth_access_token')
+      const storedRefreshToken = safeStorage.getItem('auth_refresh_token')
+      const storedTokenExpiry = safeStorage.getItem('auth_token_expiry')
+      const storedLastActivity = safeStorage.getItem('auth_last_activity')
 
       if (!storedUser || !storedAccessToken || !storedRefreshToken) {
         clearAuthData()
@@ -322,17 +360,15 @@ export const useAuthStore = defineStore('auth', () => {
       lastActivity.value = storedLastActivity ? parseInt(storedLastActivity) : null
 
       // Impersonation 상태 복원
-      const storedImpersonation = localStorage.getItem('auth_impersonation')
+      const storedImpersonation = safeStorage.getJSON<ImpersonationState>('auth_impersonation')
       if (storedImpersonation) {
-        try {
-          impersonation.value = JSON.parse(storedImpersonation)
-        } catch {
-          impersonation.value = {
-            isImpersonating: false,
-            originalUserid: null,
-            originalUserName: null,
-            originalRole: null
-          }
+        impersonation.value = storedImpersonation
+      } else {
+        impersonation.value = {
+          isImpersonating: false,
+          originalUserid: null,
+          originalUserName: null,
+          originalRole: null
         }
       }
 
@@ -358,11 +394,11 @@ export const useAuthStore = defineStore('auth', () => {
         // 서버에서 받은 사용자 정보로 업데이트
         if (data.success && data.data) {
           user.value = data.data
-          localStorage.setItem('auth_user', JSON.stringify(data.data))
+          safeStorage.setJSON('auth_user', data.data)
         } else if (data.userid) {
           // data 래퍼 없이 직접 user 정보가 온 경우
           user.value = data
-          localStorage.setItem('auth_user', JSON.stringify(data))
+          safeStorage.setJSON('auth_user', data)
         }
 
         console.log('인증 상태 복원 및 서버 검증 완료:', {
@@ -424,10 +460,8 @@ export const useAuthStore = defineStore('auth', () => {
       accessToken.value = data.accessToken
       tokenExpiry.value = Date.now() + (data.expiresIn || 3600) * 1000
 
-      if (process.client) {
-        localStorage.setItem('auth_access_token', data.accessToken)
-        localStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
-      }
+      safeStorage.setItem('auth_access_token', data.accessToken)
+      safeStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
 
       console.log('액세스 토큰 갱신 성공 (Fallback 모드)')
       return true

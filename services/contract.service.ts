@@ -42,8 +42,11 @@ export interface ContractInfo {
   partialDelivery: string
   inspectionAgency: string
   acceptanceAgency: string
-  siteManagerId?: number | null      // 현장소장 ID
-  builder?: string | null            // 현장소장 회사명
+  siteManagerId?: number | null      // 현장소장 ID (deprecated)
+  builderCompanyId?: number | null   // 건설사 ID
+  builderCompany?: string | null     // 건설사명
+  oemCompanyId?: number | null       // 제조사 ID
+  oemCompany?: string | null         // 제조사명
 }
 
 /**

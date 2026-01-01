@@ -157,7 +157,7 @@ export interface DeliveryDoneListItem {
   totalDeliveredQuantity: number
   deliveryCompletionRate: number
   totalDeliveryCount: number
-  builder?: string                     // 백엔드 응답 필드 (optional, 호환성)
+  builderCompanyName?: string          // 건설사명 (백엔드 응답 필드)
   contractorCompanyName: string        // 프론트엔드 표준 필드
   siteSupervisorName: string | null    // 시공사 현장소장 이름
   siteSupervisorPhone: string | null   // 시공사 현장소장 전화번호
@@ -221,7 +221,7 @@ export interface DeliveryDoneMobileInfo {
 
   // 서명 현황
   recipientType: RecipientType
-  builder: string
+  builderCompanyName: string           // 건설사명
   representativeName: string
   hasContractorSignature: boolean
   supervisorName: string | null

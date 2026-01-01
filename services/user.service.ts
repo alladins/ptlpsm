@@ -448,12 +448,13 @@ export const userService = {
   },
 
   /**
-   * 내 정보 수정
+   * 내 정보 수정 (모든 인증된 사용자)
+   * PUT /api/common/users/me
    */
-  async updateProfile(userId: number, profileData: Partial<User>): Promise<User> {
+  async updateProfile(profileData: Partial<User>): Promise<User> {
     try {
-      const url = USER_ENDPOINTS.update(userId)
-      
+      const url = USER_ENDPOINTS.updateProfile()
+
       const response = await fetch(url, {
         method: 'PUT',
         headers: {
@@ -470,7 +471,36 @@ export const userService = {
 
       return await response.json()
     } catch (error) {
-      console.error('프로필 수정 실패:', error)
+      console.error('내 정보 수정 실패:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 내 비밀번호 변경 (모든 인증된 사용자)
+   * PUT /api/common/users/me/change-password
+   */
+  async changeMyPassword(data: { newPassword: string; confirmPassword: string }): Promise<{ success: boolean; message: string }> {
+    try {
+      const url = USER_ENDPOINTS.changeMyPassword()
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || `HTTP error! status: ${response.status}`)
+      }
+
+      return result
+    } catch (error) {
+      console.error('내 비밀번호 변경 실패:', error)
       throw error
     }
   }

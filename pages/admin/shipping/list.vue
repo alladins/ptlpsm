@@ -2,8 +2,10 @@
   <div class="shipping-list">
     <!-- 페이지 헤더 - 리팩토링: UiPageHeader 컴포넌트 사용 -->
     <PageHeader
-      title="출하 관리"
+      title="출하관리"
       description="출하 정보를 조회하고 관리합니다."
+      icon="shipping"
+      icon-color="green"
     >
       <template #actions>
         <button class="btn-action" @click="handleSearch" :disabled="loading">
@@ -230,14 +232,14 @@ const {
   reset
 } = useDataTable<ShipmentListItem>({
   fetchFunction: async (params) => {
-    // shipmentService는 1-based page를 기대함
+    // 0-based pagination 사용
     const response = await shipmentService.getShipments({
       startDate: searchForm.value.startDate,
       endDate: searchForm.value.endDate,
       deliveryRequestNo: searchForm.value.deliveryRequestNo,
       orderId: searchForm.value.orderId,
       status: searchForm.value.status,
-      page: (params.page || 0) + 1, // 0-based → 1-based 변환
+      page: params.page || 0,
       size: params.size || 10
     })
 

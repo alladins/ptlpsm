@@ -15,10 +15,37 @@ export type BaselineType = 'PROGRESS' | 'FINAL'
 /**
  * 차수 상태
  * - DRAFT: 작성중
- * - CONFIRMED: 확정
+ * - PENDING_SIGNATURE: 서명 대기중
+ * - CONFIRMED: 확정 (서명 완료 후)
  * - CANCELLED: 취소
  */
-export type BaselineStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED'
+export type BaselineStatus = 'DRAFT' | 'PENDING_SIGNATURE' | 'CONFIRMED' | 'CANCELLED'
+
+/**
+ * 서명 상태 (백엔드 응답값 기준)
+ * - PENDING_SIGNATURE: 서명 대기 (기성청구 생성 후 서명 대기)
+ * - PARTIAL_SIGNED: 일부 서명 완료 (현장소장 또는 감리원 중 한 명만 서명)
+ * - SIGNATURE_COMPLETED: 서명 완료 (현장소장, 감리원 모두 서명 완료)
+ */
+export type SignatureStatus = 'PENDING_SIGNATURE' | 'PARTIAL_SIGNED' | 'SIGNATURE_COMPLETED'
+
+/**
+ * 서명 상태 라벨
+ */
+export const SIGNATURE_STATUS_LABELS: Record<SignatureStatus, string> = {
+  PENDING_SIGNATURE: '서명대기',
+  PARTIAL_SIGNED: '일부서명',
+  SIGNATURE_COMPLETED: '서명완료'
+}
+
+/**
+ * 서명 상태 CSS 클래스
+ */
+export const SIGNATURE_STATUS_CLASSES: Record<SignatureStatus, string> = {
+  PENDING_SIGNATURE: 'signature-pending',
+  PARTIAL_SIGNED: 'signature-partial',
+  SIGNATURE_COMPLETED: 'signature-completed'
+}
 
 /**
  * 기성/납품확인 차수
@@ -53,6 +80,16 @@ export interface Baseline extends BaseEntity {
   remarks: string | null
   /** 품목 스냅샷 목록 */
   items: BaselineItem[]
+  /** 서명 상태 (기성청구용) */
+  signatureStatus?: SignatureStatus
+  /** 현장소장 서명 완료 일시 */
+  siteManagerSignedAt?: string | null
+  /** 감리원 서명 완료 일시 */
+  inspectorSignedAt?: string | null
+  /** 현장소장 서명 이미지 URL */
+  siteManagerSignatureUrl?: string | null
+  /** 감리원 서명 이미지 URL */
+  inspectorSignatureUrl?: string | null
 }
 
 /**
@@ -110,6 +147,12 @@ export interface BaselineListItem {
   displayName?: string
   /** 납품확인서 파일 URL */
   deliveryConfirmationUrl?: string
+  /** 서명 상태 (기성청구용) */
+  signatureStatus?: SignatureStatus
+  /** 현장소장 서명 완료 여부 */
+  siteManagerSigned?: boolean
+  /** 감리원 서명 완료 여부 */
+  inspectorSigned?: boolean
 }
 
 /**
@@ -282,4 +325,212 @@ export interface DeliveryConfirmation {
   signedBy: string | null
   /** 서명일 */
   signedAt: string | null
+}
+
+// ============ 청구 가능 출하 (Available Shipments) ============
+
+/**
+ * 청구 가능 출하 정보
+ * @description 납품확인 완료되었으나 아직 기성 청구에 포함되지 않은 출하
+ *
+ * 백엔드 API 응답 기준으로 정의됨
+ */
+export interface AvailableShipment {
+  /** 출하 ID (PK) */
+  shipmentId: number
+  /** 출하일 (YYYY-MM-DD) */
+  shipmentDate: string
+  /** 출하 번호 (백엔드에서 추가 필요) */
+  shipmentNo?: string
+  /** 품목 요약 (백엔드에서 추가 권장: "폴리우레탄 단열재 외 2건") */
+  itemSummary?: string
+  /** 출하 총 수량 */
+  totalQuantity: number
+  /** 출하 총 금액 */
+  totalAmount: number
+  /** 납품확인 상태 (항상 "COMPLETED") */
+  deliveryStatus?: string
+  /** 납품확인 완료일시 (인수증 서명 일시) */
+  deliveryCompletedAt: string
+  /** 납품확인 ID (선택) */
+  deliveryConfirmationId?: number
+  /** 차량번호 */
+  vehicleNo?: string
+  /** 납품요구번호 (참고용) */
+  deliveryRequestNo?: string
+  /** 수요기관명 (참고용) */
+  clientName?: string
+  /** 품목 상세 목록 (상세 조회 시에만 제공) */
+  items?: AvailableShipmentItem[]
+}
+
+/**
+ * 청구 가능 출하의 품목 상세
+ */
+export interface AvailableShipmentItem {
+  /** 품목 ID */
+  itemId: number
+  /** 품목명 */
+  itemName: string
+  /** 규격 */
+  specification: string
+  /** 단위 */
+  unit: string
+  /** 납품단가 */
+  unitPrice: number
+  /** 원가 */
+  costPrice: number
+  /** 출하 수량 */
+  quantity: number
+  /** 출하 금액 */
+  amount: number
+}
+
+/**
+ * 기성 차수 생성 요청 (새로운 버전)
+ * @description available-shipments 기반 기성 청구 요청
+ */
+export interface BaselineCreateRequestV2 {
+  /** 주문 ID */
+  orderId: number
+  /** 차수 유형 (기성/납품완료) */
+  baselineType: BaselineType
+  /** 포함할 출하 ID 목록 */
+  shipmentIds: number[]
+  /** 확정일 (기본: 현재일) */
+  baselineDate?: string
+  /** 비고 */
+  remarks?: string
+}
+
+// ============ 기성청구 서명 관련 타입 ============
+
+/**
+ * 서명 수신자 타입
+ */
+export type SignatureRecipientType = 'SITE_MANAGER' | 'SITE_INSPECTOR'
+
+/**
+ * 서명 URL 발송 수신자
+ */
+export interface BaselineSignatureRecipient {
+  /** 수신자 타입 (현장소장/감리원) */
+  recipientType: SignatureRecipientType
+  /** 수신자 사용자 ID */
+  recipientUserId: number
+  /** 수신자 이름 */
+  recipientName: string
+  /** 수신자 전화번호 */
+  recipientPhone: string
+}
+
+/**
+ * 기성청구 서명 URL 발송 요청
+ */
+export interface BaselineSignatureUrlRequest {
+  /** 기성 차수 ID */
+  baselineId: number
+  /** 수신자 목록 */
+  recipients: BaselineSignatureRecipient[]
+  /** 메시지 타입 (LMS/SMS) */
+  messageType?: 'LMS' | 'SMS'
+}
+
+/**
+ * 기성청구 서명 URL 발송 응답
+ */
+export interface BaselineSignatureUrlResponse {
+  success: boolean
+  message: string
+  /** 발송된 수신자 수 */
+  sentCount?: number
+  /** 실패한 수신자 수 */
+  failedCount?: number
+}
+
+/**
+ * 모바일 기성청구 서명 정보 (토큰으로 조회)
+ */
+export interface BaselineSignatureInfo {
+  /** 기성 차수 ID */
+  baselineId: number
+  /** 기성 차수 순번 */
+  baselineSeq: number
+  /** 납품요구번호 */
+  deliveryRequestNo: string
+  /** 수요기관명 */
+  demandOrganization: string
+  /** 사업명 */
+  projectName: string
+  /** 시공사명 */
+  constructorName: string
+  /** 청구금액 */
+  requestAmount: number
+  /** 수신자 타입 (본인이 서명해야 하는 역할) */
+  recipientType: SignatureRecipientType
+  /** 수신자 이름 */
+  recipientName: string
+  /** 이미 서명 완료 여부 */
+  alreadySigned: boolean
+  /** 다른 서명자 완료 여부 */
+  otherSignerCompleted: boolean
+  /** 품목 요약 */
+  itemSummary?: string
+  /** 토큰 만료일 */
+  expiresAt: string
+}
+
+/**
+ * 모바일 기성청구 서명 제출 요청
+ */
+export interface BaselineSignatureSubmitRequest {
+  /** 서명 이미지 (Base64 또는 Blob) */
+  signatureImage: Blob
+}
+
+/**
+ * 모바일 기성청구 서명 제출 응답
+ */
+export interface BaselineSignatureSubmitResponse {
+  success: boolean
+  message: string
+  /** 서명 완료 시각 */
+  signedAt?: string
+  /** 양쪽 서명 모두 완료 여부 */
+  allSignaturesCompleted?: boolean
+  /** PDF 생성 여부 (모두 서명 완료 시) */
+  pdfGenerated?: boolean
+}
+
+/**
+ * 기성청구 생성 + 서명 URL 발송 통합 요청
+ * @description 기성청구 생성과 서명 URL 발송을 한 번의 API 호출로 처리
+ */
+export interface BaselineCreateAndSendRequest {
+  /** 주문 ID */
+  orderId: number
+  /** 차수 유형 (기성/납품완료) */
+  baselineType: BaselineType
+  /** 포함할 출하 ID 목록 */
+  shipmentIds: number[]
+  /** 비고 */
+  remarks?: string
+  /** 수신자 목록 (현장소장, 감리원) */
+  recipients: BaselineSignatureRecipient[]
+  /** 메시지 타입 (LMS/SMS) */
+  messageType: 'LMS' | 'SMS'
+}
+
+/**
+ * 기성청구 생성 + 서명 URL 발송 통합 응답
+ */
+export interface BaselineCreateAndSendResponse {
+  success: boolean
+  message: string
+  /** 생성된 기성 차수 정보 */
+  baseline?: Baseline
+  /** 발송된 수신자 수 */
+  sentCount?: number
+  /** 실패한 수신자 수 */
+  failedCount?: number
 }

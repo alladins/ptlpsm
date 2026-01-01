@@ -2,8 +2,8 @@
   <div class="delivery-done-list">
     <!-- 페이지 헤더 -->
     <PageHeader
-      title="납품완료계 관리"
-      description="발주별 납품완료계를 관리하고 서명 URL을 발송합니다."
+      title="납품완료"
+      description="발주별 납품완료를 관리하고 서명 URL을 발송합니다."
     >
       <template #actions>
         <button class="btn-action" @click="handleSearch">

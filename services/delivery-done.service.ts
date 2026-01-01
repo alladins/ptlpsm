@@ -66,7 +66,7 @@ export async function getDeliveryDoneList(
     if (data.content && Array.isArray(data.content)) {
       data.content = data.content.map((item: any) => ({
         ...item,
-        contractorCompanyName: item.builder || item.contractorCompanyName || '-',
+        contractorCompanyName: item.builderCompanyName || item.contractorCompanyName || '-',
         siteSupervisorName: item.siteSupervisorName || null,
         siteSupervisorPhone: item.siteSupervisorPhone || null,
         supervisorName: item.supervisorName || null,

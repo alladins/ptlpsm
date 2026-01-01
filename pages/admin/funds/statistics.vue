@@ -2,13 +2,13 @@
   <div class="fund-statistics">
     <!-- 페이지 헤더 -->
     <PageHeader
-      title="자금 통계"
-      description="자금 현황을 통계로 확인합니다."
+      title="기성통계"
+      description="기성 현황을 통계로 확인합니다."
     >
       <template #actions>
         <div class="year-selector">
           <label>조회년도:</label>
-          <select v-model="selectedYear" @change="loadStatistics" class="form-select-sm">
+          <select v-model="selectedYear" class="form-select-sm">
             <option v-for="year in availableYears" :key="year" :value="year">
               {{ year }}년
             </option>
@@ -56,7 +56,7 @@
             </div>
             <div class="card-content">
               <div class="card-label">미수금</div>
-              <div class="card-value">{{ formatCurrency(statistics.totalUncollected) }}</div>
+              <div class="card-value">{{ formatCurrency(statistics.totalOutstanding) }}</div>
             </div>
           </div>
           <div class="overview-card purple">
@@ -74,7 +74,7 @@
             </div>
             <div class="card-content">
               <div class="card-label">OEM 미지급</div>
-              <div class="card-value">{{ formatCurrency(statistics.totalOemUnpaid) }}</div>
+              <div class="card-value">{{ formatCurrency(statistics.totalOemOutstanding) }}</div>
             </div>
           </div>
           <div class="overview-card teal">
@@ -120,15 +120,11 @@
           <div class="chart-legend">
             <div class="legend-item">
               <span class="legend-dot" style="background: #3b82f6;"></span>
-              <span>진행중 ({{ statistics.progressStatus?.inProgress || 0 }}건)</span>
+              <span>진행중 ({{ statistics.activeCount || 0 }}건)</span>
             </div>
             <div class="legend-item">
               <span class="legend-dot" style="background: #10b981;"></span>
-              <span>완료 ({{ statistics.progressStatus?.completed || 0 }}건)</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background: #f59e0b;"></span>
-              <span>대기 ({{ statistics.progressStatus?.pending || 0 }}건)</span>
+              <span>완료 ({{ statistics.completedCount || 0 }}건)</span>
             </div>
           </div>
         </div>
@@ -175,8 +171,8 @@
                   <span class="progress-text">{{ fund.collectionRate?.toFixed(1) || 0 }}%</span>
                 </td>
                 <td class="text-right">{{ formatCurrency(fund.oemPaid) }}</td>
-                <td class="text-right" :class="fund.profit >= 0 ? 'text-success' : 'text-danger'">
-                  {{ formatCurrency(fund.profit) }}
+                <td class="text-right" :class="(fund.profit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
+                  {{ formatCurrency(fund.profit ?? 0) }}
                 </td>
               </tr>
             </tbody>
@@ -185,11 +181,11 @@
                 <td colspan="2" class="text-right"><strong>합계</strong></td>
                 <td class="text-right"><strong>{{ formatCurrency(statistics.totalContractAmount) }}</strong></td>
                 <td class="text-right text-success"><strong>{{ formatCurrency(statistics.totalCollected) }}</strong></td>
-                <td class="text-right text-danger"><strong>{{ formatCurrency(statistics.totalUncollected) }}</strong></td>
+                <td class="text-right text-danger"><strong>{{ formatCurrency(statistics.totalOutstanding) }}</strong></td>
                 <td class="text-center"><strong>{{ getCollectionRate() }}%</strong></td>
                 <td class="text-right"><strong>{{ formatCurrency(statistics.totalOemPaid) }}</strong></td>
-                <td class="text-right" :class="statistics.currentProfit >= 0 ? 'text-success' : 'text-danger'">
-                  <strong>{{ formatCurrency(statistics.currentProfit) }}</strong>
+                <td class="text-right" :class="(statistics.currentProfit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
+                  <strong>{{ formatCurrency(statistics.currentProfit ?? 0) }}</strong>
                 </td>
               </tr>
             </tfoot>
@@ -221,20 +217,20 @@ const router = useRouter()
 const loading = ref(true)
 const selectedYear = ref(new Date().getFullYear())
 const statistics = ref<FundStatistics>({
+  totalFundCount: 0,
   totalContractAmount: 0,
+  totalAdvancePayment: 0,
+  totalProgressPayment: 0,
+  totalBalance: 0,
   totalCollected: 0,
-  totalUncollected: 0,
+  totalOutstanding: 0,
   totalOemPaid: 0,
-  totalOemUnpaid: 0,
+  activeCount: 0,
+  completedCount: 0,
+  totalOemOutstanding: 0,
   currentProfit: 0,
   profitRate: 0,
-  monthlyData: [],
-  progressStatus: {
-    pending: 0,
-    inProgress: 0,
-    completed: 0
-  },
-  fundDetails: []
+  monthlyData: []
 })
 
 // Chart refs
@@ -291,8 +287,8 @@ const renderCharts = async () => {
 
     const monthlyData = statistics.value.monthlyData || []
     const labels = monthlyData.map(d => `${d.month}월`)
-    const collectedData = monthlyData.map(d => d.collected || 0)
-    const uncollectedData = monthlyData.map(d => d.uncollected || 0)
+    const collectedData = monthlyData.map(d => d.receivedAmount || 0)
+    const profitData = monthlyData.map(d => d.profitAmount || 0)
 
     monthlyChart = new Chart(monthlyChartRef.value, {
       type: 'bar',
@@ -306,9 +302,9 @@ const renderCharts = async () => {
             borderRadius: 4,
           },
           {
-            label: '미수금',
-            data: uncollectedData,
-            backgroundColor: '#ef4444',
+            label: '수익',
+            data: profitData,
+            backgroundColor: '#3b82f6',
             borderRadius: 4,
           }
         ]
@@ -346,15 +342,16 @@ const renderCharts = async () => {
       progressChart.destroy()
     }
 
-    const progressStatus = statistics.value.progressStatus || { pending: 0, inProgress: 0, completed: 0 }
+    const activeCount = statistics.value.activeCount || 0
+    const completedCount = statistics.value.completedCount || 0
 
     progressChart = new Chart(progressChartRef.value, {
       type: 'doughnut',
       data: {
-        labels: ['진행중', '완료', '대기'],
+        labels: ['진행중', '완료'],
         datasets: [{
-          data: [progressStatus.inProgress, progressStatus.completed, progressStatus.pending],
-          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
+          data: [activeCount, completedCount],
+          backgroundColor: ['#3b82f6', '#10b981'],
           borderWidth: 0,
         }]
       },
@@ -502,13 +499,13 @@ watch(selectedYear, () => {
 }
 
 .card-label {
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   color: #6b7280;
   margin-bottom: 0.25rem;
 }
 
 .card-value {
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #1f2937;
   white-space: nowrap;

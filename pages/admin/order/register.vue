@@ -122,31 +122,39 @@
             <i class="fas fa-clipboard-list"></i>
             <span>기타 정보</span>
           </div>
-          <!-- 현장소장 선택 -->
+          <!-- 건설사/제조사 선택 -->
           <div class="info-grid grid-2">
-            <FormField label="현장소장">
+            <FormField label="건설사">
               <select
-                v-model="contractForm.siteManagerId"
-                @change="handleSupervisorChange"
+                v-model="contractForm.builderCompanyId"
+                @change="handleBuilderChange"
                 class="form-input-sm"
               >
                 <option :value="null">선택하세요</option>
                 <option
-                  v-for="manager in siteManagers"
-                  :key="manager.userid"
-                  :value="manager.userid"
+                  v-for="company in companies"
+                  :key="company.id"
+                  :value="company.id"
                 >
-                  {{ manager.userName }}
+                  {{ company.companyName }}
                 </option>
               </select>
             </FormField>
-            <FormField label="회사명">
-              <input
-                type="text"
-                :value="selectedSupervisorCompany"
+            <FormField label="제조사">
+              <select
+                v-model="contractForm.oemCompanyId"
+                @change="handleOemChange"
                 class="form-input-sm"
-                readonly
               >
+                <option :value="null">선택하세요</option>
+                <option
+                  v-for="company in companies"
+                  :key="company.id"
+                  :value="company.id"
+                >
+                  {{ company.companyName }}
+                </option>
+              </select>
             </FormField>
           </div>
           <!-- 기존 필드들 -->
@@ -277,13 +285,13 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { apiEnvironment } from '~/services/api'
 import { contractService } from '~/services/contract.service'
-import { userService } from '~/services/user.service'
+import { companyService } from '~/services/company.service'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import ErrorPopup from '~/components/admin/common/ErrorPopup.vue'
 import ContractTypeSelectModal from '~/components/admin/order/ContractTypeSelectModal.vue'
 import type { OrderItemCreateRequest, ContractTypeCheckResult, ContractType } from '~/types/order'
-import type { UserByRole } from '~/types/user'
+import type { CompanyInfoResponse } from '~/types/company'
 
 definePageMeta({
   layout: 'admin',
@@ -300,9 +308,8 @@ const errorPopup = ref({
   message: ''
 })
 
-// 현장소장 목록
-const siteManagers = ref<UserByRole[]>([])
-const selectedSupervisorCompany = ref('')
+// 회사 목록 (건설사/제조사 선택용)
+const companies = ref<CompanyInfoResponse[]>([])
 
 // 파일 업로드
 const fileInput = ref<HTMLInputElement>()
@@ -338,8 +345,11 @@ const contractForm = ref({
   partialDelivery: '',
   inspectionAgency: '',
   acceptanceAgency: '',
-  siteManagerId: null as number | null,
-  builder: '',
+  siteManagerId: null as number | null,  // deprecated
+  builderCompanyId: null as number | null,  // 건설사 ID
+  builderCompany: '',                       // 건설사명
+  oemCompanyId: null as number | null,      // 제조사 ID
+  oemCompany: '',                           // 제조사명
   quantityTotal: '',
   preDiscountAmountTotal: '',
   pdfFilePath: '',
@@ -358,26 +368,25 @@ const pendingExtractedData = ref<{
 // 납품 목록
 const items = ref<OrderItemCreateRequest[]>([])
 
-// 현장소장 목록 조회
+// 회사 목록 조회
 onMounted(async () => {
   try {
-    const managers = await userService.getUsersByRoles(['SITE_MANAGER'])
-    siteManagers.value = managers
+    companies.value = await companyService.getCompanies()
   } catch (error) {
-    console.error('현장소장 목록 조회 실패:', error)
+    console.error('회사 목록 조회 실패:', error)
   }
 })
 
-// 현장소장 선택 핸들러
-const handleSupervisorChange = () => {
-  const supervisor = siteManagers.value.find(m => m.userid === contractForm.value.siteManagerId)
-  if (supervisor) {
-    contractForm.value.builder = supervisor.companyName || ''
-    selectedSupervisorCompany.value = supervisor.companyName || ''
-  } else {
-    contractForm.value.builder = ''
-    selectedSupervisorCompany.value = ''
-  }
+// 건설사 선택 핸들러
+const handleBuilderChange = () => {
+  const selected = companies.value.find(c => c.id === contractForm.value.builderCompanyId)
+  contractForm.value.builderCompany = selected?.companyName || ''
+}
+
+// 제조사 선택 핸들러
+const handleOemChange = () => {
+  const selected = companies.value.find(c => c.id === contractForm.value.oemCompanyId)
+  contractForm.value.oemCompany = selected?.companyName || ''
 }
 
 // 파일 업로드 트리거
@@ -616,7 +625,10 @@ const register = async () => {
         inspectionAgency: contractForm.value.inspectionAgency,
         acceptanceAgency: contractForm.value.acceptanceAgency,
         siteManagerId: contractForm.value.siteManagerId,
-        builder: contractForm.value.builder || null
+        builderCompanyId: contractForm.value.builderCompanyId,
+        builderCompany: contractForm.value.builderCompany || null,
+        oemCompanyId: contractForm.value.oemCompanyId,
+        oemCompany: contractForm.value.oemCompany || null
       },
       extractedDeliveryItems: items.value.map((item, index) => ({
         sequenceNumber: index + 1,

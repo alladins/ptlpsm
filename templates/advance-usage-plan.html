@@ -1,0 +1,306 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+  ★ 선급금사용계획 템플릿 ★
+  PDF 변환용 테이블 기반 레이아웃
+  변수: Handlebars 문법 사용 {{변수명}}
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>선급금사용계획</title>
+  <style>
+    @font-face {
+      font-family: 'MalgunGothic';
+      src: url('file:///C:/Windows/Fonts/malgun.ttf');
+      -fs-pdf-font-embed: embed;
+      -fs-pdf-font-encoding: Identity-H;
+    }
+
+    @page {
+      size: A4;
+      margin: 20mm 20mm;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'MalgunGothic', serif;
+      font-size: 11pt;
+      line-height: 1.8;
+      color: #000;
+    }
+
+    /* ========== 제목 ========== */
+    .document-title {
+      text-align: center;
+      font-size: 28pt;
+      font-weight: bold;
+      letter-spacing: 15px;
+      margin: 30px 0 50px 0;
+    }
+
+    /* ========== 본문 테이블 ========== */
+    .content-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 0;
+    }
+
+    .content-table tr {
+      border: 0;
+    }
+
+    .content-table td {
+      padding: 4px 0;
+      vertical-align: top;
+      border: 0;
+      font-size: 11pt;
+      line-height: 1.8;
+    }
+
+    .row-number {
+      width: 20px;
+      white-space: nowrap;
+      font-size: 12pt;
+    }
+
+    .row-label {
+      width: 110px;
+      white-space: nowrap;
+      font-size: 12pt;
+    }
+
+    .row-colon {
+      width: 20px;
+      text-align: center;
+    }
+
+    .row-value {
+      /* 나머지 공간 */
+    }
+
+    .indent-value {
+      padding-left: 190px !important;
+    }
+
+    /* ========== 금액단위 ========== */
+    .amount-unit {
+      text-align: right;
+      margin: 30px 0 10px 0;
+      font-size: 10pt;
+    }
+
+    /* ========== 계획 테이블 ========== */
+    .plan-table {
+      width: 100%;
+      border: 1px solid #000;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+
+    .plan-table th,
+    .plan-table td {
+      border: 1px solid #000;
+      padding: 5px 8px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 10pt;
+    }
+
+    .plan-table th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+
+    .plan-table td.text-left {
+      text-align: left;
+      padding-left: 10px;
+    }
+
+    .plan-table td.text-right {
+      text-align: right;
+      padding-right: 10px;
+    }
+
+    .plan-table .total-row td {
+      font-weight: bold;
+    }
+
+    /* ========== 날짜 ========== */
+    .date-section {
+      text-align: center;
+      margin: 60px 0 40px 0;
+      font-size: 14pt;
+      letter-spacing: 2px;
+    }
+
+    /* ========== 서명 섹션 ========== */
+    .signature-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 0;
+    }
+
+    .signature-table tr {
+      border: 0;
+    }
+
+    .signature-table td {
+      padding: 5px 0;
+      border: 0;
+      font-size: 12pt;
+      vertical-align: middle;
+    }
+
+    .sig-spacer {
+      width: 200px;
+    }
+
+    .sig-label {
+      width: 100px;
+      text-align: right;
+      padding-right: 5px;
+    }
+
+    .sig-colon {
+      width: 20px;
+      text-align: center;
+    }
+
+    .sig-value {
+      text-align: left;
+      padding-left: 10px;
+    }
+
+    /* ========== 수신자 ========== */
+    .recipient {
+      font-size: 14pt;
+      font-weight: bold;
+      margin-top: 60px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 제목 -->
+  <div class="document-title">선 급 금 사 용 계 획</div>
+
+  <!-- 본문 -->
+  <table class="content-table">
+    <tr>
+      <td class="row-number">1.</td>
+      <td class="row-label">계 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 약 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 명</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">{{contractName}}</td>
+    </tr>
+    <tr>
+      <td class="row-number">2.</td>
+      <td class="row-label">계 &nbsp; 약 &nbsp;&nbsp;&nbsp; 금 &nbsp; 액</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">{{contractAmountText}}</td>
+    </tr>
+    <tr>
+      <td class="row-number"></td>
+      <td class="row-label"></td>
+      <td class="row-colon"></td>
+      <td class="row-value">(￦ {{contractAmount}})</td>
+    </tr>
+    <tr>
+      <td class="row-number"></td>
+      <td class="row-label"></td>
+      <td class="row-colon"></td>
+      <td class="row-value"></td>
+    </tr>
+    <tr>
+      <td class="row-number">3.</td>
+      <td class="row-label">선급금 신청금액</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">{{advanceAmountText}}</td>
+    </tr>
+    <tr>
+      <td class="row-number"></td>
+      <td class="row-label"></td>
+      <td class="row-colon"></td>
+      <td class="row-value">(￦ {{advanceAmount}})</td>
+    </tr>
+  </table>
+
+  <!-- 금액단위 -->
+  <div class="amount-unit">(금액단위:원)</div>
+
+  <!-- 계획 테이블 -->
+  <table class="plan-table">
+    <thead>
+      <tr>
+        <th style="width: 22%;">구 분</th>
+        <th style="width: 23%;">계약금액</th>
+        <th style="width: 35%;">사용계획</th>
+        <th style="width: 20%;">비고</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>A. PPG,MDI</td>
+        <td class="text-right">{{planAmountA}}</td>
+        <td class="text-left">원료 구매의건 대금 결제</td>
+        <td>원료재료비</td>
+      </tr>
+      <tr>
+        <td>B.+CMCM 몰탈면재</td>
+        <td class="text-right">{{planAmountB}}</td>
+        <td class="text-left">원료 구매의건 대금 결제</td>
+        <td>원료재료비</td>
+      </tr>
+      <tr>
+        <td>..</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+      </tr>
+      <tr>
+        <td>..</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+      </tr>
+      <tr class="total-row">
+        <td>합 계</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 날짜 -->
+  <div class="date-section">{{{applicationDate}}}</div>
+
+  <!-- 서명 섹션 -->
+  <table class="signature-table">
+    <tr>
+      <td class="sig-spacer"></td>
+      <td class="sig-label">주 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 소</td>
+      <td class="sig-colon">:</td>
+      <td class="sig-value">경기도안성시서운면서미로21-10</td>
+    </tr>
+    <tr>
+      <td class="sig-spacer"></td>
+      <td class="sig-label">회 &nbsp; 사 &nbsp; 명</td>
+      <td class="sig-colon">:</td>
+      <td class="sig-value">주식회사리드파워</td>
+    </tr>
+    <tr>
+      <td class="sig-spacer"></td>
+      <td class="sig-label">대 표 이 사</td>
+      <td class="sig-colon">:</td>
+      <td class="sig-value">김 광 열 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(인)</td>
+    </tr>
+  </table>
+
+  <!-- 수신자 -->
+  <div class="recipient">{{recipientName}}분임재무관 귀하</div>
+</body>
+</html>

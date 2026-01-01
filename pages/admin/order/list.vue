@@ -2,8 +2,10 @@
   <div class="order-list">
     <!-- 페이지 헤더 - 리팩토링: PageHeader 컴포넌트 사용 -->
     <PageHeader
-      title="납품요구 관리"
+      title="납품요구"
       description="납품요구 정보를 조회하고 관리합니다."
+      icon="order"
+      icon-color="purple"
     >
       <template #actions>
         <button class="btn-action" @click="handleSearch" :disabled="loading">
@@ -26,39 +28,39 @@
       <!-- 통계 요약 카드 -->
       <div class="stats-cards">
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <div class="stat-icon stat-icon--purple">
             <i class="fas fa-file-contract"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-label">총 납품요구</div>
-            <div class="stat-value">{{ totalElements }}</div>
+            <h3>총 납품요구</h3>
+            <p>{{ totalElements }}</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <div class="stat-icon stat-icon--pink">
             <i class="fas fa-calendar-check"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-label">금일 납품요구</div>
-            <div class="stat-value">{{ todayCount }}</div>
+            <h3>금일 납품요구</h3>
+            <p>{{ todayCount }}</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <div class="stat-icon stat-icon--blue">
             <i class="fas fa-won-sign"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-label">총 납품요구금액</div>
-            <div class="stat-value">{{ formatNumber(totalContractAmount) }}</div>
+            <h3>총 납품요구금액</h3>
+            <p>{{ formatNumber(totalContractAmount) }}</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+          <div class="stat-icon stat-icon--orange">
             <i class="fas fa-truck"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-label">납품요구 예정</div>
-            <div class="stat-value">{{ pendingDeliveryCount }}</div>
+            <h3>납품요구 예정</h3>
+            <p>{{ pendingDeliveryCount }}</p>
           </div>
         </div>
       </div>
@@ -115,15 +117,14 @@
           <table class="data-table tree-table">
             <thead>
               <tr>
-                <th style="width: 40px;">No</th>
-                <th style="width: 170px;">납품요구번호</th>
-                <th style="width: 90px;">납품요구일자</th>
-                <th style="width: 240px;">수요기관</th>
-                <th style="width: 70px;">담당자</th>
+                <th style="width: 55px;">No</th>
+                <th style="width: 190px;">납품요구번호</th>
+                <th style="width: 95px;">납품요구일자</th>
+                <th style="width: 260px;">수요기관</th>
+                <th style="width: 60px;">담당자</th>
                 <th>사업명</th>
-                <th style="width: 120px;">총계약금액</th>
-                <th style="width: 160px;">계약번호</th>
-                <th style="width: 90px;">계약일자</th>
+                <th style="width: 130px;">건설사</th>
+                <th style="width: 110px;">총계약금액</th>
               </tr>
             </thead>
             <tbody>
@@ -157,9 +158,8 @@
                   <td class="text-left">{{ group.baseOrder.client }}</td>
                   <td>{{ group.baseOrder.clientManagerName }}</td>
                   <td class="project-name-cell text-left">{{ group.baseOrder.projectName }}</td>
+                  <td class="text-left">{{ group.baseOrder.builderCompanyName || '-' }}</td>
                   <td class="text-right">{{ formatNumber(group.baseOrder.totalAmount) }}</td>
-                  <td>{{ group.baseOrder.contractId }}</td>
-                  <td>{{ group.baseOrder.contractDate }}</td>
                 </tr>
 
                 <!-- 변경/별도 계약 행들 (하위) -->
@@ -187,9 +187,8 @@
                     <td class="text-left">{{ child.client }}</td>
                     <td>{{ child.clientManagerName }}</td>
                     <td class="project-name-cell text-left">{{ child.projectName }}</td>
+                    <td class="text-left">{{ child.builderCompanyName || '-' }}</td>
                     <td class="text-right">{{ formatNumber(child.totalAmount) }}</td>
-                    <td>{{ child.contractId }}</td>
-                    <td>{{ child.contractDate }}</td>
                   </tr>
                 </template>
               </template>
@@ -206,7 +205,7 @@
         <!-- 페이지네이션 - 리팩토링: Pagination 컴포넌트 사용 -->
         <Pagination
           v-if="totalPages > 0"
-          :current-page="currentPage + 1"
+          :current-page="currentPage"
           :total-pages="totalPages"
           :disabled="loading"
           @change="handlePageChange"
@@ -317,9 +316,9 @@ const handleReset = () => {
 }
 
 // 페이지 변경 - 리팩토링: useDataTable의 changePage 사용
-// Pagination 컴포넌트는 1-based, useDataTable은 0-based
+// Pagination 컴포넌트는 0-based, useDataTable도 0-based
 const handlePageChange = (page: number) => {
-  changePage(page - 1)
+  changePage(page)
 }
 
 // 페이지 크기 변경 - 리팩토링: useDataTable의 changePageSize 사용

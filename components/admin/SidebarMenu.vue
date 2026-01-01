@@ -90,10 +90,6 @@
           <i class="fas fa-user"></i>
           <span>내 정보</span>
         </NuxtLink>
-        <NuxtLink to="/admin/settings" class="user-menu-item" @click="closeUserMenu">
-          <i class="fas fa-cog"></i>
-          <span>설정</span>
-        </NuxtLink>
         <!-- 사용자 전환 (SYSTEM_ADMIN만 표시) -->
         <button
           v-if="authStore.canImpersonate"
@@ -171,77 +167,21 @@ const manualMenus = ref<MenuWithAuth[]>([
   },
   {
     menuId: 2,
-    menuCode: 'ORDER',
-    menuName: '납품요구관리',
-    menuUrl: '/admin/order/list',
+    menuCode: 'ORDER_MANAGE',
+    menuName: '주문관리',
+    menuUrl: '/admin/order',
     menuIcon: 'fas fa-shopping-cart',
     menuLevel: 1,
     sortOrder: 2,
     visible: 'Y',
     useYn: 'Y',
-    target: '_self'
-  },
-  {
-    menuId: 3,
-    menuCode: 'SHIPPING',
-    menuName: '출하관리',
-    menuUrl: '/admin/shipping/list',
-    menuIcon: 'fas fa-truck',
-    menuLevel: 1,
-    sortOrder: 3,
-    visible: 'Y',
-    useYn: 'Y'
-  },
-  {
-    menuId: 4,
-    menuCode: 'TRANSPORT',
-    menuName: '운송관리',
-    menuUrl: '/admin/transport/list',
-    menuIcon: 'fas fa-route',
-    menuLevel: 1,
-    sortOrder: 4,
-    visible: 'Y',
-    useYn: 'Y'
-  },
-  {
-    menuId: 5,
-    menuCode: 'DELIVERY',
-    menuName: '납품확인관리',
-    menuUrl: '/admin/delivery/list',
-    menuIcon: 'fas fa-check-circle',
-    menuLevel: 1,
-    sortOrder: 5,
-    visible: 'Y',
-    useYn: 'Y'
-  },
-  {
-    menuId: 6,
-    menuCode: 'DELIVERY_DONE',
-    menuName: '납품완료계',
-    menuUrl: '/admin/delivery-done/list',
-    menuIcon: 'fas fa-file-contract',
-    menuLevel: 1,
-    sortOrder: 6,
-    visible: 'Y',
-    useYn: 'Y'
-  },
-  {
-    menuId: 11,
-    menuCode: 'FUNDS',
-    menuName: '자금관리',
-    menuUrl: '/admin/funds',
-    menuIcon: 'fas fa-coins',
-    menuLevel: 1,
-    sortOrder: 7,
-    visible: 'Y',
-    useYn: 'Y',
     children: [
       {
-        menuId: 111,
-        menuCode: 'FUND_LIST',
-        menuName: '자금 목록',
-        menuUrl: '/admin/funds',
-        menuIcon: 'fas fa-list',
+        menuId: 21,
+        menuCode: 'ORDER',
+        menuName: '납품요구',
+        menuUrl: '/admin/order/list',
+        menuIcon: 'fas fa-file-alt',
         menuLevel: 2,
         sortOrder: 1,
         visible: 'Y',
@@ -249,11 +189,11 @@ const manualMenus = ref<MenuWithAuth[]>([
         children: []
       },
       {
-        menuId: 112,
-        menuCode: 'FUND_STATISTICS',
-        menuName: '자금 통계',
-        menuUrl: '/admin/funds/statistics',
-        menuIcon: 'fas fa-chart-pie',
+        menuId: 22,
+        menuCode: 'ORDER_REQUESTS',
+        menuName: '납품요청',
+        menuUrl: '/admin/order-requests',
+        menuIcon: 'fas fa-clipboard-list',
         menuLevel: 2,
         sortOrder: 2,
         visible: 'Y',
@@ -263,15 +203,90 @@ const manualMenus = ref<MenuWithAuth[]>([
     ]
   },
   {
-    menuId: 12,
-    menuCode: 'ORDER_REQUESTS',
-    menuName: '주문요청관리',
-    menuUrl: '/admin/order-requests',
-    menuIcon: 'fas fa-clipboard-list',
+    menuId: 3,
+    menuCode: 'SHIPPING',
+    menuName: '출하관리',
+    menuUrl: '/admin/shipping',
+    menuIcon: 'fas fa-truck',
     menuLevel: 1,
-    sortOrder: 8,
+    sortOrder: 3,
     visible: 'Y',
-    useYn: 'Y'
+    useYn: 'Y',
+    children: [
+      {
+        menuId: 31,
+        menuCode: 'SHIPPING_LIST',
+        menuName: '출하관리',
+        menuUrl: '/admin/shipping/list',
+        menuIcon: 'fas fa-truck',
+        menuLevel: 2,
+        sortOrder: 1,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 32,
+        menuCode: 'TRANSPORT',
+        menuName: '운송관리',
+        menuUrl: '/admin/transport/list',
+        menuIcon: 'fas fa-route',
+        menuLevel: 2,
+        sortOrder: 2,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      }
+    ]
+  },
+  {
+    menuId: 5,
+    menuCode: 'DELIVERY',
+    menuName: '납품관리',
+    menuUrl: '/admin/delivery',
+    menuIcon: 'fas fa-check-circle',
+    menuLevel: 1,
+    sortOrder: 4,
+    visible: 'Y',
+    useYn: 'Y',
+    children: [
+      {
+        menuId: 51,
+        menuCode: 'DELIVERY_LIST',
+        menuName: '납품확인',
+        menuUrl: '/admin/delivery/list',
+        menuIcon: 'fas fa-check-circle',
+        menuLevel: 2,
+        sortOrder: 1,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 52,
+        menuCode: 'DELIVERY_DONE',
+        menuName: '납품완료',
+        menuUrl: '/admin/delivery-done/list',
+        menuIcon: 'fas fa-file-contract',
+        menuLevel: 2,
+        sortOrder: 2,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 53,
+        menuCode: 'FUND_LIST',
+        menuName: '기성청구',
+        menuUrl: '/admin/funds',
+        menuIcon: 'fas fa-coins',
+        menuLevel: 2,
+        sortOrder: 3,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      }
+    ]
   },
   {
     menuId: 7,
@@ -280,16 +295,16 @@ const manualMenus = ref<MenuWithAuth[]>([
     menuUrl: '/admin/statistics',
     menuIcon: 'fas fa-chart-bar',
     menuLevel: 1,
-    sortOrder: 9,
+    sortOrder: 6,
     visible: 'Y',
     useYn: 'Y',
     children: [
       {
         menuId: 71,
-        menuCode: 'STAT_SALES',
-        menuName: '영업통계',
-        menuUrl: '/admin/statistics/sales',
-        menuIcon: 'fas fa-chart-line',
+        menuCode: 'STAT_SHIPMENT',
+        menuName: '출하현황 통계',
+        menuUrl: '/admin/statistics/shipment',
+        menuIcon: 'fas fa-truck-loading',
         menuLevel: 2,
         sortOrder: 1,
         visible: 'Y',
@@ -298,10 +313,10 @@ const manualMenus = ref<MenuWithAuth[]>([
       },
       {
         menuId: 72,
-        menuCode: 'STAT_REGION',
-        menuName: '지역별통계',
-        menuUrl: '/admin/statistics/region',
-        menuIcon: 'fas fa-map-marker-alt',
+        menuCode: 'STAT_FUND',
+        menuName: '기성통계',
+        menuUrl: '/admin/funds/statistics',
+        menuIcon: 'fas fa-chart-pie',
         menuLevel: 2,
         sortOrder: 2,
         visible: 'Y',
@@ -310,10 +325,10 @@ const manualMenus = ref<MenuWithAuth[]>([
       },
       {
         menuId: 73,
-        menuCode: 'STAT_SHIPMENT',
-        menuName: '출하현황통계',
-        menuUrl: '/admin/statistics/shipment',
-        menuIcon: 'fas fa-truck-loading',
+        menuCode: 'STAT_REGION',
+        menuName: '지역별 통계',
+        menuUrl: '/admin/statistics/region',
+        menuIcon: 'fas fa-map-marker-alt',
         menuLevel: 2,
         sortOrder: 3,
         visible: 'Y',
@@ -511,30 +526,45 @@ const router = useRouter()
  * 권한 필터링된 메뉴 목록
  * - readAuth가 'Y'인 메뉴만 표시
  * - 전체 접근 권한(SYSTEM_ADMIN, LEADPOWER_MANAGER)은 모든 메뉴 표시
+ * - 단, LEADPOWER_MANAGER는 시스템관리(SYSTEM) 메뉴 제외
  */
 const menus = computed(() => {
+  // ✅ 디버깅 로그 추가
+  console.log('🔍 [메뉴 필터링] 권한 체크:', {
+    currentRole: authStore.user?.role,
+    isFullAccess: permissionStore.isFullAccess,
+    currentUserRole: permissionStore.currentUserRole,
+    rawMenusCount: rawMenus.value.length
+  })
+
   // 전체 접근 권한이 있으면 필터링 없이 모두 표시
   if (permissionStore.isFullAccess) {
+    // 리드파워 담당자는 시스템관리 메뉴 제외
+    if (permissionStore.currentUserRole === 'LEADPOWER_MANAGER') {
+      console.log('⚠️ [메뉴 필터링] LEADPOWER_MANAGER → 시스템관리 메뉴 제외')
+      return rawMenus.value.filter(menu => menu.menuCode !== 'SYSTEM')
+    }
+    console.log('⚠️ [메뉴 필터링] isFullAccess=true → 전체 메뉴 표시')
     return rawMenus.value
   }
 
   // 권한 기반 필터링
+  console.log('✅ [메뉴 필터링] 권한 기반 필터링 적용')
   return filterMenusByPermission(rawMenus.value)
 })
 
 /**
  * 메뉴 권한 필터링 (재귀)
+ *
+ * 보안 우선 정책:
+ * - auth 정보가 없으면 메뉴 숨김 (API에서 명시적 허용 필요)
+ * - isFullAccess(SYSTEM_ADMIN)는 이 함수 호출 전에 처리됨
+ * - 부모 메뉴는 자식 중 하나라도 권한이 있으면 표시
  */
 function filterMenusByPermission(menuList: MenuWithAuth[]): MenuWithAuth[] {
   return menuList
-    .filter(menu => {
-      // auth 정보가 없으면 기본적으로 표시 (호환성)
-      if (!menu.auth) return true
-      // readAuth가 'Y'인 경우만 표시
-      return menu.auth.readAuth === 'Y'
-    })
     .map(menu => {
-      // 하위 메뉴가 있으면 재귀적으로 필터링
+      // 하위 메뉴가 있으면 먼저 재귀적으로 필터링
       if (menu.children && menu.children.length > 0) {
         const filteredChildren = filterMenusByPermission(menu.children)
         return {
@@ -545,15 +575,31 @@ function filterMenusByPermission(menuList: MenuWithAuth[]): MenuWithAuth[] {
       return menu
     })
     .filter(menu => {
-      // 1차 메뉴 중 하위 메뉴가 있었는데 필터링 후 비어있으면 제외
-      if (menu.children !== undefined && menu.children.length === 0) {
-        // 원래 children이 있었는지 확인 (manualMenus에서)
-        const originalMenu = findOriginalMenu(menu.menuId)
-        if (originalMenu?.children && originalMenu.children.length > 0) {
-          return false
-        }
+      // 1. 하위 메뉴가 있는 부모 메뉴인 경우
+      if (menu.children && menu.children.length > 0) {
+        // 필터링된 자식 메뉴가 하나라도 있으면 부모 표시
+        console.log(`📁 [메뉴 필터링] 부모 메뉴 표시 (자식 ${menu.children.length}개 있음): ${menu.menuName}`)
+        return true
       }
-      return true
+
+      // 2. 원래 자식이 있었는데 필터링 후 비어있는 경우 → 숨김
+      const originalMenu = findOriginalMenu(menu.menuId)
+      if (originalMenu?.children && originalMenu.children.length > 0) {
+        console.log(`🔒 [메뉴 필터링] 부모 메뉴 숨김 (자식 메뉴 모두 권한 없음): ${menu.menuName}`)
+        return false
+      }
+
+      // 3. 단일 메뉴(자식 없음)인 경우 → readAuth 확인
+      if (!menu.auth) {
+        console.log(`🔒 [메뉴 필터링] auth 없음 - 메뉴 숨김: ${menu.menuName}`)
+        return false
+      }
+
+      const hasPermission = menu.auth.readAuth === 'Y'
+      if (!hasPermission) {
+        console.log(`🔒 [메뉴 필터링] readAuth=${menu.auth.readAuth} - 메뉴 숨김: ${menu.menuName}`)
+      }
+      return hasPermission
     })
 }
 
@@ -577,6 +623,13 @@ function findOriginalMenu(menuId: number): MenuWithAuth | null {
 // Methods
 const loadMenus = async () => {
   try {
+    console.log('📋 [loadMenus] 시작:', {
+      isLoggedIn: authStore.isLoggedIn,
+      userid: authStore.user?.userid,
+      loginId: authStore.user?.loginId,
+      role: authStore.user?.role
+    })
+
     // 1. 기본 메뉴 구조 설정
     rawMenus.value = manualMenus.value
 
@@ -591,20 +644,27 @@ const loadMenus = async () => {
     // 3. 사용자별 메뉴 권한 조회
     if (authStore.isLoggedIn && authStore.user?.userid) {
       try {
+        console.log('📋 [loadMenus] 사용자 메뉴 권한 조회 시작...')
         const userMenusWithAuth = await permissionStore.fetchUserMenus()
+
+        console.log('📋 [loadMenus] 서버 응답:', {
+          menuCount: userMenusWithAuth?.length || 0,
+          hasAuth: userMenusWithAuth?.[0]?.auth ? 'Y' : 'N',
+          firstMenuAuth: userMenusWithAuth?.[0]?.auth
+        })
 
         if (userMenusWithAuth && userMenusWithAuth.length > 0) {
           // 서버에서 받은 메뉴 사용 (권한 정보 포함)
           rawMenus.value = mergeMenuPermissions(manualMenus.value, userMenusWithAuth)
-          console.log('사용자 권한 메뉴 로드 완료:', userMenusWithAuth.length, '개')
+          console.log('✅ [loadMenus] 사용자 권한 메뉴 로드 완료:', userMenusWithAuth.length, '개')
         }
       } catch (error) {
-        console.warn('권한 정보 로딩 실패 (기본 메뉴 사용):', error)
+        console.warn('❌ [loadMenus] 권한 정보 로딩 실패 (기본 메뉴 사용):', error)
         // API 실패 시 수동 메뉴 유지 (전체 접근 권한 허용)
       }
     }
   } catch (error) {
-    console.error('메뉴 로딩 실패:', error)
+    console.error('❌ [loadMenus] 메뉴 로딩 실패:', error)
     rawMenus.value = manualMenus.value
   }
 }
@@ -614,21 +674,24 @@ const loadMenus = async () => {
  */
 function getRoleDisplayName(role: string): string {
   const roleNames: Record<string, string> = {
-    'SYSTEM_ADMIN': '시스템 관리자',
+    'SYSTEM_ADMIN': '시스템관리자',
     'LEADPOWER_MANAGER': '리드파워 담당자',
     'OEM_MANAGER': 'OEM 담당자',
     'SITE_MANAGER': '시공사 담당자',
-    'SITE_INSPECTOR': '감리원',
+    'SITE_INSPECTOR': '시공사 감리원',
     'SALES_MANAGER': '영업 담당자',
-    'COURIER': '운송기사',
-    'READ_ONLY': '조회 전용',
-    'ADMINISTRATOR': '관리자'
+    'DELIVERY_DRIVER': '운송기사',
+    'READ_ONLY': '조회 전용'
   }
   return roleNames[role] || role || '사용자'
 }
 
 /**
  * 수동 메뉴와 서버 권한 정보 병합
+ *
+ * 보안 우선 정책:
+ * - 서버에서 권한 정보가 없으면 기본적으로 접근 불허
+ * - API에서 명시적으로 readAuth: 'Y'를 받아야만 메뉴 표시
  */
 function mergeMenuPermissions(
   manualMenuList: MenuWithAuth[],
@@ -655,8 +718,9 @@ function mergeMenuPermissions(
       const serverMenu = serverMenuMap.get(menu.menuCode)
       const mergedMenu: MenuWithAuth = {
         ...menu,
+        // ✅ 보안 우선: 서버 권한 없으면 기본적으로 접근 불허
         auth: serverMenu?.auth || {
-          readAuth: 'Y',  // 기본값: 조회 허용
+          readAuth: 'N',   // 기본값: 조회 불허 (API에서 명시적 허용 필요)
           writeAuth: 'N',
           editAuth: 'N',
           deleteAuth: 'N'
@@ -862,14 +926,26 @@ watch(
   }
 )
 
-// 사용자 정보 변경 감시 - 표시명 업데이트
+// 사용자 정보 변경 감시 - 표시명 업데이트 및 메뉴 권한 재로드
 watch(
   () => authStore.user,
-  (newUser) => {
+  (newUser, oldUser) => {
     if (newUser) {
+      // 표시명 업데이트
       userInfo.value = {
         name: newUser.userName || '관리자',
         role: getRoleDisplayName(newUser.role)
+      }
+
+      // ✅ 사용자가 변경되었으면 메뉴 권한 다시 로드 (대리 로그인 등)
+      const userChanged = oldUser && oldUser.userid !== newUser.userid
+      if (userChanged) {
+        console.log('사용자 변경 감지 - 메뉴 권한 재로드:', {
+          이전사용자: oldUser?.userName,
+          새사용자: newUser.userName,
+          새역할: newUser.role
+        })
+        loadMenus()
       }
     }
   },
@@ -878,27 +954,30 @@ watch(
 </script>
 
 <style scoped>
+/* ========== 사이드바 메인 컨테이너 ========== */
 .sidebar-menu {
   width: 280px;
   height: 100vh;
-  background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
-  color: white;
+  background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-dark) 100%);
+  color: var(--sidebar-text);
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.15);
   position: relative;
   left: 0;
   top: 0;
   z-index: 1000;
 }
 
+/* ========== 사이드바 헤더 (로고 영역) ========== */
 .sidebar-header {
   height: 64px;
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--sidebar-divider);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-logo {
@@ -916,17 +995,18 @@ watch(
 }
 
 .sidebar-logo-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: #ecf0f1;
+  font-size: 17px;
+  font-weight: 700;
+  color: white;
   white-space: nowrap;
+  letter-spacing: -0.025em;
 }
 
 .mobile-close-btn {
   display: none;
   background: none;
   border: none;
-  color: #ecf0f1;
+  color: var(--sidebar-text);
   cursor: pointer;
   padding: 8px;
   border-radius: 4px;
@@ -937,12 +1017,32 @@ watch(
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+/* ========== 사이드바 네비게이션 ========== */
 .sidebar-nav {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 0;
+  padding: 16px 0;
 }
 
+/* 스크롤바 스타일링 */
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--sidebar-divider);
+  border-radius: 3px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-text-muted);
+}
+
+/* ========== 메뉴 리스트 ========== */
 .menu-list {
   list-style: none;
   padding: 0;
@@ -950,49 +1050,65 @@ watch(
 }
 
 .menu-item {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
+/* ========== 1차 메뉴 링크 ========== */
 .menu-link {
   display: flex;
   align-items: center;
   padding: 12px 20px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   border-left: 3px solid transparent;
+  position: relative;
 }
 
 .menu-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-left-color: #3498db;
+  background: linear-gradient(90deg, var(--sidebar-hover), transparent);
+  border-left-color: var(--sidebar-accent);
 }
 
 .menu-link.active {
-  background-color: rgba(52, 152, 219, 0.2);
-  border-left-color: #3498db;
+  background: linear-gradient(90deg, var(--sidebar-active), transparent);
+  border-left-color: var(--sidebar-accent);
 }
 
+/* ========== 메뉴 아이콘 ========== */
 .menu-icon {
-  width: 20px;
+  width: 24px;
   margin-right: 12px;
-  font-size: 16px;
+  font-size: 1.125rem;
+  opacity: 0.9;
+  text-align: center;
 }
 
+.menu-link:hover .menu-icon,
+.menu-link.active .menu-icon {
+  opacity: 1;
+}
+
+/* ========== 메뉴 텍스트 (1차 메뉴) ========== */
 .menu-text {
   flex: 1;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;  /* 굵게 - 메인메뉴 강조 */
+  letter-spacing: -0.01em;
+  color: #ffffff;  /* 순백색 */
 }
 
+/* ========== 서브메뉴 화살표 ========== */
 .submenu-arrow {
-  font-size: 12px;
-  transition: transform 0.3s ease;
+  font-size: 11px;
+  transition: transform 0.2s ease;
+  opacity: 0.7;
 }
 
 .submenu-arrow.rotated {
   transform: rotate(180deg);
 }
 
+/* ========== 2차 메뉴 리스트 ========== */
 .submenu-list {
   list-style: none;
   padding: 0;
@@ -1000,6 +1116,7 @@ watch(
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease;
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .submenu-list.expanded {
@@ -1010,42 +1127,71 @@ watch(
   margin: 0;
 }
 
+/* ========== 2차 메뉴 링크 ========== */
 .submenu-link {
   display: flex;
   align-items: center;
-  padding: 10px 20px 10px 52px;
-  color: #bdc3c7;
+  /* 메인메뉴: border(3px) + padding(20px) + icon(24px) + gap(12px) = 59px에서 텍스트 시작 */
+  /* 서브메뉴: border(3px) + padding(75px) = 78px에서 텍스트 시작 (약 2글자 들여쓰기) */
+  padding: 10px 20px 10px 75px;
+  color: rgba(255, 255, 255, 0.65);  /* 밝은 회색 - 메인메뉴보다 연하게 */
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   border-left: 3px solid transparent;
+  position: relative;
+}
+
+/* 서브메뉴 마커: 대시(-) 스타일 - 전문적인 느낌 */
+.submenu-link::before {
+  content: '–';  /* en-dash 사용 */
+  position: absolute;
+  left: 52px;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);  /* 연한 색상 */
+  transition: all 0.2s ease;
 }
 
 .submenu-link:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: white;
-  border-left-color: #3498db;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;  /* 호버 시 완전 흰색 */
+  border-left-color: var(--sidebar-accent);
+}
+
+.submenu-link:hover::before {
+  color: var(--sidebar-accent);  /* 호버 시 강조색 */
 }
 
 .submenu-link.active {
-  background-color: rgba(52, 152, 219, 0.1);
-  color: #3498db;
-  border-left-color: #3498db;
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;  /* 활성 상태: 강조색 */
+  border-left-color: var(--sidebar-accent);
 }
 
+.submenu-link.active::before {
+  color: #60a5fa;  /* 활성 상태: 강조색 */
+  font-weight: 600;
+}
+
+/* ========== 2차 메뉴 아이콘 (숨김) ========== */
 .submenu-icon {
-  width: 16px;
-  margin-right: 10px;
-  font-size: 14px;
+  display: none;
 }
 
+/* ========== 2차 메뉴 텍스트 ========== */
 .submenu-text {
-  font-size: 13px;
+  font-size: 13px;  /* 메인메뉴(14px)보다 약간 작게 */
+  font-weight: 400;
+  color: inherit;
+  letter-spacing: 0;
 }
 
+/* ========== 사이드바 푸터 (사용자 정보) ========== */
 .sidebar-footer {
-  padding: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative; /* For dropdown positioning */
+  padding: 16px;
+  border-top: 1px solid var(--sidebar-divider);
+  position: relative;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .user-info {
@@ -1053,25 +1199,26 @@ watch(
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  padding: 8px 0;
-  border-radius: 6px;
-  transition: background-color 0.3s ease;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
 .user-info:hover {
-  background-color: rgba(255, 255, 255, 0.15);
+  background: var(--sidebar-hover);
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.1);
-  position: relative; /* For dropdown positioning */
+  background: var(--sidebar-active);
+  position: relative;
+  border: 2px solid var(--sidebar-divider);
 }
 
 .user-avatar-img {
@@ -1086,12 +1233,12 @@ watch(
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.1);
+  background: var(--sidebar-active);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  color: #ecf0f1;
+  font-size: 16px;
+  color: white;
 }
 
 .user-details {
@@ -1100,13 +1247,13 @@ watch(
 
 .user-name {
   font-size: 14px;
-  font-weight: 500;
-  color: #ecf0f1;
+  font-weight: 600;
+  color: white;
 }
 
 .user-role {
-  font-size: 12px;
-  color: #bdc3c7;
+  font-size: 11px;
+  color: var(--sidebar-text-muted);
   margin-top: 2px;
 }
 
@@ -1309,42 +1456,9 @@ watch(
     position: relative;
     width: 280px;
   }
-  
+
   .mobile-close-btn {
     display: none;
   }
 }
-
-  /* 모바일에서 사용자 메뉴 드롭다운 색상 표기 */
-  .user-menu-dropdown {
-    background: white;
-    border: 1px solid #e9ecef;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 8px 0;
-  }
-  
-  .user-menu-item {
-    color: #495057;
-    border-radius: 0;
-    margin: 0;
-    padding: 10px 20px;
-    font-weight: normal;
-  }
-  
-  .user-menu-item:hover {
-    background-color: #f8f9fa;
-    transform: none;
-    box-shadow: none;
-  }
-  
-  .user-menu-item i {
-    color: #6c757d;
-    font-size: 16px;
-  }
-  
-  .user-menu-divider {
-    background-color: #e9ecef;
-    margin: 8px 0;
-    height: 1px;
-  }
 </style>

@@ -52,8 +52,7 @@ export const orderService = {
       if (params.sort) queryParams.append('sort', params.sort)
 
       const url = `${ORDER_ENDPOINTS.list()}?${queryParams.toString()}`
-      console.log('API 호출 URL:', url)
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -66,32 +65,32 @@ export const orderService = {
       }
 
       const result = await response.json()
-      
+
       // 백엔드 API 응답 구조 확인 및 처리
       if (result.success === false) {
         throw new Error(result.message || 'API 호출 실패')
       }
-      
+
       // 응답이 직접 페이징 데이터인 경우
       if (result.content && typeof result.totalElements !== 'undefined') {
         return result as OrderSearchResponse
       }
-      
+
       // 응답이 ApiResponse 형태인 경우
       if (result.data) {
         return result.data
       }
-      
+
       throw new Error('알 수 없는 API 응답 구조입니다.')
     } catch (error) {
-      console.error('발주 목록 조회 실패:', error)
+      console.error('❌ [getOrders] 발주 목록 조회 실패:', error)
       // 개발 환경에서는 빈 응답 반환
       return {
         content: [],
         totalElements: 0,
         totalPages: 1,
         size: 10,
-        number: 1
+        number: 0
       }
     }
   },

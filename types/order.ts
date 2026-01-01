@@ -80,7 +80,10 @@ export interface OrderDetailResponse extends OrderResponse {
   inspectionAgency?: string
   acceptanceAgency?: string
   siteManagerId?: number
-  builder?: string
+  builderCompanyId?: number       // 건설사 ID
+  builderCompanyName?: string     // 건설사명
+  oemCompanyId?: number           // 제조사 ID
+  oemCompanyName?: string         // 제조사명
   pdfFile?: string
   items: OrderDetailItem[]
 }
@@ -136,7 +139,10 @@ export interface OrderCreateRequest {
   inspectionAgency: string
   acceptanceAgency: string
   siteManagerId?: number
-  builder?: string
+  builderCompanyId?: number       // 건설사 ID
+  builderCompanyName?: string     // 건설사명
+  oemCompanyId?: number           // 제조사 ID
+  oemCompanyName?: string         // 제조사명
   items: OrderItemCreateRequest[]
 }
 

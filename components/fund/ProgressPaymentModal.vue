@@ -1,5 +1,13 @@
 <template>
-  <div v-if="isOpen" class="modal-overlay" @click="closeModal">
+  <!-- 서명 발송 모달 -->
+  <ProgressSignatureModal
+    v-if="showSignatureModal && progressClaimData"
+    :claim-data="progressClaimData"
+    @close="closeSignatureModal"
+    @sent="onSignatureSent"
+  />
+
+  <div v-if="isOpen && !showSignatureModal" class="modal-overlay" @click="closeModal">
     <div class="modal modal-large" @click.stop>
       <div class="modal-header">
         <h3>기성 청구</h3>
@@ -9,97 +17,121 @@
       </div>
 
       <div class="modal-body">
-        <!-- 이전 차수 정보 -->
-        <div class="previous-info" v-if="previousBaseline">
-          <div class="info-badge">
-            <i class="fas fa-info-circle"></i>
-            <span>이전 차수: {{ previousBaseline.displayName }} ({{ previousBaseline.baselineDate }})</span>
-          </div>
+        <!-- 로딩 상태 -->
+        <div v-if="baselineStore.loading" class="loading-container">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span>데이터를 불러오는 중...</span>
         </div>
 
-        <!-- 수량 변경 경고 -->
-        <div v-if="hasQuantityChanges" class="warning-box">
-          <i class="fas fa-exclamation-triangle"></i>
-          <div class="warning-content">
-            <strong>기성 확정 후 수량 변경이 있습니다</strong>
-            <p>변경된 수량이 이번 청구에 반영됩니다.</p>
-            <button class="btn-link" @click="showQuantityHistory = true">
-              수량 변경 이력 상세보기
-            </button>
+        <template v-else>
+          <!-- 이전 차수 정보 -->
+          <div class="previous-info" v-if="previousBaseline">
+            <div class="info-badge">
+              <i class="fas fa-info-circle"></i>
+              <span>이전 차수: {{ previousBaseline.displayName }} ({{ previousBaseline.baselineDate }})</span>
+            </div>
           </div>
-        </div>
 
-        <!-- 품목별 현황 테이블 -->
-        <div class="table-section">
-          <h4>품목별 현황</h4>
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>품목명</th>
-                  <th>주문수량</th>
-                  <th>이전확정</th>
-                  <th>현재납품</th>
-                  <th>이번청구</th>
-                  <th>청구금액</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in items" :key="item.itemId">
-                  <td>{{ item.itemName }}</td>
-                  <td class="text-right">{{ formatNumber(item.orderedQty) }}</td>
-                  <td class="text-right">{{ formatNumber(item.confirmedQty) }}</td>
-                  <td class="text-right">{{ formatNumber(item.deliveredQty) }}</td>
-                  <td class="text-right">
-                    <input
-                      type="number"
-                      v-model.number="item.claimQty"
-                      :max="item.deliveredQty - item.confirmedQty"
-                      min="0"
-                      class="qty-input"
-                      @input="calculateTotals"
-                    >
-                  </td>
-                  <td class="text-right amount">{{ formatCurrency(item.claimAmount) }}</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="4" class="text-right"><strong>합계</strong></td>
-                  <td class="text-right"><strong>{{ formatNumber(totalClaimQty) }}</strong></td>
-                  <td class="text-right amount"><strong>{{ formatCurrency(totalClaimAmount) }}</strong></td>
-                </tr>
-              </tfoot>
-            </table>
+          <!-- 청구 가능 출하 없음 -->
+          <div v-if="!hasAvailableShipments" class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>청구 가능한 출하가 없습니다.</p>
+            <span class="empty-hint">납품확인(인수증 서명)이 완료된 출하만 기성 청구할 수 있습니다.</span>
           </div>
-        </div>
 
-        <!-- 자동 계산 결과 -->
-        <div class="calculation-result">
-          <div class="result-row">
-            <label>청구 금액</label>
-            <span class="amount primary">{{ formatCurrency(totalClaimAmount) }}</span>
+          <!-- 청구 가능 출하 목록 -->
+          <div v-else class="table-section">
+            <div class="table-header">
+              <h4>청구 가능 출하 목록</h4>
+              <span class="hint">납품확인 완료된 출하를 선택하세요</span>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th class="checkbox-col">
+                      <input
+                        type="checkbox"
+                        :checked="isAllSelected"
+                        :indeterminate="isIndeterminate"
+                        @change="toggleSelectAll"
+                      >
+                    </th>
+                    <th>출하번호</th>
+                    <th>출하일</th>
+                    <th>품목요약</th>
+                    <th>수량</th>
+                    <th>금액</th>
+                    <th>납품확인일</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="shipment in availableShipments"
+                    :key="shipment.shipmentId"
+                    :class="{ selected: isSelected(shipment.shipmentId) }"
+                    @click="toggleShipment(shipment.shipmentId)"
+                  >
+                    <td class="checkbox-col" @click.stop>
+                      <input
+                        type="checkbox"
+                        :checked="isSelected(shipment.shipmentId)"
+                        @change="toggleShipment(shipment.shipmentId)"
+                      >
+                    </td>
+                    <td>{{ shipment.shipmentId }}</td>
+                    <td>{{ formatDate(shipment.shipmentDate) }}</td>
+                    <td>{{ shipment.itemSummary || '-' }}</td>
+                    <td class="text-right">{{ formatNumber(shipment.totalQuantity) }}</td>
+                    <td class="text-right amount">{{ formatCurrency(shipment.totalAmount) }}</td>
+                    <td>{{ formatDateTime(shipment.deliveryCompletedAt) }}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="4" class="text-right"><strong>선택 합계</strong></td>
+                    <td class="text-right"><strong>{{ formatNumber(selectedTotalQuantity) }}</strong></td>
+                    <td class="text-right amount"><strong>{{ formatCurrency(selectedTotalAmount) }}</strong></td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
-          <div class="result-row">
-            <label>OEM 지급 예정 금액</label>
-            <span class="amount">{{ formatCurrency(oemPaymentAmount) }}</span>
+
+          <!-- 자동 계산 결과 -->
+          <div v-if="hasAvailableShipments" class="calculation-result">
+            <div class="result-row">
+              <label>선택한 출하 수</label>
+              <span class="count">{{ selectedShipmentIds.length }}건</span>
+            </div>
+            <div class="result-row">
+              <label>청구 금액</label>
+              <span class="amount primary">{{ formatCurrency(selectedTotalAmount) }}</span>
+            </div>
+            <div class="result-row">
+              <label>OEM 지급 예정 금액</label>
+              <span class="amount">{{ formatCurrency(oemPaymentAmount) }}</span>
+            </div>
           </div>
-        </div>
 
-        <!-- 납품확인서 자동 생성 -->
-        <div class="checkbox-section">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="generateDeliveryConfirmation" disabled checked>
-            <span>납품확인서 자동 생성 (필수)</span>
-          </label>
-          <p class="checkbox-hint">기성 청구 시 납품확인서가 자동으로 생성됩니다.</p>
-        </div>
+          <!-- 비고 입력 -->
+          <div v-if="hasAvailableShipments" class="form-field">
+            <label>비고</label>
+            <textarea
+              v-model="remarks"
+              class="form-textarea"
+              placeholder="기성 청구 관련 메모를 입력하세요"
+              rows="2"
+            ></textarea>
+          </div>
 
-        <!-- 유효성 검사 메시지 -->
-        <div v-if="validationError" class="validation-error">
-          <i class="fas fa-exclamation-circle"></i>
-          <span>{{ validationError }}</span>
-        </div>
+          <!-- 유효성 검사 메시지 -->
+          <div v-if="validationError" class="validation-error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ validationError }}</span>
+          </div>
+        </template>
       </div>
 
       <div class="modal-footer">
@@ -110,7 +142,7 @@
         <button
           class="btn-primary"
           @click="submitClaim"
-          :disabled="!isValid || isSubmitting"
+          :disabled="!isValid || isSubmitting || !hasAvailableShipments"
         >
           <i v-if="isSubmitting" class="fas fa-spinner fa-spin"></i>
           <i v-else class="fas fa-paper-plane"></i>
@@ -123,9 +155,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { formatCurrency, formatNumber } from '~/utils/format'
+import { formatCurrency, formatNumber, formatDate, formatDateTime } from '~/utils/format'
 import { useBaselineStore } from '~/stores/baseline'
-import type { BaselineListItem } from '~/types/baseline'
+import { useFundStore } from '~/stores/fund'
+import type { BaselineListItem, AvailableShipment } from '~/types/baseline'
+import type { ProgressClaimData } from '~/types/fund'
+import ProgressSignatureModal from './ProgressSignatureModal.vue'
 
 // Props
 interface Props {
@@ -144,67 +179,87 @@ const emit = defineEmits<{
 
 // Stores
 const baselineStore = useBaselineStore()
+const fundStore = useFundStore()
 
 // State
 const isSubmitting = ref(false)
-const showQuantityHistory = ref(false)
-const generateDeliveryConfirmation = ref(true)
+const selectedShipmentIds = ref<number[]>([])
+const remarks = ref('')
 
-// 품목 데이터
-interface ClaimItem {
-  itemId: string
-  itemName: string
-  unitPrice: number
-  orderedQty: number
-  confirmedQty: number
-  deliveredQty: number
-  claimQty: number
-  claimAmount: number
-}
+// 서명 발송 모달 관련
+const showSignatureModal = ref(false)
+const progressClaimData = ref<ProgressClaimData | null>(null)
 
-const items = ref<ClaimItem[]>([])
+// Computed - 청구 가능 출하 목록
+const availableShipments = computed<AvailableShipment[]>(() => {
+  return baselineStore.availableShipments
+})
+
+const hasAvailableShipments = computed(() => {
+  return baselineStore.hasAvailableShipments
+})
 
 // 이전 차수 정보
 const previousBaseline = computed<BaselineListItem | null>(() => {
   return baselineStore.latestBaseline
 })
 
-// 수량 변경 여부
-const hasQuantityChanges = computed(() => {
-  return baselineStore.hasQuantityChanges
+// 선택 관련
+const isAllSelected = computed(() => {
+  return availableShipments.value.length > 0 &&
+    selectedShipmentIds.value.length === availableShipments.value.length
 })
 
-// 합계 계산
-const totalClaimQty = computed(() => {
-  return items.value.reduce((sum, item) => sum + (item.claimQty || 0), 0)
+const isIndeterminate = computed(() => {
+  return selectedShipmentIds.value.length > 0 &&
+    selectedShipmentIds.value.length < availableShipments.value.length
 })
 
-const totalClaimAmount = computed(() => {
-  return items.value.reduce((sum, item) => sum + (item.claimAmount || 0), 0)
+const isSelected = (shipmentId: number) => {
+  return selectedShipmentIds.value.includes(shipmentId)
+}
+
+const toggleShipment = (shipmentId: number) => {
+  const index = selectedShipmentIds.value.indexOf(shipmentId)
+  if (index === -1) {
+    selectedShipmentIds.value.push(shipmentId)
+  } else {
+    selectedShipmentIds.value.splice(index, 1)
+  }
+}
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedShipmentIds.value = []
+  } else {
+    selectedShipmentIds.value = availableShipments.value.map(s => s.shipmentId)
+  }
+}
+
+// 선택된 출하의 합계
+const selectedTotalQuantity = computed(() => {
+  return availableShipments.value
+    .filter(s => selectedShipmentIds.value.includes(s.shipmentId))
+    .reduce((sum, s) => sum + (s.totalQuantity || 0), 0)
+})
+
+const selectedTotalAmount = computed(() => {
+  return availableShipments.value
+    .filter(s => selectedShipmentIds.value.includes(s.shipmentId))
+    .reduce((sum, s) => sum + (s.totalAmount || 0), 0)
 })
 
 // OEM 지급 예정 금액 (예시: 청구금액의 70%)
 const oemPaymentAmount = computed(() => {
-  return Math.round(totalClaimAmount.value * 0.7)
+  return Math.round(selectedTotalAmount.value * 0.7)
 })
 
 // 유효성 검사
 const validationError = ref<string | null>(null)
 
 const isValid = computed(() => {
-  if (totalClaimQty.value <= 0) {
-    validationError.value = '청구할 수량이 없습니다.'
-    return false
-  }
-
-  // 주문 수량 초과 체크
-  const overClaimedItem = items.value.find(item => {
-    const totalClaimed = item.confirmedQty + item.claimQty
-    return totalClaimed > item.orderedQty
-  })
-
-  if (overClaimedItem) {
-    validationError.value = `${overClaimedItem.itemName}의 청구 수량이 주문 수량을 초과합니다.`
+  if (selectedShipmentIds.value.length === 0) {
+    validationError.value = '청구할 출하를 선택하세요.'
     return false
   }
 
@@ -217,61 +272,55 @@ const closeModal = () => {
   emit('close')
 }
 
-const calculateTotals = () => {
-  items.value.forEach(item => {
-    item.claimAmount = (item.claimQty || 0) * item.unitPrice
-  })
-}
-
 const loadData = async () => {
   if (!props.orderId) return
 
-  // 기성 데이터 로드
-  await baselineStore.loadProgressPaymentData(props.orderId)
+  // 초기화
+  selectedShipmentIds.value = []
+  remarks.value = ''
+  validationError.value = null
 
-  // 현재 수량 스냅샷에서 품목 데이터 생성
-  const snapshot = baselineStore.currentQuantities
-  if (snapshot?.items) {
-    items.value = snapshot.items.map(item => ({
-      itemId: item.itemId,
-      itemName: item.itemName,
-      unitPrice: item.unitPrice || 0,
-      orderedQty: item.orderedQty || 0,
-      confirmedQty: item.confirmedQty || 0,
-      deliveredQty: item.deliveredQty || 0,
-      claimQty: Math.max(0, (item.deliveredQty || 0) - (item.confirmedQty || 0)),
-      claimAmount: 0
-    }))
-    calculateTotals()
-  }
+  // 청구 가능 출하 목록 로드
+  await baselineStore.loadProgressPaymentDataV2(props.orderId)
+
+  // 기본적으로 모든 출하 선택
+  selectedShipmentIds.value = availableShipments.value.map(s => s.shipmentId)
 }
 
 const submitClaim = async () => {
   if (!isValid.value || isSubmitting.value) return
 
-  isSubmitting.value = true
-
-  try {
-    // 기성 청구 API 호출
-    await baselineStore.createBaseline(props.orderId, {
-      baselineType: 'PROGRESS',
-      items: items.value.map(item => ({
-        itemId: item.itemId,
-        quantity: item.claimQty,
-        amount: item.claimAmount
-      })),
-      generateDeliveryConfirmation: generateDeliveryConfirmation.value
-    })
-
-    alert('기성 청구가 완료되었습니다.')
-    emit('submitted')
-    closeModal()
-  } catch (error) {
-    console.error('기성 청구 실패:', error)
-    alert(error instanceof Error ? error.message : '기성 청구에 실패했습니다.')
-  } finally {
-    isSubmitting.value = false
+  // API 호출 없이 데이터만 전달하여 서명 발송 모달 표시
+  // 실제 API 호출은 ProgressSignatureModal에서 통합 API로 처리
+  progressClaimData.value = {
+    orderId: props.orderId,
+    shipmentIds: selectedShipmentIds.value,
+    remarks: remarks.value || undefined,
+    deliveryRequestNo: fundStore.detail?.deliveryRequestNo || '',
+    demandOrganization: fundStore.detail?.client || '',  // client가 수요기관
+    projectName: fundStore.detail?.projectName || fundStore.detail?.siteName || '',
+    totalAmount: selectedTotalAmount.value
   }
+
+  // 서명 발송 모달 표시
+  showSignatureModal.value = true
+}
+
+// 서명 발송 모달 닫기
+const closeSignatureModal = () => {
+  showSignatureModal.value = false
+  progressClaimData.value = null
+  emit('submitted')
+  closeModal()
+}
+
+// 서명 발송 완료
+const onSignatureSent = () => {
+  showSignatureModal.value = false
+  progressClaimData.value = null
+  alert('기성 청구가 완료되고 서명 URL이 발송되었습니다.')
+  emit('submitted')
+  closeModal()
 }
 
 // Watch
@@ -310,7 +359,7 @@ watch(() => props.isOpen, (isOpen) => {
 
 .modal-large {
   width: 90%;
-  max-width: 900px;
+  max-width: 1000px;
 }
 
 .modal-header {
@@ -360,6 +409,21 @@ watch(() => props.isOpen, (isOpen) => {
   background: #f9fafb;
 }
 
+/* 로딩 */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.loading-container i {
+  font-size: 1.5rem;
+  color: #3b82f6;
+}
+
 /* 이전 차수 정보 */
 .previous-info {
   background: #f0f9ff;
@@ -379,54 +443,53 @@ watch(() => props.isOpen, (isOpen) => {
   font-size: 1rem;
 }
 
-/* 경고 박스 */
-.warning-box {
+/* 빈 상태 */
+.empty-state {
   display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
-  border-radius: 8px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #6b7280;
+  text-align: center;
 }
 
-.warning-box > i {
-  color: #d97706;
-  font-size: 1.25rem;
-  flex-shrink: 0;
+.empty-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #d1d5db;
 }
 
-.warning-content {
-  flex: 1;
-}
-
-.warning-content strong {
-  color: #92400e;
-  display: block;
-  margin-bottom: 0.25rem;
-}
-
-.warning-content p {
-  color: #a16207;
-  font-size: 0.875rem;
+.empty-state p {
+  font-size: 1rem;
+  font-weight: 500;
   margin: 0 0 0.5rem 0;
+  color: #374151;
 }
 
-.btn-link {
-  background: none;
-  border: none;
-  color: #0369a1;
+.empty-hint {
   font-size: 0.875rem;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 0;
+  color: #9ca3af;
 }
 
 /* 테이블 섹션 */
+.table-section .table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
 .table-section h4 {
-  margin: 0 0 1rem 0;
+  margin: 0;
   font-size: 1rem;
   font-weight: 600;
   color: #1f2937;
+}
+
+.table-section .hint {
+  font-size: 0.875rem;
+  color: #6b7280;
 }
 
 .table-container {
@@ -454,6 +517,33 @@ watch(() => props.isOpen, (isOpen) => {
   border-bottom: 1px solid #f3f4f6;
 }
 
+.data-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.data-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.data-table tbody tr.selected {
+  background: #eff6ff;
+}
+
+.data-table tbody tr.selected:hover {
+  background: #dbeafe;
+}
+
+.checkbox-col {
+  width: 40px;
+}
+
+.checkbox-col input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
 .data-table td.text-right {
   text-align: right;
 }
@@ -466,21 +556,6 @@ watch(() => props.isOpen, (isOpen) => {
 .data-table tfoot td {
   background: #f9fafb;
   border-top: 2px solid #e5e7eb;
-}
-
-.qty-input {
-  width: 80px;
-  padding: 0.375rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  text-align: right;
-  font-size: 0.875rem;
-}
-
-.qty-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 /* 계산 결과 */
@@ -504,6 +579,12 @@ watch(() => props.isOpen, (isOpen) => {
   color: #374151;
 }
 
+.result-row .count {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
 .result-row .amount {
   font-size: 1.125rem;
   font-weight: 700;
@@ -514,31 +595,31 @@ watch(() => props.isOpen, (isOpen) => {
   color: #059669;
 }
 
-/* 체크박스 */
-.checkbox-section {
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-
-.checkbox-label {
+/* 폼 필드 */
+.form-field {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
+}
+
+.form-field label {
   font-size: 0.875rem;
+  font-weight: 500;
   color: #374151;
-  cursor: pointer;
 }
 
-.checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+.form-textarea {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  resize: vertical;
 }
 
-.checkbox-hint {
-  margin: 0.5rem 0 0 1.75rem;
-  font-size: 0.75rem;
-  color: #6b7280;
+.form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 /* 유효성 에러 */
@@ -553,42 +634,5 @@ watch(() => props.isOpen, (isOpen) => {
   font-size: 0.875rem;
 }
 
-/* 버튼 */
-.btn-primary,
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-  border: none;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.btn-primary:disabled {
-  background: #93c5fd;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover {
-  background: #f9fafb;
-}
+/* 버튼 - admin-buttons.css에서 import됨 */
 </style>

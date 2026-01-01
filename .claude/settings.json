@@ -1,17 +1,24 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch(https://www.google.com/*)",
       "Bash(cmd /c:*)",
       "Bash(claude mcp:*)",
       "Bash(npx -y @benborla29/mcp-server-mysql:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
+      "Bash(gradle:*)",
+      "Bash(gradle build:*)",
+      "Bash(gradle clean:*)",
+      "Bash(gradle clean build:*)",
+      "Bash(gradle bootJar:*)",
       "Read(**)",
       "Grep(./**)",
+      "Grep(*)",
       "Grep(**)",
       "Grep pattern(**/**)",
       "Glob(./**)",
+      "Glob(**)",
+      "Glob(*)",
       "Glob pattern(**/**)"
     ],
     "deny": [],
@@ -21,6 +28,7 @@
     "context7",
     "magic",
     "playwright",
-    "sequential-thinking"
+    "sequential-thinking",
+    "mariadb"
   ]
 }

@@ -43,6 +43,17 @@
                 :readonly="mode === 'view'"
               >
             </FormField>
+
+            <FormField label="직원수">
+              <input
+                type="number"
+                v-model.number="formData.employeeCount"
+                class="form-input"
+                :readonly="mode === 'view'"
+                placeholder="직원수를 입력하세요"
+                min="0"
+              >
+            </FormField>
           </div>
         </div>
 

@@ -83,6 +83,7 @@
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-md);
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .info-group-header {
@@ -90,11 +91,17 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: linear-gradient(to right, var(--primary-50), var(--primary-100));
-  border-bottom: 1px solid var(--primary-500);
+  background: linear-gradient(90deg, var(--primary-50), transparent);
+  border-left: 4px solid var(--primary-500);
+  border-bottom: 1px solid var(--gray-200);
   font-weight: 600;
   color: var(--primary-700);
   font-size: var(--font-size-sm);
+}
+
+.info-group-header i {
+  color: var(--primary-500);
+  font-size: 1rem;
 }
 
 .info-grid {

@@ -42,9 +42,9 @@ function getRoleLabel(role: string | undefined | null): string {
     'LEADPOWER_MANAGER': '리드파워 담당자',
     'OEM_MANAGER': 'OEM 담당자',
     'SITE_MANAGER': '시공사 담당자',
-    'SITE_INSPECTOR': '감리원',
+    'SITE_INSPECTOR': '시공사 감리원',
     'SALES_MANAGER': '영업 담당자',
-    'COURIER': '운송기사',
+    'DELIVERY_DRIVER': '운송기사',
     'READ_ONLY': '조회 전용'
   }
   return roleMap[role || ''] || role || '알 수 없음'

@@ -185,8 +185,8 @@ class ShipmentService {
     try {
       const queryParams = new URLSearchParams()
       
-      // 필수 파라미터
-      queryParams.append('page', (Number(params.page) - 1).toString()) // 백엔드는 0-based pagination
+      // 필수 파라미터 (0-based pagination - useDataTable과 동일)
+      queryParams.append('page', params.page.toString())
       queryParams.append('size', params.size.toString())
       
       // 선택적 파라미터 (빈 문자열도 허용)

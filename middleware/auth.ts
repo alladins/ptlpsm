@@ -1,5 +1,6 @@
 // 실제 인증 미들웨어
 import { useAuthStore } from '~/stores/auth'
+import { usePermissionStore } from '~/stores/permission'
 
 export default defineNuxtRouteMiddleware(async (to) => {
   // 서버 사이드에서는 인증 검사를 수행하지 않음
@@ -109,67 +110,66 @@ export default defineNuxtRouteMiddleware(async (to) => {
       return navigateTo('/login')
     }
     
-    // ⚠️ 개발 모드: 관리자 권한 체크 우회
-    // TODO: 프로덕션 배포 시 이 코드 제거 필요
-    if (process.dev || import.meta.env.DEV) {
-      console.warn('⚠️ 개발 모드: 관리자 권한 체크 스킵됨', {
-        사용자역할: authStore.role,
-        경로: to.path,
-        환경: process.dev ? 'development' : import.meta.env.MODE
-      })
+    // 로컬 개발 환경 체크 (런타임 hostname 기반 - 안전)
+    const isLocalDevelopment = process.client &&
+      (window.location.hostname === 'localhost' ||
+       window.location.hostname === '127.0.0.1')
 
-      // 개발 모드에서는 권한 체크 건너뛰고 활동 시간만 업데이트
-      authStore.updateLastActivity()
-
-      // 토큰 만료 임박 시 백그라운드에서 갱신 시도
-      if (authStore.isTokenExpiringSoon) {
-        console.log('토큰 만료 임박: 백그라운드에서 갱신 시도')
-        authStore.refreshAccessToken().catch(error => {
-          console.warn('백그라운드 토큰 갱신 실패:', error)
-        })
-      }
-
-      // 개발 모드에서는 여기서 종료
-      return
-    }
-
-    // === 프로덕션 모드: 관리자 권한 확인 ===
-    const userRole = authStore.role?.toUpperCase() || '';
-    console.log('관리자 권한 검증:', {
-      원본역할: authStore.role,
-      정규화역할: userRole,
-      경로: to.path
-    });
-
-    // 다양한 형태의 관리자 역할 검사
-    const isAdmin = userRole === 'ADMINISTRATOR' ||
-                    userRole === 'SYSTEM_ADMIN';
-
-    if (!isAdmin) {
-      console.warn('관리자 권한이 필요합니다:', {
-        현재역할: authStore.role,
-        정규화된역할: userRole,
-        요청경로: to.path,
-        허용되는역할: ['ADMINISTRATOR', 'SYSTEM_ADMIN']
-      })
-
-      // 권한 부족 메시지 표시
-      alert('관리자 권한이 필요합니다. 관리자에게 문의하세요.');
-
-      // 메인 페이지로 리다이렉트
-      return navigateTo('/')
-    }
-    
     // 사용자 활동 시간 업데이트
     authStore.updateLastActivity()
-    
+
     // 토큰 만료 임박 시 백그라운드에서 갱신 시도
     if (authStore.isTokenExpiringSoon) {
       console.log('토큰 만료 임박: 백그라운드에서 갱신 시도')
-      // 실패해도 페이지 접근에는 영향 없게 백그라운드 처리
       authStore.refreshAccessToken().catch(error => {
         console.warn('백그라운드 토큰 갱신 실패:', error)
       })
+    }
+
+    // 관리자 권한 확인 (로컬 개발 환경에서는 역할 체크 스킵)
+    if (!isLocalDevelopment) {
+      const userRole = authStore.role?.toUpperCase() || ''
+      console.log('관리자 권한 검증:', {
+        원본역할: authStore.role,
+        정규화역할: userRole,
+        경로: to.path
+      })
+
+      // 다양한 형태의 관리자 역할 검사
+      const isAdmin = userRole === 'ADMINISTRATOR' ||
+                      userRole === 'SYSTEM_ADMIN'
+
+      if (!isAdmin) {
+        console.warn('관리자 권한이 필요합니다:', {
+          현재역할: authStore.role,
+          정규화된역할: userRole,
+          요청경로: to.path,
+          허용되는역할: ['ADMINISTRATOR', 'SYSTEM_ADMIN']
+        })
+
+        // 권한 부족 메시지 표시
+        alert('관리자 권한이 필요합니다. 관리자에게 문의하세요.')
+
+        // 메인 페이지로 리다이렉트
+        return navigateTo('/')
+      }
+    }
+
+    // 메뉴 권한 체크 (모든 환경에서 수행)
+    const permissionStore = usePermissionStore()
+
+    // 메뉴 권한 로드 (캐시된 경우 빠르게 반환)
+    await permissionStore.fetchUserMenus()
+
+    // 현재 경로에 대한 메뉴 권한 체크
+    const menu = permissionStore.findMenuByUrl(to.path)
+    if (menu && !permissionStore.hasPermission(menu.menuId, 'readAuth')) {
+      console.warn('메뉴 접근 권한 없음:', {
+        경로: to.path,
+        메뉴: menu.menuName,
+        사용자역할: authStore.role
+      })
+      return navigateTo('/admin/unauthorized')
     }
   }
 })

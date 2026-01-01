@@ -2,7 +2,7 @@
   <div class="company-list">
     <!-- 페이지 헤더 -->
     <PageHeader
-      title="회사 정보"
+      title="회사정보"
       description="회사 정보를 조회하고 관리합니다."
     >
       <template #actions>

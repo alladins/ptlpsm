@@ -90,14 +90,15 @@ const route = useRoute()
 const router = useRouter()
 
 const currentPageTitle = computed(() => {
-  // 현재 경로에 따른 페이지 제목 반환
+  // 현재 경로에 따른 페이지 제목 반환 (메인메뉴명과 일치)
   const pathMap: Record<string, string> = {
     '/admin/sales': '영업관리',
-    '/admin/order': '납품요구관리',
+    '/admin/order': '주문관리',
     '/admin/shipping': '출하관리',
-    '/admin/transport': '운송관리',
-    '/admin/delivery': '납품확인관리',
-    '/admin/delivery-done': '납품완료계',
+    '/admin/transport': '출하관리',      // 출하관리 하위 메뉴
+    '/admin/delivery': '납품관리',       // 수정: 납품확인관리 → 납품관리
+    '/admin/delivery-done': '납품관리',  // 수정: 납품완료계 → 납품관리
+    '/admin/funds': '납품관리',          // 추가: 기성청구도 납품관리 하위
     '/admin/statistics': '통계',
     '/admin/message': '문자관리',
     '/admin/basic-info': '기초정보',
@@ -283,13 +284,13 @@ onUnmounted(() => {
 
 .admin-header {
   height: 48px;
-  background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--sidebar-bg);
+  border-bottom: 1px solid var(--sidebar-divider);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .header-left {
@@ -302,15 +303,15 @@ onUnmounted(() => {
   background: none;
   border: none;
   font-size: 18px;
-  color: #ecf0f1;
+  color: var(--sidebar-text);
   cursor: pointer;
   padding: 8px;
   border-radius: 4px;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 .sidebar-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--sidebar-hover);
 }
 
 /* PC에서는 사이드바 토글 버튼 숨김 */
@@ -328,8 +329,9 @@ onUnmounted(() => {
 
 .breadcrumb-item {
   font-size: 16px;
-  font-weight: 500;
-  color: #ecf0f1;
+  font-weight: 600;
+  color: white;
+  letter-spacing: -0.01em;
 }
 
 /* 빈 breadcrumb 숨기기 (웹) */
@@ -361,11 +363,11 @@ onUnmounted(() => {
   background: none;
   border: none;
   font-size: 18px;
-  color: #ecf0f1;
+  color: var(--sidebar-text);
   cursor: pointer;
   padding: 6px;
-  border-radius: 4px;
-  transition: all 0.3s ease;
+  border-radius: 6px;
+  transition: all 0.2s ease;
   width: 36px;
   height: 36px;
   display: flex;
@@ -374,7 +376,7 @@ onUnmounted(() => {
 }
 
 .action-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--sidebar-hover);
   color: white;
 }
 

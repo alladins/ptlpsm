@@ -2,8 +2,10 @@
   <div class="sales-list">
     <!-- 페이지 헤더 -->
     <PageHeader
-      title="영업 관리"
+      title="영업관리"
       description="영업 정보를 조회하고 관리합니다."
+      icon="chart"
+      icon-color="blue"
     >
       <template #actions>
         <button class="btn-action" @click="handleSearch" :disabled="loading">

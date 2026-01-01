@@ -2,7 +2,7 @@
   <div class="delivery-tree-list">
     <!-- 페이지 헤더 -->
     <PageHeader
-      title="납품현황 관리"
+      title="납품확인"
       description="발주별 납품 현황을 트리 구조로 확인합니다."
     >
       <template #actions>
@@ -135,19 +135,19 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`
 }
 
-// 2개월 전 날짜 계산 (로컬 시간 기준)
-const getTwoMonthsAgo = () => {
+// 3개월 전 날짜 계산 (로컬 시간 기준)
+const getThreeMonthsAgo = () => {
   const date = new Date()
-  date.setMonth(date.getMonth() - 2)
+  date.setMonth(date.getMonth() - 3)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
-// 검색 폼 (기본값: 최근 2개월)
+// 검색 폼 (기본값: 최근 3개월)
 const searchForm = ref({
-  startDate: getTwoMonthsAgo(),
+  startDate: getThreeMonthsAgo(),
   endDate: getTodayDate(),
   deliveryRequestNo: '', // NEW field
   status: ''
@@ -176,12 +176,12 @@ const {
       status: searchForm.value.status,
       page: params.page || 0,
       size: params.size || 10,
-      sort: params.sort || 'deliveryRequestDate,desc'
+      sort: params.sort || 'delivery_request_date,desc'
     })
     return response
   },
   initialPageSize: 10,
-  initialSort: 'deliveryRequestDate,desc'
+  initialSort: 'delivery_request_date,desc'
 })
 
 // 검색
@@ -192,7 +192,7 @@ const handleSearch = () => {
 // 초기화
 const handleReset = () => {
   searchForm.value = {
-    startDate: getTwoMonthsAgo(),
+    startDate: getThreeMonthsAgo(),
     endDate: getTodayDate(),
     deliveryRequestNo: '',
     status: ''

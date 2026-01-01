@@ -1,6 +1,17 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Tailwind v4 Theme Configuration */
+@theme {
+  /* Colors */
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-darker: #1e40af;
+  --color-secondary: #64748b;
+  --color-accent: #f59e0b;
+
+  /* Font Family */
+  --font-sans: 'Pretendard', 'Malgun Gothic', sans-serif;
+}
 
 /* CSS 변수 정의 - 업무 시스템 최적화 */
 :root {

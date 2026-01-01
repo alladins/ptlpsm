@@ -4,6 +4,8 @@
     <PageHeader
       title="운송장 수정"
       description="운송장 정보를 수정합니다."
+      icon="transport"
+      icon-color="orange"
     >
       <template #actions>
         <button class="btn-secondary" @click="router.back()">

@@ -14,6 +14,7 @@ export interface Menu {
   description?: string
   children?: Menu[]
   pages?: MenuPage[]
+  auth?: MenuAuth  // 메뉴 권한 정보
 }
 
 export interface MenuPage {

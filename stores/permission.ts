@@ -27,8 +27,33 @@ type UserRole =
   | 'SITE_MANAGER'
   | 'SITE_INSPECTOR'
   | 'SALES_MANAGER'
-  | 'COURIER'
+  | 'DELIVERY_DRIVER'
   | 'READ_ONLY'
+
+// 역할 코드 정규화 매핑 (DB → 프론트엔드 표준)
+const ROLE_CODE_MAPPING: Record<string, UserRole> = {
+  // 기존 DB 코드 → 표준 코드
+  'LEAD_POWER': 'LEADPOWER_MANAGER',
+  'COURIER': 'DELIVERY_DRIVER',
+  // 표준 코드는 그대로 유지
+  'SYSTEM_ADMIN': 'SYSTEM_ADMIN',
+  'LEADPOWER_MANAGER': 'LEADPOWER_MANAGER',
+  'OEM_MANAGER': 'OEM_MANAGER',
+  'SITE_MANAGER': 'SITE_MANAGER',
+  'SITE_INSPECTOR': 'SITE_INSPECTOR',
+  'SALES_MANAGER': 'SALES_MANAGER',
+  'DELIVERY_DRIVER': 'DELIVERY_DRIVER',
+  'READ_ONLY': 'READ_ONLY'
+}
+
+/**
+ * 역할 코드 정규화
+ * DB에서 반환되는 다양한 역할 코드를 프론트엔드 표준 코드로 변환
+ */
+function normalizeRoleCode(role: string | null | undefined): UserRole | null {
+  if (!role) return null
+  return ROLE_CODE_MAPPING[role] || role as UserRole
+}
 
 export const usePermissionStore = defineStore('permission', () => {
   // ========================================
@@ -57,7 +82,8 @@ export const usePermissionStore = defineStore('permission', () => {
   // 권한 캐시 TTL (5분)
   const CACHE_TTL = 5 * 60 * 1000
 
-  // 전체 접근 권한을 가진 역할
+  // 전체 접근 권한을 가진 역할 (시스템관리자 + 리드파워 담당자)
+  // 리드파워 담당자는 SidebarMenu에서 시스템관리 메뉴만 별도 제외
   const FULL_ACCESS_ROLES: UserRole[] = ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER']
 
   // ========================================
@@ -70,10 +96,10 @@ export const usePermissionStore = defineStore('permission', () => {
     return Date.now() - lastFetched.value < CACHE_TTL
   })
 
-  // 현재 사용자 역할
+  // 현재 사용자 역할 (정규화된 역할 코드)
   const currentUserRole = computed(() => {
     const authStore = useAuthStore()
-    return authStore.user?.role as UserRole | null
+    return normalizeRoleCode(authStore.user?.role)
   })
 
   // 전체 접근 권한 여부
@@ -92,7 +118,7 @@ export const usePermissionStore = defineStore('permission', () => {
   const isSiteInspector = computed(() => currentUserRole.value === 'SITE_INSPECTOR')
 
   // 운송기사 여부
-  const isCourier = computed(() => currentUserRole.value === 'COURIER')
+  const isDeliveryDriver = computed(() => currentUserRole.value === 'DELIVERY_DRIVER')
 
   // 조회 전용 여부
   const isReadOnly = computed(() => currentUserRole.value === 'READ_ONLY')
@@ -120,10 +146,11 @@ export const usePermissionStore = defineStore('permission', () => {
     loading.value = true
     error.value = null
 
-    try {
-      const { MENU_ENDPOINTS } = await import('~/services/api/endpoints/menu.endpoints')
+    const { MENU_ENDPOINTS } = await import('~/services/api/endpoints/menu.endpoints')
+    const apiUrl = MENU_ENDPOINTS.userMenus(authStore.user.loginId)
 
-      const response = await fetch(MENU_ENDPOINTS.userMenus(authStore.user.loginId), {
+    try {
+      const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
           'Content-Type': 'application/json'
@@ -136,19 +163,39 @@ export const usePermissionStore = defineStore('permission', () => {
 
       const data = await response.json()
 
-      if (data.success && Array.isArray(data.data)) {
-        userMenus.value = data.data
-        lastFetched.value = Date.now()
+      // 백엔드 응답 형식 처리:
+      // 1. 배열 직접 반환: [...] (현재 백엔드 방식)
+      // 2. 래퍼 형식: { success: true, data: [...] } (레거시 호환)
+      let menus: Menu[] = []
 
-        // 메뉴별 권한 캐시 업데이트
-        updateMenuPermissionsCache(data.data)
-
-        return data.data
+      if (Array.isArray(data)) {
+        // 배열 직접 반환 (현재 백엔드 방식)
+        menus = data
+      } else if (data.success && Array.isArray(data.data)) {
+        // 래퍼 형식 (레거시 호환)
+        menus = data.data
+      } else if (data.content && Array.isArray(data.content)) {
+        // 페이징 응답 형식
+        menus = data.content
+      } else {
+        throw new Error('잘못된 API 응답 형식')
       }
 
-      throw new Error('잘못된 API 응답 형식')
+      userMenus.value = menus
+      lastFetched.value = Date.now()
+
+      // 메뉴별 권한 캐시 업데이트
+      updateMenuPermissionsCache(menus)
+
+      console.log('[Permission Store] 사용자 메뉴 조회 성공:', {
+        menuCount: menus.length,
+        hasAuth: menus[0]?.auth ? 'Y' : 'N',
+        firstMenuAuth: menus[0]?.auth
+      })
+
+      return menus
     } catch (err) {
-      console.warn('사용자 메뉴 조회 실패, Mock 데이터 사용:', err)
+      console.warn(`[Permission Store] 사용자 메뉴 조회 실패 (${apiUrl}), Mock 데이터 사용:`, err)
       error.value = err instanceof Error ? err.message : '알 수 없는 오류'
 
       // API 실패 시 Mock 데이터 반환
@@ -219,15 +266,28 @@ export const usePermissionStore = defineStore('permission', () => {
 
       const data = await response.json()
 
-      if (data.success && data.data) {
+      // 백엔드 응답 형식 처리:
+      // 1. 객체 직접 반환: { readAuth: 'Y', ... } (현재 백엔드 방식)
+      // 2. 래퍼 형식: { success: true, data: {...} } (레거시 호환)
+      let auth: MenuAuth | null = null
+
+      if (data.readAuth !== undefined) {
+        // 객체 직접 반환 (현재 백엔드 방식)
+        auth = data as MenuAuth
+      } else if (data.success && data.data) {
+        // 래퍼 형식 (레거시 호환)
+        auth = data.data
+      }
+
+      if (auth) {
         // 캐시 업데이트
         menuPermissions.value.set(menuId, {
           menuId,
-          auth: data.data,
+          auth,
           cachedAt: Date.now()
         })
 
-        return data.data
+        return auth
       }
 
       throw new Error('잘못된 API 응답 형식')
@@ -356,7 +416,7 @@ export const usePermissionStore = defineStore('permission', () => {
     const userId = authStore.user?.userid
 
     // 운송기사
-    if (isCourier.value) {
+    if (isDeliveryDriver.value) {
       return transport.courierId === userId
     }
 
@@ -432,7 +492,7 @@ export const usePermissionStore = defineStore('permission', () => {
     isOemManager,
     isSiteManager,
     isSiteInspector,
-    isCourier,
+    isDeliveryDriver,
     isReadOnly,
 
     // Actions

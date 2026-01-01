@@ -117,5 +117,23 @@ export const USER_ENDPOINTS = {
   currentUser: () => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/common/users/me`
+  },
+
+  /**
+   * 내 정보 수정 (모든 인증된 사용자)
+   * @returns PUT /common/users/me
+   */
+  updateProfile: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/common/users/me`
+  },
+
+  /**
+   * 내 비밀번호 변경 (모든 인증된 사용자)
+   * @returns PUT /common/users/me/change-password
+   */
+  changeMyPassword: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/common/users/me/change-password`
   }
 } as const

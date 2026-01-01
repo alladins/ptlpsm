@@ -1,0 +1,249 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+  ★ 선급금신청서 - 실제 데이터 샘플 ★
+  PDF 변환용 테이블 기반 레이아웃
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>선급금신청서</title>
+  <style>
+    @font-face {
+      font-family: 'MalgunGothic';
+      src: url('file:///C:/Windows/Fonts/malgun.ttf');
+      -fs-pdf-font-embed: embed;
+      -fs-pdf-font-encoding: Identity-H;
+    }
+
+    @page {
+      size: A4;
+      margin: 20mm 20mm;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'MalgunGothic', serif;
+      font-size: 11pt;
+      line-height: 1.8;
+      color: #000;
+    }
+
+    /* ========== 제목 ========== */
+    .document-title {
+      text-align: center;
+      font-size: 28pt;
+      font-weight: bold;
+      letter-spacing: 15px;
+      margin: 30px 0 50px 0;
+    }
+
+    /* ========== 본문 테이블 ========== */
+    .content-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 0;
+    }
+
+    .content-table tr {
+      border: 0;
+    }
+
+    .content-table td {
+      padding: 4px 0;
+      vertical-align: top;
+      border: 0;
+      font-size: 11pt;
+      line-height: 1.8;
+    }
+
+    .row-number {
+      width: 20px;
+      white-space: nowrap;
+      font-size: 12pt;
+    }
+
+    .row-label {
+      width: 110px;
+      white-space: nowrap;
+      font-size: 12pt;
+    }
+
+    .row-colon {
+      width: 20px;
+      text-align: center;
+    }
+
+    .row-value {
+      /* 나머지 공간 */
+    }
+
+    .indent-value {
+      padding-left: 190px !important;
+    }
+
+    /* ========== 신청사유 ========== */
+    .content-table td.reason-value {
+      font-size: 14pt;
+      line-height: 2.0;
+    }
+
+    /* ========== 날짜 ========== */
+    .date-section {
+      text-align: center;
+      margin: 60px 0 40px 0;
+      font-size: 14pt;
+      letter-spacing: 2px;
+    }
+
+    /* ========== 서명 섹션 ========== */
+    .signature-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 0;
+    }
+
+    .signature-table tr {
+      border: 0;
+    }
+
+    .signature-table td {
+      padding: 5px 0;
+      border: 0;
+      font-size: 12pt;
+      vertical-align: middle;
+    }
+
+    .sig-spacer {
+      width: 200px;
+    }
+
+    .sig-label {
+      width: 100px;
+      text-align: right;
+      padding-right: 5px;
+    }
+
+    .sig-colon {
+      width: 20px;
+      text-align: center;
+    }
+
+    .sig-value {
+      text-align: left;
+      padding-left: 10px;
+    }
+
+    /* ========== 수신자 ========== */
+    .recipient {
+      font-size: 14pt;
+      font-weight: bold;
+      margin-top: 60px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 제목 -->
+  <div class="document-title">선 급 금 신 청 서</div>
+
+  <!-- 본문 -->
+  <table class="content-table">
+    <tr>
+      <td class="row-number">1.</td>
+      <td class="row-label">계 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 약 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 명</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">임실 정주활력센터 건립사업 건축공사 관급자재(폴리우레탄단열재) 구입</td>
+    </tr>
+    <tr>
+      <td class="row-number">2.</td>
+      <td class="row-label">계 &nbsp; 약 &nbsp;&nbsp;&nbsp; 금 &nbsp; 액</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">330,538,830원</td>
+    </tr>
+    <tr>
+      <td class="row-number">3.</td>
+      <td class="row-label">계 &nbsp;약 &nbsp;년 &nbsp;월 &nbsp;일</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">2025년 11월 27일</td>
+    </tr>
+    <tr>
+      <td class="row-number">4.</td>
+      <td class="row-label">납 &nbsp;품 &nbsp;년 &nbsp;월 &nbsp;일</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;년 &nbsp;&nbsp;&nbsp;&nbsp; 월 &nbsp;&nbsp;&nbsp;&nbsp; 일</td>
+    </tr>
+    <tr>
+      <td class="row-number">5.</td>
+      <td class="row-label">준 &nbsp;공 &nbsp;년 &nbsp;월 &nbsp;일</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;년 &nbsp;&nbsp;&nbsp;&nbsp; 월 &nbsp;&nbsp;&nbsp;&nbsp; 일</td>
+    </tr>
+    <tr>
+      <td class="row-number">6.</td>
+      <td class="row-label">선금급 신청 금액</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">일금 이억삼천일백삼십칠만칠천일백팔십일 원정 (￦ 231,377,181 )</td>
+    </tr>
+    <tr>
+      <td class="row-number">7.</td>
+      <td class="row-label">잔 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 액</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">일금 구천구백일십육만일천육백사십구 원정 (￦ 99,161,649)</td>
+    </tr>
+    <tr>
+      <td class="row-number">8.</td>
+      <td class="row-label">지 급 보 증 방 법</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">선급금 보증증권</td>
+    </tr>
+    <tr>
+      <td class="row-number">9.</td>
+      <td class="row-label">선급금 신청 비율</td>
+      <td class="row-colon">:</td>
+      <td class="row-value">70%</td>
+    </tr>
+    <tr>
+      <td class="row-number">10.</td>
+      <td class="row-label"> 선금급 신청사유</td>
+      <td class="row-colon">:</td>
+      <td class="reason-value">본인은 선금 및 대가지급요령을 성실히 이행하며 의무 불이행에 따른 귀 청 결정에 이의 없이 순응할 것을 확약하며 상기와 같이 선금 지급을 신청합니다.</td>
+    </tr>
+  </table>
+
+  <!-- 날짜 -->
+  <div class="date-section">
+    2025 년 &nbsp;&nbsp; 12 월 &nbsp;&nbsp; 02 일
+  </div>
+
+  <!-- 서명 섹션 -->
+  <table class="signature-table">
+    <tr>
+      <td class="sig-spacer"></td>
+      <td class="sig-label">주 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 소</td>
+      <td class="sig-colon">:</td>
+      <td class="sig-value">경기도안성시서운면서미로21-10</td>
+    </tr>
+    <tr>
+      <td class="sig-spacer"></td>
+      <td class="sig-label">회 &nbsp; 사 &nbsp; 명</td>
+      <td class="sig-colon">:</td>
+      <td class="sig-value">주식회사리드파워</td>
+    </tr>
+    <tr>
+      <td class="sig-spacer"></td>
+      <td class="sig-label">대 표 이 사</td>
+      <td class="sig-colon">:</td>
+      <td class="sig-value">김 광 열 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(인)</td>
+    </tr>
+  </table>
+
+  <!-- 수신자 -->
+  <div class="recipient">
+    전북특별자치도임실군분임재무관 귀하
+  </div>
+</body>
+</html>

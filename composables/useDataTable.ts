@@ -157,9 +157,12 @@ export function useDataTable<T = any>(options: UseDataTableOptions = {}) {
     loading.value = true
     error.value = null
 
+    // 요청 시 사용한 페이지 번호 저장
+    const requestedPage = currentPage.value
+
     try {
       const params: PaginationRequest = {
-        page: currentPage.value,
+        page: requestedPage,
         size: pageSize.value,
         sort: sort.value,
         ...additionalParams
@@ -173,9 +176,10 @@ export function useDataTable<T = any>(options: UseDataTableOptions = {}) {
         items.value = pageResponse.content || []
         totalElements.value = pageResponse.totalElements ?? 0
         totalPages.value = pageResponse.totalPages ?? 0
-        isFirstPage.value = pageResponse.first ?? true
-        isLastPage.value = pageResponse.last ?? true
-        currentPage.value = pageResponse.number ?? 0
+        isFirstPage.value = pageResponse.first ?? (requestedPage === 0)
+        isLastPage.value = pageResponse.last ?? (requestedPage >= (pageResponse.totalPages ?? 1) - 1)
+        // 요청한 페이지 번호를 유지
+        currentPage.value = requestedPage
       } else {
         // 일반 배열 응답 처리
         items.value = response || []

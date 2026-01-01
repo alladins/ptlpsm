@@ -22,7 +22,6 @@
         <div class="role-selector">
           <label>역할 선택:</label>
           <select v-model="selectedRoleCode" class="form-select" @change="handleRoleChange">
-            <option value="">역할을 선택하세요</option>
             <option v-for="role in roles" :key="role.roleCode" :value="role.roleCode">
               {{ role.roleName }}
             </option>
@@ -45,12 +44,6 @@
       <div v-if="loading" class="loading-state">
         <i class="fas fa-spinner fa-spin"></i>
         <span>데이터를 불러오는 중...</span>
-      </div>
-
-      <!-- 역할 미선택 안내 -->
-      <div v-else-if="!selectedRoleCode" class="empty-state">
-        <i class="fas fa-user-shield"></i>
-        <p>역할을 선택하면 메뉴별 권한을 설정할 수 있습니다.</p>
       </div>
 
       <!-- 권한 설정 테이블 -->
@@ -76,50 +69,66 @@
                   </span>
                 </td>
                 <td class="col-auth">
-                  <label class="checkbox-wrapper">
+                  <label
+                    class="checkbox-wrapper"
+                    :class="{ 'indeterminate': getCheckboxState(menu.menuId, 'readAuth') === 'indeterminate' }"
+                  >
                     <input
                       type="checkbox"
-                      :checked="getPermission(menu.menuId, 'readAuth') === 'Y'"
-                      @change="togglePermission(menu.menuId, 'readAuth')"
+                      :checked="getCheckboxState(menu.menuId, 'readAuth') === 'checked'"
+                      :indeterminate="getCheckboxState(menu.menuId, 'readAuth') === 'indeterminate'"
+                      @change="togglePermissionWithHierarchy(menu.menuId, 'readAuth')"
                     />
                     <span class="checkmark"></span>
                   </label>
                 </td>
                 <td class="col-auth">
-                  <label class="checkbox-wrapper">
+                  <label
+                    class="checkbox-wrapper"
+                    :class="{ 'indeterminate': getCheckboxState(menu.menuId, 'writeAuth') === 'indeterminate' }"
+                  >
                     <input
                       type="checkbox"
-                      :checked="getPermission(menu.menuId, 'writeAuth') === 'Y'"
-                      @change="togglePermission(menu.menuId, 'writeAuth')"
+                      :checked="getCheckboxState(menu.menuId, 'writeAuth') === 'checked'"
+                      :indeterminate="getCheckboxState(menu.menuId, 'writeAuth') === 'indeterminate'"
+                      @change="togglePermissionWithHierarchy(menu.menuId, 'writeAuth')"
                     />
                     <span class="checkmark"></span>
                   </label>
                 </td>
                 <td class="col-auth">
-                  <label class="checkbox-wrapper">
+                  <label
+                    class="checkbox-wrapper"
+                    :class="{ 'indeterminate': getCheckboxState(menu.menuId, 'editAuth') === 'indeterminate' }"
+                  >
                     <input
                       type="checkbox"
-                      :checked="getPermission(menu.menuId, 'editAuth') === 'Y'"
-                      @change="togglePermission(menu.menuId, 'editAuth')"
+                      :checked="getCheckboxState(menu.menuId, 'editAuth') === 'checked'"
+                      :indeterminate="getCheckboxState(menu.menuId, 'editAuth') === 'indeterminate'"
+                      @change="togglePermissionWithHierarchy(menu.menuId, 'editAuth')"
                     />
                     <span class="checkmark"></span>
                   </label>
                 </td>
                 <td class="col-auth">
-                  <label class="checkbox-wrapper">
+                  <label
+                    class="checkbox-wrapper"
+                    :class="{ 'indeterminate': getCheckboxState(menu.menuId, 'deleteAuth') === 'indeterminate' }"
+                  >
                     <input
                       type="checkbox"
-                      :checked="getPermission(menu.menuId, 'deleteAuth') === 'Y'"
-                      @change="togglePermission(menu.menuId, 'deleteAuth')"
+                      :checked="getCheckboxState(menu.menuId, 'deleteAuth') === 'checked'"
+                      :indeterminate="getCheckboxState(menu.menuId, 'deleteAuth') === 'indeterminate'"
+                      @change="togglePermissionWithHierarchy(menu.menuId, 'deleteAuth')"
                     />
                     <span class="checkmark"></span>
                   </label>
                 </td>
                 <td class="col-action">
-                  <button class="btn-allow-sm" @click="setMenuAllPermissions(menu.menuId, 'Y')" title="전체 허용">
+                  <button class="btn-allow-sm" @click="setMenuAllPermissionsWithHierarchy(menu.menuId, 'Y')" title="전체 허용">
                     <i class="fas fa-check"></i>
                   </button>
-                  <button class="btn-deny-sm" @click="setMenuAllPermissions(menu.menuId, 'N')" title="전체 차단">
+                  <button class="btn-deny-sm" @click="setMenuAllPermissionsWithHierarchy(menu.menuId, 'N')" title="전체 차단">
                     <i class="fas fa-times"></i>
                   </button>
                 </td>
@@ -141,7 +150,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import type { Menu, MenuAuth } from '~/types/menu'
-import { roleService, menuService, getMockMenuData, getMockRoleData } from '~/services/menu.service'
+import { roleService, menuService } from '~/services/menu.service'
 import type { Role, RolePermission } from '~/services/menu.service'
 
 definePageMeta({
@@ -192,24 +201,42 @@ interface FlatMenuItem {
   menuIcon: string
   level: number
   parentMenuId?: number
+  hasChildren: boolean  // 자식 메뉴 여부
+  childMenuIds: number[]  // 자식 메뉴 ID 목록
 }
 
 const flatMenuList = computed<FlatMenuItem[]>(() => {
   const result: FlatMenuItem[] = []
 
+  function getChildIds(menuList: Menu[]): number[] {
+    const ids: number[] = []
+    for (const menu of menuList) {
+      ids.push(menu.menuId)
+      if (menu.children && menu.children.length > 0) {
+        ids.push(...getChildIds(menu.children))
+      }
+    }
+    return ids
+  }
+
   function flatten(menuList: Menu[], level: number = 1) {
     for (const menu of menuList) {
+      const hasChildren = !!(menu.children && menu.children.length > 0)
+      const childMenuIds = hasChildren ? getChildIds(menu.children!) : []
+
       result.push({
         menuId: menu.menuId,
         menuCode: menu.menuCode,
         menuName: menu.menuName,
         menuIcon: menu.menuIcon || 'fas fa-folder',
         level,
-        parentMenuId: menu.parentMenuId
+        parentMenuId: menu.parentMenuId,
+        hasChildren,
+        childMenuIds
       })
 
-      if (menu.children && menu.children.length > 0) {
-        flatten(menu.children, level + 1)
+      if (hasChildren) {
+        flatten(menu.children!, level + 1)
       }
     }
   }
@@ -250,8 +277,8 @@ async function loadRoles() {
   try {
     roles.value = await roleService.getAllRoles()
   } catch (error) {
-    console.warn('역할 로드 실패, Mock 데이터 사용:', error)
-    roles.value = getMockRoleData()
+    console.error('역할 로드 실패:', error)
+    roles.value = []
   }
 }
 
@@ -262,8 +289,8 @@ async function loadMenus() {
   try {
     menus.value = await menuService.getAllMenus()
   } catch (error) {
-    console.warn('메뉴 로드 실패, Mock 데이터 사용:', error)
-    menus.value = getMockMenuData()
+    console.error('메뉴 로드 실패:', error)
+    menus.value = []
   }
 }
 
@@ -343,7 +370,7 @@ function getPermission(menuId: number, authType: keyof Pick<RolePermission, 'rea
 }
 
 /**
- * 권한 토글
+ * 권한 토글 (기존 - 단일 메뉴만)
  */
 function togglePermission(menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>) {
   const perm = permissions.value.get(menuId)
@@ -353,7 +380,7 @@ function togglePermission(menuId: number, authType: keyof Pick<RolePermission, '
 }
 
 /**
- * 특정 메뉴의 모든 권한 설정
+ * 특정 메뉴의 모든 권한 설정 (기존 - 단일 메뉴만)
  */
 function setMenuAllPermissions(menuId: number, value: 'Y' | 'N') {
   const perm = permissions.value.get(menuId)
@@ -362,6 +389,147 @@ function setMenuAllPermissions(menuId: number, value: 'Y' | 'N') {
     perm.writeAuth = value
     perm.editAuth = value
     perm.deleteAuth = value
+  }
+}
+
+/**
+ * 메뉴의 부모 메뉴 ID 찾기
+ */
+function findParentMenuId(menuId: number): number | undefined {
+  const menu = flatMenuList.value.find(m => m.menuId === menuId)
+  return menu?.parentMenuId
+}
+
+/**
+ * 메뉴의 자식 메뉴 ID 목록 가져오기
+ */
+function getChildMenuIds(menuId: number): number[] {
+  const menu = flatMenuList.value.find(m => m.menuId === menuId)
+  return menu?.childMenuIds || []
+}
+
+/**
+ * 부모 메뉴의 체크 상태 업데이트 (자식 상태 기반)
+ */
+function updateParentState(parentMenuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>) {
+  const parentMenu = flatMenuList.value.find(m => m.menuId === parentMenuId)
+  if (!parentMenu || !parentMenu.hasChildren) return
+
+  const childIds = parentMenu.childMenuIds
+  const checkedCount = childIds.filter(childId => {
+    const perm = permissions.value.get(childId)
+    return perm && perm[authType] === 'Y'
+  }).length
+
+  const parentPerm = permissions.value.get(parentMenuId)
+  if (parentPerm) {
+    // 모든 자식이 체크되어 있으면 부모도 체크, 아니면 체크 해제
+    // (indeterminate 상태는 getCheckboxState에서 처리)
+    parentPerm[authType] = checkedCount === childIds.length ? 'Y' : 'N'
+  }
+}
+
+/**
+ * 체크박스 상태 계산 (checked, unchecked, indeterminate)
+ */
+function getCheckboxState(menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>): 'checked' | 'unchecked' | 'indeterminate' {
+  const menu = flatMenuList.value.find(m => m.menuId === menuId)
+  if (!menu) return 'unchecked'
+
+  const perm = permissions.value.get(menuId)
+  if (!perm) return 'unchecked'
+
+  // 자식이 없는 메뉴는 단순 체크/언체크
+  if (!menu.hasChildren) {
+    return perm[authType] === 'Y' ? 'checked' : 'unchecked'
+  }
+
+  // 자식이 있는 메뉴는 자식 상태 확인
+  const childIds = menu.childMenuIds
+  const checkedCount = childIds.filter(childId => {
+    const childPerm = permissions.value.get(childId)
+    return childPerm && childPerm[authType] === 'Y'
+  }).length
+
+  if (checkedCount === 0) {
+    return 'unchecked'
+  } else if (checkedCount === childIds.length) {
+    return 'checked'
+  } else {
+    return 'indeterminate'
+  }
+}
+
+/**
+ * 권한 토글 (계층 구조 반영)
+ * - 부모 메뉴 체크 해제 시: 모든 자식 메뉴 체크 해제
+ * - 부모 메뉴 체크 시: 모든 자식 메뉴 체크
+ * - 자식 메뉴 변경 시: 부모 메뉴 상태 업데이트 (all/some/none)
+ */
+function togglePermissionWithHierarchy(menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>) {
+  const menu = flatMenuList.value.find(m => m.menuId === menuId)
+  if (!menu) return
+
+  const currentState = getCheckboxState(menuId, authType)
+  // indeterminate 또는 unchecked 상태에서 클릭하면 checked로, checked에서 클릭하면 unchecked로
+  const newValue: 'Y' | 'N' = currentState === 'checked' ? 'N' : 'Y'
+
+  // 현재 메뉴 권한 설정
+  const perm = permissions.value.get(menuId)
+  if (perm) {
+    perm[authType] = newValue
+  }
+
+  // 자식 메뉴가 있으면 모두 같은 값으로 설정
+  if (menu.hasChildren) {
+    for (const childId of menu.childMenuIds) {
+      const childPerm = permissions.value.get(childId)
+      if (childPerm) {
+        childPerm[authType] = newValue
+      }
+    }
+  }
+
+  // 부모 메뉴 상태 업데이트
+  if (menu.parentMenuId) {
+    updateParentState(menu.parentMenuId, authType)
+  }
+}
+
+/**
+ * 특정 메뉴의 모든 권한 설정 (계층 구조 반영)
+ */
+function setMenuAllPermissionsWithHierarchy(menuId: number, value: 'Y' | 'N') {
+  const menu = flatMenuList.value.find(m => m.menuId === menuId)
+  if (!menu) return
+
+  const authTypes: Array<keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>> = ['readAuth', 'writeAuth', 'editAuth', 'deleteAuth']
+
+  // 현재 메뉴 권한 설정
+  const perm = permissions.value.get(menuId)
+  if (perm) {
+    for (const authType of authTypes) {
+      perm[authType] = value
+    }
+  }
+
+  // 자식 메뉴가 있으면 모두 같은 값으로 설정
+  if (menu.hasChildren) {
+    for (const childId of menu.childMenuIds) {
+      const childPerm = permissions.value.get(childId)
+      if (childPerm) {
+        for (const authType of authTypes) {
+          childPerm[authType] = value
+        }
+      }
+    }
+  }
+
+  // 부모 메뉴 상태 업데이트
+  if (menu.parentMenuId) {
+    for (const authType of authTypes) {
+      updateParentState(menu.parentMenuId, authType)
+    }
   }
 }
 
@@ -440,6 +608,17 @@ async function handleSave() {
 
 onMounted(async () => {
   await Promise.all([loadRoles(), loadMenus()])
+
+  // 기본 역할 선택: 리드파워담당자 (LEADPOWER_MANAGER)
+  const defaultRole = roles.value.find(r => r.roleCode === 'LEADPOWER_MANAGER')
+  if (defaultRole) {
+    selectedRoleCode.value = defaultRole.roleCode
+    await handleRoleChange()
+  } else if (roles.value.length > 0) {
+    // LEADPOWER_MANAGER가 없으면 첫 번째 역할 선택
+    selectedRoleCode.value = roles.value[0].roleCode
+    await handleRoleChange()
+  }
 })
 </script>
 
@@ -463,20 +642,24 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid #e5e7eb;
+  flex-wrap: nowrap;
 }
 
 .role-selector {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .role-selector label {
   font-weight: 500;
   color: #374151;
+  white-space: nowrap;
 }
 
 .role-selector .form-select {
@@ -558,12 +741,12 @@ onMounted(async () => {
 .permission-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .permission-table th,
 .permission-table td {
-  padding: 0.75rem 1rem;
+  padding: 0.4rem 0.75rem;
   border-bottom: 1px solid #e5e7eb;
   text-align: center;
 }
@@ -576,15 +759,15 @@ onMounted(async () => {
 
 .permission-table .col-menu {
   text-align: left;
-  min-width: 250px;
+  min-width: 200px;
 }
 
 .permission-table .col-auth {
-  width: 80px;
+  width: 60px;
 }
 
 .permission-table .col-action {
-  width: 100px;
+  width: 80px;
 }
 
 /* 부모/자식 메뉴 스타일 */
@@ -602,9 +785,10 @@ onMounted(async () => {
 }
 
 .menu-icon {
-  width: 20px;
-  margin-right: 0.5rem;
+  width: 18px;
+  margin-right: 0.375rem;
   color: #6b7280;
+  font-size: 0.875rem;
 }
 
 /* 체크박스 스타일 */
@@ -613,13 +797,64 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  position: relative;
 }
 
 .checkbox-wrapper input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
   accent-color: #2563eb;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 2px solid #d1d5db;
+  border-radius: 3px;
+  background: white;
+  transition: all 0.15s ease;
+}
+
+.checkbox-wrapper input[type="checkbox"]:checked {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.checkbox-wrapper input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Indeterminate 상태 (일부 자식만 선택) - 회색 배경 */
+.checkbox-wrapper input[type="checkbox"]:indeterminate {
+  background: #9ca3af;
+  border-color: #9ca3af;
+}
+
+.checkbox-wrapper input[type="checkbox"]:indeterminate::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 6px;
+  width: 8px;
+  height: 2px;
+  background: white;
+  border: none;
+  transform: none;
+}
+
+.checkbox-wrapper input[type="checkbox"]:hover {
+  border-color: #2563eb;
+}
+
+.checkbox-wrapper.indeterminate input[type="checkbox"] {
+  background: #9ca3af;
+  border-color: #9ca3af;
 }
 
 /* 일괄 설정 버튼 */
@@ -627,16 +862,21 @@ onMounted(async () => {
 .btn-deny-sm {
   padding: 0.25rem 0.5rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
   font-size: 0.75rem;
   transition: all 0.2s;
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-allow-sm {
   background: #d1fae5;
   color: #047857;
-  margin-right: 0.25rem;
+  margin-right: 0.375rem;
 }
 
 .btn-allow-sm:hover {
@@ -652,6 +892,11 @@ onMounted(async () => {
 .btn-deny-sm:hover {
   background: #ef4444;
   color: white;
+}
+
+.btn-allow-sm i,
+.btn-deny-sm i {
+  font-size: 0.8125rem;
 }
 
 /* 변경 안내 */

@@ -1,7 +1,7 @@
 <template>
   <div class="bank-account">
     <PageHeader
-      title="계좌 조회"
+      title="계좌조회"
       description="등록된 계좌 정보와 입출금 내역을 조회합니다."
     >
       <template #actions>

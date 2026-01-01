@@ -27,9 +27,9 @@ export interface DeliveryApiResponse {
   siteAddress: string
   addressDetail: string
   deliveryDate: string
-  siteSupervisorName: string
+  siteManagerName: string  // 서버 필드명: siteManagerName
   receiverName: string
-  siteSupervisorPhone: string
+  siteManagerPhone: string  // 서버 필드명: siteManagerPhone
   driverName: string
   driverPhone: string
   vehicleNo: string
@@ -154,9 +154,9 @@ function transformDeliveryResponse(apiResponse: DeliveryApiResponse): DeliveryIn
       deliveryAddress: apiResponse.siteAddress,  // siteAddress → deliveryAddress
       addressDetail: apiResponse.addressDetail,
       deliveryDate: apiResponse.deliveryDate,
-      siteSupervisorName: apiResponse.siteSupervisorName,
+      siteSupervisorName: apiResponse.siteManagerName,  // siteManagerName → siteSupervisorName
       receiverName: apiResponse.receiverName,
-      siteSupervisorPhone: apiResponse.siteSupervisorPhone,
+      siteSupervisorPhone: apiResponse.siteManagerPhone,  // siteManagerPhone → siteSupervisorPhone
       driverName: apiResponse.driverName,
       driverPhone: apiResponse.driverPhone,
       vehicleNo: apiResponse.vehicleNo
@@ -375,7 +375,7 @@ class DeliveryService {
       if (params.endDate) queryParams.append('endDate', params.endDate)
       if (params.deliveryRequestNo) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
       if (params.status) queryParams.append('status', params.status)
-      queryParams.append('sort', params.sort || 'deliveryRequestDate,desc')
+      queryParams.append('sort', params.sort || 'delivery_request_date,desc')
       queryParams.append('page', params.page.toString())
       queryParams.append('size', params.size.toString())
 

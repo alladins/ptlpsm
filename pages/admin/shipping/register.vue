@@ -172,24 +172,25 @@
             </div>
             <div class="items-table-wrapper">
               <table class="items-table">
-                <thead>                  
+                <thead>
                   <tr>
-                    <th style="width: 30px">NO</th>
-                    <th style="width: 90px">품목명</th>
+                    <th style="width: 20px">NO</th>
+                    <th style="width: 80px">품목명</th>
                     <th style="width: 60px">SKU ID</th>
                     <th style="width: 100px">SKU 품명</th>
-                    <th style="width: 420px">규격</th>
-                    <th style="width: 30px">단위</th>
-                    <th style="width: 60px">발주수량</th>
+                    <th style="width: 350px">규격</th>
+                    <th style="width: 20px">단위</th>
+                    <th style="width: 70px">발주수량</th>
+                    <th style="width: 60px">기출하</th>
                     <th style="width: 60px">잔여수량</th>
-                    <th style="width: 60px" class="quantity-col">출하수량</th>
-                    <th style="width: 60px">단가</th>
-                    <th style="width: 100px">금액</th>
+                    <th style="width: 80px" class="quantity-col">출하수량</th>
+                    <th style="width: 70px">단가</th>
+                    <th style="width: 80px">금액</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="selectedOrderItems.length === 0">
-                    <td colspan="11" class="empty-message">
+                    <td colspan="12" class="empty-message">
                       납품요구번호를 선택하면 품목이 표시됩니다.
                     </td>
                   </tr>
@@ -198,16 +199,18 @@
                     <td>{{ item.itemName }}</td>
                     <td>{{ item.skuId }}</td>
                     <td>{{ item.skuName }}</td>
-                    <td>{{ item.specification }}</td>
+                    <td class="specification-cell" :title="item.specification">{{ item.specification }}</td>
                     <td>{{ item.unit }}</td>
                     <td class="text-right">{{ formatQuantity(item.quantity) }}</td>
+                    <td class="text-right">{{ formatQuantity(item.shippedQuantity) }}</td>
                     <td class="text-right">
-                      {{ formatQuantity(item.remainingQuantity) }}
+                      {{ formatQuantity(getCalculatedRemainingQuantity(item)) }}
                       <button
                         type="button"
                         class="btn-max-quantity"
                         @click="setMaxQuantity(item)"
-                        :title="'전체수량 입력 (' + formatQuantity(item.remainingQuantity) + ')'"
+                        :title="'전체수량 입력 (' + formatQuantity(getCalculatedRemainingQuantity(item)) + ')'"
+                        :disabled="getCalculatedRemainingQuantity(item) <= 0"
                       >▶</button>
                     </td>
                     <td class="text-right quantity-col">
@@ -226,7 +229,7 @@
                 </tbody>
                 <tfoot v-if="selectedOrderItems.length > 0">
                   <tr>
-                    <td colspan="6" class="text-right"></td>
+                    <td colspan="7" class="text-right"></td>
                     <td colspan="2" class="text-right"><strong>총 출하수량</strong></td>
                     <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
                     <td class="text-right"><strong>총 금액</strong></td>
@@ -282,6 +285,7 @@ interface OrderItem {
   unit: string
   quantity: number
   shippingQuantity: number
+  shippedQuantity: number  // 기출하 수량
   remainingQuantity: number
   unitPrice: number
   amount: number
@@ -455,8 +459,14 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
   }
 }
 
+// 잔여수량 계산 (발주수량 - 기출하 - 출하수량)
+const getCalculatedRemainingQuantity = (item: OrderItem): number => {
+  return Math.max(0, item.quantity - item.shippedQuantity - item.shippingQuantity)
+}
+
 // 전체수량 설정
 const setMaxQuantity = (item: OrderItem) => {
+  // 기출하를 제외한 실제 잔여수량을 출하수량에 설정
   item.shippingQuantity = item.remainingQuantity
 }
 
@@ -486,14 +496,15 @@ const handleSubmit = async () => {
   const validationRules = {
     deliveryRequestNo: [rules.required('납품요구번호')],
     shippingDate: [
-      rules.required('출하일자'),
-      (value: string) => {
-        const today = new Date().toISOString().slice(0, 10)
-        if (value < today) {
-          return '출하일자는 오늘 이전 날짜로 설정할 수 없습니다'
-        }
-        return null
-      }
+      rules.required('출하일자')
+      // TODO: 임시로 과거 날짜 입력 허용 - 나중에 제한 복구 필요
+      // (value: string) => {
+      //   const today = new Date().toISOString().slice(0, 10)
+      //   if (value < today) {
+      //     return '출하일자는 오늘 이전 날짜로 설정할 수 없습니다'
+      //   }
+      //   return null
+      // }
     ],
     status: [rules.required('상태')]
   }
@@ -552,5 +563,18 @@ const handleSubmit = async () => {
 
 .btn-max-quantity:hover {
   background: #1d4ed8;
+}
+
+.btn-max-quantity:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* 규격 셀 스타일 (말줄임표) */
+.specification-cell {
+  max-width: 350px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

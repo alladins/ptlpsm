@@ -2,8 +2,10 @@
   <div class="transport-list">
     <!-- 페이지 헤더 - 리팩토링: UiPageHeader 컴포넌트 사용 -->
     <PageHeader
-      title="운송장 목록"
-      description="운송장 정보를 조회하고 관리합니다."
+      title="운송관리"
+      description="운송 정보를 조회하고 관리합니다."
+      icon="transport"
+      icon-color="orange"
     >
       <template #actions>
         <button class="btn-action" @click="handleSearch" :disabled="loading">

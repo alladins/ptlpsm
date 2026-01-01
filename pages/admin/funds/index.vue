@@ -2,8 +2,8 @@
   <div class="fund-list">
     <!-- 페이지 헤더 -->
     <PageHeader
-      title="자금 관리"
-      description="납품요구별 자금 현황(선급금/기성금/잔금)을 조회하고 관리합니다."
+      title="기성청구"
+      description="납품요구별 기성 현황(선급금/기성금/잔금)을 조회하고 관리합니다."
     >
       <template #actions>
         <button class="btn-action" @click="handleSearch" :disabled="loading">
@@ -91,7 +91,7 @@
             <label>상태:</label>
             <select v-model="searchForm.status" class="select-input">
               <option value="">전체</option>
-              <option value="IN_PROGRESS">진행중</option>
+              <option value="ACTIVE">진행중</option>
               <option value="COMPLETED">완료</option>
               <option value="CANCELLED">취소</option>
             </select>
@@ -145,10 +145,10 @@
               >
                 <td>{{ startIndex + index }}</td>
                 <td>{{ item.deliveryRequestNo }}</td>
-                <td>{{ item.projectName }}</td>
-                <td class="text-right">{{ formatCurrency(item.advancePayment) }}</td>
+                <td>{{ item.projectName || item.siteName }}</td>
+                <td class="text-right">{{ formatCurrency(item.advancePaymentAmount || item.advancePayment) }}</td>
                 <td class="text-right">{{ formatCurrency(item.progressPaymentTotal) }}</td>
-                <td class="text-right">{{ formatCurrency(item.balancePayment) }}</td>
+                <td class="text-right">{{ formatCurrency(item.balancePayment || item.balanceAmount) }}</td>
                 <td class="text-center">
                   <div class="progress-cell">
                     <div class="progress-bar-mini">
@@ -272,11 +272,12 @@ const handleReset = () => {
 }
 
 const handlePageChange = async (page: number) => {
+  // page는 Pagination 컴포넌트에서 이미 0-based로 전달됨
   await fundStore.fetchList({
     deliveryRequestNo: searchForm.value.deliveryRequestNo || undefined,
     projectName: searchForm.value.projectName || undefined,
     status: searchForm.value.status || undefined,
-    page: page - 1,
+    page: page,
     size: pageSize.value
   })
 }
@@ -293,9 +294,12 @@ const goToDetail = (fundId: number) => {
  * 수금률 계산
  */
 const getCollectionRate = (item: FundListItem): number => {
-  if (!item.totalContractAmount || item.totalContractAmount <= 0) return 0
-  const collected = (item.advancePayment || 0) + (item.progressPaymentTotal || 0) + (item.balancePayment || 0)
-  return (collected / item.totalContractAmount) * 100
+  const contractAmount = item.totalContractAmount || item.contractTotalAmount || 0
+  if (contractAmount <= 0) return 0
+  const collected = (item.advancePaymentAmount || item.advancePayment || 0) +
+                    (item.progressPaymentTotal || 0) +
+                    (item.balanceAmount || item.balancePayment || 0)
+  return (collected / contractAmount) * 100
 }
 
 /**
@@ -314,7 +318,7 @@ const getProgressClass = (rate: number): string => {
 const getStatusClass = (status?: FundStatus): string => {
   if (!status) return ''
   switch (status) {
-    case 'IN_PROGRESS':
+    case 'ACTIVE':
       return 'status-in-progress'
     case 'COMPLETED':
       return 'status-completed'

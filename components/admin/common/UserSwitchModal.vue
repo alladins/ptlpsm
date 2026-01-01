@@ -80,6 +80,7 @@
                 <div class="user-details">
                   <span class="user-id">{{ user.loginId }}</span>
                   <span class="user-role">{{ getRoleLabel(user.role) }}</span>
+                  <span v-if="user.companyName" class="user-company">{{ user.companyName }}</span>
                 </div>
               </div>
               <div v-if="selectedUser?.userid === user.userid" class="check-icon">
@@ -151,6 +152,8 @@ interface UserItem {
   userName: string
   email?: string
   role: string
+  companyId?: number | null    // 회사 ID (FK)
+  companyName?: string | null  // 회사명
 }
 
 const props = defineProps<{
@@ -177,29 +180,29 @@ const totalPages = ref(1)
 const pageSize = 10
 const searchInput = ref<HTMLInputElement | null>(null)
 
-// 역할 필터 옵션 (서버 USER_ROLE 코드 기준)
+// 역할 필터 옵션
 const roleFilters = [
   { value: '', label: '전체' },
-  { value: 'LEAD_POWER', label: '리드파워담당자' },
-  { value: 'OEM_MANAGER', label: 'OEM담당자' },
-  { value: 'COURIER', label: '배송기사' },
-  { value: 'SITE_MANAGER', label: '현장소장' },
-  { value: 'SALES_MANAGER', label: '영업담당자' },
-  { value: 'VIEWER', label: '조회자' },
-  { value: 'SITE_INSPECTOR', label: '감리원' }
+  { value: 'LEADPOWER_MANAGER', label: '리드파워 담당자' },
+  { value: 'OEM_MANAGER', label: 'OEM 담당자' },
+  { value: 'SITE_MANAGER', label: '시공사 담당자' },
+  { value: 'SITE_INSPECTOR', label: '시공사 감리원' },
+  { value: 'SALES_MANAGER', label: '영업 담당자' },
+  { value: 'DELIVERY_DRIVER', label: '운송기사' },
+  { value: 'READ_ONLY', label: '조회 전용' }
 ]
 
-// 역할 라벨 변환 (서버 USER_ROLE 코드 기준)
+// 역할 라벨 변환
 function getRoleLabel(role: string | undefined | null): string {
   const roleMap: Record<string, string> = {
     'SYSTEM_ADMIN': '시스템관리자',
-    'LEAD_POWER': '리드파워담당자',
-    'OEM_MANAGER': 'OEM담당자',
-    'COURIER': '배송기사',
-    'SITE_MANAGER': '현장소장',
-    'SALES_MANAGER': '영업담당자',
-    'VIEWER': '조회자',
-    'SITE_INSPECTOR': '감리원'
+    'LEADPOWER_MANAGER': '리드파워 담당자',
+    'OEM_MANAGER': 'OEM 담당자',
+    'SITE_MANAGER': '시공사 담당자',
+    'SITE_INSPECTOR': '시공사 감리원',
+    'SALES_MANAGER': '영업 담당자',
+    'DELIVERY_DRIVER': '운송기사',
+    'READ_ONLY': '조회 전용'
   }
   return roleMap[role || ''] || role || '알 수 없음'
 }
@@ -263,7 +266,13 @@ async function fetchUsers() {
 
     const data = await response.json()
 
-    if (data.success && data.data) {
+    // 서버 응답 형식: { content: [...], totalPages: 1, ... }
+    if (data.content && Array.isArray(data.content)) {
+      users.value = data.content
+      totalPages.value = data.totalPages || 1
+    }
+    // 기존 형식도 지원: { success: true, data: { content: [...] } }
+    else if (data.success && data.data) {
       users.value = data.data.content || data.data || []
       totalPages.value = data.data.totalPages || 1
     } else {
@@ -273,15 +282,15 @@ async function fetchUsers() {
     console.error('사용자 목록 조회 실패:', err)
     error.value = err instanceof Error ? err.message : '사용자 목록을 불러올 수 없습니다.'
 
-    // Mock 데이터 (개발용, 서버 USER_ROLE 코드 기준)
+    // Mock 데이터 (개발용)
     users.value = [
-      { userid: 2, loginId: 'leadpower01', userName: '김리드', role: 'LEAD_POWER' },
-      { userid: 3, loginId: 'oem01', userName: '이OEM', role: 'OEM_MANAGER' },
-      { userid: 4, loginId: 'courier01', userName: '박배송', role: 'COURIER' },
-      { userid: 5, loginId: 'site01', userName: '최현장', role: 'SITE_MANAGER' },
-      { userid: 6, loginId: 'sales01', userName: '정영업', role: 'SALES_MANAGER' },
-      { userid: 7, loginId: 'viewer01', userName: '한조회', role: 'VIEWER' },
-      { userid: 8, loginId: 'inspector01', userName: '윤감리', role: 'SITE_INSPECTOR' }
+      { userid: 2, loginId: 'leadpower01', userName: '김리드', role: 'LEADPOWER_MANAGER', companyId: 1, companyName: '(주)리드파워' },
+      { userid: 3, loginId: 'oem01', userName: '이OEM', role: 'OEM_MANAGER', companyId: 2, companyName: '(주)하이코리아' },
+      { userid: 4, loginId: 'driver01', userName: '박운송', role: 'DELIVERY_DRIVER', companyId: 3, companyName: '주식회사 유진로지스틱스' },
+      { userid: 5, loginId: 'site01', userName: '최현장', role: 'SITE_MANAGER', companyId: 4, companyName: '(주)한주토건' },
+      { userid: 6, loginId: 'sales01', userName: '정영업', role: 'SALES_MANAGER', companyId: 1, companyName: '(주)리드파워' },
+      { userid: 7, loginId: 'readonly01', userName: '한조회', role: 'READ_ONLY', companyId: 5, companyName: 'PTLPSM' },
+      { userid: 8, loginId: 'inspector01', userName: '윤감리', role: 'SITE_INSPECTOR', companyId: 6, companyName: '플랫트리 주식회사' }
     ]
     totalPages.value = 1
     error.value = null // Mock 데이터 사용 시 에러 숨김
@@ -336,8 +345,8 @@ async function handleConfirm() {
     if (success) {
       emit('switched', selectedUser.value.userid)
       emit('close')
-      // 페이지 새로고침하여 권한 및 메뉴 갱신
-      window.location.reload()
+      // 대시보드로 이동하여 권한 및 메뉴 갱신 (권한 없는 페이지에 남지 않도록)
+      window.location.href = '/admin'
     } else {
       alert('사용자 전환에 실패했습니다.')
     }
@@ -609,6 +618,11 @@ async function handleConfirm() {
   background: #f3f4f6;
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+.user-company {
+  color: #9ca3af;
+  font-size: 11px;
 }
 
 .check-icon {

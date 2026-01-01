@@ -2,15 +2,18 @@
   "permissions": {
     "allow": [
       "Bash(npm run dev:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "context7",
     "magic",
     "playwright",
     "sequential-thinking"
-  ]
+  ],
+  "outputStyle": "default"
 }

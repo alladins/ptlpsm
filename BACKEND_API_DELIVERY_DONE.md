@@ -357,7 +357,7 @@ sort: string (default: 'deliveryRequestDate,desc') - 정렬
 {deliveryRequestNo} 건에 대한 {현장 소장 서명 or 현장감리원 서명}이 필요합니다.
 아래 링크를 클릭하여 서명해 주시기 바랍니다.
 {tokenUrl}
-* 링크는 발송 후 7일간 유효합니다.
+* 링크는 발송 후 1일간 유효합니다.
 ```
 
 ---
@@ -920,7 +920,7 @@ public class MessageService {
             "%s 건에 대한 %s이 필요합니다.\n" +
             "아래 링크를 클릭하여 서명해 주시기 바랍니다.\n" +
             "%s\n" +
-            "* 링크는 발송 후 7일간 유효합니다.",
+            "* 링크는 발송 후 1일간 유효합니다.",
             recipientName,
             deliveryDone.getDeliveryRequestNo(),
             roleText,

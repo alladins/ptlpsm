@@ -113,7 +113,7 @@ export function usePermission(options: UsePermissionOptions | string = {}) {
   const isSiteInspector = computed(() => permissionStore.isSiteInspector)
 
   /** 운송기사 */
-  const isCourier = computed(() => permissionStore.isCourier)
+  const isDeliveryDriver = computed(() => permissionStore.isDeliveryDriver)
 
   /** 조회 전용 역할 */
   const isReadOnlyRole = computed(() => permissionStore.isReadOnly)
@@ -298,7 +298,7 @@ export function usePermission(options: UsePermissionOptions | string = {}) {
     isOemManager,
     isSiteManager,
     isSiteInspector,
-    isCourier,
+    isDeliveryDriver,
     isReadOnlyRole,
     currentRole,
 

@@ -19,7 +19,8 @@ import type {
   FundStatistics,
   FundStatisticsParams,
   ProgressPaymentRequest,
-  PaymentCreateRequest
+  PaymentCreateRequest,
+  AdvancePayment
 } from '~/types/fund'
 
 export const useFundStore = defineStore('fund', () => {
@@ -36,6 +37,9 @@ export const useFundStore = defineStore('fund', () => {
 
   /** 기성금 이력 */
   const payments = ref<ProgressPaymentRequest[]>([])
+
+  /** 선급금 이력 */
+  const advances = ref<AdvancePayment[]>([])
 
   /** 로딩 상태 */
   const loading = ref(false)
@@ -61,6 +65,9 @@ export const useFundStore = defineStore('fund', () => {
 
   /** 전체 항목 수 */
   const totalElements = computed(() => pagination.value.total)
+
+  /** 선급금 신청 여부 (1회성이므로 이력이 있으면 true) */
+  const hasAdvancePayment = computed(() => advances.value.length > 0)
 
   // ============ Actions ============
 
@@ -196,6 +203,19 @@ export const useFundStore = defineStore('fund', () => {
   }
 
   /**
+   * 선급금 이력 조회
+   */
+  async function fetchAdvances(fundId: number) {
+    try {
+      const response = await fundService.getAdvances(fundId)
+      advances.value = response
+    } catch (err) {
+      console.error('선급금 이력 조회 실패:', err)
+      advances.value = []
+    }
+  }
+
+  /**
    * 기성금 요청
    */
   async function requestPayment(fundId: number, data: PaymentCreateRequest): Promise<ProgressPaymentRequest | null> {
@@ -249,6 +269,7 @@ export const useFundStore = defineStore('fund', () => {
     detail.value = null
     statistics.value = null
     payments.value = []
+    advances.value = []
     loading.value = false
     error.value = null
     pagination.value = {
@@ -265,6 +286,7 @@ export const useFundStore = defineStore('fund', () => {
     detail,
     statistics,
     payments,
+    advances,
     loading,
     error,
     pagination,
@@ -273,6 +295,7 @@ export const useFundStore = defineStore('fund', () => {
     isEmpty,
     currentPage,
     totalElements,
+    hasAdvancePayment,
 
     // Actions
     fetchList,
@@ -282,6 +305,7 @@ export const useFundStore = defineStore('fund', () => {
     createFund,
     updateFund,
     fetchPayments,
+    fetchAdvances,
     requestPayment,
     approvePayment,
     reset

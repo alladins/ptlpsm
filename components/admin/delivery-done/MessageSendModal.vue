@@ -109,7 +109,7 @@
               </p>
               <p>아래 링크를 클릭하여 서명해 주시기 바랍니다.</p>
               <p class="preview-link">[서명 URL이 여기에 표시됩니다]</p>
-              <p class="preview-note">* 링크는 발송 후 7일간 유효합니다.</p>
+              <p class="preview-note">* 링크는 발송 후 1일간 유효합니다.</p>
             </div>
 
             <!-- 현장감리원 메시지 -->
@@ -123,7 +123,7 @@
               </p>
               <p>아래 링크를 클릭하여 서명해 주시기 바랍니다.</p>
               <p class="preview-link">[서명 URL이 여기에 표시됩니다]</p>
-              <p class="preview-note">* 링크는 발송 후 7일간 유효합니다.</p>
+              <p class="preview-note">* 링크는 발송 후 1일간 유효합니다.</p>
             </div>
           </div>
         </div>

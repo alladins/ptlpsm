@@ -2,8 +2,10 @@
   <div class="order-requests-list">
     <!-- 페이지 헤더 -->
     <PageHeader
-      title="주문 요청 관리"
-      description="현장소장의 주문 요청을 확인하고 처리합니다."
+      title="납품요청"
+      description="현장소장의 납품요청을 확인하고 처리합니다."
+      icon="delivery"
+      icon-color="cyan"
     >
       <template #actions>
         <button class="btn-action" @click="handleSearch" :disabled="loading">
@@ -22,39 +24,39 @@
       <!-- 통계 요약 카드 -->
       <div class="stats-cards">
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+          <div class="stat-icon stat-icon--red">
             <i class="fas fa-bell"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-label">신규 요청</div>
-            <div class="stat-value">{{ statistics.newCount }}</div>
+            <h3>신규 요청</h3>
+            <p>{{ statistics.newCount }}</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+          <div class="stat-icon stat-icon--yellow">
             <i class="fas fa-clock"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-label">대기중</div>
-            <div class="stat-value">{{ statistics.pendingCount }}</div>
+            <h3>대기중</h3>
+            <p>{{ statistics.pendingCount }}</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+          <div class="stat-icon stat-icon--green">
             <i class="fas fa-check-circle"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-label">승인</div>
-            <div class="stat-value">{{ statistics.approvedCount }}</div>
+            <h3>승인</h3>
+            <p>{{ statistics.approvedCount }}</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
+          <div class="stat-icon stat-icon--gray">
             <i class="fas fa-times-circle"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-label">반려</div>
-            <div class="stat-value">{{ statistics.rejectedCount }}</div>
+            <h3>반려</h3>
+            <p>{{ statistics.rejectedCount }}</p>
           </div>
         </div>
       </div>

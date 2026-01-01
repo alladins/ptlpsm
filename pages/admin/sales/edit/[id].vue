@@ -4,6 +4,8 @@
     <PageHeader
       title="영업 수정"
       description="영업 정보를 수정합니다."
+      icon="chart"
+      icon-color="blue"
     />
 
     <LoadingSection v-if="loading" />

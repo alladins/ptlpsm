@@ -213,8 +213,8 @@
                 class="form-input-md"
               >
                 <option value="">기사를 선택하세요</option>
-                <option v-for="courier in couriers" :key="courier.userid" :value="courier.userid">
-                  {{ courier.userName }} ({{ courier.companyName || '운송사 정보 없음' }})
+                <option v-for="driver in deliveryDrivers" :key="driver.userid" :value="driver.userid">
+                  {{ driver.userName }} ({{ driver.companyName || '운송사 정보 없음' }})
                 </option>
               </select>
             </FormField>
@@ -325,8 +325,8 @@ const router = useRouter()
 const route = useRoute()
 
 // 사용자 목록
-const siteManagers = ref<UserByRole[]>([])  // SITE_MANAGER (현장소장/현장담당자)
-const couriers = ref<UserByRole[]>([])       // COURIER (배송 기사)
+const siteManagers = ref<UserByRole[]>([])     // SITE_MANAGER (시공사 담당자)
+const deliveryDrivers = ref<UserByRole[]>([])  // DELIVERY_DRIVER (운송기사)
 
 // 선택된 사용자 ID
 const selectedSupervisorId = ref<number | ''>('')  // 현장소장
@@ -412,12 +412,12 @@ onMounted(async () => {
     const managers = await userService.getUsersByRoles(['SITE_MANAGER'])
     siteManagers.value = managers
 
-    // COURIER 목록 조회
-    const courierList = await userService.getUsersByRoles(['COURIER'])
-    couriers.value = courierList
+    // DELIVERY_DRIVER 목록 조회 (운송기사)
+    const driverList = await userService.getUsersByRoles(['DELIVERY_DRIVER'])
+    deliveryDrivers.value = driverList
 
     console.log('현장 담당자 목록:', siteManagers.value)
-    console.log('배송 기사 목록:', couriers.value)
+    console.log('운송기사 목록:', deliveryDrivers.value)
   } catch (error) {
     console.error('사용자 목록 조회 실패:', error)
   }
@@ -553,7 +553,7 @@ const handleDriverPhoneInput = () => {
 // 기사 선택 시 자동 입력
 const handleDriverChange = () => {
   if (selectedDriverId.value) {
-    const driver = couriers.value.find(c => c.userid === selectedDriverId.value)
+    const driver = deliveryDrivers.value.find((d: UserByRole) => d.userid === selectedDriverId.value)
     if (driver) {
       formData.driverName = driver.userName
       formData.carrierName = driver.companyName || ''

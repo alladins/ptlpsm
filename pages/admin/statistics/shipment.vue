@@ -1,7 +1,7 @@
 <template>
   <div class="statistics-shipment">
     <PageHeader
-      title="출하현황통계"
+      title="출하현황 통계"
       description="기간별 출하 현황을 통계로 확인합니다."
     />
 

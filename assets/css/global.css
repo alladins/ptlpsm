@@ -56,6 +56,38 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
+  /* ========== Sidebar Design System (전문 출하관리 시스템) ========== */
+  --sidebar-bg: #1e3a5f;           /* 깊은 네이비 - 전문성 강조 */
+  --sidebar-bg-dark: #162d4a;      /* 더 어두운 네이비 */
+  --sidebar-hover: #2a4a6f;        /* 호버 상태 */
+  --sidebar-active: #3b5998;       /* 활성화 상태 */
+  --sidebar-text: #e2e8f0;         /* 메인 텍스트 */
+  --sidebar-text-muted: #94a3b8;   /* 보조 텍스트 */
+  --sidebar-divider: #334766;      /* 구분선 */
+  --sidebar-accent: #60a5fa;       /* 악센트 (활성 표시) */
+
+  /* ========== Domain Colors (업무 도메인별 색상) ========== */
+  --domain-sales: #6366f1;         /* 영업 - 인디고 */
+  --domain-order: #3b82f6;         /* 발주 - 파란색 */
+  --domain-shipment: #8b5cf6;      /* 출하 - 보라색 */
+  --domain-transport: #f59e0b;     /* 운송 - 황색 */
+  --domain-delivery: #10b981;      /* 납품 - 초록색 */
+  --domain-fund: #ef4444;          /* 자금 - 빨간색 */
+  --domain-statistics: #06b6d4;    /* 통계 - 청록색 */
+  --domain-message: #ec4899;       /* 문자 - 분홍색 */
+  --domain-basic: #64748b;         /* 기초정보 - 슬레이트 */
+  --domain-system: #78716c;        /* 시스템 - 스톤 */
+
+  /* ========== Extended Semantic Colors ========== */
+  --success-300: #86efac;
+  --success-700: #15803d;
+  --warning-300: #fcd34d;
+  --warning-700: #b45309;
+  --danger-300: #fca5a5;
+  --danger-700: #b91c1c;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+
   /* Typography */
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;

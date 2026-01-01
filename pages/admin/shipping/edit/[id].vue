@@ -3,6 +3,8 @@
     <PageHeader
       title="출하 수정"
       description="출하 정보를 수정합니다."
+      icon="shipping"
+      icon-color="green"
     >
       <template #actions>
         <button
