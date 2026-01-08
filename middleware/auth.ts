@@ -126,29 +126,27 @@ export default defineNuxtRouteMiddleware(async (to) => {
       })
     }
 
-    // 관리자 권한 확인 (로컬 개발 환경에서는 역할 체크 스킵)
+    // 역할 기반 접근 제어 (인증된 사용자는 /admin 접근 허용, 메뉴 레벨에서 권한 제어)
+    // 로컬 개발 환경에서는 역할 체크 스킵
     if (!isLocalDevelopment) {
       const userRole = authStore.role?.toUpperCase() || ''
-      console.log('관리자 권한 검증:', {
+      console.log('사용자 역할 확인:', {
         원본역할: authStore.role,
         정규화역할: userRole,
         경로: to.path
       })
 
-      // 다양한 형태의 관리자 역할 검사
-      const isAdmin = userRole === 'ADMINISTRATOR' ||
-                      userRole === 'SYSTEM_ADMIN'
-
-      if (!isAdmin) {
-        console.warn('관리자 권한이 필요합니다:', {
+      // 인증된 사용자인지 확인 (로그인 상태는 위에서 이미 확인됨)
+      // 메뉴별 권한은 SidebarMenu의 filterMenusByPermission()에서 제어
+      // 역할이 없는 경우만 차단
+      if (!userRole) {
+        console.warn('사용자 역할이 설정되지 않았습니다:', {
           현재역할: authStore.role,
-          정규화된역할: userRole,
-          요청경로: to.path,
-          허용되는역할: ['ADMINISTRATOR', 'SYSTEM_ADMIN']
+          요청경로: to.path
         })
 
         // 권한 부족 메시지 표시
-        alert('관리자 권한이 필요합니다. 관리자에게 문의하세요.')
+        alert('사용자 역할이 설정되지 않았습니다. 관리자에게 문의하세요.')
 
         // 메인 페이지로 리다이렉트
         return navigateTo('/')

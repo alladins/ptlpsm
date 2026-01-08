@@ -91,8 +91,10 @@ class AuthService {
   /**
    * 로그아웃
    * @param userid 사용자 ID (숫자)
+   * @param loginId 로그인 ID (문자열)
+   * @param token 액세스 토큰
    */
-  async logout(userid: number, token: string): Promise<void> {
+  async logout(userid: number, loginId: string, token: string): Promise<void> {
     try {
       const response = await fetch(`${getApiBaseUrl()}/auth/logout`, {
         method: 'POST',
@@ -101,7 +103,8 @@ class AuthService {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          userid: userid
+          userid: userid,
+          loginId: loginId
         })
       })
   

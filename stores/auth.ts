@@ -93,11 +93,21 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // Actions
-  function setAuthData(data: {
+  async function setAuthData(data: {
     userInfo: User
     accessToken: string
     refreshToken: string
   }) {
+    // 권한 캐시 초기화 (새 사용자 로그인 시 이전 권한 캐시 제거)
+    try {
+      const { usePermissionStore } = await import('./permission')
+      const permissionStore = usePermissionStore()
+      permissionStore.clearCache()
+      console.log('권한 캐시 초기화 완료 (로그인)')
+    } catch (err) {
+      console.warn('권한 캐시 초기화 실패:', err)
+    }
+
     user.value = data.userInfo
     accessToken.value = data.accessToken
     refreshToken.value = data.refreshToken

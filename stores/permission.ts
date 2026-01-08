@@ -133,8 +133,9 @@ export const usePermissionStore = defineStore('permission', () => {
   async function fetchUserMenus(forceRefresh = false): Promise<Menu[]> {
     const authStore = useAuthStore()
 
-    if (!authStore.user?.userid) {
-      console.warn('사용자 정보가 없습니다')
+    // loginId로 체크 (API 호출에 loginId 사용, userid는 백엔드에서 누락될 수 있음)
+    if (!authStore.user?.loginId) {
+      console.warn('사용자 정보가 없습니다 (loginId 없음)')
       return []
     }
 
@@ -239,8 +240,9 @@ export const usePermissionStore = defineStore('permission', () => {
   async function fetchMenuAuth(menuId: number): Promise<MenuAuth> {
     const authStore = useAuthStore()
 
-    if (!authStore.user?.userid) {
-      console.warn('사용자 정보가 없습니다')
+    // loginId로 체크 (API 호출에 loginId 사용)
+    if (!authStore.user?.loginId) {
+      console.warn('사용자 정보가 없습니다 (loginId 없음)')
       return getDefaultAuth()
     }
 
