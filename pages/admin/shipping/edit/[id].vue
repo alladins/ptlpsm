@@ -1241,5 +1241,15 @@ const handleDelete = async () => {
 /* 출하수량 입력 폭 조절 */
 .input-w66 {
   width: 66% !important;
+  min-width: 70px !important;
+}
+
+/* 출하수량 컬럼 최소 너비 보장 */
+.quantity-col {
+  min-width: 80px !important;
+}
+
+.quantity-col input {
+  min-width: 70px !important;
 }
 </style>

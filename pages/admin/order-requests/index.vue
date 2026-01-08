@@ -13,10 +13,6 @@
           <i v-else class="fas fa-search"></i>
           검색
         </button>
-        <button class="btn-action btn-secondary" @click="handleReset">
-          <i class="fas fa-undo"></i>
-          초기화
-        </button>
       </template>
     </PageHeader>
 

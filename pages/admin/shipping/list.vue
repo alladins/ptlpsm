@@ -13,10 +13,6 @@
           <i v-else class="fas fa-search"></i>
           검색
         </button>
-        <button class="btn-action btn-secondary" @click="handleReset">
-          <i class="fas fa-undo"></i>
-          초기화
-        </button>
         <button class="btn-action btn-primary" @click="goToRegister">
           <i class="fas fa-plus"></i>
           등록
@@ -57,10 +53,13 @@
             </select>
           </div>
 
-          <!-- 출하ID -->
-          <div class="search-item search-keyword">
-            <label>출하ID:</label>
-            <input type="number" v-model.number="searchForm.shipmentId" placeholder="출하ID 입력" class="keyword-input" @keyup.enter="handleSearch">
+          <!-- 정렬 -->
+          <div class="search-item">
+            <label>정렬:</label>
+            <select v-model="searchForm.sortOrder" class="status-select">
+              <option value="desc">최근 출하순</option>
+              <option value="asc">과거 출하순</option>
+            </select>
           </div>
         </div>
       </div>
@@ -211,8 +210,8 @@ const searchForm = ref({
   endDate: getTodayDate(),
   orderId: null as number | null,
   deliveryRequestNo: '',
-  shipmentId: null as number | null,
-  status: ''
+  status: '',
+  sortOrder: 'desc' as 'asc' | 'desc'  // 기본값: 최근 출하순
 })
 
 // 리팩토링: useDataTable composable 사용으로 페이지네이션 로직 통합
@@ -233,6 +232,7 @@ const {
 } = useDataTable<ShipmentListItem>({
   fetchFunction: async (params) => {
     // 0-based pagination 사용
+    // 정렬은 백엔드에서 처리 (shipmentDate 기준)
     const response = await shipmentService.getShipments({
       startDate: searchForm.value.startDate,
       endDate: searchForm.value.endDate,
@@ -240,20 +240,14 @@ const {
       orderId: searchForm.value.orderId,
       status: searchForm.value.status,
       page: params.page || 0,
-      size: params.size || 10
-    })
-
-    // 납품요구일자 내림차순 정렬 (프론트엔드 정렬)
-    const sortedContent = [...(response.content || [])].sort((a, b) => {
-      const dateA = a.deliveryRequestDate ? new Date(a.deliveryRequestDate).getTime() : 0
-      const dateB = b.deliveryRequestDate ? new Date(b.deliveryRequestDate).getTime() : 0
-      return dateB - dateA // 내림차순 (최신순)
+      size: params.size || 10,
+      sort: `shipmentDate,${searchForm.value.sortOrder}`
     })
 
     // shipmentService 응답을 Spring Page 형식으로 변환
     return {
-      content: sortedContent,
-      number: response.pageNumber !== undefined ? response.pageNumber : 0, // 1-based → 0-based
+      content: response.content || [],
+      number: response.pageNumber !== undefined ? response.pageNumber : 0,
       size: response.pageSize || params.size || 10,
       totalElements: response.totalElements || 0,
       totalPages: response.totalPages || 0,
@@ -304,8 +298,8 @@ const handleReset = () => {
     endDate: getTodayDate(),
     orderId: null,
     deliveryRequestNo: '',
-    shipmentId: null,
-    status: ''
+    status: '',
+    sortOrder: 'desc'
   }
   reset()
 }

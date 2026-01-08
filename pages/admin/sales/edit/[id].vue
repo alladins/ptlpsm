@@ -149,7 +149,7 @@
         <!-- 계약서 파일 섹션 -->
         <FormSection title="계약서 파일">
           <div class="file-section-wrapper">
-            <AdminCommonFileUploadArea
+            <FileUploadArea
               v-model="selectedFile"
               :existing-file-name="salesData.contractFileNm"
               :existing-file-size="salesData.contractFileSize"
@@ -185,6 +185,7 @@ import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import ItemsManager from '~/components/admin/forms/ItemsManager.vue'
+import FileUploadArea from '~/components/admin/common/FileUploadArea.vue'
 import { useSalesStatus } from '~/composables/useSalesStatus'
 
 definePageMeta({
@@ -362,7 +363,7 @@ const {
   openItemSelector,
   handleSkuSelected,
   calculateItemAmount,
-  totalAmount: totalItemsAmount
+  totalItemsAmount
 } = useItemManagement({
   parentId: salesId,
   autoCalculate: true,

@@ -250,8 +250,8 @@ class ShipmentService {
         content: data.content || [],
         totalElements: data.totalElements || 0,
         totalPages: data.totalPages || 1,
-        pageNumber: data.pageNumber || 0,
-        pageSize: data.pageSize || 10
+        pageNumber: data.page ?? 0,
+        pageSize: data.size ?? 10
       }
     } catch (error) {
       console.error('출하 목록 조회 중 오류:', error)

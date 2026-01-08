@@ -92,6 +92,17 @@ export interface ApiResponse<T = any> {
 }
 
 /**
+ * 중복 체크 응답 인터페이스
+ * 서버 응답: { deliveryRequestNo, duplicate, message }
+ */
+export interface DuplicateCheckResponse {
+  deliveryRequestNo: string
+  duplicate: boolean      // 서버 응답 필드명
+  isDuplicate?: boolean   // 호환성 유지
+  message: string
+}
+
+/**
  * 현재 로그인한 사용자 ID 가져오기
  */
 function getCurrentUserId(): string {
@@ -201,6 +212,39 @@ export const contractService = {
       return result
     } catch (error) {
       console.error('❌ PDF 업로드 실패:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 납품요구번호 중복 체크
+   * @param deliveryRequestNo - 납품요구번호
+   * @returns 중복 여부 및 메시지
+   */
+  async checkDuplicateDeliveryRequest(deliveryRequestNo: string): Promise<DuplicateCheckResponse> {
+    try {
+      const url = CONTRACT_ENDPOINTS.checkDuplicate(deliveryRequestNo)
+
+      console.log('📤 중복 체크 요청:', url)
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      console.log('✅ 중복 체크 응답:', result)
+
+      return result
+    } catch (error) {
+      console.error('❌ 중복 체크 실패:', error)
       throw error
     }
   }

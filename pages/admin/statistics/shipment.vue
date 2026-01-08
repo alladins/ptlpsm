@@ -44,10 +44,6 @@
               <i class="fas fa-search"></i>
               조회
             </button>
-            <button class="btn-secondary" @click="handleReset">
-              <i class="fas fa-redo"></i>
-              초기화
-            </button>
           </div>
         </div>
       </div>
@@ -375,10 +371,11 @@ const statistics = ref<ShipmentStatisticsResponse>({
   recentShipments: []
 })
 
-// 기본 날짜 (올해 1월 1일 ~ 오늘)
+// 기본 날짜 (3개월 전 ~ 오늘)
 function getDefaultStartDate(): string {
   const now = new Date()
-  return `${now.getFullYear()}-01-01`
+  now.setMonth(now.getMonth() - 3)
+  return now.toISOString().split('T')[0]
 }
 
 function getDefaultEndDate(): string {

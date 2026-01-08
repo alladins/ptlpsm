@@ -73,3 +73,14 @@ export const apiEnvironment = {
 export const getApiBaseUrl = () => apiEnvironment.getApiBaseUrl();
 export const getCurrentEnvironment = () => apiEnvironment.getCurrentEnvironment();
 export const setEnvironment = (env: 'development' | 'production') => apiEnvironment.setEnvironment(env);
+
+/**
+ * 공통 인증 헤더 생성
+ * 모든 API 호출에서 사용
+ */
+export function getAuthHeaders(): HeadersInit {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
+  }
+}

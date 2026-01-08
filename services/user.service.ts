@@ -1,4 +1,4 @@
-import { apiEnvironment } from './api'
+import { apiEnvironment, getAuthHeaders } from './api'
 import { USER_ENDPOINTS } from './api/endpoints/user.endpoints'
 import type { UserByRole, UserRole } from '~/types/user'
 
@@ -78,9 +78,7 @@ export const userService = {
       
       const response = await fetch(testUrl, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (response.ok) {
@@ -132,9 +130,7 @@ export const userService = {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -159,9 +155,7 @@ export const userService = {
       
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(searchRequest),
       })
 
@@ -201,9 +195,7 @@ export const userService = {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -226,9 +218,7 @@ export const userService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -248,8 +238,7 @@ export const userService = {
    */
   async getUsersByRoles(roles: UserRole[]): Promise<UserByRole[]> {
     try {
-      const { getApiBaseUrl } = await import('./api')
-      const baseUrl = getApiBaseUrl()
+      const baseUrl = apiEnvironment.getApiBaseUrl()
 
       // Query parameters 생성 (roles 배열을 multiple query params로)
       const queryParams = roles.map(role => `roles=${role}`).join('&')
@@ -257,9 +246,7 @@ export const userService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -280,12 +267,10 @@ export const userService = {
   async createUser(userData: User): Promise<User> {
     try {
       const url = USER_ENDPOINTS.create()
-      
+
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(userData),
       })
 
@@ -306,12 +291,10 @@ export const userService = {
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
     try {
       const url = USER_ENDPOINTS.update(id)
-      
+
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(userData),
       })
 
@@ -332,12 +315,10 @@ export const userService = {
   async deleteUser(id: number): Promise<void> {
     try {
       const url = USER_ENDPOINTS.delete(id)
-      
+
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -355,12 +336,10 @@ export const userService = {
   async toggleUserStatus(id: number): Promise<User> {
     try {
       const url = USER_ENDPOINTS.toggleStatus(id)
-      
+
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -380,14 +359,12 @@ export const userService = {
   async changePassword(id: number, passwordData: PasswordChangeRequest): Promise<PasswordChangeResponse> {
     try {
       const url = USER_ENDPOINTS.changePassword(id)
-      
+
       console.log('비밀번호 변경 요청:', { userId: id, passwordData })
-      
+
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(passwordData),
       })
 
@@ -428,12 +405,10 @@ export const userService = {
   async getCurrentUser(): Promise<User> {
     try {
       const url = USER_ENDPOINTS.currentUser()
-      
+
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -457,9 +432,7 @@ export const userService = {
 
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(profileData),
       })
 
@@ -486,9 +459,7 @@ export const userService = {
 
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       })
 

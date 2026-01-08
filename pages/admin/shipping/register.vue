@@ -410,12 +410,9 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
       .map(item => {
         const statusItem = shipmentStatus.items.find(si => si.skuId === item.skuId)
 
-        // 클라이언트에서 잔여수량 직접 계산
-        // = 발주수량 - 전체출하누적
-        const orderQty = item.quantity || 0
-        const totalShippedQty = statusItem?.totalShippedQuantity || 0
-        const remainingQuantity = Math.max(0, orderQty - totalShippedQty)
-        const shippedQuantity = totalShippedQty
+        // 백엔드에서 계산된 잔여수량 사용 (부동소수점 오차 없음)
+        const remainingQuantity = statusItem?.remainingQuantity || 0
+        const shippedQuantity = statusItem?.totalShippedQuantity || 0
 
         return {
           itemId: item.itemId,
@@ -459,9 +456,12 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
   }
 }
 
-// 잔여수량 계산 (발주수량 - 기출하 - 출하수량)
+// 실시간 잔여수량 계산 (발주수량 - 기출하 - 현재 입력된 출하수량)
+// 사용자가 출하수량을 입력하면 실시간으로 남은 수량 표시
 const getCalculatedRemainingQuantity = (item: OrderItem): number => {
-  return Math.max(0, item.quantity - item.shippedQuantity - item.shippingQuantity)
+  const remaining = item.quantity - item.shippedQuantity - item.shippingQuantity
+  // 부동소수점 연산 오차 방지
+  return parseFloat(Math.max(0, remaining).toFixed(2))
 }
 
 // 전체수량 설정

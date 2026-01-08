@@ -436,6 +436,14 @@
       @close="closeCollectionConfirmModal"
       @confirmed="handleCollectionConfirmed"
     />
+
+    <!-- PDF 미리보기 모달 -->
+    <PdfPreviewModal
+      :show="showPdfModal"
+      :pdf-url="currentPdfUrl"
+      :file-name="currentPdfFileName"
+      @close="showPdfModal = false"
+    />
   </div>
 </template>
 
@@ -456,6 +464,7 @@ import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import ProgressPaymentModal from '~/components/fund/ProgressPaymentModal.vue'
 import CollectionConfirmModal from '~/components/fund/CollectionConfirmModal.vue'
+import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -500,6 +509,11 @@ const showProgressPaymentModal = ref(false)
 const showCollectionConfirmModal = ref(false)
 const collectionPaymentId = ref(0)
 const collectionRequestAmount = ref(0)
+
+// PDF 모달 상태
+const showPdfModal = ref(false)
+const currentPdfUrl = ref('')
+const currentPdfFileName = ref('')
 
 // 자금 관련 상태
 const fundSummary = ref({
@@ -810,14 +824,16 @@ const getPaymentStatusLabel = (status?: PaymentStatus): string => {
 
 // PDF 보기 - 납품확인서
 const viewConfirmationPdf = (baselineId: number) => {
-  const url = baselineService.getConfirmationPdfUrl(baselineId)
-  window.open(url, '_blank')
+  currentPdfUrl.value = baselineService.getConfirmationPdfUrl(baselineId)
+  currentPdfFileName.value = `납품확인서_${baselineId}.pdf`
+  showPdfModal.value = true
 }
 
 // PDF 보기 - 사진대지
 const viewPhotoSheetPdf = (baselineId: number) => {
-  const url = baselineService.getPhotoSheetPdfUrl(baselineId)
-  window.open(url, '_blank')
+  currentPdfUrl.value = baselineService.getPhotoSheetPdfUrl(baselineId)
+  currentPdfFileName.value = `사진대지_${baselineId}.pdf`
+  showPdfModal.value = true
 }
 
 // 수금확인 모달 열기 (자금관리와 동일한 타입 사용)

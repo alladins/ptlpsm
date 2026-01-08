@@ -111,6 +111,36 @@ export async function getDeliveryDoneDetail(
 }
 
 /**
+ * 주문 ID로 납품완료계 상태 조회
+ * 기성청구 버튼 활성화/비활성화 판단용
+ */
+export async function getDeliveryDoneByOrderId(
+  orderId: number
+): Promise<DeliveryDone | null> {
+  try {
+    const url = `${getApiBaseUrl()}/admin/delivery-done/by-order/${orderId}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null // 납품완료계가 없는 경우
+      }
+      throw new Error(`Failed to fetch delivery done by orderId: ${response.statusText}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching delivery done by orderId:', error)
+    return null
+  }
+}
+
+/**
  * 서명 URL 생성 및 메시지 발송 (다중 수신자 지원)
  */
 export async function sendSignatureUrl(
@@ -226,6 +256,21 @@ export async function downloadCompletionPdf(deliveryDoneId: number): Promise<voi
  */
 export async function downloadPhotoSheetPdf(deliveryDoneId: number): Promise<void> {
   const url = getPdfDownloadUrl(deliveryDoneId, 'photo-sheet')
+  window.open(url, '_blank')
+}
+
+/**
+ * 기성청구내역서 엑셀 다운로드 URL 생성
+ */
+export function getBaselineInvoiceExcelUrl(orderId: number): string {
+  return `${getApiBaseUrl()}/admin/delivery-done/order/${orderId}/excel/baseline-invoice`
+}
+
+/**
+ * 기성청구내역서 엑셀 다운로드
+ */
+export async function downloadBaselineInvoiceExcel(orderId: number): Promise<void> {
+  const url = getBaselineInvoiceExcelUrl(orderId)
   window.open(url, '_blank')
 }
 

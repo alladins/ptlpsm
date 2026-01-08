@@ -9,10 +9,6 @@
           <i class="fas fa-search"></i>
           검색
         </button>
-        <button class="btn-action btn-secondary" @click="handleReset">
-          <i class="fas fa-undo"></i>
-          초기화
-        </button>
         <button class="btn-action btn-primary" @click="handleExportExcel">
           <i class="fas fa-file-excel"></i>
           엑셀 다운로드

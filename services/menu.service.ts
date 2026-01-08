@@ -7,6 +7,7 @@
 import type { Menu, MenuPage, MenuAuth } from '~/types/menu'
 import { MENU_ENDPOINTS, ROLE_ENDPOINTS } from '~/services/api/endpoints/menu.endpoints'
 import { ROLE_LIST } from '~/types/user'
+import { getAuthHeaders } from './api'
 
 // ========================================
 // 역할 관련 타입
@@ -55,6 +56,69 @@ function extractArrayFromResponse<T>(data: any, possibleKeys: string[]): T[] | n
   return null
 }
 
+/**
+ * 메뉴 구조 재배치 (프론트엔드 임시 처리)
+ * - 코드관리: 기초정보 → 시스템관리로 이동
+ * - 메뉴권한관리: 시스템관리 → 기초정보로 이동
+ * - 계좌조회: 시스템관리 → 기초정보로 이동
+ */
+function reorganizeMenuStructure(menus: Menu[]): Menu[] {
+  // 메뉴 코드 기준으로 이동할 항목 정의
+  const MOVE_TO_SYSTEM = ['CODE_MANAGE']  // 시스템관리로 이동
+  const MOVE_TO_BASIC_INFO = ['MENU_AUTH', 'BANK_ACCOUNT']  // 기초정보로 이동
+
+  // 깊은 복사
+  const result = JSON.parse(JSON.stringify(menus)) as Menu[]
+
+  // 기초정보와 시스템관리 메뉴 찾기
+  const basicInfoMenu = result.find(m => m.menuCode === 'BASIC_INFO')
+  const systemMenu = result.find(m => m.menuCode === 'SYSTEM')
+
+  if (!basicInfoMenu || !systemMenu) {
+    console.warn('[메뉴 재배치] 기초정보 또는 시스템관리 메뉴를 찾을 수 없습니다.')
+    return result
+  }
+
+  // 기초정보에서 시스템관리로 이동할 메뉴 추출
+  const menusToMoveToSystem: Menu[] = []
+  if (basicInfoMenu.children) {
+    basicInfoMenu.children = basicInfoMenu.children.filter(child => {
+      if (MOVE_TO_SYSTEM.includes(child.menuCode)) {
+        menusToMoveToSystem.push(child)
+        return false
+      }
+      return true
+    })
+  }
+
+  // 시스템관리에서 기초정보로 이동할 메뉴 추출
+  const menusToMoveToBasicInfo: Menu[] = []
+  if (systemMenu.children) {
+    systemMenu.children = systemMenu.children.filter(child => {
+      if (MOVE_TO_BASIC_INFO.includes(child.menuCode)) {
+        menusToMoveToBasicInfo.push(child)
+        return false
+      }
+      return true
+    })
+  }
+
+  // 메뉴 이동 적용
+  if (systemMenu.children && menusToMoveToSystem.length > 0) {
+    systemMenu.children.push(...menusToMoveToSystem)
+  }
+  if (basicInfoMenu.children && menusToMoveToBasicInfo.length > 0) {
+    basicInfoMenu.children.push(...menusToMoveToBasicInfo)
+  }
+
+  console.log('[메뉴 재배치] 완료:', {
+    toSystem: menusToMoveToSystem.map(m => m.menuName),
+    toBasicInfo: menusToMoveToBasicInfo.map(m => m.menuName)
+  })
+
+  return result
+}
+
 // ========================================
 // 메뉴 서비스
 // ========================================
@@ -68,10 +132,7 @@ export const menuService = {
     const apiUrl = MENU_ENDPOINTS.userMenus(loginId)
     try {
       const response = await fetch(apiUrl, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -99,10 +160,7 @@ export const menuService = {
   async getMenuAuth(loginId: string, menuId: number): Promise<MenuAuth> {
     try {
       const response = await fetch(MENU_ENDPOINTS.menuAuth(loginId, menuId), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -133,10 +191,7 @@ export const menuService = {
   async getMenuByUrl(url: string): Promise<Menu | null> {
     try {
       const response = await fetch(MENU_ENDPOINTS.menuByUrl(url), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -162,10 +217,7 @@ export const menuService = {
   async getAllMenus(): Promise<Menu[]> {
     try {
       const response = await fetch(MENU_ENDPOINTS.allMenus(), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -176,7 +228,8 @@ export const menuService = {
 
       const menus = extractArrayFromResponse<Menu>(data, ['menus', 'data', 'menuList'])
       if (menus) {
-        return menus
+        // 메뉴 구조 재배치 (프론트엔드 임시 처리)
+        return reorganizeMenuStructure(menus)
       }
 
       throw new Error('잘못된 API 응답 형식')
@@ -196,10 +249,7 @@ export const menuService = {
     try {
       const response = await fetch(MENU_ENDPOINTS.updateMenuAuth(loginId, menuId), {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(auth)
       })
 
@@ -267,10 +317,7 @@ export const roleService = {
   async getRolePermissions(roleCode: string): Promise<RolePermission[]> {
     try {
       const response = await fetch(ROLE_ENDPOINTS.rolePermissions(roleCode), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -303,10 +350,7 @@ export const roleService = {
     try {
       const response = await fetch(ROLE_ENDPOINTS.updateRolePermissions(roleCode), {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ menuPermissions: permissions })
       })
 

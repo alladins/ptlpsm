@@ -31,5 +31,15 @@ export const CONTRACT_ENDPOINTS = {
   uploadPdf: () => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/contract/upload-pdf`
+  },
+
+  /**
+   * 납품요구번호 중복 체크
+   * @param deliveryRequestNo - 납품요구번호
+   * @returns GET /admin/contract/check-duplicate?deliveryRequestNo={deliveryRequestNo}
+   */
+  checkDuplicate: (deliveryRequestNo: string) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/contract/check-duplicate?deliveryRequestNo=${encodeURIComponent(deliveryRequestNo)}`
   }
 } as const

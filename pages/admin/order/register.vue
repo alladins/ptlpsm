@@ -21,7 +21,7 @@
     </PageHeader>
 
     <!-- 업로드 상태 표시 -->
-    <div v-if="uploadStatus" class="upload-status">
+    <div v-if="uploadStatus && !isDuplicate" class="upload-status">
       <div v-if="uploadStatus.loading" class="status-loading">
         <i class="fas fa-spinner fa-spin"></i>
         <span>{{ uploadStatus.message }}</span>
@@ -38,6 +38,21 @@
         <span>{{ uploadStatus.message }}</span>
         <button class="status-close" @click="uploadStatus = null">
           <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 중복 경고 배너 -->
+    <div v-if="isDuplicate" class="duplicate-warning">
+      <div class="duplicate-warning-content">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div class="duplicate-warning-text">
+          <strong>중복된 납품요구번호</strong>
+          <span>{{ duplicateMessage || '이미 등록된 납품요구번호입니다.' }}</span>
+        </div>
+        <button class="btn-secondary btn-sm" @click="cancel">
+          <i class="fas fa-list"></i>
+          목록으로 이동
         </button>
       </div>
     </div>
@@ -253,9 +268,15 @@
       <!-- 버튼 영역 -->
       <div class="form-actions">
         <button type="button" @click="cancel" class="btn-secondary" :disabled="submitting">
-          취소
+          {{ isDuplicate ? '목록으로 이동' : '취소' }}
         </button>
-        <button type="button" @click="register" class="btn-primary" :disabled="submitting">
+        <button
+          type="button"
+          @click="register"
+          class="btn-primary"
+          :disabled="submitting || isDuplicate"
+          :title="isDuplicate ? '이미 등록된 납품요구번호입니다' : ''"
+        >
           {{ submitting ? '등록 중...' : '등록' }}
         </button>
       </div>
@@ -284,7 +305,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { apiEnvironment } from '~/services/api'
-import { contractService } from '~/services/contract.service'
+import { contractService, type DuplicateCheckResponse } from '~/services/contract.service'
 import { companyService } from '~/services/company.service'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
@@ -300,6 +321,10 @@ definePageMeta({
 
 const router = useRouter()
 const submitting = ref(false)
+
+// 중복 체크 상태
+const isDuplicate = ref(false)
+const duplicateMessage = ref('')
 
 // 에러 팝업
 const errorPopup = ref({
@@ -476,6 +501,11 @@ const handleFileUpload = async (event: Event) => {
           success: true,
           message: `PDF 업로드 및 데이터 추출 완료 (${result.processingTime}ms)`
         }
+
+        // 중복 체크 수행
+        if (contractForm.value.deliveryRequestNo) {
+          await checkDuplicateDeliveryRequest(contractForm.value.deliveryRequestNo)
+        }
       }
     } else {
       throw new Error(result.message || '데이터 추출에 실패했습니다.')
@@ -516,6 +546,39 @@ const fillItemsWithExtractedData = (deliveryItems: any[]) => {
   }))
 }
 
+// 납품요구번호 중복 체크
+const checkDuplicateDeliveryRequest = async (deliveryRequestNo: string) => {
+  if (!deliveryRequestNo) return
+
+  try {
+    console.log('📤 중복 체크 요청:', deliveryRequestNo)
+    const checkResult = await contractService.checkDuplicateDeliveryRequest(deliveryRequestNo)
+    console.log('📥 중복 체크 응답:', checkResult)
+
+    // 서버 응답: duplicate (boolean) 필드 사용
+    const isDuplicateResult = checkResult.duplicate || checkResult.isDuplicate
+
+    if (isDuplicateResult) {
+      isDuplicate.value = true
+      duplicateMessage.value = checkResult.message
+      uploadStatus.value = {
+        error: true,
+        message: `⚠️ ${checkResult.message} 목록으로 이동해주세요.`
+      }
+      console.warn('⚠️ 중복된 납품요구번호:', deliveryRequestNo)
+    } else {
+      isDuplicate.value = false
+      duplicateMessage.value = ''
+      console.log('✅ 등록 가능한 납품요구번호:', deliveryRequestNo)
+    }
+  } catch (error) {
+    console.error('❌ 중복 체크 실패:', error)
+    // 중복 체크 실패 시에도 등록은 허용 (서버에서 최종 검증)
+    isDuplicate.value = false
+    duplicateMessage.value = ''
+  }
+}
+
 // 추출된 데이터로 폼 채우기
 const fillFormWithExtractedData = (data: any) => {
   if (data.contractNumber) contractForm.value.contractNo = data.contractNumber
@@ -545,7 +608,7 @@ const fillFormWithExtractedData = (data: any) => {
 }
 
 // 계약 유형 선택 확인 핸들러
-const handleContractTypeConfirm = (type: ContractType) => {
+const handleContractTypeConfirm = async (type: ContractType) => {
   showContractTypeModal.value = false
 
   // 임시 저장된 데이터로 폼 채우기
@@ -569,6 +632,11 @@ const handleContractTypeConfirm = (type: ContractType) => {
     uploadStatus.value = {
       success: true,
       message: `PDF 데이터 추출 완료. 계약 유형: ${type === 'AMENDMENT' ? '변경계약' : '추가계약'}`
+    }
+
+    // 중복 체크 수행
+    if (contractForm.value.deliveryRequestNo) {
+      await checkDuplicateDeliveryRequest(contractForm.value.deliveryRequestNo)
     }
   }
 }
@@ -691,5 +759,50 @@ const cancel = () => {
 .order-register {
   padding: 0;
   margin-bottom: 0;
+}
+
+/* 중복 경고 배너 */
+.duplicate-warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border: 2px solid #f39c12;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 16px 0;
+  box-shadow: 0 2px 8px rgba(243, 156, 18, 0.2);
+}
+
+.duplicate-warning-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.duplicate-warning-content > i {
+  font-size: 28px;
+  color: #e67e22;
+  flex-shrink: 0;
+}
+
+.duplicate-warning-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.duplicate-warning-text strong {
+  font-size: 15px;
+  color: #d35400;
+}
+
+.duplicate-warning-text span {
+  font-size: 13px;
+  color: #7f6c00;
+}
+
+.duplicate-warning .btn-sm {
+  padding: 8px 16px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 </style>
