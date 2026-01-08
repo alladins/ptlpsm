@@ -82,6 +82,23 @@
                 <i class="fas fa-eye"></i>
               </div>
             </button>
+
+            <!-- 납품내역서 엑셀 -->
+            <button
+              class="pdf-button"
+              @click="downloadExcel"
+            >
+              <div class="pdf-icon excel-icon">
+                <i class="fas fa-file-excel"></i>
+              </div>
+              <div class="pdf-info">
+                <h5>납품내역서</h5>
+                <p>엑셀 다운로드</p>
+              </div>
+              <div class="pdf-action">
+                <i class="fas fa-download"></i>
+              </div>
+            </button>
           </div>
 
           <!-- 일괄 다운로드 -->
@@ -125,7 +142,8 @@
 import { ref } from 'vue'
 import {
   downloadAllPdfs,
-  getPdfDownloadUrl
+  getPdfDownloadUrl,
+  getBaselineInvoiceExcelUrl
 } from '~/services/delivery-done.service'
 import type { DeliveryDoneListItem } from '~/types/delivery-done'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
@@ -168,6 +186,14 @@ function closePdfPreview() {
   showPdfPreview.value = false
   previewPdfUrl.value = ''
   previewFileName.value = ''
+}
+
+/**
+ * 납품내역서 엑셀 다운로드
+ */
+function downloadExcel() {
+  const url = getBaselineInvoiceExcelUrl(props.deliveryDone.orderId)
+  window.open(url, '_blank')
 }
 
 /**
@@ -303,6 +329,10 @@ async function downloadAll() {
   color: #ef4444;
   min-width: 40px;
   text-align: center;
+}
+
+.pdf-icon.excel-icon {
+  color: #10b981;
 }
 
 .pdf-info {

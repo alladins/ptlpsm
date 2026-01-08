@@ -127,7 +127,7 @@ const loadItems = async () => {
   try {
     const response = await itemService.searchItems({
       keyword: searchKeyword.value,
-      page: currentPage.value,
+      page: currentPage.value - 1,  // UI는 1-indexed, API는 0-indexed
       size: 10
     })
     

@@ -240,7 +240,7 @@ async function fetchUsers() {
 
   try {
     const params = new URLSearchParams({
-      page: currentPage.value.toString(),
+      page: (currentPage.value - 1).toString(),  // UI는 1-indexed, API는 0-indexed
       size: pageSize.toString()
     })
 

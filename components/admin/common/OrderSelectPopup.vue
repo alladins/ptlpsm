@@ -119,7 +119,7 @@ const loadOrders = async () => {
   try {
     const response = await orderService.getOrders({
       client: searchParams.value.client,
-      page: currentPage.value,
+      page: currentPage.value - 1,  // UI는 1-indexed, API는 0-indexed
       size: 10,
       sort: 'createdAt,desc',
       shippableOnly: props.shippableOnly

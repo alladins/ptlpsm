@@ -99,6 +99,9 @@ const handleFileSelect = async (e: Event) => {
   // 압축 중 표시
   isCompressing.value = true
 
+  // 서버 업로드 최대 크기 (10MB - 서버 제한 고려)
+  const maxUploadSize = 10 * 1024 * 1024
+
   try {
     for (const file of filesToAdd) {
       // 이미지 파일 검증
@@ -107,21 +110,46 @@ const handleFileSelect = async (e: Event) => {
         continue
       }
 
-      // 파일 크기 검증 (원본 기준 20MB 제한 - 압축 후 줄어듦)
-      const maxSize = 20 * 1024 * 1024 // 20MB
-      if (file.size > maxSize) {
-        alert(`파일 크기가 너무 큽니다: ${file.name}\n최대 20MB까지 가능합니다.`)
-        continue
-      }
-
       try {
-        // 조건부 이미지 압축 (1MB 초과 또는 1920x1440 초과 시)
-        const processedFile = await compressImageIfNeeded(file, {
+        // 1차 압축 시도 (75% 품질)
+        let processedFile = await compressImageIfNeeded(file, {
           maxWidth: 1920,
           maxHeight: 1440,
-          quality: 0.75,        // 75% 품질
+          quality: 0.75,
           maxSizeBytes: 1 * 1024 * 1024  // 1MB 초과 시 압축
         })
+
+        console.log(`[사진 처리] 1차 압축 결과: ${file.name} → ${(processedFile.size / 1024 / 1024).toFixed(2)}MB`)
+
+        // 1차 압축 후에도 크기가 크면 2차 압축 (50% 품질, 해상도 축소)
+        if (processedFile.size > maxUploadSize) {
+          console.log(`[사진 처리] 2차 압축 시도: ${file.name}`)
+          processedFile = await compressImageIfNeeded(file, {
+            maxWidth: 1280,
+            maxHeight: 960,
+            quality: 0.5,
+            maxSizeBytes: 0  // 무조건 압축
+          })
+          console.log(`[사진 처리] 2차 압축 결과: ${file.name} → ${(processedFile.size / 1024 / 1024).toFixed(2)}MB`)
+        }
+
+        // 2차 압축 후에도 크기가 크면 3차 압축 (30% 품질)
+        if (processedFile.size > maxUploadSize) {
+          console.log(`[사진 처리] 3차 압축 시도: ${file.name}`)
+          processedFile = await compressImageIfNeeded(file, {
+            maxWidth: 1024,
+            maxHeight: 768,
+            quality: 0.3,
+            maxSizeBytes: 0  // 무조건 압축
+          })
+          console.log(`[사진 처리] 3차 압축 결과: ${file.name} → ${(processedFile.size / 1024 / 1024).toFixed(2)}MB`)
+        }
+
+        // 최종 크기 검증
+        if (processedFile.size > maxUploadSize) {
+          alert(`파일 크기가 너무 큽니다: ${file.name}\n압축 후에도 ${(processedFile.size / 1024 / 1024).toFixed(1)}MB입니다.\n최대 10MB까지 가능합니다.`)
+          continue
+        }
 
         // 미리보기 생성
         const preview = await createPreview(processedFile)
@@ -130,6 +158,8 @@ const handleFileSelect = async (e: Event) => {
           file: processedFile,
           preview
         })
+
+        console.log(`[사진 처리] 완료: ${file.name} (원본: ${(file.size / 1024 / 1024).toFixed(2)}MB → 압축: ${(processedFile.size / 1024 / 1024).toFixed(2)}MB)`)
       } catch (error) {
         console.error('이미지 처리 실패:', file.name, error)
         alert(`이미지 처리 실패: ${file.name}`)
