@@ -289,6 +289,67 @@ const manualMenus = ref<MenuWithAuth[]>([
     ]
   },
   {
+    menuId: 6,
+    menuCode: 'COMMISSION',
+    menuName: '커미션관리',
+    menuUrl: '/admin/commission',
+    menuIcon: 'fas fa-percent',
+    menuLevel: 1,
+    sortOrder: 5,
+    visible: 'Y',
+    useYn: 'Y',
+    children: [
+      {
+        menuId: 61,
+        menuCode: 'COMMISSION_DASHBOARD',
+        menuName: '커미션 대시보드',
+        menuUrl: '/admin/commission/dashboard',
+        menuIcon: 'fas fa-chart-line',
+        menuLevel: 2,
+        sortOrder: 1,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 62,
+        menuCode: 'COMMISSION_RATES',
+        menuName: '커미션율 설정',
+        menuUrl: '/admin/commission/rates',
+        menuIcon: 'fas fa-sliders-h',
+        menuLevel: 2,
+        sortOrder: 2,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 63,
+        menuCode: 'COMMISSION_SETTLEMENTS',
+        menuName: '정산 이력',
+        menuUrl: '/admin/commission/settlements',
+        menuIcon: 'fas fa-file-invoice-dollar',
+        menuLevel: 2,
+        sortOrder: 3,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 64,
+        menuCode: 'COMMISSION_PAYMENTS',
+        menuName: '지급 관리',
+        menuUrl: '/admin/commission/payments',
+        menuIcon: 'fas fa-credit-card',
+        menuLevel: 2,
+        sortOrder: 4,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      }
+    ]
+  },
+  {
     menuId: 7,
     menuCode: 'STATISTICS',
     menuName: '통계',
@@ -387,10 +448,10 @@ const manualMenus = ref<MenuWithAuth[]>([
     children: [
       {
         menuId: 81,
-        menuCode: 'CODE_MANAGE',
-        menuName: '코드관리',
-        menuUrl: '/admin/basic-info/code',
-        menuIcon: 'fas fa-code',
+        menuCode: 'ITEM_MANAGE',
+        menuName: '품목관리',
+        menuUrl: '/admin/basic-info/item',
+        menuIcon: 'fas fa-boxes',
         menuLevel: 2,
         sortOrder: 1,
         visible: 'Y',
@@ -399,10 +460,10 @@ const manualMenus = ref<MenuWithAuth[]>([
       },
       {
         menuId: 82,
-        menuCode: 'ITEM_MANAGE',
-        menuName: '품목관리',
-        menuUrl: '/admin/basic-info/item',
-        menuIcon: 'fas fa-boxes',
+        menuCode: 'USER_MANAGE',
+        menuName: '사용자관리',
+        menuUrl: '/admin/basic-info/user',
+        menuIcon: 'fas fa-users',
         menuLevel: 2,
         sortOrder: 2,
         visible: 'Y',
@@ -411,10 +472,10 @@ const manualMenus = ref<MenuWithAuth[]>([
       },
       {
         menuId: 83,
-        menuCode: 'USER_MANAGE',
-        menuName: '사용자관리',
-        menuUrl: '/admin/basic-info/user',
-        menuIcon: 'fas fa-users',
+        menuCode: 'ORG_MANAGE',
+        menuName: '수요기관관리',
+        menuUrl: '/admin/basic-info/organization',
+        menuIcon: 'fas fa-building',
         menuLevel: 2,
         sortOrder: 3,
         visible: 'Y',
@@ -423,10 +484,10 @@ const manualMenus = ref<MenuWithAuth[]>([
       },
       {
         menuId: 84,
-        menuCode: 'ORG_MANAGE',
-        menuName: '수요기관관리',
-        menuUrl: '/admin/basic-info/organization',
-        menuIcon: 'fas fa-building',
+        menuCode: 'COMPANY_MANAGE',
+        menuName: '회사정보',
+        menuUrl: '/admin/basic-info/company',
+        menuIcon: 'fas fa-building-user',
         menuLevel: 2,
         sortOrder: 4,
         visible: 'Y',
@@ -435,12 +496,24 @@ const manualMenus = ref<MenuWithAuth[]>([
       },
       {
         menuId: 85,
-        menuCode: 'COMPANY_MANAGE',
-        menuName: '회사정보',
-        menuUrl: '/admin/basic-info/company',
-        menuIcon: 'fas fa-building-user',
+        menuCode: 'MENU_AUTH',
+        menuName: '메뉴권한관리',
+        menuUrl: '/admin/basic-info/menu-auth',
+        menuIcon: 'fas fa-key',
         menuLevel: 2,
         sortOrder: 5,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 86,
+        menuCode: 'BANK_ACCOUNT',
+        menuName: '계좌조회',
+        menuUrl: '/admin/basic-info/bank-account',
+        menuIcon: 'fas fa-university',
+        menuLevel: 2,
+        sortOrder: 6,
         visible: 'Y',
         useYn: 'Y',
         children: []
@@ -472,10 +545,10 @@ const manualMenus = ref<MenuWithAuth[]>([
       },
       {
         menuId: 92,
-        menuCode: 'MENU_AUTH',
-        menuName: '메뉴권한관리',
-        menuUrl: '/admin/system/menu-auth',
-        menuIcon: 'fas fa-key',
+        menuCode: 'CODE_MANAGE',
+        menuName: '코드관리',
+        menuUrl: '/admin/system/code',
+        menuIcon: 'fas fa-code',
         menuLevel: 2,
         sortOrder: 2,
         visible: 'Y',
@@ -490,18 +563,6 @@ const manualMenus = ref<MenuWithAuth[]>([
         menuIcon: 'fas fa-history',
         menuLevel: 2,
         sortOrder: 3,
-        visible: 'Y',
-        useYn: 'Y',
-        children: []
-      },
-      {
-        menuId: 94,
-        menuCode: 'BANK_ACCOUNT',
-        menuName: '계좌조회',
-        menuUrl: '/admin/system/bank-account',
-        menuIcon: 'fas fa-university',
-        menuLevel: 2,
-        sortOrder: 4,
         visible: 'Y',
         useYn: 'Y',
         children: []
@@ -641,8 +702,8 @@ const loadMenus = async () => {
       }
     }
 
-    // 3. 사용자별 메뉴 권한 조회
-    if (authStore.isLoggedIn && authStore.user?.userid) {
+    // 3. 사용자별 메뉴 권한 조회 (loginId로 체크 - userid는 백엔드 응답에 없을 수 있음)
+    if (authStore.isLoggedIn && authStore.user?.loginId) {
       try {
         console.log('📋 [loadMenus] 사용자 메뉴 권한 조회 시작...')
         const userMenusWithAuth = await permissionStore.fetchUserMenus()
