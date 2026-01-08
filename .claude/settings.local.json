@@ -1,9 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run dev:*)",
-      "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash",
+      "WebSearch",
+      "WebFetch",
+      "Bash(ls -la \"d:\\\\dev\\\\ptlpsm\\\\assets\\\\css\"\" 2>/dev/null || echo \"Directory structure issue \")",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

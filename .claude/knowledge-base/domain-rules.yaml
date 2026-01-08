@@ -1,0 +1,402 @@
+# 출하관리시스템 도메인 규칙
+# 이 파일은 코드에서 직접 추출하기 어려운 비즈니스 규칙과 도메인 지식을 정의합니다.
+#
+# 사용법:
+# - business_rules: 핵심 비즈니스 규칙
+# - relationships: 엔티티 간 관계 규칙
+# - calculations: 금액/수량 계산 공식
+# - workflows: 업무 프로세스 흐름
+# - constraints: 제약 조건
+#
+# 작성일: 2026-01-02
+# 버전: 1.0.0
+
+# ============================================================
+# 엔티티 관계 규칙
+# ============================================================
+relationships:
+  order_to_shipment:
+    from: "Order"
+    to: "Shipment"
+    type: "ONE_TO_MANY"
+    korean: "발주 1건에 여러 번 분할 출하 가능"
+    business_meaning: "계약 물량을 한 번에 납품하지 않고 분할하여 출하"
+    constraint: "출하 수량 합계 ≤ 발주 수량"
+
+  shipment_to_transport:
+    from: "Shipment"
+    to: "Transport"
+    type: "ONE_TO_ONE"
+    korean: "출하 1건당 운송장 1건"
+    business_meaning: "출하 단위로 운송 추적"
+
+  transport_to_delivery:
+    from: "Transport"
+    to: "Delivery"
+    type: "ONE_TO_ONE"
+    korean: "운송 완료 시 납품확인 1건"
+    business_meaning: "현장 도착 후 인수자 확인"
+
+  order_to_baseline:
+    from: "Order"
+    to: "Baseline"
+    type: "ONE_TO_MANY"
+    korean: "발주 1건에 여러 기성 차수"
+    business_meaning: "기성금 분할 청구 (1차, 2차, 3차...)"
+
+  order_to_fund:
+    from: "Order"
+    to: "Fund"
+    type: "ONE_TO_ONE"
+    korean: "발주 1건에 자금 관리 1건"
+    business_meaning: "발주 단위로 선급금/기성금/잔금 관리"
+
+  baseline_to_shipment:
+    from: "Baseline"
+    to: "Shipment"
+    type: "MANY_TO_MANY"
+    korean: "기성 차수에 여러 출하 포함"
+    business_meaning: "복수의 출하를 묶어서 기성금 청구"
+    constraint: "납품확인 완료된 출하만 포함 가능"
+
+  fund_to_baseline:
+    from: "Fund"
+    to: "Baseline"
+    type: "ONE_TO_MANY"
+    korean: "자금 1건에 여러 기성 차수 연결"
+    business_meaning: "기성금은 기성 차수별로 청구"
+
+# ============================================================
+# 자금 관련 규칙
+# ============================================================
+fund_rules:
+  advance_payment:
+    name: "선급금"
+    default_rate: 0.7
+    rate_description: "계약금액의 70%"
+    timing: "첫 출하 전후 (계약 초기)"
+    condition: "출하 여부 무관"
+    max_count: 1
+    requires_signature: false
+    source: "조달청 계약 가이드라인"
+    generated_documents:
+      - "선급금신청서"
+      - "선급금사용계획"
+      - "선급금사용확약서"
+      - "선급금사용각서"
+      - "선급금정산서"
+
+  progress_payment:
+    name: "기성금"
+    calculation: "실제 납품수량 × 단가"
+    timing: "납품 진행 중 (여러 차수)"
+    condition: "납품확인 완료된 출하"
+    max_count: null  # 무제한
+    requires_signature: true
+    signature_order: ["현장소장", "감리원"]
+    generated_documents:
+      - "납품확인서"
+      - "사진대지"
+
+  balance_payment:
+    name: "잔금"
+    calculation: "계약금액 - 선급금(수금액) - 기성금누계(수금액)"
+    timing: "납품완료 후"
+    condition: "납품완료계 완료"
+    max_count: 1
+    requires_signature: false
+
+  oem_payment:
+    name: "OEM지급"
+    rate: 0.7
+    calculation: "기성금 × 70%"
+    description: "협력업체(제조사)에 지급하는 금액"
+    timing: "기성금 수금 후"
+
+# ============================================================
+# 서명 관련 규칙
+# ============================================================
+signature_rules:
+  baseline_signature:
+    entity: "Baseline"
+    signers:
+      - role: "현장소장"
+        code: "SITE_MANAGER"
+        order: 1
+        required: true
+      - role: "감리원"
+        code: "SITE_INSPECTOR"
+        order: 2
+        required: true
+    url_validity_hours: 24
+    expired_action: "URL 재발송 필요"
+    notification_method: "LMS/SMS"
+
+  delivery_done_signature:
+    entity: "DeliveryDone"
+    signers:
+      - role: "현장소장"
+        code: "SITE_MANAGER"
+        order: 1
+        required: true
+      - role: "감리원"
+        code: "SITE_INSPECTOR"
+        order: 2
+        required: true
+    url_validity_hours: 24
+
+  delivery_signature:
+    entity: "Delivery"
+    signers:
+      - role: "인수자"
+        code: "RECEIVER"
+        order: 1
+        required: true
+    additional_requirements:
+      - "사진 최소 1장"
+      - "GPS 위치 자동 기록"
+
+# ============================================================
+# 문서 생성 규칙
+# ============================================================
+document_generation:
+  receipt_pdf:
+    korean: "인수증"
+    trigger: "납품확인 완료 시"
+    condition: "서명 + 사진 완료"
+    content:
+      - "출하 정보"
+      - "품목별 납품 수량"
+      - "인수자 서명"
+      - "납품 사진"
+
+  confirmation_pdf:
+    korean: "납품확인서"
+    trigger: "기성 차수 서명 완료 시"
+    condition: "현장소장 + 감리원 서명 완료"
+    content:
+      - "기성 차수 정보"
+      - "포함된 출하 내역"
+      - "품목별 수량/금액"
+      - "양측 서명"
+
+  photo_sheet_pdf:
+    korean: "사진대지"
+    trigger: "기성 차수 서명 완료 시"
+    condition: "현장소장 + 감리원 서명 완료"
+    content:
+      - "현장 사진 모음"
+      - "출하당 2장"
+
+  delivery_done_pdf:
+    korean: "납품완료계"
+    trigger: "최종 서명 완료 시"
+    condition: "모든 출하 납품확인 완료 + 양측 서명"
+    content:
+      - "전체 납품 요약"
+      - "조달청 제출용 보고서"
+
+  delivery_statement_pdf:
+    korean: "납품내역서"
+    trigger: "필요 시 다운로드"
+    content:
+      - "차수별 청구 내역"
+      - "정산 자료"
+
+# ============================================================
+# 수량 관리 규칙
+# ============================================================
+quantity_rules:
+  order_quantity:
+    name: "발주수량"
+    constraint: "발주수량 ≥ Σ(출하수량)"
+    description: "발주 수량을 초과하여 출하 불가"
+
+  shipment_quantity:
+    name: "출하수량"
+    constraint: "출하수량 ≤ 발주 잔여수량"
+    description: "발주의 남은 수량 이내에서만 출하 가능"
+
+  delivered_quantity:
+    name: "납품수량"
+    constraint: "납품수량 = 출하수량 (정상 완료 시)"
+    description: "정상 완료 시 출하 수량 = 납품 수량"
+
+  additional_change:
+    name: "추가변경"
+    condition: "출하 상태가 IN_PROGRESS일 때"
+    constraint: "기성금 청구에 포함된 출하는 변경 불가"
+    description: "진행 중인 출하의 수량 조정"
+    requires_history: true
+
+# ============================================================
+# 업무 흐름 정의
+# ============================================================
+workflows:
+  main_flow:
+    name: "주요 업무 흐름"
+    steps:
+      - step: 1
+        entity: "Order"
+        action: "등록"
+        description: "납품요구서 PDF 업로드 및 데이터 추출"
+
+      - step: 2
+        entity: "Shipment"
+        action: "등록"
+        description: "품목별 출하 수량 입력"
+        repeat: "계약 물량 완료까지"
+
+      - step: 3
+        entity: "Transport"
+        action: "배차"
+        description: "차량번호, 기사명, 배송일 등록"
+
+      - step: 4
+        entity: "Delivery"
+        action: "확인"
+        description: "모바일로 서명, 사진, GPS 기록"
+
+      - step: 5
+        entity: "Baseline"
+        action: "생성"
+        description: "기성금 청구를 위한 차수 생성"
+
+      - step: 6
+        entity: "Fund"
+        action: "관리"
+        description: "선급금/기성금/잔금 수금 확인"
+
+  fund_flow:
+    name: "자금 흐름"
+    steps:
+      - step: 1
+        type: "선급금"
+        timing: "첫 출하 전 신청"
+        rate: "70%"
+
+      - step: 2
+        type: "기성금"
+        timing: "납품확인 완료 후"
+        repeat: true
+
+      - step: 3
+        type: "잔금"
+        timing: "납품완료계 서명 완료 후"
+        calculation: "계약금액 - 선급금 - 기성금누계"
+
+# ============================================================
+# 사용자 역할 및 권한
+# ============================================================
+user_roles:
+  SYSTEM_ADMIN:
+    korean: "시스템관리자"
+    description: "전체 기능 접근 가능"
+    permissions: ["all"]
+
+  LEADPOWER_MANAGER:
+    korean: "리드파워담당자"
+    description: "발주/출하/납품/자금 관리"
+    permissions:
+      - "order:*"
+      - "shipment:*"
+      - "transport:*"
+      - "delivery:read"
+      - "baseline:*"
+      - "fund:*"
+
+  SITE_MANAGER:
+    korean: "현장소장"
+    description: "현장 업무 담당"
+    permissions:
+      - "delivery:sign"
+      - "baseline:sign"
+      - "delivery_done:sign"
+
+  SITE_INSPECTOR:
+    korean: "현장감리원"
+    description: "감리 업무 담당"
+    permissions:
+      - "delivery:read"
+      - "baseline:sign"
+      - "delivery_done:sign"
+
+# ============================================================
+# 코드 분석 패턴
+# ============================================================
+code_analysis_patterns:
+  entity_detection:
+    typescript:
+      - pattern: "interface (\\w+) {"
+        type: "interface"
+      - pattern: "type (\\w+) ="
+        type: "type_alias"
+      - pattern: "class (\\w+)"
+        type: "class"
+
+    java:
+      - pattern: "@Entity.*class (\\w+)"
+        type: "entity"
+      - pattern: "public enum (\\w+)"
+        type: "enum"
+
+  relationship_detection:
+    typescript:
+      - pattern: "(\\w+)\\[\\]"
+        relationship: "ONE_TO_MANY"
+      - pattern: "(\\w+)\\?"
+        relationship: "OPTIONAL"
+
+    java:
+      - pattern: "@OneToMany"
+        relationship: "ONE_TO_MANY"
+      - pattern: "@ManyToOne"
+        relationship: "MANY_TO_ONE"
+      - pattern: "@OneToOne"
+        relationship: "ONE_TO_ONE"
+
+  status_detection:
+    - pattern: "(\\w+)Status"
+      type: "status_enum"
+    - pattern: "status.*===.*'(\\w+)'"
+      type: "status_value"
+    - pattern: "setStatus\\((\\w+)\\)"
+      type: "status_transition"
+
+  business_rule_detection:
+    - pattern: "throw new.*Exception\\(\"(.+)\"\\)"
+      type: "error_rule"
+    - pattern: ":disabled=\"(.+)\""
+      type: "ui_constraint"
+    - pattern: "if \\((.+)\\) \\{"
+      type: "condition"
+
+# ============================================================
+# 분석 대상 디렉토리
+# ============================================================
+analysis_targets:
+  frontend:
+    base_path: "."
+    patterns:
+      - "types/**/*.ts"
+      - "services/**/*.ts"
+      - "services/api/endpoints/**/*.ts"
+      - "pages/**/*.vue"
+      - "components/**/*.vue"
+      - "stores/**/*.ts"
+      - "composables/**/*.ts"
+
+  # 백엔드가 별도 저장소인 경우 아래 설정 사용
+  # backend:
+  #   base_path: "../ptlpsm-backend"
+  #   patterns:
+  #     - "src/main/java/**/entity/**/*.java"
+  #     - "src/main/java/**/service/**/*.java"
+  #     - "src/main/java/**/controller/**/*.java"
+  #     - "src/main/java/**/dto/**/*.java"
+  #     - "src/main/java/**/enums/**/*.java"
+
+  # database:
+  #   base_path: "../ptlpsm-backend"
+  #   patterns:
+  #     - "src/main/resources/db/migration/**/*.sql"

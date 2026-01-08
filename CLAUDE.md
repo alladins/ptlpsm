@@ -90,6 +90,50 @@ apiEnvironment.forceDevelopment()  // 개발 API
 - **HMR**: 비활성화됨 (`hmr: false`)
 - **Language**: 한국어 (`lang: 'ko'`)
 
+## 페이징 규칙 (중요!)
+
+### API 페이징 (0-indexed)
+- Spring Boot API는 **0부터 시작**하는 페이지 번호 사용
+- 첫 번째 페이지: `page=0`
+
+### UI 페이징 (1-indexed)
+- 사용자에게 표시되는 페이지 번호는 **1부터 시작**
+- 첫 번째 페이지: `currentPage = 1`
+
+### 변환 규칙
+```typescript
+// UI → API 호출 시
+const response = await service.getList({
+  page: currentPage.value - 1,  // UI 1 → API 0
+  size: 10
+})
+
+// API 응답 → UI 표시 시
+pagination.value = {
+  page: response.number + 1,  // API 0 → UI 1
+  totalPages: response.totalPages
+}
+```
+
+### 예시 코드
+```typescript
+// ✅ 올바른 예시
+const loadData = async () => {
+  const response = await service.getList({
+    page: currentPage.value - 1,  // 변환 필요!
+    size: 10
+  })
+}
+
+// ❌ 잘못된 예시 (API에 1을 전달하면 두 번째 페이지 조회)
+const loadData = async () => {
+  const response = await service.getList({
+    page: currentPage.value,  // 변환 누락!
+    size: 10
+  })
+}
+```
+
 ## 상세 문서
 
 | 문서 | 내용 |

@@ -1,0 +1,402 @@
+# 출하관리시스템 상태 정의
+# 이 파일은 각 엔티티의 상태 값과 상태 전이 규칙을 정의합니다.
+#
+# 사용법:
+# - states: 상태 값과 한글 매핑
+# - transitions: 상태 전이 규칙 (from → to, trigger)
+# - constraints: 상태별 가능/불가능 작업
+#
+# 작성일: 2026-01-02
+# 버전: 1.0.0
+
+# ============================================================
+# 공통 상태 (여러 엔티티에서 공유)
+# ============================================================
+common_states:
+  PENDING:
+    korean: "대기"
+    description: "처리 대기 중인 상태"
+    color: "#6c757d"  # gray
+
+  IN_PROGRESS:
+    korean: "진행중"
+    description: "처리가 진행 중인 상태"
+    color: "#007bff"  # blue
+
+  COMPLETED:
+    korean: "완료"
+    description: "처리가 완료된 상태"
+    color: "#28a745"  # green
+
+  CANCELLED:
+    korean: "취소"
+    description: "취소된 상태"
+    color: "#dc3545"  # red
+
+# ============================================================
+# 발주(Order) 상태
+# ============================================================
+order:
+  entity: "Order"
+  status_field: "status"
+
+  states:
+    ACTIVE:
+      korean: "진행중"
+      description: "발주가 활성화되어 출하 진행 중"
+      is_initial: true
+
+    COMPLETED:
+      korean: "완료"
+      description: "모든 물량 납품 완료"
+      is_final: true
+
+    CANCELLED:
+      korean: "취소"
+      description: "발주 취소됨"
+      is_final: true
+
+  transitions:
+    - from: "ACTIVE"
+      to: "COMPLETED"
+      trigger: "모든 물량 납품확인 완료"
+      auto: true
+      condition: "remainingQuantity == 0 && allShipmentsCompleted"
+
+    - from: "ACTIVE"
+      to: "CANCELLED"
+      trigger: "발주 취소"
+      auto: false
+      condition: "hasNoShipments || allShipmentsPending"
+
+  constraints:
+    ACTIVE:
+      allowed: ["수정", "출하등록", "자금관리"]
+      forbidden: []
+    COMPLETED:
+      allowed: ["조회", "PDF다운로드"]
+      forbidden: ["수정", "삭제", "출하등록"]
+    CANCELLED:
+      allowed: ["조회"]
+      forbidden: ["모든수정"]
+
+# ============================================================
+# 출하(Shipment) 상태
+# ============================================================
+shipment:
+  entity: "Shipment"
+  status_field: "status"
+
+  states:
+    PENDING:
+      korean: "대기"
+      description: "출하 등록됨, 운송 배차 대기"
+      is_initial: true
+
+    IN_PROGRESS:
+      korean: "진행중"
+      description: "운송 배차 완료, 납품확인 대기"
+
+    COMPLETED:
+      korean: "완료"
+      description: "납품확인 완료, 기성금 청구 가능"
+      is_final: true
+
+  transitions:
+    - from: "PENDING"
+      to: "IN_PROGRESS"
+      trigger: "운송 배차"
+      auto: true
+      condition: "transport != null"
+
+    - from: "IN_PROGRESS"
+      to: "COMPLETED"
+      trigger: "납품확인 완료"
+      auto: true
+      condition: "delivery.status == COMPLETED"
+
+  constraints:
+    PENDING:
+      allowed: ["수정", "삭제", "운송배차"]
+      forbidden: []
+    IN_PROGRESS:
+      allowed: ["추가변경(수량조정)", "운송정보수정"]
+      forbidden: ["삭제"]
+    COMPLETED:
+      allowed: ["조회", "기성금청구"]
+      forbidden: ["수정", "삭제", "추가변경"]
+
+  business_rules:
+    - "기성금 청구에 포함된 출하는 수량 변경 불가"
+    - "발주 잔여수량 이내에서만 출하 등록 가능"
+
+# ============================================================
+# 운송(Transport) 상태
+# ============================================================
+transport:
+  entity: "Transport"
+  status_field: "status"
+
+  states:
+    PENDING:
+      korean: "대기"
+      description: "운송장 등록됨, 배송 대기"
+      is_initial: true
+
+    IN_PROGRESS:
+      korean: "배송중"
+      description: "배송 출발함"
+
+    COMPLETED:
+      korean: "배송완료"
+      description: "현장 도착 완료"
+      is_final: true
+
+  transitions:
+    - from: "PENDING"
+      to: "IN_PROGRESS"
+      trigger: "배송 출발"
+      auto: false
+
+    - from: "IN_PROGRESS"
+      to: "COMPLETED"
+      trigger: "배송 도착"
+      auto: false
+
+# ============================================================
+# 납품확인(Delivery) 상태
+# ============================================================
+delivery:
+  entity: "Delivery"
+  status_field: "status"
+
+  states:
+    IN_PROGRESS:
+      korean: "진행중"
+      description: "모바일 URL 발송됨, 서명 대기"
+      is_initial: true
+
+    COMPLETED:
+      korean: "완료"
+      description: "인수자 서명 + 사진 완료"
+      is_final: true
+
+  transitions:
+    - from: "IN_PROGRESS"
+      to: "COMPLETED"
+      trigger: "납품확인 완료"
+      auto: true
+      condition: "signatureUrl != null && photos.length >= 1"
+
+  completion_requirements:
+    - field: "signatureUrl"
+      required: true
+      message: "인수자 서명 필수"
+    - field: "photos"
+      required: true
+      min_count: 1
+      message: "사진 최소 1장 필수"
+    - field: "gpsLocation"
+      required: false
+      auto_capture: true
+      message: "GPS 위치 자동 기록"
+
+# ============================================================
+# 기성차수(Baseline) 상태
+# ============================================================
+baseline:
+  entity: "Baseline"
+  status_field: "status"
+
+  states:
+    DRAFT:
+      korean: "작성중"
+      description: "기성 차수 생성됨, 출하 선택 중"
+      is_initial: true
+
+    PENDING_SIGNATURE:
+      korean: "서명대기"
+      description: "서명 URL 발송됨, 서명 대기"
+
+    PARTIAL_SIGNED:
+      korean: "일부서명"
+      description: "현장소장만 서명 완료"
+
+    SIGNATURE_COMPLETED:
+      korean: "서명완료"
+      description: "현장소장 + 감리원 모두 서명 완료"
+
+    CONFIRMED:
+      korean: "확정"
+      description: "PDF 자동 생성됨, 기성금 청구 가능"
+      is_final: true
+
+    CANCELLED:
+      korean: "취소"
+      description: "기성 차수 취소됨"
+      is_final: true
+
+  transitions:
+    - from: "DRAFT"
+      to: "PENDING_SIGNATURE"
+      trigger: "서명 URL 발송"
+      auto: false
+
+    - from: "PENDING_SIGNATURE"
+      to: "PARTIAL_SIGNED"
+      trigger: "현장소장 서명"
+      auto: true
+      condition: "siteManagerSignature != null"
+
+    - from: "PARTIAL_SIGNED"
+      to: "SIGNATURE_COMPLETED"
+      trigger: "감리원 서명"
+      auto: true
+      condition: "siteInspectorSignature != null"
+
+    - from: "SIGNATURE_COMPLETED"
+      to: "CONFIRMED"
+      trigger: "PDF 자동 생성"
+      auto: true
+
+    - from: ["DRAFT", "PENDING_SIGNATURE"]
+      to: "CANCELLED"
+      trigger: "취소"
+      auto: false
+
+  signature_flow:
+    order: ["현장소장", "감리원"]
+    url_validity: "24시간"
+    expired_action: "재발송 필요"
+
+  constraints:
+    DRAFT:
+      allowed: ["출하선택변경", "삭제"]
+      forbidden: []
+    PENDING_SIGNATURE:
+      allowed: ["서명URL재발송"]
+      forbidden: ["출하변경"]
+    CONFIRMED:
+      allowed: ["PDF다운로드", "수금확인"]
+      forbidden: ["모든수정"]
+
+# ============================================================
+# 자금(Fund) 상태
+# ============================================================
+fund:
+  entity: "Fund"
+  status_field: "status"
+
+  states:
+    ACTIVE:
+      korean: "진행중"
+      description: "자금 관리 진행 중"
+      is_initial: true
+
+    COMPLETED:
+      korean: "완료"
+      description: "선급금 + 기성금 + 잔금 모두 수금 완료"
+      is_final: true
+
+  transitions:
+    - from: "ACTIVE"
+      to: "COMPLETED"
+      trigger: "전체 수금 완료"
+      auto: true
+      condition: "advancePayment.status == PAID && allProgressPayments.status == PAID && balance.status == PAID"
+
+# ============================================================
+# 결제(Payment) 상태 - 선급금/기성금/잔금 공통
+# ============================================================
+payment:
+  entity: "Payment"
+  status_field: "status"
+  applies_to: ["AdvancePayment", "ProgressPayment", "BalancePayment"]
+
+  states:
+    REQUESTED:
+      korean: "신청"
+      description: "결제 신청됨"
+      is_initial: true
+
+    APPROVED:
+      korean: "승인"
+      description: "결제 승인됨"
+
+    PAID:
+      korean: "수금완료"
+      description: "입금 확인됨"
+      is_final: true
+
+    REJECTED:
+      korean: "반려"
+      description: "결제 반려됨"
+      is_final: true
+
+  transitions:
+    - from: "REQUESTED"
+      to: "APPROVED"
+      trigger: "승인"
+      auto: false
+
+    - from: "APPROVED"
+      to: "PAID"
+      trigger: "수금확인"
+      auto: false
+      required_fields: ["paidAmount", "paymentDate"]
+
+    - from: "REQUESTED"
+      to: "REJECTED"
+      trigger: "반려"
+      auto: false
+
+# ============================================================
+# 납품완료계(DeliveryDone) 상태
+# ============================================================
+delivery_done:
+  entity: "DeliveryDone"
+  status_field: "status"
+
+  states:
+    DRAFT:
+      korean: "작성중"
+      description: "납품완료계 작성 중"
+      is_initial: true
+
+    PENDING_SIGNATURE:
+      korean: "서명대기"
+      description: "서명 URL 발송됨"
+
+    PARTIAL_SIGNED:
+      korean: "일부서명"
+      description: "현장소장만 서명 완료"
+
+    SIGNATURE_COMPLETED:
+      korean: "서명완료"
+      description: "양측 서명 완료"
+
+    CONFIRMED:
+      korean: "확정"
+      description: "3종 PDF 생성 완료"
+      is_final: true
+
+  transitions:
+    - from: "DRAFT"
+      to: "PENDING_SIGNATURE"
+      trigger: "서명 URL 발송"
+
+    - from: "PENDING_SIGNATURE"
+      to: "PARTIAL_SIGNED"
+      trigger: "현장소장 서명"
+
+    - from: "PARTIAL_SIGNED"
+      to: "SIGNATURE_COMPLETED"
+      trigger: "감리원 서명"
+
+    - from: "SIGNATURE_COMPLETED"
+      to: "CONFIRMED"
+      trigger: "PDF 자동 생성"
+
+  prerequisite:
+    - "모든 출하의 납품확인 완료"
+    - "모든 물량 납품 완료"
