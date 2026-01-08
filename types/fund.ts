@@ -317,13 +317,22 @@ export interface PaymentCreateRequest {
 }
 
 /**
+ * 기간 조회 타입
+ */
+export type PeriodType = 'MONTHS' | 'QUARTER' | 'YEAR'
+
+/**
  * 통계 조회 파라미터
  */
 export interface FundStatisticsParams {
-  /** 조회 연도 */
-  year: number
-  /** 조회 월 (선택) */
-  month?: number
+  /** 조회 기간 타입 */
+  periodType: PeriodType
+  /** 조회 연도 (QUARTER, YEAR 타입에서 사용) */
+  year?: number
+  /** 조회 분기 (QUARTER 타입에서 사용, 1-4) */
+  quarter?: number
+  /** 조회 개월수 (MONTHS 타입에서 사용) */
+  months?: number
 }
 
 /**
@@ -699,12 +708,12 @@ export interface OemPayment {
  * OEM 지급 등록 요청
  */
 export interface OemPaymentCreateRequest {
-  /** 기성금 ID (연결된 기성금, 선택) */
-  paymentId?: number
-  /** 지급 예정 금액 */
-  scheduledAmount: number
+  /** 지급 유형 (필수): 'ADVANCE' | 'PROGRESS' */
+  paymentType: string
+  /** 지급 금액 (필수) */
+  paymentAmount: number
   /** 지급 예정일 */
-  scheduledDate: string
+  paymentDate: string
   /** OEM 업체명 */
   oemCompanyName?: string
   /** OEM 업체 ID */
@@ -713,6 +722,8 @@ export interface OemPaymentCreateRequest {
   bankAccount?: string
   /** 비고 */
   remarks?: string
+  /** 기성금 ID (연결된 기성금, 선택) */
+  paymentId?: number
 }
 
 /**

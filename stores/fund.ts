@@ -47,9 +47,9 @@ export const useFundStore = defineStore('fund', () => {
   /** 에러 메시지 */
   const error = ref<string | null>(null)
 
-  /** 페이지네이션 */
+  /** 페이지네이션 (0-indexed, useDataTable과 동일) */
   const pagination = ref({
-    page: 1,
+    page: 0,
     size: 20,
     total: 0,
     totalPages: 0
@@ -83,7 +83,7 @@ export const useFundStore = defineStore('fund', () => {
 
       list.value = response.content
       pagination.value = {
-        page: response.number + 1, // 0-indexed to 1-indexed
+        page: response.number, // 0-indexed 유지 (useDataTable과 동일)
         size: response.size,
         total: response.totalElements,
         totalPages: response.totalPages
@@ -273,7 +273,7 @@ export const useFundStore = defineStore('fund', () => {
     loading.value = false
     error.value = null
     pagination.value = {
-      page: 1,
+      page: 0,
       size: 20,
       total: 0,
       totalPages: 0

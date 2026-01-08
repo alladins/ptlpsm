@@ -49,9 +49,9 @@ export const fundService = {
       // 검색 파라미터 추가
       if (params.search) queryParams.append('search', params.search)
       if (params.deliveryRequestNo) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
-      // siteName 또는 projectName 처리
-      const siteNameParam = params.siteName || params.projectName
-      if (siteNameParam) queryParams.append('siteName', siteNameParam)
+      // projectName으로 통일 (siteName은 projectName으로 변환)
+      const projectNameParam = params.projectName || params.siteName
+      if (projectNameParam) queryParams.append('projectName', projectNameParam)
       if (params.status) queryParams.append('status', params.status)
       if (params.startDate) queryParams.append('startDate', params.startDate)
       if (params.endDate) queryParams.append('endDate', params.endDate)
@@ -343,8 +343,16 @@ export const fundService = {
   async getStatistics(params: FundStatisticsParams): Promise<FundStatistics | null> {
     try {
       const queryParams = new URLSearchParams()
-      queryParams.append('year', params.year.toString())
-      if (params.month) queryParams.append('month', params.month.toString())
+      queryParams.append('periodType', params.periodType)
+
+      if (params.periodType === 'MONTHS' && params.months) {
+        queryParams.append('months', params.months.toString())
+      } else if (params.periodType === 'QUARTER') {
+        if (params.year) queryParams.append('year', params.year.toString())
+        if (params.quarter) queryParams.append('quarter', params.quarter.toString())
+      } else if (params.periodType === 'YEAR' && params.year) {
+        queryParams.append('year', params.year.toString())
+      }
 
       const url = `${FUND_ENDPOINTS.statistics()}?${queryParams.toString()}`
       console.log('자금 통계 API 호출:', url)
@@ -476,18 +484,25 @@ export const fundService = {
 
   /**
    * 선급금 수금 확인
+   * 백엔드가 @RequestParam으로 받으므로 쿼리스트링으로 전송
    */
   async confirmAdvance(fundId: number, advanceId: number, data: AdvanceConfirmRequest): Promise<AdvancePayment> {
     try {
-      const url = FUND_ENDPOINTS.confirmAdvance(fundId, advanceId)
-      console.log('선급금 수금 확인 API 호출:', url, data)
+      // 쿼리스트링으로 파라미터 전송 (백엔드 @RequestParam 대응)
+      const queryParams = new URLSearchParams()
+      queryParams.append('paymentDate', data.paymentDate)
+      queryParams.append('paidAmount', data.paidAmount.toString())
+      if (data.bankAccount) queryParams.append('bankAccount', data.bankAccount)
+      if (data.remarks) queryParams.append('remarks', data.remarks)
+
+      const url = `${FUND_ENDPOINTS.confirmAdvance(fundId, advanceId)}?${queryParams.toString()}`
+      console.log('선급금 수금 확인 API 호출:', url)
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
       })
 
       if (!response.ok) {
@@ -538,15 +553,21 @@ export const fundService = {
    */
   async confirmBalance(fundId: number, data: { paidAmount: number; paidDate: string; bankAccount?: string; remarks?: string }): Promise<void> {
     try {
-      const url = FUND_ENDPOINTS.confirmBalance(fundId)
-      console.log('잔금 입금확인 API 호출:', url, data)
+      // 쿼리스트링으로 파라미터 전송 (백엔드 @RequestParam 대응)
+      const queryParams = new URLSearchParams()
+      queryParams.append('paidDate', data.paidDate)
+      queryParams.append('paidAmount', data.paidAmount.toString())
+      if (data.bankAccount) queryParams.append('bankAccount', data.bankAccount)
+      if (data.remarks) queryParams.append('remarks', data.remarks)
+
+      const url = `${FUND_ENDPOINTS.confirmBalance(fundId)}?${queryParams.toString()}`
+      console.log('잔금 입금확인 API 호출:', url)
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
       })
 
       if (!response.ok) {
@@ -563,18 +584,25 @@ export const fundService = {
 
   /**
    * 기성금 수금 확인
+   * 백엔드가 @RequestParam으로 받으므로 쿼리스트링으로 전송
    */
   async confirmPayment(fundId: number, paymentId: number, data: { paidAmount: number; paymentDate: string; bankAccount?: string; remarks?: string }): Promise<ProgressPaymentRequest> {
     try {
-      const url = FUND_ENDPOINTS.confirmPayment(fundId, paymentId)
-      console.log('기성금 수금 확인 API 호출:', url, data)
+      // 쿼리스트링으로 파라미터 전송 (백엔드 @RequestParam 대응)
+      const queryParams = new URLSearchParams()
+      queryParams.append('paymentDate', data.paymentDate)
+      queryParams.append('paidAmount', data.paidAmount.toString())
+      if (data.bankAccount) queryParams.append('bankAccount', data.bankAccount)
+      if (data.remarks) queryParams.append('remarks', data.remarks)
+
+      const url = `${FUND_ENDPOINTS.confirmPayment(fundId, paymentId)}?${queryParams.toString()}`
+      console.log('기성금 수금 확인 API 호출:', url)
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
       })
 
       if (!response.ok) {

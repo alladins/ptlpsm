@@ -91,11 +91,11 @@ export const FUND_ENDPOINTS = {
 
   /**
    * 자금 통계 조회
-   * @returns GET /admin/funds/statistics?params
+   * @returns GET /admin/statistics/fund?params
    */
   statistics: () => {
     const baseUrl = getApiBaseUrl()
-    return `${baseUrl}/admin/funds/statistics`
+    return `${baseUrl}/admin/statistics/fund`
   },
 
   /**

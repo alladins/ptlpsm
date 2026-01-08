@@ -6,13 +6,60 @@
       description="기성 현황을 통계로 확인합니다."
     >
       <template #actions>
-        <div class="year-selector">
-          <label>조회년도:</label>
-          <select v-model="selectedYear" class="form-select-sm">
-            <option v-for="year in availableYears" :key="year" :value="year">
-              {{ year }}년
-            </option>
-          </select>
+        <div class="period-filter">
+          <!-- 기간 타입 탭 -->
+          <div class="period-tabs">
+            <button
+              v-for="tab in periodTabs"
+              :key="tab.value"
+              :class="['tab-btn', { active: periodType === tab.value }]"
+              @click="periodType = tab.value"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+
+          <!-- 개월 선택 (칩 버튼) -->
+          <div v-if="periodType === 'MONTHS'" class="option-chips">
+            <button
+              v-for="m in monthOptions"
+              :key="m"
+              :class="['chip', { active: selectedMonths === m }]"
+              @click="selectedMonths = m"
+            >
+              {{ m }}개월
+            </button>
+          </div>
+
+          <!-- 분기 선택 -->
+          <div v-if="periodType === 'QUARTER'" class="option-group">
+            <select v-model="selectedYear" class="form-select-sm">
+              <option v-for="year in availableYears" :key="year" :value="year">{{ year }}년</option>
+            </select>
+            <div class="quarter-chips">
+              <button
+                v-for="q in 4"
+                :key="q"
+                :class="['chip', { active: selectedQuarter === q }]"
+                @click="selectedQuarter = q"
+              >
+                {{ q }}분기
+              </button>
+            </div>
+          </div>
+
+          <!-- 년도 선택 -->
+          <div v-if="periodType === 'YEAR'" class="option-group">
+            <select v-model="selectedYear" class="form-select-sm">
+              <option v-for="year in availableYears" :key="year" :value="year">{{ year }}년</option>
+            </select>
+          </div>
+
+          <!-- 조회 버튼 -->
+          <button class="btn-search" @click="loadStatistics">
+            <i class="fas fa-search"></i>
+            조회
+          </button>
         </div>
       </template>
     </PageHeader>
@@ -197,11 +244,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from '#imports'
 import { fundService } from '~/services/fund.service'
 import { formatCurrency } from '~/utils/format'
-import type { FundStatistics } from '~/types/fund'
+import type { FundStatistics, FundStatisticsParams, PeriodType } from '~/types/fund'
 
 // Chart.js dynamic import
 let Chart: any = null
@@ -213,8 +260,26 @@ definePageMeta({
 
 const router = useRouter()
 
+// 현재 분기 계산 헬퍼
+function getCurrentQuarter(): number {
+  return Math.ceil((new Date().getMonth() + 1) / 3)
+}
+
+// 기간 타입 탭 옵션
+const periodTabs = [
+  { value: 'MONTHS' as PeriodType, label: '개월' },
+  { value: 'QUARTER' as PeriodType, label: '분기' },
+  { value: 'YEAR' as PeriodType, label: '년도' }
+]
+
+// 개월 옵션
+const monthOptions = [3, 6, 9, 12]
+
 // State
 const loading = ref(true)
+const periodType = ref<PeriodType>('MONTHS')
+const selectedMonths = ref(3)
+const selectedQuarter = ref(getCurrentQuarter())
 const selectedYear = ref(new Date().getFullYear())
 const statistics = ref<FundStatistics>({
   totalFundCount: 0,
@@ -249,16 +314,30 @@ const availableYears = computed(() => {
 const loadStatistics = async () => {
   loading.value = true
   try {
-    const data = await fundService.getStatistics({ year: selectedYear.value })
+    const params: FundStatisticsParams = {
+      periodType: periodType.value,
+    }
+
+    if (periodType.value === 'MONTHS') {
+      params.months = selectedMonths.value
+    } else if (periodType.value === 'QUARTER') {
+      params.year = selectedYear.value
+      params.quarter = selectedQuarter.value
+    } else {
+      params.year = selectedYear.value
+    }
+
+    const data = await fundService.getStatistics(params)
     if (data) {
       statistics.value = data
     }
-    await nextTick()
-    renderCharts()
   } catch (error) {
     console.error('통계 조회 실패:', error)
   } finally {
     loading.value = false
+    // loading이 false가 된 후 DOM이 업데이트되면 차트 렌더링
+    await nextTick()
+    renderCharts()
   }
 }
 
@@ -380,11 +459,6 @@ const renderCharts = async () => {
 onMounted(() => {
   loadStatistics()
 })
-
-// Watch for year change
-watch(selectedYear, () => {
-  loadStatistics()
-})
 </script>
 
 <style scoped>
@@ -407,16 +481,101 @@ watch(selectedYear, () => {
   margin-bottom: 1rem;
 }
 
-/* 년도 선택 */
-.year-selector {
+/* 기간 필터 컨테이너 */
+.period-filter {
   display: flex;
   align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 기간 타입 탭 */
+.period-tabs {
+  display: flex;
+  background: #e2e8f0;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.tab-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: #1e40af;
+}
+
+.tab-btn.active {
+  background: white;
+  color: #1e40af;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* 옵션 칩 버튼 */
+.option-chips,
+.quarter-chips {
+  display: flex;
   gap: 0.5rem;
 }
 
-.year-selector label {
+.chip {
+  padding: 0.375rem 0.875rem;
+  border: 1px solid #cbd5e1;
+  background: white;
+  font-size: 0.8125rem;
+  color: #475569;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.chip:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.chip.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+/* 옵션 그룹 */
+.option-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* 조회 버튼 */
+.btn-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  background: #1e40af;
+  color: white;
+  border: none;
+  border-radius: 6px;
   font-size: 0.875rem;
-  color: #374151;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-search:hover {
+  background: #1e3a8a;
 }
 
 .form-select-sm {

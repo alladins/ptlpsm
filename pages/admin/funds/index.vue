@@ -11,10 +11,6 @@
           <i v-else class="fas fa-search"></i>
           검색
         </button>
-        <button class="btn-action btn-secondary" @click="handleReset">
-          <i class="fas fa-undo"></i>
-          초기화
-        </button>
       </template>
     </PageHeader>
 
@@ -74,13 +70,13 @@
             >
           </div>
 
-          <!-- 현장명 -->
+          <!-- 사업명 -->
           <div class="search-item">
-            <label>현장명:</label>
+            <label>사업명:</label>
             <input
               type="text"
               v-model="searchForm.projectName"
-              placeholder="현장명/사업명"
+              placeholder="사업명"
               class="text-input"
               @keyup.enter="handleSearch"
             >
@@ -128,27 +124,27 @@
               <tr>
                 <th>No</th>
                 <th>납품요구번호</th>
-                <th>현장명</th>
+                <th>사업명</th>
                 <th>선급금</th>
                 <th>기성금 누계</th>
                 <th>잔금</th>
                 <th>수금률</th>
                 <th>상태</th>
-                <th>관리</th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="(item, index) in fundList"
                 :key="item.fundId"
-                class="table-row"
+                class="table-row clickable-row"
+                @click="goToDetail(item.fundId)"
               >
                 <td>{{ startIndex + index }}</td>
                 <td>{{ item.deliveryRequestNo }}</td>
                 <td>{{ item.projectName || item.siteName }}</td>
-                <td class="text-right">{{ formatCurrency(item.advancePaymentAmount || item.advancePayment) }}</td>
-                <td class="text-right">{{ formatCurrency(item.progressPaymentTotal) }}</td>
-                <td class="text-right">{{ formatCurrency(item.balancePayment || item.balanceAmount) }}</td>
+                <td class="text-right">{{ formatCurrency(item.advancePaymentAmount || item.advancePayment || 0) }}</td>
+                <td class="text-right">{{ formatCurrency(item.progressPaymentTotal || 0) }}</td>
+                <td class="text-right">{{ formatCurrency(item.balancePayment || item.balanceAmount || 0) }}</td>
                 <td class="text-center">
                   <div class="progress-cell">
                     <div class="progress-bar-mini">
@@ -165,12 +161,6 @@
                   <span class="status-badge" :class="getStatusClass(item.status)">
                     {{ getStatusLabel(item.status) }}
                   </span>
-                </td>
-                <td class="action-buttons">
-                  <button class="btn-view" @click="goToDetail(item.fundId)" title="상세보기">
-                    <i class="fas fa-eye"></i>
-                    <span>상세</span>
-                  </button>
                 </td>
               </tr>
             </tbody>
@@ -243,11 +233,11 @@ const currentPage = computed(() => fundStore.pagination.page)
 
 const startIndex = computed(() => {
   if (totalElements.value === 0) return 0
-  return (currentPage.value - 1) * pageSize.value + 1
+  return currentPage.value * pageSize.value + 1
 })
 
 const endIndex = computed(() => {
-  const end = currentPage.value * pageSize.value
+  const end = (currentPage.value + 1) * pageSize.value
   return Math.min(end, totalElements.value)
 })
 
@@ -343,7 +333,7 @@ const getStatusLabel = (status?: FundStatus): string => {
 const loadStatistics = async () => {
   try {
     const currentYear = new Date().getFullYear()
-    const stats = await fundService.getStatistics({ year: currentYear })
+    const stats = await fundService.getStatistics({ periodType: 'YEAR', year: currentYear })
 
     if (stats) {
       summaryData.value = {
@@ -545,6 +535,14 @@ onMounted(async () => {
   background: #f0f4ff;
 }
 
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover {
+  background: #e0e7ff;
+}
+
 .text-right {
   text-align: right !important;
   font-weight: 500;
@@ -621,32 +619,6 @@ onMounted(async () => {
 .status-cancelled {
   background: #fee2e2;
   color: #dc2626;
-}
-
-/* 액션 버튼 */
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
-.btn-view {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  background: #10b981;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-view:hover {
-  background: #059669;
 }
 
 /* 로딩/빈 상태 */
