@@ -63,9 +63,9 @@
               @click="selectAccount(account)"
               class="clickable-row"
             >
-              <td>{{ account.bankName }}</td>
+              <td>{{ getBankName(account.bankCode, account.bankName) }}</td>
               <td>{{ account.bankAccountNumMasked }}</td>
-              <td>{{ account.bankAccountTypeName }}</td>
+              <td>{{ getAccountTypeName(account.bankAccountType, account.bankAccountTypeName) }}</td>
               <td>{{ account.alias || '-' }}</td>
               <td class="text-right">{{ formatCurrency(account.balance) }}</td>
               <td class="text-center">
@@ -73,7 +73,7 @@
                   {{ account.status }}
                 </span>
               </td>
-              <td>{{ account.collectCycleName }}</td>
+              <td>{{ getCollectCycleName(account.collectCycle, account.collectCycleName) }}</td>
               <td class="text-center">{{ account.lastCollectDate || '-' }}</td>
             </tr>
           </tbody>
@@ -88,7 +88,7 @@
           <i class="fas fa-exchange-alt"></i>
           거래내역
           <span class="selected-account-info">
-            {{ selectedAccount.bankName }} {{ selectedAccount.bankAccountNum }}
+            {{ getBankName(selectedAccount.bankCode, selectedAccount.bankName) }} {{ selectedAccount.bankAccountNum }}
             <template v-if="selectedAccount.alias">({{ selectedAccount.alias }})</template>
           </span>
         </h3>
@@ -123,10 +123,6 @@
             <button class="btn-search" @click="loadTransactions">
               <i class="fas fa-search"></i>
               조회
-            </button>
-            <button class="btn-secondary-sm" @click="resetTransSearch">
-              <i class="fas fa-undo"></i>
-              초기화
             </button>
           </div>
         </div>
@@ -173,10 +169,10 @@
               <td colspan="7" class="empty-row">거래내역이 없습니다.</td>
             </tr>
             <tr v-for="trans in transData.transactions" :key="trans.transRefKey">
-              <td class="text-center">{{ trans.transDateTime }}</td>
+              <td class="text-center">{{ formatTransDateTime(trans.transDateTime) }}</td>
               <td class="text-center">
                 <span class="trans-type" :class="getTransTypeClass(trans.transTypeCode)">
-                  {{ trans.transType }}
+                  {{ getTransTypeName(trans.transTypeCode) }}
                 </span>
               </td>
               <td class="text-right" :class="getAmountClass(trans.transTypeCode)">
@@ -214,6 +210,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { bankAccountService } from '~/services/bank-account.service'
+import { codeService } from '~/services/code.service'
 import { formatCurrency } from '~/utils/format'
 import type { BankAccount, Transaction, TransactionResponse } from '~/types/bank-account'
 import {
@@ -226,6 +223,35 @@ definePageMeta({
   layout: 'admin',
   pageTitle: '계좌 조회'
 })
+
+// 은행 코드 매핑 (bankCode → 은행명)
+const bankCodeMap = ref<Record<string, string>>({})
+
+// 계좌 유형 매핑
+const BANK_ACCOUNT_TYPE_MAP: Record<string, string> = {
+  'COMPANY': '법인계좌',
+  'C': '법인계좌',
+  'PERSONAL': '개인계좌',
+  'P': '개인계좌'
+}
+
+// 거래 유형 매핑 (입금/출금)
+const TRANS_TYPE_MAP: Record<string, string> = {
+  '1': '출금',
+  '2': '입금'
+}
+
+// 수집주기 매핑
+const COLLECT_CYCLE_MAP: Record<string, string> = {
+  'MINUTE10': '10분',
+  'MINUTE30': '30분',
+  'HOUR1': '1시간',
+  'HOUR3': '3시간',
+  'HOUR6': '6시간',
+  'HOUR12': '12시간',
+  'DAY1': '1일',
+  'REALTIME': '실시간'
+}
 
 // 계좌 목록 상태
 const accounts = ref<BankAccount[]>([])
@@ -374,18 +400,77 @@ function getStatusClass(status: string): string {
   return status === '정상' ? 'status-active' : 'status-inactive'
 }
 
-// 거래 유형 클래스
-function getTransTypeClass(typeCode: string): string {
-  return typeCode === '2' ? 'trans-in' : 'trans-out'
+// 거래 유형 클래스 (입금: '2' 또는 '입금', 출금: '1' 또는 '출금')
+function getTransTypeClass(typeCode: string | number): string {
+  const code = String(typeCode)
+  // 코드값('2') 또는 한글 텍스트('입금') 모두 처리
+  const isDeposit = code === '2' || code === '입금'
+  return isDeposit ? 'trans-in' : 'trans-out'
 }
 
-// 금액 클래스
-function getAmountClass(typeCode: string): string {
-  return typeCode === '2' ? 'amount-in' : 'amount-out'
+// 금액 클래스 (입금: '2' 또는 '입금', 출금: '1' 또는 '출금')
+function getAmountClass(typeCode: string | number): string {
+  const code = String(typeCode)
+  const isDeposit = code === '2' || code === '입금'
+  return isDeposit ? 'amount-in' : 'amount-out'
+}
+
+// 거래일시 포맷 (20251231172340 → 2025-12-31 17:23:40)
+function formatTransDateTime(dateTimeStr: string): string {
+  if (!dateTimeStr || dateTimeStr.length < 12) return dateTimeStr || '-'
+
+  const year = dateTimeStr.substring(0, 4)
+  const month = dateTimeStr.substring(4, 6)
+  const day = dateTimeStr.substring(6, 8)
+  const hour = dateTimeStr.substring(8, 10)
+  const minute = dateTimeStr.substring(10, 12)
+  const second = dateTimeStr.length >= 14 ? dateTimeStr.substring(12, 14) : '00'
+
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+}
+
+// 은행 코드 목록 조회
+async function loadBankCodes() {
+  try {
+    const codes = await codeService.getCodeDetails('BANK_CODE')
+    // code → codeName 매핑 생성
+    bankCodeMap.value = codes.reduce((acc, item) => {
+      acc[item.code] = item.codeName
+      return acc
+    }, {} as Record<string, string>)
+    console.log('은행 코드 매핑 완료:', bankCodeMap.value)
+  } catch (error) {
+    console.error('은행 코드 조회 실패:', error)
+    // 조회 실패 시 기본 매핑 사용
+    bankCodeMap.value = {}
+  }
+}
+
+// 은행코드로 은행명 조회
+function getBankName(bankCode: string, fallbackName?: string): string {
+  return bankCodeMap.value[bankCode] || fallbackName || bankCode
+}
+
+// 계좌유형 코드로 유형명 조회
+function getAccountTypeName(typeCode: string, fallbackName?: string): string {
+  return BANK_ACCOUNT_TYPE_MAP[typeCode] || fallbackName || typeCode
+}
+
+// 거래유형 코드로 유형명 조회 (1: 출금, 2: 입금)
+function getTransTypeName(typeCode: string): string {
+  return TRANS_TYPE_MAP[typeCode] || typeCode
+}
+
+// 수집주기 코드로 명칭 조회
+function getCollectCycleName(cycleCode: string, fallbackName?: string): string {
+  return COLLECT_CYCLE_MAP[cycleCode] || fallbackName || cycleCode
 }
 
 // 초기 로드
-onMounted(() => {
+onMounted(async () => {
+  // 은행 코드 먼저 로드
+  await loadBankCodes()
+  // 계좌 목록 로드
   loadAccounts()
 })
 </script>
@@ -550,34 +635,42 @@ onMounted(() => {
   color: #991b1b;
 }
 
-/* 거래 유형 */
+/* 거래 유형 배지 - 고대비 디자인 */
 .trans-type {
-  display: inline-block;
-  padding: 0.125rem 0.375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 0.25rem 0.625rem;
   border-radius: 4px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
-.trans-in {
-  background: #dbeafe;
-  color: #1d4ed8;
+/* 입금: 진한 파란색 배경 + 흰색 글씨 */
+.trans-type.trans-in {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2) !important;
 }
 
-.trans-out {
-  background: #fee2e2;
-  color: #dc2626;
+/* 출금: 진한 빨간색 배경 + 흰색 글씨 */
+.trans-type.trans-out {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(220, 38, 38, 0.2) !important;
 }
 
-/* 금액 색상 */
+/* 금액 색상 - 명확한 대비 */
 .amount-in {
-  color: #2563eb;
-  font-weight: 500;
+  color: #1d4ed8 !important;
+  font-weight: 600 !important;
 }
 
 .amount-out {
-  color: #dc2626;
-  font-weight: 500;
+  color: #b91c1c !important;
+  font-weight: 600 !important;
 }
 
 /* 로딩/에러 상태 */

@@ -41,10 +41,6 @@
                 <i class="fas fa-search"></i>
                 <span>검색</span>
               </button>
-              <button class="btn-secondary" @click="resetSearch">
-                <i class="fas fa-undo"></i>
-                <span>초기화</span>
-              </button>
               <button class="btn-primary" @click="openAddModal">
                 <i class="fas fa-plus"></i>
                 <span>등록</span>

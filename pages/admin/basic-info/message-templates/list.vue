@@ -61,10 +61,6 @@
           <i class="ri-search-line"></i>
           검색
         </button>
-        <button class="btn-reset-inline" @click="handleReset">
-          <i class="ri-refresh-line"></i>
-          초기화
-        </button>
       </div>
     </div>
 
