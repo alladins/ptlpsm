@@ -100,6 +100,44 @@ apiEnvironment.forceDevelopment()  // 개발 API (leadpower:9031)
 
 > **참고**: 도메인 기반 자동 감지가 우선 적용됩니다. localhost에서만 수동 전환이 가능합니다.
 
+## Git 브랜치 전략
+
+```
+main (운영) ←── develop (개발)
+                   ↑
+              feature/* (기능 개발)
+```
+
+### 브랜치 역할
+| 브랜치 | 용도 | 배포 대상 |
+|--------|------|-----------|
+| `main` | 운영 코드 | shipmg.lphydrofoam.com |
+| `develop` | 개발/테스트 코드 | leadpower.platree.com |
+| `feature/*` | 기능 개발 | - |
+
+### 작업 흐름
+1. **기능 개발**: `develop`에서 `feature/*` 브랜치 생성 → 작업 → `develop`에 머지
+2. **개발 배포**: `develop` 브랜치 → `npm run generate:dev` → 개발 서버 배포
+3. **운영 배포**: `develop`를 `main`에 머지 → `npm run generate:prod` → 운영 서버 배포
+
+### 명령어
+```bash
+# 기능 개발 시작
+git checkout develop
+git pull origin develop
+git checkout -b feature/기능명
+
+# 개발 완료 후 develop에 머지
+git checkout develop
+git merge feature/기능명
+git push origin develop
+
+# 운영 배포 시 main에 머지
+git checkout main
+git merge develop
+git push origin main
+```
+
 ## Important Notes
 
 - **Memory**: 정적 빌드 시 4GB 할당 (`--max-old-space-size=4096`)
