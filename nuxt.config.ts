@@ -239,7 +239,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     apiSecret: process.env.API_SECRET,
     public: {
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL,
+      // API 설정 (환경변수에서 로드)
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:9031/api',
       nodeEnv: process.env.NODE_ENV || 'development',
       excludeVisitPaths: [
         '/login',
@@ -248,8 +249,9 @@ export default defineNuxtConfig({
         '/_nuxt',
         '/api'
       ],
-      siteUrl: 'https://www.ptlpsm.com',
-      siteName: 'PTPLPSM'
+      // 사이트 설정 (환경변수에서 로드)
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+      siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'PTLPSM'
     }
   },
 

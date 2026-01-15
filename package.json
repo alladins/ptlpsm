@@ -7,6 +7,8 @@
     "build": "cross-env NODE_ENV=production nuxt build",
     "start": "nuxt start",
     "generate": "set NODE_OPTIONS=--max-old-space-size=4096 && cross-env NODE_ENV=production NUXT_STATIC=true nuxt generate",
+    "generate:dev": "set NODE_OPTIONS=--max-old-space-size=4096 && cross-env NODE_ENV=development NUXT_STATIC=true nuxt generate --dotenv .env.development",
+    "generate:prod": "set NODE_OPTIONS=--max-old-space-size=4096 && cross-env NODE_ENV=production NUXT_STATIC=true nuxt generate --dotenv .env.production",
     "lint": "eslint --ext .js,.vue --ignore-path .gitignore .",
     "preview": "nuxt preview"
   },

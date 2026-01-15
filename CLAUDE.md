@@ -11,10 +11,12 @@ This file provides guidance to Claude Code when working with this repository.
 ## Key Commands
 
 ```bash
-npm run dev        # 개발 서버 (localhost:3000)
-npm run generate   # 정적 사이트 빌드 (SSG)
-npm run lint       # 코드 린트
-npm run preview    # 프로덕션 빌드 미리보기
+npm run dev           # 개발 서버 (localhost:3000)
+npm run generate      # 정적 사이트 빌드 (SSG)
+npm run generate:dev  # 개발 환경용 빌드 (leadpower.platree.com)
+npm run generate:prod # 운영 환경용 빌드 (shipmg.lphydrofoam.com)
+npm run lint          # 코드 린트
+npm run preview       # 프로덕션 빌드 미리보기
 ```
 
 ## Architecture
@@ -22,9 +24,20 @@ npm run preview    # 프로덕션 빌드 미리보기
 - **Mode**: SSG (정적 사이트), SSR 비활성화
 - **State**: Pinia
 - **Style**: Tailwind CSS v4
-- **API**: 
-  - 개발: `http://localhost:9031/api`
-  - 운영: `http://leadpower.platree.com:9031/api`
+
+## 환경 구성
+
+| 구분 | 개발 (DEV) | 운영 (PROD) |
+|------|------------|-------------|
+| **도메인** | leadpower.platree.com | shipmg.lphydrofoam.com |
+| **API 포트** | 9031 | 9030 |
+| **서버 경로** | /app/leadpower | /app/shipmg |
+| **용도** | 개발/테스트 | 운영 |
+
+### API URL
+- 로컬: `http://localhost:9031/api`
+- 개발: `http://leadpower.platree.com:9031/api`
+- 운영: `http://shipmg.lphydrofoam.com:9030/api`
 
 ## Directory Structure
 
@@ -80,9 +93,12 @@ assets/css/                # 공통 CSS
 
 브라우저 콘솔에서:
 ```javascript
-apiEnvironment.forceProduction()   // 운영 API
-apiEnvironment.forceDevelopment()  // 개발 API
+apiEnvironment.printStatus()       // 현재 환경 정보 출력
+apiEnvironment.forceProduction()   // 운영 API (shipmg:9030)
+apiEnvironment.forceDevelopment()  // 개발 API (leadpower:9031)
 ```
+
+> **참고**: 도메인 기반 자동 감지가 우선 적용됩니다. localhost에서만 수동 전환이 가능합니다.
 
 ## Important Notes
 
