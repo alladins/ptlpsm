@@ -133,11 +133,12 @@
                 </option>
               </select>
             </FormField>
-            <FormField label="제조사">
+            <FormField label="제조사" required>
               <select
                 v-model="formData.oemCompanyId"
                 @change="handleOemChange"
                 class="form-input-sm"
+                required
               >
                 <option :value="null">선택하세요</option>
                 <option
@@ -248,7 +249,13 @@
         <button type="button" @click="goBack" class="btn-secondary">
           취소
         </button>
-        <button type="button" @click="handleSave" class="btn-primary" :disabled="submitting">
+        <button
+          type="button"
+          @click="handleSave"
+          class="btn-primary"
+          :disabled="submitting || !canEdit"
+          :title="!canEdit ? '수정 권한이 없습니다' : ''"
+        >
           {{ submitting ? '저장 중...' : '저장' }}
         </button>
       </div>
@@ -465,6 +472,7 @@ import FormField from '~/components/admin/forms/FormField.vue'
 import ProgressPaymentModal from '~/components/fund/ProgressPaymentModal.vue'
 import CollectionConfirmModal from '~/components/fund/CollectionConfirmModal.vue'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
+import { usePermission } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -474,6 +482,9 @@ definePageMeta({
 const router = useRouter()
 const route = useRoute()
 const orderId = computed(() => Number(route.params.id))
+
+// 권한
+const { canEdit, canDelete } = usePermission()
 
 // 상태
 const loading = ref(true)
@@ -603,6 +614,12 @@ const handleOemChange = () => {
 const handleSave = async () => {
   if (submitting.value) return
 
+  // 제조사 필수 검사
+  if (!formData.value.oemCompanyId) {
+    alert('제조사를 선택해주세요.')
+    return
+  }
+
   try {
     submitting.value = true
 
@@ -661,7 +678,7 @@ const handleSave = async () => {
 
     await orderService.updateOrder(orderId.value, formDataToSend)
     alert('납품요구가 수정되었습니다.')
-    router.push('/admin/order/list')
+    goBack()
   } catch (error) {
     console.error('납품요구 수정 실패:', error)
     alert('납품요구 수정에 실패했습니다.')
@@ -670,9 +687,14 @@ const handleSave = async () => {
   }
 }
 
-// 목록으로 이동
+// 목록으로 이동 (이전 페이지 번호 유지)
 const goBack = () => {
-  router.push('/admin/order/list')
+  const returnPage = route.query.returnPage
+  if (returnPage) {
+    router.push({ path: '/admin/order/list', query: { page: returnPage as string } })
+  } else {
+    router.push('/admin/order/list')
+  }
 }
 
 // 기성금 데이터 로드 (자금관리와 동일한 API 사용)

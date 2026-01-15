@@ -11,20 +11,20 @@
           class="btn-action btn-delete"
           @click="handleDelete"
           :disabled="!canDelete"
-          :title="!canDelete ? '대기 또는 취소 상태에서만 삭제할 수 있습니다.' : ''"
+          :title="getDeleteDisabledReason"
         >
           <i class="fas fa-trash"></i>
           삭제
         </button>
-        <button class="btn-action btn-secondary" @click="goBack">
-          <i class="fas fa-times"></i>
-          취소
+        <button class="btn-action btn-secondary" @click="handleGoBack">
+          <i class="fas fa-list"></i>
+          목록
         </button>
         <button
           class="btn-action btn-primary"
           @click="handleSubmit"
           :disabled="submitting || !canEdit"
-          :title="!canEdit ? '완료 또는 취소된 출하는 수정할 수 없습니다.' : ''"
+          :title="getEditDisabledReason"
         >
           <i class="fas fa-save"></i>
           {{ submitting ? '저장 중...' : '저장' }}
@@ -421,7 +421,7 @@
  *   * maxEditableQuantity: 최대 수정 가능 수량
  */
 import { ref, computed } from 'vue'
-import { useRouter } from '#imports'
+import { useRouter, useRoute } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
 import type { ShipmentDetailWithOrder, ShipmentItemWithOrder } from '~/services/shipment.service'
 import type { AdditionalChangeResponse, QuantityChangeHistory } from '~/types/shipment-change'
@@ -429,6 +429,7 @@ import { formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useEditForm } from '~/composables/admin/useEditForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { useCommonStatus } from '~/composables/useCommonStatus'
+import { usePermission } from '~/composables/usePermission'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import LoadingSection from '~/components/admin/common/LoadingSection.vue'
@@ -443,6 +444,10 @@ definePageMeta({
 })
 
 const router = useRouter()
+const route = useRoute()
+
+// 권한
+const { canEdit: hasEditPermission, canDelete: hasDeletePermission } = usePermission()
 
 // 상태 관리 (DB 기반)
 const { getStatusLabel: getStatusLabelFromDB, getStatusBadgeClass } = useCommonStatus()
@@ -657,19 +662,42 @@ const totalAmount = computed(() => {
   return items.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * item.unitPrice), 0)
 })
 
-// 삭제 가능 여부 (대기 또는 취소 상태만 삭제 가능)
-const canDelete = computed(() => {
+// 비즈니스 로직: 삭제 가능 상태 (대기 또는 취소 상태만)
+const isDeletableStatus = computed(() => {
   return ['PENDING', 'CANCELLED'].includes(formData.status)
 })
 
-// 수량 수정 가능 여부 (대기 상태만)
-const canEditQuantity = computed(() => {
-  return formData.status === 'PENDING'
+// 비즈니스 로직: 수정 가능 상태 (완료/취소 상태에서는 수정 불가)
+const isEditableStatus = computed(() => {
+  return !['COMPLETED', 'CANCELLED'].includes(formData.status)
 })
 
-// 출하 수정 가능 여부 (완료/취소 상태에서는 수정 불가)
+// 삭제 가능 여부 (권한 + 비즈니스 로직)
+const canDelete = computed(() => {
+  return hasDeletePermission.value && isDeletableStatus.value
+})
+
+// 수량 수정 가능 여부 (대기 상태만 + 수정 권한)
+const canEditQuantity = computed(() => {
+  return hasEditPermission.value && formData.status === 'PENDING'
+})
+
+// 출하 수정 가능 여부 (권한 + 비즈니스 로직)
 const canEdit = computed(() => {
-  return !['COMPLETED', 'CANCELLED'].includes(formData.status)
+  return hasEditPermission.value && isEditableStatus.value
+})
+
+// 비활성화 사유 표시 (권한 vs 상태 구분)
+const getEditDisabledReason = computed(() => {
+  if (!hasEditPermission.value) return '수정 권한이 없습니다'
+  if (!isEditableStatus.value) return '완료 또는 취소된 출하는 수정할 수 없습니다'
+  return ''
+})
+
+const getDeleteDisabledReason = computed(() => {
+  if (!hasDeletePermission.value) return '삭제 권한이 없습니다'
+  if (!isDeletableStatus.value) return '대기 또는 취소 상태에서만 삭제할 수 있습니다'
+  return ''
 })
 
 // 추가변경 가능 여부
@@ -898,6 +926,16 @@ const handleSubmit = async () => {
   await submit()
 }
 
+// 목록으로 이동 (returnPage 쿼리 파라미터 처리)
+const handleGoBack = () => {
+  const returnPage = route.query.returnPage
+  if (returnPage) {
+    router.push({ path: '/admin/shipping/list', query: { page: returnPage as string } })
+  } else {
+    router.push('/admin/shipping/list')
+  }
+}
+
 // 삭제 처리
 const handleDelete = async () => {
   if (!confirm('정말 삭제하시겠습니까?')) {
@@ -907,7 +945,7 @@ const handleDelete = async () => {
   try {
     await shipmentService.deleteShipment(shipmentId.value)
     alert('출하 정보가 삭제되었습니다.')
-    router.push('/admin/shipping/list')
+    handleGoBack()  // 삭제 후에도 returnPage로 이동
   } catch (error) {
     console.error('출하 정보 삭제 실패:', error)
     alert('출하 정보 삭제에 실패했습니다.')

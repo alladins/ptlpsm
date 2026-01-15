@@ -9,15 +9,6 @@
       </div>
 
       <div class="modal-body">
-        <!-- 서명완료 상태 경고 -->
-        <div v-if="isPendingSignature" class="warning-box">
-          <i class="fas fa-exclamation-triangle"></i>
-          <div>
-            <strong>서명이 완료된 상태입니다.</strong>
-            <p>추가변경 시 재서명이 필요합니다.</p>
-          </div>
-        </div>
-
         <!-- 변경 사유 입력 -->
         <div class="form-section">
           <label class="form-label required">변경 사유</label>
@@ -72,6 +63,54 @@
         <div v-if="hasChanges" class="summary-box">
           <i class="fas fa-info-circle"></i>
           <span>{{ changedItemCount }}개 품목의 수량이 변경됩니다.</span>
+        </div>
+
+        <!-- 서명 처리 방식 선택 (서명대기 상태일 때만 표시) -->
+        <div v-if="isPendingSignature" class="form-section">
+          <label class="form-label">서명 처리 방식</label>
+          <div class="signature-options">
+            <label class="signature-option" :class="{ active: reuseSignature }">
+              <input
+                v-model="reuseSignature"
+                type="radio"
+                name="signatureOption"
+                :value="true"
+              />
+              <div class="option-content">
+                <div class="option-title">
+                  <i class="fas fa-redo"></i>
+                  기존 서명 재사용
+                  <span class="badge-recommended">권장</span>
+                </div>
+                <p class="option-description">
+                  기존에 받은 서명으로 인수증을 새로 생성합니다.<br />
+                  재서명 절차 없이 즉시 완료됩니다.
+                </p>
+              </div>
+            </label>
+            <label class="signature-option" :class="{ active: !reuseSignature }">
+              <input
+                v-model="reuseSignature"
+                type="radio"
+                name="signatureOption"
+                :value="false"
+              />
+              <div class="option-content">
+                <div class="option-title">
+                  <i class="fas fa-pen"></i>
+                  새로 서명 받기
+                </div>
+                <p class="option-description">
+                  문자 발송 → 서명 → 사진 촬영 절차가 필요합니다.<br />
+                  기존 서명/사진 정보가 초기화됩니다.
+                </p>
+              </div>
+            </label>
+          </div>
+          <p class="signature-note">
+            <i class="fas fa-history"></i>
+            기존 인수증은 이력으로 보관됩니다.
+          </p>
         </div>
       </div>
 
@@ -129,6 +168,7 @@ const emit = defineEmits<{
 // State
 const changeReason = ref('')
 const isSubmitting = ref(false)
+const reuseSignature = ref(true)  // 기존 서명 재사용 여부 (기본값: true)
 
 interface EditableItem {
   skuId: string
@@ -213,11 +253,15 @@ const handleSubmit = async () => {
         newQuantity: item.newQuantity
       }))
 
-    const response = await shipmentService.executeAdditionalChange({
+    // 서명대기 상태일 때만 reuseSignature 전달
+    const requestData = {
       shipmentId: props.shipmentId,
       items: changedItems,
-      changeReason: changeReason.value.trim()
-    })
+      changeReason: changeReason.value.trim(),
+      ...(isPendingSignature.value && { reuseSignature: reuseSignature.value })
+    }
+
+    const response = await shipmentService.executeAdditionalChange(requestData)
 
     if (response.success) {
       emit('complete', response)
@@ -236,6 +280,7 @@ const handleSubmit = async () => {
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     changeReason.value = ''
+    reuseSignature.value = true  // 기본값으로 초기화
     initializeItems()
   }
 })
@@ -524,5 +569,100 @@ td.col-spec {
 
 .btn-secondary:hover {
   background: #f9fafb;
+}
+
+/* 서명 처리 방식 옵션 */
+.signature-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.signature-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.signature-option:hover {
+  border-color: #93c5fd;
+  background: #f8fafc;
+}
+
+.signature-option.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.signature-option input[type="radio"] {
+  margin-top: 0.25rem;
+  accent-color: #2563eb;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.option-content {
+  flex: 1;
+}
+
+.option-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.9375rem;
+  margin-bottom: 0.375rem;
+}
+
+.option-title i {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.signature-option.active .option-title i {
+  color: #2563eb;
+}
+
+.badge-recommended {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.option-description {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.signature-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0 0;
+  padding: 0.5rem 0.75rem;
+  background: #fef3c7;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #92400e;
+}
+
+.signature-note i {
+  color: #f59e0b;
 }
 </style>

@@ -109,6 +109,12 @@ export interface DeliveryDone {
   // 상태 정보
   status: DeliveryDoneStatus
 
+  // 건설사/OEM 정보
+  builderCompanyId: number | null      // 건설사 ID
+  builderCompanyName: string | null    // 건설사명
+  oemCompanyId: number | null          // OEM 업체 ID (제조사)
+  oemCompanyName: string | null        // OEM 업체명
+
   // 시공사 정보
   contractorCompanyName: string
   contractorRepresentative: string

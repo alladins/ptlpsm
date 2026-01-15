@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from './api'
+import { getApiBaseUrl, getAuthHeaders } from './api'
 import {
   DeliveryDoneStatus,
   SignatureRole
@@ -268,10 +268,40 @@ export function getBaselineInvoiceExcelUrl(orderId: number): string {
 
 /**
  * 기성청구내역서 엑셀 다운로드
+ * - 인증 토큰이 필요한 API이므로 fetch + blob 방식 사용
  */
 export async function downloadBaselineInvoiceExcel(orderId: number): Promise<void> {
   const url = getBaselineInvoiceExcelUrl(orderId)
-  window.open(url, '_blank')
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+
+  if (!response.ok) {
+    // 에러 응답에서 메시지 추출
+    try {
+      const errorData = await response.json()
+      throw new Error(errorData.message || `엑셀 다운로드 실패: ${response.status}`)
+    } catch (parseError) {
+      // JSON 파싱 실패 시 기본 메시지
+      if (parseError instanceof Error && parseError.message !== `엑셀 다운로드 실패: ${response.status}`) {
+        throw parseError
+      }
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+  }
+
+  // Blob으로 다운로드 처리
+  const blob = await response.blob()
+  const downloadUrl = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = downloadUrl
+  link.download = '기성청구내역서.xlsx'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(downloadUrl)
 }
 
 /**

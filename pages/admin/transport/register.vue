@@ -10,7 +10,12 @@
           <i class="fas fa-times"></i>
           취소
         </button>
-        <button class="btn-primary" @click="handleSubmit" :disabled="submitting">
+        <button
+          class="btn-primary"
+          @click="handleSubmit"
+          :disabled="submitting || !canWrite"
+          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+        >
           <i class="fas fa-save"></i>
           {{ submitting ? '등록 중...' : '등록' }}
         </button>
@@ -83,7 +88,7 @@
             <span>현장 담당자 정보</span>
           </div>
           <div class="info-grid grid-2">
-            <FormField label="현장소장">
+            <FormField label="현장소장" required :error="errors.siteManagerId">
               <select
                 v-model="selectedSupervisorId"
                 @change="handleSupervisorChange"
@@ -95,7 +100,7 @@
                 </option>
               </select>
             </FormField>
-            <FormField label="현장 인수자">
+            <FormField label="현장 인수자" required :error="errors.receiverName">
               <div class="input-with-select">
                 <select
                   v-model="selectedReceiverId"
@@ -226,7 +231,7 @@
                 placeholder="직접 입력 또는 기사 선택 시 자동 입력"
               >
             </FormField>
-            <FormField label="기사 연락처">
+            <FormField label="기사 연락처" required :error="errors.driverPhone">
               <input
                 type="tel"
                 v-model="formData.driverPhone"
@@ -236,7 +241,7 @@
                 maxlength="13"
               >
             </FormField>
-            <FormField label="차량번호" required :error="errors.vehicleNo">
+            <FormField label="차량번호">
               <input
                 type="text"
                 v-model="formData.vehicleNo"
@@ -244,7 +249,7 @@
                 placeholder="차량번호를 입력하세요"
               >
               <template #hint>
-                차량번호를 기준으로 운송장번호가 자동 생성됩니다.
+                기사 연락처 마지막 4자리를 기준으로 운송장번호가 자동 생성됩니다.
               </template>
             </FormField>
             <FormField label="배차/출차 시각">
@@ -312,6 +317,7 @@ import type { UserByRole } from '~/types/user'
 import { formatPhoneNumber } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
+import { usePermission } from '~/composables/usePermission'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import ShipmentSelectPopup from '~/components/admin/common/ShipmentSelectPopup.vue'
@@ -323,6 +329,9 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
+
+// 권한
+const { canWrite } = usePermission()
 
 // 사용자 목록
 const siteManagers = ref<UserByRole[]>([])     // SITE_MANAGER (시공사 담당자)
@@ -396,9 +405,11 @@ const {
 // useFormValidation 사용
 const { errors, validateAll, rules } = useFormValidation({
   shipmentId: '',
-  vehicleNo: '',
   deliveryDate: '',
-  deliveryAddress: ''
+  deliveryAddress: '',
+  siteManagerId: '',
+  receiverName: '',
+  driverPhone: ''
 })
 
 // 팝업 상태
@@ -568,14 +579,23 @@ const handleDriverChange = () => {
 
 // 제출 처리
 const handleSubmit = async () => {
+  // 유효성 검사용 데이터 (formData + 별도 ref 값 포함)
+  const validationData = {
+    ...formData,
+    siteManagerId: selectedSupervisorId.value || ''
+  }
+
   // 유효성 검사
   const validationRules = {
     shipmentId: [rules.required('출하 정보')],
-    vehicleNo: [rules.required('차량번호')],
-    deliveryDate: [rules.required('배송예정일')]
+    deliveryDate: [rules.required('배송예정일')],
+    deliveryAddress: [rules.required('배송지 주소')],
+    siteManagerId: [rules.required('현장소장')],
+    receiverName: [rules.required('현장 인수자')],
+    driverPhone: [rules.required('기사 연락처')]
   }
 
-  if (!validateAll(formData, validationRules)) {
+  if (!validateAll(validationData, validationRules)) {
     return
   }
 

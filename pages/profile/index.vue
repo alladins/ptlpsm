@@ -556,7 +556,7 @@ const showPasswordModal = ref(false)
 
 // 프로필 수정 폼
 const profileForm = ref({
-  userId: '',
+  loginId: '',
   userName: '',
   email: '',
   phone: '',

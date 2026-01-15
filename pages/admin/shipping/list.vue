@@ -13,7 +13,12 @@
           <i v-else class="fas fa-search"></i>
           검색
         </button>
-        <button class="btn-action btn-primary" @click="goToRegister">
+        <button
+          class="btn-action btn-primary"
+          @click="goToRegister"
+          :disabled="!canWrite"
+          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+        >
           <i class="fas fa-plus"></i>
           등록
         </button>
@@ -35,7 +40,7 @@
           <!-- 납품요구번호 -->
           <div class="search-item">
             <label>납품요구번호:</label>
-            <input type="text" v-model="searchForm.deliveryRequestNo" placeholder="납품요구번호 선택" class="text-input" readonly>
+            <input type="text" v-model="searchForm.deliveryRequestNo" placeholder="납품요구번호 입력 또는 조회" class="text-input">
             <button type="button" class="btn-search-inline" @click="openOrderSelectPopup">
               <i class="fas fa-search"></i>
               조회
@@ -162,7 +167,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from '#imports'
+import { useRouter, useRoute } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
 import type { ShipmentListItem } from '~/services/shipment.service'
 import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
@@ -171,6 +176,7 @@ import type { OrderDetailResponse } from '~/types/order'
 import { formatDate, formatDateTime, formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
 import { useCommonStatus } from '~/composables/useCommonStatus'
+import { usePermission } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -178,6 +184,10 @@ definePageMeta({
 })
 
 const router = useRouter()
+const route = useRoute()
+
+// 권한
+const { canWrite } = usePermission()
 
 // 상태 관리 (DB 기반)
 const { statusOptions, getStatusLabel, loadStatusCodes } = useCommonStatus()
@@ -228,6 +238,7 @@ const {
   changePage,
   changePageSize,
   search,
+  refresh,
   reset
 } = useDataTable<ShipmentListItem>({
   fetchFunction: async (params) => {
@@ -319,9 +330,12 @@ const goToRegister = () => {
   router.push('/admin/shipping/register')
 }
 
-// 수정 페이지로 이동
+// 수정 페이지로 이동 (현재 페이지 번호를 쿼리로 전달)
 const editItem = (id: number) => {
-  router.push(`/admin/shipping/edit/${id}`)
+  router.push({
+    path: `/admin/shipping/edit/${id}`,
+    query: { returnPage: String(currentPage.value) }
+  })
 }
 
 // 총 출하수량 계산
@@ -337,6 +351,19 @@ const totalShippingAmount = computed(() => {
 // 초기 데이터 로드
 onMounted(async () => {
   await loadStatusCodes()  // 상태 코드 로드
+
+  // URL 쿼리에서 페이지 번호 복원 (상세 페이지에서 돌아올 때)
+  const pageFromQuery = route.query.page || route.query.returnPage
+  if (pageFromQuery) {
+    const pageNum = parseInt(pageFromQuery as string, 10)
+    if (!isNaN(pageNum) && pageNum >= 0) {
+      currentPage.value = pageNum
+      // 페이지 번호가 있으면 해당 페이지로 데이터 로드 (search()는 페이지를 0으로 리셋함)
+      refresh()
+      return
+    }
+  }
+  // 페이지 번호가 없으면 첫 페이지부터 검색
   search()
 })
 </script>

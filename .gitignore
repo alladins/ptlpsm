@@ -51,7 +51,9 @@ coverage
 # OS
 Thumbs.db
 
-# Windows ���� ��ġ��
+# Claude Code 임시 파일
+tmpclaude-*
+
 # Windows 예약 파일명
 nul
 NUL

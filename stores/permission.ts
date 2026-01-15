@@ -316,11 +316,18 @@ export const usePermissionStore = defineStore('permission', () => {
 
   /**
    * URL로 메뉴 찾기
+   * - trailing slash 제거하여 비교 (예: /admin/delivery/list/ → /admin/delivery/list)
    */
   function findMenuByUrl(url: string): Menu | null {
+    // trailing slash 제거 (루트 경로 '/'는 유지)
+    const normalizeUrl = (u: string) => u.length > 1 ? u.replace(/\/$/, '') : u
+
+    const normalizedUrl = normalizeUrl(url)
+
     function searchMenu(menus: Menu[]): Menu | null {
       for (const menu of menus) {
-        if (menu.menuUrl === url) return menu
+        const normalizedMenuUrl = normalizeUrl(menu.menuUrl || '')
+        if (normalizedMenuUrl === normalizedUrl) return menu
 
         if (menu.children) {
           const found = searchMenu(menu.children)

@@ -63,18 +63,17 @@ export interface RoleInfo {
 }
 
 /**
- * 역할 목록 (표준화된 8가지 역할)
- * - 메뉴권한관리 등에서 사용
+ * 역할 목록 (메뉴권한관리에서 사용)
+ * - SYSTEM_ADMIN 제외: 항상 전체 권한이므로 설정 불필요
  */
 export const ROLE_LIST: RoleInfo[] = [
-  { roleCode: 'SYSTEM_ADMIN', roleName: '시스템관리자', description: '시스템 전체 관리 권한', sortOrder: 1 },
-  { roleCode: 'LEADPOWER_MANAGER', roleName: '리드파워 담당자', description: '리드파워 전체 업무 담당', sortOrder: 2 },
-  { roleCode: 'OEM_MANAGER', roleName: 'OEM 담당자', description: 'OEM 업체 담당자', sortOrder: 3 },
-  { roleCode: 'SITE_MANAGER', roleName: '시공사 담당자', description: '시공사 현장 담당자', sortOrder: 4 },
-  { roleCode: 'SITE_INSPECTOR', roleName: '시공사 감리원', description: '시공사 감리 담당', sortOrder: 5 },
-  { roleCode: 'DELIVERY_DRIVER', roleName: '운송기사', description: '배송/운송 담당', sortOrder: 6 },
-  { roleCode: 'SALES_MANAGER', roleName: '영업 담당자', description: '영업 업무 담당', sortOrder: 7 },
-  { roleCode: 'READ_ONLY', roleName: '조회 전용', description: '조회만 가능한 역할', sortOrder: 8 }
+  { roleCode: 'LEADPOWER_MANAGER', roleName: '리드파워 담당자', description: '리드파워 전체 업무 담당', sortOrder: 1 },
+  { roleCode: 'OEM_MANAGER', roleName: 'OEM 담당자', description: 'OEM 업체 담당자', sortOrder: 2 },
+  { roleCode: 'SITE_MANAGER', roleName: '시공사 담당자', description: '시공사 현장 담당자', sortOrder: 3 },
+  { roleCode: 'SITE_INSPECTOR', roleName: '시공사 감리원', description: '시공사 감리 담당', sortOrder: 4 },
+  { roleCode: 'DELIVERY_DRIVER', roleName: '운송기사', description: '배송/운송 담당', sortOrder: 5 },
+  { roleCode: 'SALES_MANAGER', roleName: '영업 담당자', description: '영업 업무 담당', sortOrder: 6 },
+  { roleCode: 'READ_ONLY', roleName: '조회 전용', description: '조회만 가능한 역할', sortOrder: 7 }
 ]
 
 /**

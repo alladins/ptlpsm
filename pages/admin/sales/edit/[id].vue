@@ -163,7 +163,12 @@
           <button type="button" @click="goBack" class="btn-secondary" :disabled="submitting">
             취소
           </button>
-          <button type="submit" class="btn-primary" :disabled="submitting">
+          <button
+            type="submit"
+            class="btn-primary"
+            :disabled="submitting || !canEdit"
+            :title="!canEdit ? '수정 권한이 없습니다' : ''"
+          >
             {{ submitting ? '수정 중...' : '수정' }}
           </button>
         </div>
@@ -187,6 +192,7 @@ import FormField from '~/components/admin/forms/FormField.vue'
 import ItemsManager from '~/components/admin/forms/ItemsManager.vue'
 import FileUploadArea from '~/components/admin/common/FileUploadArea.vue'
 import { useSalesStatus } from '~/composables/useSalesStatus'
+import { usePermission } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -195,6 +201,9 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
+
+// 권한
+const { canEdit, canDelete } = usePermission()
 
 // ID 추출
 const salesId = computed(() => {

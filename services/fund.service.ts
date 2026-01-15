@@ -554,8 +554,9 @@ export const fundService = {
   async confirmBalance(fundId: number, data: { paidAmount: number; paidDate: string; bankAccount?: string; remarks?: string }): Promise<void> {
     try {
       // 쿼리스트링으로 파라미터 전송 (백엔드 @RequestParam 대응)
+      // 백엔드는 'paymentDate' 파라미터명 사용
       const queryParams = new URLSearchParams()
-      queryParams.append('paidDate', data.paidDate)
+      queryParams.append('paymentDate', data.paidDate)
       queryParams.append('paidAmount', data.paidAmount.toString())
       if (data.bankAccount) queryParams.append('bankAccount', data.bankAccount)
       if (data.remarks) queryParams.append('remarks', data.remarks)

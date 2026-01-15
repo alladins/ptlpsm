@@ -8,9 +8,9 @@
       icon-color="orange"
     >
       <template #actions>
-        <button class="btn-secondary" @click="router.back()">
-          <i class="fas fa-times"></i>
-          취소
+        <button class="btn-secondary" @click="handleGoBack">
+          <i class="fas fa-list"></i>
+          목록
         </button>
         <button
           class="btn-print"
@@ -23,7 +23,7 @@
           class="btn-primary"
           @click="saveTransport"
           :disabled="!canSave"
-          :title="!canSave ? '대기 또는 진행중 상태에서만 저장할 수 있습니다.' : ''"
+          :title="getSaveDisabledReason"
         >
           <i class="fas fa-save"></i>
           저장
@@ -99,6 +99,7 @@
                 v-model="selectedSupervisorId"
                 @change="handleSupervisorChange"
                 class="form-input-md"
+                :disabled="!isSavableStatus"
               >
                 <option value="">현장소장을 선택하세요</option>
                 <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
@@ -112,6 +113,7 @@
                   v-model="selectedReceiverId"
                   @change="handleReceiverChange"
                   class="form-input-sm"
+                  :disabled="!isSavableStatus"
                 >
                   <option value="direct">직접 입력</option>
                   <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
@@ -123,7 +125,8 @@
                   v-model="formData.receiverName"
                   class="form-input-md"
                   placeholder="인수자명을 입력하세요"
-                  :disabled="selectedReceiverId !== 'direct'"
+                  :disabled="!isSavableStatus || selectedReceiverId !== 'direct'"
+                  :readonly="!isSavableStatus"
                 >
               </div>
             </FormField>
@@ -134,7 +137,8 @@
                 class="form-input-md"
                 placeholder="010-0000-0000"
                 @input="handleReceiverPhoneInput"
-                :disabled="selectedReceiverId !== 'direct'"
+                :disabled="!isSavableStatus || selectedReceiverId !== 'direct'"
+                :readonly="!isSavableStatus"
               >
             </FormField>
           </div>
@@ -153,6 +157,7 @@
                 v-model="formData.deliveryMemo"
                 class="form-input-lg"
                 placeholder="배송 관련 메모를 입력하세요"
+                :readonly="!isSavableStatus"
               >
             </FormField>
           </div>
@@ -196,7 +201,7 @@
                   placeholder="우편번호"
                   readonly
                 >
-                <button type="button" class="btn-search" @click="searchAddress">
+                <button type="button" class="btn-search" @click="searchAddress" :disabled="!isSavableStatus">
                   <i class="fas fa-search"></i>
                   검색
                 </button>
@@ -207,6 +212,8 @@
                 type="date"
                 v-model="formData.deliveryDate"
                 class="form-input-md"
+                :readonly="!isSavableStatus"
+                :disabled="!isSavableStatus"
               >
             </FormField>
             <FormField label="배송지 주소" full-width>
@@ -224,6 +231,7 @@
                 v-model="formData.addressDetail"
                 class="form-input-lg"
                 placeholder="상세주소를 입력하세요"
+                :readonly="!isSavableStatus"
               >
             </FormField>
           </div>
@@ -242,17 +250,19 @@
                 v-model="formData.carrierName"
                 class="form-input-md"
                 placeholder="운송사명을 입력하세요"
+                :readonly="!isSavableStatus"
               >
             </FormField>
-            <FormField label="차량번호" required>
+            <FormField label="차량번호">
               <input
                 type="text"
                 v-model="formData.vehicleNo"
                 class="form-input-md"
                 placeholder="차량번호를 입력하세요"
+                :readonly="!isSavableStatus"
               >
               <template #hint>
-                차량번호를 기준으로 운송장번호가 자동 생성됩니다.
+                기사 연락처 마지막 4자리를 기준으로 운송장번호가 자동 생성됩니다.
               </template>
             </FormField>
             <FormField label="기사명">
@@ -261,9 +271,10 @@
                 v-model="formData.driverName"
                 class="form-input-md"
                 placeholder="기사명을 입력하세요"
+                :readonly="!isSavableStatus"
               >
             </FormField>
-            <FormField label="기사 연락처">
+            <FormField label="기사 연락처" required>
               <input
                 type="tel"
                 v-model="formData.driverPhone"
@@ -271,6 +282,7 @@
                 class="form-input-md"
                 placeholder="010-0000-0000"
                 maxlength="13"
+                :readonly="!isSavableStatus"
               >
             </FormField>
             <FormField label="배차/출차 시각">
@@ -284,6 +296,7 @@
                 placeholder="날짜와 시간을 선택하세요"
                 auto-apply
                 :teleport="true"
+                :disabled="!isSavableStatus"
               />
             </FormField>
             <FormField label="도착 예정 시각">
@@ -297,6 +310,7 @@
                 placeholder="날짜와 시간을 선택하세요"
                 auto-apply
                 :teleport="true"
+                :disabled="!isSavableStatus"
               />
             </FormField>
             <FormField label="운송장번호" full-width>
@@ -353,6 +367,7 @@ import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import { getApiBaseUrl } from '~/services/api'
 import { useCommonStatus } from '~/composables/useCommonStatus'
+import { usePermission } from '~/composables/usePermission'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { formatPhoneNumberInput, formatPhoneNumber } from '~/utils/format'
 
@@ -365,6 +380,9 @@ definePageMeta({
 const router = useRouter()
 const route = useRoute()
 const loading = ref(true)
+
+// 권한
+const { canEdit: hasEditPermission, canDelete: hasDeletePermission } = usePermission()
 
 // 상태 관리 (DB 기반)
 const { getStatusLabel } = useCommonStatus()
@@ -548,18 +566,33 @@ onMounted(async () => {
   } catch (error) {
     console.error('운송 정보 로드 실패:', error)
     alert('운송 정보를 불러오는데 실패했습니다.')
-    router.back()
+    handleGoBack()  // 로드 실패 시에도 목록으로 이동
   } finally {
     loading.value = false
   }
 })
 
+// 목록으로 이동 (returnPage 쿼리 파라미터 처리)
+const handleGoBack = () => {
+  const returnPage = route.query.returnPage
+  if (returnPage) {
+    router.push({ path: '/admin/transport/list', query: { page: returnPage as string } })
+  } else {
+    router.push('/admin/transport/list')
+  }
+}
+
 // 운송 정보 저장
 const saveTransport = async () => {
   try {
     // 유효성 검사
-    if (!formData.value.vehicleNo) {
-      alert('차량번호를 입력해주세요.\n차량번호는 운송장번호 생성에 사용됩니다.')
+    if (!formData.value.deliveryAddress) {
+      alert('배송지 주소를 입력해주세요.')
+      return
+    }
+
+    if (!formData.value.driverPhone) {
+      alert('기사 연락처를 입력해주세요.')
       return
     }
 
@@ -596,10 +629,18 @@ const saveTransport = async () => {
     console.log('운송장 수정 요청:', transportData)
     await transportService.updateTransport(formData.value.transportId, transportData)
     alert('운송장이 수정되었습니다.')
-    router.back()
-  } catch (error) {
+    handleGoBack()  // 저장 후에도 returnPage로 이동
+  } catch (error: any) {
     console.error('운송장 수정 실패:', error)
-    alert('운송장 수정에 실패했습니다.')
+
+    // 서버 에러 메시지가 있으면 표시, 없으면 기본 메시지
+    const message = error.serverMessage || '운송장 수정에 실패했습니다.'
+    alert(message)
+
+    // 409 Conflict인 경우 페이지 새로고침 (상태 동기화)
+    if (error.status === 409) {
+      location.reload()
+    }
   }
 }
 
@@ -649,9 +690,21 @@ const statusText = computed(() => {
   return getStatusLabel(formData.value.status)
 })
 
-// 저장 가능 여부 (대기 또는 진행중일 때만)
-const canSave = computed(() => {
+// 비즈니스 로직: 저장 가능 상태 (대기 또는 진행중)
+const isSavableStatus = computed(() => {
   return ['PENDING', 'IN_PROGRESS'].includes(formData.value.status)
+})
+
+// 저장 가능 여부 (권한 + 비즈니스 로직)
+const canSave = computed(() => {
+  return hasEditPermission.value && isSavableStatus.value
+})
+
+// 비활성화 사유 표시
+const getSaveDisabledReason = computed(() => {
+  if (!hasEditPermission.value) return '수정 권한이 없습니다'
+  if (!isSavableStatus.value) return '대기 또는 진행중 상태에서만 저장할 수 있습니다'
+  return ''
 })
 
 // 메시지 전송 가능 여부 체크

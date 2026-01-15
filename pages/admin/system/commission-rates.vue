@@ -235,6 +235,54 @@ const editForm = ref({
   isUnlimited: false
 })
 
+// 목업 데이터 사용 여부 (UI 테스트용)
+const useMockData = ref(true)
+
+// 목업 데이터 정의 - 연간 매출 구간별 커미션율
+const mockTiers: Omit<CommissionTier, 'tierId' | 'year' | 'createdAt' | 'updatedAt'>[] = [
+  {
+    tierOrder: 1,
+    tierName: '1구간',
+    minAmount: 0,
+    maxAmount: 500_000_000,
+    commissionRate: 3.0,
+    remarks: '연간 매출 5억 미만'
+  },
+  {
+    tierOrder: 2,
+    tierName: '2구간',
+    minAmount: 500_000_000,
+    maxAmount: 2_000_000_000,
+    commissionRate: 4.0,
+    remarks: '연간 매출 5억~20억'
+  },
+  {
+    tierOrder: 3,
+    tierName: '3구간',
+    minAmount: 2_000_000_000,
+    maxAmount: 3_000_000_000,
+    commissionRate: 5.0,
+    remarks: '연간 매출 20억~30억'
+  },
+  {
+    tierOrder: 4,
+    tierName: '4구간',
+    minAmount: 3_000_000_000,
+    maxAmount: 5_000_000_000,
+    commissionRate: 6.0,
+    remarks: '연간 매출 30억~50억'
+  },
+  {
+    tierOrder: 5,
+    tierName: '5구간',
+    minAmount: 5_000_000_000,
+    maxAmount: null,
+    commissionRate: 7.0,
+    remarks: '연간 매출 50억 이상 (최고 구간)'
+  }
+]
+const mockDefaultRate = 2.5
+
 // Computed
 const availableYears = computed(() => {
   const currentYear = new Date().getFullYear()
@@ -245,21 +293,29 @@ const availableYears = computed(() => {
 const loadRateConfig = async () => {
   loading.value = true
   try {
-    await commissionStore.fetchRateConfig(selectedYear.value)
-    const config = commissionStore.rateConfig
-    if (config) {
-      tiers.value = config.tiers.map(tier => ({
-        tierOrder: tier.tierOrder,
-        tierName: tier.tierName,
-        minAmount: tier.minAmount,
-        maxAmount: tier.maxAmount,
-        commissionRate: tier.commissionRate,
-        remarks: tier.remarks
-      }))
-      defaultRate.value = config.defaultRate || 0
+    // 목업 데이터 모드
+    if (useMockData.value) {
+      // 목업 데이터로 초기화
+      tiers.value = [...mockTiers]
+      defaultRate.value = mockDefaultRate
     } else {
-      tiers.value = []
-      defaultRate.value = 0
+      // 실제 API 호출
+      await commissionStore.fetchRateConfig(selectedYear.value)
+      const config = commissionStore.rateConfig
+      if (config) {
+        tiers.value = config.tiers.map(tier => ({
+          tierOrder: tier.tierOrder,
+          tierName: tier.tierName,
+          minAmount: tier.minAmount,
+          maxAmount: tier.maxAmount,
+          commissionRate: tier.commissionRate,
+          remarks: tier.remarks
+        }))
+        defaultRate.value = config.defaultRate || 0
+      } else {
+        tiers.value = []
+        defaultRate.value = 0
+      }
     }
   } catch (error) {
     console.error('커미션율 조회 실패:', error)

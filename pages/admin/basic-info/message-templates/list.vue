@@ -6,7 +6,12 @@
       description="발송할 메시지 템플릿을 관리합니다"
     >
       <template #actions>
-        <button class="btn-primary" @click="goToRegister">
+        <button
+          class="btn-primary"
+          @click="goToRegister"
+          :disabled="!canWrite"
+          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+        >
           <i class="ri-add-line"></i>
           템플릿 등록
         </button>
@@ -165,6 +170,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePermission } from '~/composables/usePermission'
 import {
   getMessageTemplateList,
   deleteMessageTemplate,
@@ -183,6 +189,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 권한
+const { canWrite } = usePermission()
 
 // State
 const loading = ref(false)

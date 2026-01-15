@@ -13,7 +13,12 @@
           <i v-else class="fas fa-search"></i>
           검색
         </button>
-        <button class="btn-action btn-primary" @click="goToRegister">
+        <button
+          class="btn-action btn-primary"
+          @click="goToRegister"
+          :disabled="!canWrite"
+          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+        >
           <i class="fas fa-plus"></i>
           등록
         </button>
@@ -113,13 +118,13 @@
           <table class="data-table tree-table">
             <thead>
               <tr>
-                <th style="width: 55px;">No</th>
-                <th style="width: 190px;">납품요구번호</th>
-                <th style="width: 95px;">납품요구일자</th>
+                <th style="width: 50px;">No</th>
+                <th style="width: 160px;">납품요구번호</th>
+                <th style="width: 105px;">납품요구일자</th>
                 <th style="width: 260px;">수요기관</th>
                 <th style="width: 60px;">담당자</th>
-                <th>사업명</th>
-                <th style="width: 130px;">건설사</th>
+                <th style="min-width: 200px;">사업명</th>
+                <th style="width: 100px;">건설사</th>
                 <th style="width: 110px;">총계약금액</th>
               </tr>
             </thead>
@@ -213,13 +218,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from '#imports'
+import { useRouter, useRoute } from '#imports'
 import { orderService } from '~/services/order.service'
 import type { OrderDetailResponse, ContractType } from '~/types/order'
 import { CONTRACT_TYPE_LABELS } from '~/types/order'
 // 리팩토링: 공통 모듈 import
 import { formatNumber } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
+import { usePermission } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -227,6 +233,10 @@ definePageMeta({
 })
 
 const router = useRouter()
+const route = useRoute()
+
+// 권한
+const { canWrite } = usePermission()
 
 // 통계 데이터
 const todayCount = ref(0)
@@ -275,6 +285,7 @@ const {
   changePage,
   changePageSize,
   search,
+  refresh,
   reset
 } = useDataTable<OrderDetailResponse>({
   fetchFunction: async (params) => {
@@ -315,6 +326,8 @@ const handleReset = () => {
 // Pagination 컴포넌트는 0-based, useDataTable도 0-based
 const handlePageChange = (page: number) => {
   changePage(page)
+  // URL에 페이지 번호 저장 (뒤로가기/앞으로가기 시 복원용)
+  router.replace({ query: { ...route.query, page: String(page) } })
 }
 
 // 페이지 크기 변경 - 리팩토링: useDataTable의 changePageSize 사용
@@ -327,9 +340,12 @@ const goToRegister = () => {
   router.push('/admin/order/register')
 }
 
-// 수정 페이지로 이동
+// 수정 페이지로 이동 (현재 페이지 번호를 쿼리로 전달)
 const editItem = (id: number) => {
-  router.push(`/admin/order/edit/${id}`)
+  router.push({
+    path: `/admin/order/edit/${id}`,
+    query: { returnPage: String(currentPage.value) }
+  })
 }
 
 // ========== 트리 구조 관련 상태 및 함수 ==========
@@ -463,6 +479,18 @@ const getContractTypeLabel = (contractType?: ContractType): string => {
 
 // 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
+  // URL 쿼리에서 페이지 번호 복원 (상세 페이지에서 돌아올 때)
+  const pageFromQuery = route.query.page || route.query.returnPage
+  if (pageFromQuery) {
+    const pageNum = parseInt(pageFromQuery as string, 10)
+    if (!isNaN(pageNum) && pageNum >= 0) {
+      currentPage.value = pageNum
+      // 페이지 번호가 있으면 해당 페이지로 데이터 로드 (search()는 페이지를 0으로 리셋함)
+      refresh()
+      return
+    }
+  }
+  // 페이지 번호가 없으면 첫 페이지부터 검색
   search()
 })
 </script>
@@ -569,6 +597,12 @@ onMounted(() => {
 /* 납품요구번호 셀 스타일 */
 .delivery-request-cell {
   text-align: left !important;
+  white-space: nowrap;
+}
+
+/* 납품요구일자 셀 스타일 */
+.data-table td:nth-child(3) {
+  white-space: nowrap;
 }
 
 .tree-toggle-wrapper {

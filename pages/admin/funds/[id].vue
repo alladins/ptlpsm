@@ -382,9 +382,9 @@
                 <i class="fas fa-check-circle"></i>
                 납품완료 처리하기
               </button>
-              <!-- 잔금등록 버튼 (납품완료 상태일 때만) -->
+              <!-- 잔금등록 버튼 (납품완료 상태 && 잔금 미입금 시에만) -->
               <button
-                v-if="fundDetail.isDeliveryCompleted || deliveryDoneStatus === 'COMPLETED'"
+                v-if="(fundDetail.isDeliveryCompleted || deliveryDoneStatus === 'COMPLETED') && !fundDetail.balancePaidAmount"
                 class="btn-primary"
                 @click="openBalanceConfirmModal"
               >
@@ -644,6 +644,7 @@ const oemPayments = ref<OemPayment[]>([])
 // 기성청구 Validation용 상태
 const completedDeliveryCount = ref(0)  // 서명 완료된 출하 수
 const deliveryDoneStatus = ref<string | null>(null)  // 납품완료계 상태
+const oemCompanyId = ref<number | null>(null)  // OEM 업체 ID (deliveryDone에서 가져옴)
 
 // OEM 지급 완료 총액 계산
 const oemPaidTotal = computed(() => {
@@ -763,6 +764,8 @@ const loadValidationData = async () => {
     // 2. 납품완료계 상태 조회
     const deliveryDone = await getDeliveryDoneByOrderId(fundDetail.value.orderId)
     deliveryDoneStatus.value = deliveryDone?.status || null
+    // OEM 업체 ID 저장 (OEM 지급 등록 시 사용)
+    oemCompanyId.value = deliveryDone?.oemCompanyId || null
   } catch (error) {
     console.error('Validation 데이터 로드 실패:', error)
   }
@@ -1027,8 +1030,9 @@ const openBalanceConfirmModal = () => {
 
   collectionPaymentType.value = 'balance'
   collectionPaymentId.value = fundDetail.value.fundId
-  collectionRequestAmount.value = fundDetail.value.balanceAmount || 0
-  collectionApprovedAmount.value = fundDetail.value.balanceAmount || 0
+  // 잔금 등록 시 미수금(outstandingAmount) 사용 (balanceAmount는 수금된 잔금)
+  collectionRequestAmount.value = fundDetail.value.outstandingAmount || 0
+  collectionApprovedAmount.value = fundDetail.value.outstandingAmount || 0
   showCollectionConfirmModal.value = true
 }
 
@@ -1225,6 +1229,7 @@ const handleOemPaymentSubmitted = async (data: {
         paymentAmount: data.amount,
         paymentDate: data.paymentDate,
         oemCompanyName: data.oemCompanyName,
+        oemCompanyId: oemCompanyId.value || undefined,  // OEM 업체 ID 추가
         bankAccount: data.bankAccount,
         remarks: data.remarks
       })

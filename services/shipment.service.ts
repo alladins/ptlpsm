@@ -360,16 +360,28 @@ class ShipmentService {
         request
       })
 
+      // 요청 바디 구성 (reuseSignature가 있으면 포함)
+      const requestBody: {
+        items: typeof request.items
+        changeReason: string
+        reuseSignature?: boolean
+      } = {
+        items: request.items,
+        changeReason: request.changeReason
+      }
+
+      // reuseSignature가 명시적으로 전달된 경우에만 포함
+      if (request.reuseSignature !== undefined) {
+        requestBody.reuseSignature = request.reuseSignature
+      }
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          items: request.items,
-          changeReason: request.changeReason
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {

@@ -5,7 +5,8 @@
       "WebSearch",
       "WebFetch",
       "Bash(ls -la \"d:\\\\dev\\\\ptlpsm\\\\assets\\\\css\"\" 2>/dev/null || echo \"Directory structure issue \")",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "playwright"
     ],
     "deny": [],
     "ask": []

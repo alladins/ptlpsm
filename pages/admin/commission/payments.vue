@@ -332,6 +332,175 @@ const showCreateModal = ref(false)
 const showCompleteModal = ref(false)
 const selectedPayment = ref<CommissionPayment | null>(null)
 
+// 목업 데이터 사용 여부 (UI 테스트용)
+const useMockData = ref(true)
+
+// 목업 데이터 정의 - 대리점(영업직원)별 커미션 지급 이력 (15% 지분)
+// 대리점 = 영업직원 (커미션 지급 대상)
+// 대리점별: 김영업(서울/경기), 이판매(부산/경남), 박세일(대전/충청), 최거래(광주/전라), 정딜러(대구/경북)
+const mockPayments: CommissionPayment[] = [
+  // 김영업 (서울/경기) - 국민은행
+  {
+    paymentId: 1,
+    year: 2026,
+    paymentSeq: 1,
+    scheduledAmount: 67_500_000, // 서울시청 4.5억 × 15%
+    paidAmount: 67_500_000,
+    scheduledDate: '2026-02-25',
+    paidDate: '2026-02-28',
+    status: 'COMPLETED',
+    settlementIds: [1],
+    settlementCount: 1,
+    recipientName: '김영업',
+    bankAccount: '110-123-456789',
+    bankName: '국민은행',
+    remarks: '서울시청 납품건 (서울/경기 담당)'
+  },
+  {
+    paymentId: 2,
+    year: 2026,
+    paymentSeq: 2,
+    scheduledAmount: 102_000_000, // 경기도교육청 6.8억 × 15%
+    paidAmount: 102_000_000,
+    scheduledDate: '2026-03-25',
+    paidDate: '2026-03-31',
+    status: 'COMPLETED',
+    settlementIds: [2],
+    settlementCount: 1,
+    recipientName: '김영업',
+    bankAccount: '110-123-456789',
+    bankName: '국민은행',
+    remarks: '경기도교육청 납품건 (서울/경기 담당)'
+  },
+  // 이판매 (부산/경남) - 신한은행
+  {
+    paymentId: 3,
+    year: 2026,
+    paymentSeq: 1,
+    scheduledAmount: 48_000_000, // 부산소방본부 3.2억 × 15%
+    paidAmount: 48_000_000,
+    scheduledDate: '2026-05-25',
+    paidDate: '2026-05-30',
+    status: 'COMPLETED',
+    settlementIds: [3],
+    settlementCount: 1,
+    recipientName: '이판매',
+    bankAccount: '110-987-654321',
+    bankName: '신한은행',
+    remarks: '부산소방본부 납품건 (부산/경남 담당)'
+  },
+  // 김영업 - 인천환경공단
+  {
+    paymentId: 4,
+    year: 2026,
+    paymentSeq: 3,
+    scheduledAmount: 42_000_000, // 인천환경공단 2.8억 × 15%
+    paidAmount: null,
+    scheduledDate: '2026-07-25',
+    paidDate: null,
+    status: 'PROCESSING',
+    settlementIds: [4],
+    settlementCount: 1,
+    recipientName: '김영업',
+    bankAccount: '110-123-456789',
+    bankName: '국민은행',
+    remarks: '인천환경공단 납품건 - 지급 처리 중'
+  },
+  // 박세일 (대전/충청) - 하나은행
+  {
+    paymentId: 5,
+    year: 2026,
+    paymentSeq: 1,
+    scheduledAmount: 63_000_000, // 대전보건연구원 4.2억 × 15%
+    paidAmount: null,
+    scheduledDate: '2026-08-31',
+    paidDate: null,
+    status: 'SCHEDULED',
+    settlementIds: [5],
+    settlementCount: 1,
+    recipientName: '박세일',
+    bankAccount: '123-456-789012',
+    bankName: '하나은행',
+    remarks: '대전보건연구원 납품건 (대전/충청 담당)'
+  },
+  // 최거래 (광주/전라) - 우리은행
+  {
+    paymentId: 6,
+    year: 2026,
+    paymentSeq: 1,
+    scheduledAmount: 27_000_000, // 광주교육청 1.8억 × 15%
+    paidAmount: null,
+    scheduledDate: '2026-09-30',
+    paidDate: null,
+    status: 'SCHEDULED',
+    settlementIds: [6],
+    settlementCount: 1,
+    recipientName: '최거래',
+    bankAccount: '789-012-345678',
+    bankName: '우리은행',
+    remarks: '광주교육청 납품건 (광주/전라 담당)'
+  },
+  // 박세일 - 세종시청
+  {
+    paymentId: 7,
+    year: 2026,
+    paymentSeq: 2,
+    scheduledAmount: 22_500_000, // 세종시청 1.5억 × 15%
+    paidAmount: null,
+    scheduledDate: '2026-10-31',
+    paidDate: null,
+    status: 'SCHEDULED',
+    settlementIds: [7],
+    settlementCount: 1,
+    recipientName: '박세일',
+    bankAccount: '123-456-789012',
+    bankName: '하나은행',
+    remarks: '세종시청 납품건 (대전/충청 담당)'
+  },
+  // 정딜러 (대구/경북) - 기업은행
+  {
+    paymentId: 8,
+    year: 2026,
+    paymentSeq: 1,
+    scheduledAmount: 55_500_000, // 울산시청 3.7억 × 15%
+    paidAmount: null,
+    scheduledDate: '2026-11-30',
+    paidDate: null,
+    status: 'SCHEDULED',
+    settlementIds: [8],
+    settlementCount: 1,
+    recipientName: '정딜러',
+    bankAccount: '456-789-012345',
+    bankName: '기업은행',
+    remarks: '울산시청 납품건 (대구/경북 담당)'
+  },
+  // 이판매 - 취소 건
+  {
+    paymentId: 9,
+    year: 2026,
+    paymentSeq: 0,
+    scheduledAmount: 36_000_000, // 2.4억 × 15%
+    paidAmount: null,
+    scheduledDate: '2026-04-30',
+    paidDate: null,
+    status: 'CANCELLED',
+    settlementIds: [],
+    settlementCount: 0,
+    recipientName: '이판매',
+    bankAccount: '110-987-654321',
+    bankName: '신한은행',
+    remarks: '납품 계약 취소로 지급 취소'
+  }
+]
+
+// 목업 페이지네이션
+const mockPaymentPagination = {
+  page: 0,
+  size: 20,
+  total: mockPayments.length,
+  totalPages: 1
+}
+
 const createForm = ref<CommissionPaymentCreateRequest>({
   year: new Date().getFullYear(),
   scheduledAmount: 0,
@@ -355,8 +524,28 @@ const availableYears = computed(() => {
   return Array.from({ length: 5 }, (_, i) => currentYear + 1 - i)
 })
 
-const payments = computed(() => commissionStore.payments)
-const pagination = computed(() => commissionStore.paymentPagination)
+const payments = computed(() => {
+  if (useMockData.value) {
+    // 상태 필터 적용
+    let filtered = [...mockPayments]
+    if (selectedStatus.value) {
+      filtered = filtered.filter(p => p.status === selectedStatus.value)
+    }
+    // 지급 차수 순으로 정렬 (최신 먼저)
+    filtered.sort((a, b) => b.paymentSeq - a.paymentSeq)
+    return filtered
+  }
+  return commissionStore.payments
+})
+const pagination = computed(() => {
+  if (useMockData.value) {
+    return {
+      ...mockPaymentPagination,
+      total: payments.value.length
+    }
+  }
+  return commissionStore.paymentPagination
+})
 
 const totalScheduled = computed(() =>
   payments.value.reduce((sum, p) => sum + p.scheduledAmount, 0)
@@ -380,11 +569,15 @@ const isCompleteFormValid = computed(() =>
 const loadPayments = async () => {
   loading.value = true
   try {
-    await commissionStore.fetchPayments(selectedYear.value, {
-      status: selectedStatus.value || undefined,
-      page: 0,
-      size: 20
-    })
+    // 목업 데이터 모드가 아닐 때만 실제 API 호출
+    if (!useMockData.value) {
+      await commissionStore.fetchPayments(selectedYear.value, {
+        status: selectedStatus.value || undefined,
+        page: 0,
+        size: 20
+      })
+    }
+    // 목업 모드에서는 computed가 자동으로 필터링 처리함
   } catch (error) {
     console.error('지급 목록 조회 실패:', error)
   } finally {

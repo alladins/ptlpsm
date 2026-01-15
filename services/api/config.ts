@@ -10,7 +10,7 @@ import { apiEnvironment } from '../api'
 /**
  * API Base URL 가져오기
  *
- * @returns API Base URL (예: http://localhost:9031/api 또는 http://leadpower.platree.com:9031/api)
+ * @returns API Base URL (예: http://localhost:9031/api 또는 http://shipmg.lphydrofoam.com:9031/api)
  */
 export function getApiBaseUrl(): string {
   return apiEnvironment.getApiBaseUrl()

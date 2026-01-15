@@ -12,7 +12,8 @@
         <button
           class="btn-action btn-primary"
           @click="handleSubmit"
-          :disabled="submitting"
+          :disabled="submitting || !canWrite"
+          :title="!canWrite ? '등록 권한이 없습니다' : ''"
         >
           <i class="fas fa-save"></i>
           {{ submitting ? '저장 중...' : '저장' }}
@@ -263,6 +264,7 @@ import { shipmentService } from '~/services/shipment.service'
 import { formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
+import { usePermission } from '~/composables/usePermission'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 
@@ -272,6 +274,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 권한
+const { canWrite } = usePermission()
 
 // 상태 관리 (등록 시에는 항상 '대기' 상태로 고정)
 

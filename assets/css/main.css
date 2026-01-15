@@ -11,6 +11,28 @@
 
   /* Font Family */
   --font-sans: 'Pretendard', 'Malgun Gothic', sans-serif;
+
+  /* shadcn-vue 색상 (HSL 값을 HEX로 변환) */
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+  --color-primary-foreground: #f8fafc;
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent-foreground: #0f172a;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #f8fafc;
+  --color-success: #10b981;
+  --color-success-foreground: #f8fafc;
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #0f172a;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #3b82f6;
 }
 
 /* CSS 변수 정의 - 업무 시스템 최적화 */

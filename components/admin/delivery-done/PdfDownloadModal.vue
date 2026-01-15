@@ -143,7 +143,7 @@ import { ref } from 'vue'
 import {
   downloadAllPdfs,
   getPdfDownloadUrl,
-  getBaselineInvoiceExcelUrl
+  downloadBaselineInvoiceExcel
 } from '~/services/delivery-done.service'
 import type { DeliveryDoneListItem } from '~/types/delivery-done'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
@@ -191,9 +191,15 @@ function closePdfPreview() {
 /**
  * 납품내역서 엑셀 다운로드
  */
-function downloadExcel() {
-  const url = getBaselineInvoiceExcelUrl(props.deliveryDone.orderId)
-  window.open(url, '_blank')
+async function downloadExcel() {
+  try {
+    await downloadBaselineInvoiceExcel(props.deliveryDone.orderId)
+  } catch (error) {
+    console.error('엑셀 다운로드 실패:', error)
+    // 서버에서 전달한 에러 메시지 표시
+    const message = error instanceof Error ? error.message : '엑셀 다운로드 중 오류가 발생했습니다.'
+    alert(message)
+  }
 }
 
 /**

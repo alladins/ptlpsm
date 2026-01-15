@@ -14,7 +14,12 @@
           <i class="fas fa-times"></i>
           취소
         </button>
-        <button @click="handleSubmit" class="btn-action btn-primary" :disabled="submitting">
+        <button
+          @click="handleSubmit"
+          class="btn-action btn-primary"
+          :disabled="submitting || !canWrite"
+          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+        >
           <i class="fas fa-check"></i>
           {{ submitting ? '등록 중...' : '등록' }}
         </button>
@@ -237,6 +242,7 @@ import { useRouter } from '#imports'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { useItemManagement } from '~/composables/admin/useItemManagement'
+import { usePermission } from '~/composables/usePermission'
 import { formatPhoneNumberInput } from '~/utils/format'
 import { salesService, type SalesRequest } from '~/services/sales.service'
 import { type DemandOrganization } from '~/services/demand-organization.service'
@@ -253,6 +259,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 권한
+const { canWrite } = usePermission()
 
 // 기본값 정의
 const defaultFormData: SalesRequest = {

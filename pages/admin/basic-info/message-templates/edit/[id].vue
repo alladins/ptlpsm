@@ -30,6 +30,7 @@
       v-else-if="template"
       mode="edit"
       :initial-data="template"
+      :can-write="canEdit"
       @submit="handleSubmit"
       @cancel="goToList"
     />
@@ -44,6 +45,7 @@ import {
   updateMessageTemplate
 } from '~/services/message-template.service'
 import type { MessageTemplate, MessageTemplateUpdateRequest } from '~/types/message-template'
+import { usePermission } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -52,6 +54,9 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
+
+// 권한
+const { canEdit } = usePermission()
 
 // State
 const loading = ref(false)

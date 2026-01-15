@@ -25,6 +25,8 @@ export interface AdditionalChangeRequest {
   items: AdditionalChangeItem[]
   /** 변경 사유 (필수) */
   changeReason: string
+  /** 기존 서명 재사용 여부 (디폴트: true) */
+  reuseSignature?: boolean
 }
 
 /**

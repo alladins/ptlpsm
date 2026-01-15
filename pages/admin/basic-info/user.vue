@@ -459,7 +459,7 @@ const editingUser = ref<any>(null)
 
 // 사용자 폼
 const userForm = ref({
-  userId: '',
+  loginId: '',
   password: '',
   userName: '',
   email: '',
@@ -483,7 +483,7 @@ const passwordForm = ref({
 
 // 유효성 검사 오류 메시지
 const validationErrors = ref<{
-  userId: string
+  loginId: string
   password: string
   userName: string
   email: string
@@ -491,7 +491,7 @@ const validationErrors = ref<{
   phone: string
   [key: string]: string
 }>({
-  userId: '',
+  loginId: '',
   password: '',
   userName: '',
   email: '',
@@ -630,7 +630,7 @@ const changePageSize = () => {
 // 등록 모달 열기
 const openAddModal = () => {
   userForm.value = {
-    userId: '',
+    loginId: '',
     password: '',
     userName: '',
     email: '',
@@ -646,7 +646,7 @@ const openAddModal = () => {
     zipCode: ''
   }
   validationErrors.value = {
-    userId: '',
+    loginId: '',
     password: '',
     userName: '',
     email: '',
@@ -674,7 +674,7 @@ const openEditModal = (user: any) => {
     companyId
   }
   validationErrors.value = {
-    userId: '',
+    loginId: '',
     password: '',
     userName: '',
     email: '',
@@ -700,7 +700,7 @@ const closeModal = () => {
   showEditModal.value = false
   editingUser.value = null
   validationErrors.value = {
-    userId: '',
+    loginId: '',
     password: '',
     userName: '',
     email: '',
@@ -725,7 +725,7 @@ const closePasswordModal = () => {
 // 유효성 검사
 const validateForm = (): boolean => {
   validationErrors.value = {
-    userId: '',
+    loginId: '',
     password: '',
     userName: '',
     email: '',

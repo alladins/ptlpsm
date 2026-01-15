@@ -136,7 +136,8 @@
         <button
           type="submit"
           class="btn-primary"
-          :disabled="isContentTooLong || isSubmitting"
+          :disabled="isContentTooLong || isSubmitting || !canWrite"
+          :title="!canWrite ? (mode === 'create' ? '등록 권한이 없습니다' : '수정 권한이 없습니다') : ''"
         >
           <i v-if="isSubmitting" class="ri-loader-4-line animate-spin"></i>
           <i v-else class="ri-save-line"></i>
@@ -160,11 +161,13 @@ import type {
 interface Props {
   mode: 'create' | 'edit'
   initialData?: MessageTemplate
+  canWrite?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   mode: 'create',
-  initialData: undefined
+  initialData: undefined,
+  canWrite: true
 })
 
 // Emits

@@ -221,6 +221,9 @@ const flatMenuList = computed<FlatMenuItem[]>(() => {
 
   function flatten(menuList: Menu[], level: number = 1) {
     for (const menu of menuList) {
+      // 시스템관리 메뉴 영역 제외 (SYSTEM_ADMIN 전용)
+      if (menu.menuCode === 'SYSTEM') continue
+
       const hasChildren = !!(menu.children && menu.children.length > 0)
       const childMenuIds = hasChildren ? getChildIds(menu.children!) : []
 

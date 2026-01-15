@@ -36,6 +36,7 @@
         ref="formRef"
         mode="edit"
         :initial-data="companyData"
+        :can-write="canEdit"
         @submit="handleUpdate"
         @cancel="goBack"
       />
@@ -49,6 +50,7 @@ import { useRouter, useRoute } from '#imports'
 import { companyService } from '~/services/company.service'
 import type { CompanyInfoResponse, CompanyCreateRequest } from '~/types/company'
 import CompanyForm from '~/components/admin/company/CompanyForm.vue'
+import { usePermission } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -58,6 +60,9 @@ definePageMeta({
 const router = useRouter()
 const route = useRoute()
 const formRef = ref<{ setSaving: (value: boolean) => void } | null>(null)
+
+// 권한
+const { canEdit } = usePermission()
 
 // 상태 관리
 const loading = ref(false)

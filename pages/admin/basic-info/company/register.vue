@@ -18,6 +18,7 @@
       <CompanyForm
         ref="formRef"
         mode="create"
+        :can-write="canWrite"
         @submit="handleCreate"
         @cancel="goBack"
       />
@@ -31,6 +32,7 @@ import { useRouter } from '#imports'
 import { companyService } from '~/services/company.service'
 import type { CompanyCreateRequest } from '~/types/company'
 import CompanyForm from '~/components/admin/company/CompanyForm.vue'
+import { usePermission } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -39,6 +41,9 @@ definePageMeta({
 
 const router = useRouter()
 const formRef = ref<{ setSaving: (value: boolean) => void } | null>(null)
+
+// 권한
+const { canWrite } = usePermission()
 
 // 등록 처리
 async function handleCreate(data: CompanyCreateRequest) {

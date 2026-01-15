@@ -9,7 +9,7 @@
       </template>
     </PageHeader>
 
-    <MessageTemplateForm mode="create" @submit="handleSubmit" @cancel="goToList" />
+    <MessageTemplateForm mode="create" :can-write="canWrite" @submit="handleSubmit" @cancel="goToList" />
   </div>
 </template>
 
@@ -17,6 +17,7 @@
 import { useRouter } from 'vue-router'
 import { createMessageTemplate } from '~/services/message-template.service'
 import type { MessageTemplateCreateRequest } from '~/types/message-template'
+import { usePermission } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -24,6 +25,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 권한
+const { canWrite } = usePermission()
 
 const handleSubmit = async (data: MessageTemplateCreateRequest) => {
   try {

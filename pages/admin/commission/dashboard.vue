@@ -1,9 +1,9 @@
 <template>
-  <div class="commission-dashboard">
+  <div class="distribution-dashboard">
     <!-- 페이지 헤더 -->
     <PageHeader
-      title="커미션 대시보드"
-      description="연간 커미션 현황을 한눈에 파악합니다."
+      title="수익 배분 대시보드"
+      description="연간 매출 및 수익 배분 현황을 한눈에 파악합니다."
     >
       <template #actions>
         <div class="year-selector">
@@ -44,7 +44,20 @@
           </div>
           <div class="kpi-value">{{ formatCurrency(summary.totalSalesAmount) }}</div>
           <div class="kpi-footer">
-            <span class="kpi-sub">커미션 산정 기준</span>
+            <span class="kpi-sub">수익 배분 기준</span>
+          </div>
+        </div>
+
+        <div class="kpi-card info">
+          <div class="kpi-header">
+            <div class="kpi-icon">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <span class="kpi-label">현재 지분율 구간</span>
+          </div>
+          <div class="kpi-value tier-value">{{ summary.currentTier?.tierName || '-' }}</div>
+          <div class="kpi-footer">
+            <span class="kpi-sub">{{ getTierRange() }}</span>
           </div>
         </div>
 
@@ -53,24 +66,11 @@
             <div class="kpi-icon">
               <i class="fas fa-coins"></i>
             </div>
-            <span class="kpi-label">총 커미션</span>
+            <span class="kpi-label">총 배분 금액</span>
           </div>
-          <div class="kpi-value">{{ formatCurrency(summary.totalCommissionAmount) }}</div>
+          <div class="kpi-value">{{ formatCurrency(totalDistributionAmount) }}</div>
           <div class="kpi-footer">
-            <span class="kpi-rate">평균 {{ summary.averageCommissionRate?.toFixed(1) || 0 }}%</span>
-          </div>
-        </div>
-
-        <div class="kpi-card info">
-          <div class="kpi-header">
-            <div class="kpi-icon">
-              <i class="fas fa-check-circle"></i>
-            </div>
-            <span class="kpi-label">지급 완료</span>
-          </div>
-          <div class="kpi-value">{{ formatCurrency(summary.totalPaidAmount) }}</div>
-          <div class="kpi-footer">
-            <span class="kpi-progress">{{ paymentRate }}% 완료</span>
+            <span class="kpi-progress">지급 {{ paymentRate }}% 완료</span>
           </div>
         </div>
 
@@ -79,7 +79,7 @@
             <div class="kpi-icon">
               <i class="fas fa-hourglass-half"></i>
             </div>
-            <span class="kpi-label">미지급</span>
+            <span class="kpi-label">미지급 합계</span>
           </div>
           <div class="kpi-value">{{ formatCurrency(summary.totalUnpaidAmount) }}</div>
           <div class="kpi-footer">
@@ -88,61 +88,61 @@
         </div>
       </div>
 
-      <!-- 현재 구간 정보 -->
-      <div v-if="summary.currentTier" class="tier-info-card">
-        <div class="tier-content">
+      <!-- 지분율 구조 섹션 -->
+      <div class="share-structure-card">
+        <div class="share-header">
+          <h3 class="section-title">
+            <i class="fas fa-chart-pie"></i>
+            현재 적용 지분율 구조
+          </h3>
           <div class="tier-badge">
-            <i class="fas fa-layer-group"></i>
-            현재 적용 구간
-          </div>
-          <div class="tier-detail">
-            <span class="tier-name">{{ summary.currentTier.tierName }}</span>
-            <span class="tier-rate">{{ summary.currentTier.commissionRate }}%</span>
-          </div>
-          <div class="tier-range">
-            {{ formatCurrency(summary.currentTier.minAmount) }} ~
-            {{ summary.currentTier.maxAmount ? formatCurrency(summary.currentTier.maxAmount) : '무제한' }}
+            <i class="fas fa-tag"></i>
+            {{ summary.currentTier?.tierName || '기본 구간' }}
           </div>
         </div>
-        <div v-if="summary.amountToNextTier" class="tier-progress">
-          <div class="progress-label">
-            <span>다음 구간까지</span>
-            <span class="amount">{{ formatCurrency(summary.amountToNextTier) }}</span>
+        <div class="share-content">
+          <div class="share-chart-wrapper">
+            <canvas ref="shareChartRef"></canvas>
           </div>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: tierProgressPercent + '%' }"></div>
+          <div class="share-legend">
+            <div
+              v-for="(dist, index) in summary.totalDistributions"
+              :key="dist.stakeholder"
+              class="legend-row"
+            >
+              <span class="legend-dot" :style="{ background: stakeholderColors[index] }"></span>
+              <span class="legend-name">{{ dist.name }}</span>
+              <span class="legend-rate">{{ dist.rate }}%</span>
+              <span class="legend-amount">{{ formatCurrency(dist.amount) }}</span>
+              <span class="legend-status" :class="getPaymentStatusClass(dist)">
+                {{ getPaymentStatusText(dist) }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- 차트 영역 -->
       <div class="charts-grid">
-        <!-- 월별 커미션 차트 -->
+        <!-- 월별 매출 & 배분 차트 -->
         <div class="chart-card">
           <h3 class="chart-title">
             <i class="fas fa-chart-bar"></i>
-            월별 커미션 현황
+            월별 매출 및 배분 현황
           </h3>
           <div class="chart-wrapper">
             <canvas ref="monthlyChartRef"></canvas>
           </div>
         </div>
 
-        <!-- 분기별 비교 차트 -->
+        <!-- 지분자별 배분 비교 차트 -->
         <div class="chart-card">
           <h3 class="chart-title">
-            <i class="fas fa-chart-pie"></i>
-            분기별 커미션 비교
+            <i class="fas fa-balance-scale"></i>
+            지분자별 총 배분
           </h3>
-          <div class="chart-wrapper quarter">
-            <canvas ref="quarterlyChartRef"></canvas>
-          </div>
-          <div class="quarter-legend">
-            <div v-for="(item, index) in quarterlyData" :key="index" class="legend-item">
-              <span class="legend-dot" :style="{ background: quarterColors[index] }"></span>
-              <span class="legend-label">{{ item.quarterLabel }}</span>
-              <span class="legend-value">{{ formatCurrency(item.commissionAmount) }}</span>
-            </div>
+          <div class="chart-wrapper bar">
+            <canvas ref="stakeholderChartRef"></canvas>
           </div>
         </div>
       </div>
@@ -151,7 +151,7 @@
       <div class="detail-table-card">
         <h3 class="table-title">
           <i class="fas fa-calendar-alt"></i>
-          월별 상세 내역
+          월별 수익 배분 상세
         </h3>
         <div class="table-container">
           <table class="detail-table">
@@ -159,10 +159,11 @@
               <tr>
                 <th>월</th>
                 <th>매출액</th>
-                <th>커미션 금액</th>
-                <th>지급 금액</th>
-                <th>미지급 금액</th>
-                <th>지급률</th>
+                <th class="stakeholder-col manufacturer">제조사 (64%)</th>
+                <th class="stakeholder-col headquarters">본사 (10%)</th>
+                <th class="stakeholder-col agent">대리점 (15%)</th>
+                <th class="stakeholder-col partner">협력사 (11%)</th>
+                <th>지급 상태</th>
               </tr>
             </thead>
             <tbody>
@@ -171,17 +172,22 @@
                   <span class="month-badge">{{ item.month }}월</span>
                 </td>
                 <td class="text-right">{{ formatCurrency(item.salesAmount) }}</td>
-                <td class="text-right commission">{{ formatCurrency(item.commissionAmount) }}</td>
-                <td class="text-right paid">{{ formatCurrency(item.paidAmount) }}</td>
-                <td class="text-right unpaid">{{ formatCurrency(item.unpaidAmount) }}</td>
+                <td class="text-right manufacturer">
+                  {{ formatCurrency(getDistributionAmount(item, 'MANUFACTURER')) }}
+                </td>
+                <td class="text-right headquarters">
+                  {{ formatCurrency(getDistributionAmount(item, 'HEADQUARTERS')) }}
+                </td>
+                <td class="text-right agent">
+                  {{ formatCurrency(getDistributionAmount(item, 'AGENT')) }}
+                </td>
+                <td class="text-right partner">
+                  {{ formatCurrency(getDistributionAmount(item, 'PARTNER')) }}
+                </td>
                 <td class="text-center">
-                  <div class="mini-progress">
-                    <div
-                      class="mini-progress-fill"
-                      :style="{ width: getMonthPaymentRate(item) + '%' }"
-                    ></div>
-                  </div>
-                  <span class="progress-text">{{ getMonthPaymentRate(item) }}%</span>
+                  <span :class="['payment-status-badge', getMonthPaymentStatusClass(item)]">
+                    {{ getMonthPaymentStatusText(item) }}
+                  </span>
                 </td>
               </tr>
             </tbody>
@@ -189,9 +195,18 @@
               <tr>
                 <td class="text-center"><strong>합계</strong></td>
                 <td class="text-right"><strong>{{ formatCurrency(summary.totalSalesAmount) }}</strong></td>
-                <td class="text-right commission"><strong>{{ formatCurrency(summary.totalCommissionAmount) }}</strong></td>
-                <td class="text-right paid"><strong>{{ formatCurrency(summary.totalPaidAmount) }}</strong></td>
-                <td class="text-right unpaid"><strong>{{ formatCurrency(summary.totalUnpaidAmount) }}</strong></td>
+                <td class="text-right manufacturer">
+                  <strong>{{ formatCurrency(getTotalByStakeholder('MANUFACTURER')) }}</strong>
+                </td>
+                <td class="text-right headquarters">
+                  <strong>{{ formatCurrency(getTotalByStakeholder('HEADQUARTERS')) }}</strong>
+                </td>
+                <td class="text-right agent">
+                  <strong>{{ formatCurrency(getTotalByStakeholder('AGENT')) }}</strong>
+                </td>
+                <td class="text-right partner">
+                  <strong>{{ formatCurrency(getTotalByStakeholder('PARTNER')) }}</strong>
+                </td>
                 <td class="text-center"><strong>{{ paymentRate }}%</strong></td>
               </tr>
             </tfoot>
@@ -201,13 +216,13 @@
 
       <!-- 빠른 링크 -->
       <div class="quick-links">
-        <NuxtLink to="/admin/commission/rates" class="quick-link-card">
+        <NuxtLink to="/admin/system/commission-rates" class="quick-link-card">
           <div class="link-icon blue">
             <i class="fas fa-percentage"></i>
           </div>
           <div class="link-content">
-            <span class="link-title">커미션율 설정</span>
-            <span class="link-desc">연도별 커미션율 구간 관리</span>
+            <span class="link-title">지분율 설정</span>
+            <span class="link-desc">연도별 지분율 구간 관리</span>
           </div>
           <i class="fas fa-chevron-right"></i>
         </NuxtLink>
@@ -217,7 +232,7 @@
           </div>
           <div class="link-content">
             <span class="link-title">정산 이력</span>
-            <span class="link-desc">계약별 커미션 정산 현황</span>
+            <span class="link-desc">지분자별 정산 현황</span>
           </div>
           <i class="fas fa-chevron-right"></i>
         </NuxtLink>
@@ -227,7 +242,7 @@
           </div>
           <div class="link-content">
             <span class="link-title">지급 관리</span>
-            <span class="link-desc">커미션 지급 이력 관리</span>
+            <span class="link-desc">지분자별 지급 이력 관리</span>
           </div>
           <i class="fas fa-chevron-right"></i>
         </NuxtLink>
@@ -238,63 +253,165 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { useCommissionStore } from '~/stores/commission'
 import { formatCurrency } from '~/utils/format'
-import type { AnnualCommissionSummary, MonthlyCommissionData, QuarterlyCommissionData } from '~/types/commission'
+import type {
+  Stakeholder,
+  StakeholderDistribution,
+  MonthlyDistribution,
+  AnnualDistributionSummary,
+  ShareTier
+} from '~/types/commission'
 
 // Chart.js dynamic import
 let Chart: any = null
 
 definePageMeta({
   layout: 'admin',
-  pageTitle: '커미션 대시보드'
+  pageTitle: '수익 배분 대시보드'
 })
-
-const commissionStore = useCommissionStore()
 
 // State
 const loading = ref(true)
 const selectedYear = ref(new Date().getFullYear())
 const monthlyChartRef = ref<HTMLCanvasElement | null>(null)
-const quarterlyChartRef = ref<HTMLCanvasElement | null>(null)
+const shareChartRef = ref<HTMLCanvasElement | null>(null)
+const stakeholderChartRef = ref<HTMLCanvasElement | null>(null)
 let monthlyChart: any = null
-let quarterlyChart: any = null
+let shareChart: any = null
+let stakeholderChart: any = null
 
-// Chart colors
-const quarterColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
+// 목업 데이터 사용 여부 (UI 테스트용)
+const useMockData = ref(true)
+
+// 지분자 색상
+const stakeholderColors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b']
+
+// 목업 데이터 정의 - 수익 배분 구조
+const mockDistributionSummary: AnnualDistributionSummary = {
+  year: 2026,
+  totalSalesAmount: 2_850_000_000, // 28억 5천만원
+  currentTier: {
+    tierId: 2,
+    year: 2026,
+    tierName: '10억~50억 구간',
+    minAmount: 1_000_000_000,
+    maxAmount: 5_000_000_000,
+    rates: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11 }
+    ]
+  },
+  totalDistributions: [
+    { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 1_824_000_000, paidAmount: 1_824_000_000, unpaidAmount: 0 },
+    { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 285_000_000, paidAmount: 285_000_000, unpaidAmount: 0 },
+    { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 427_500_000, paidAmount: 256_500_000, unpaidAmount: 171_000_000 },
+    { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 313_500_000, paidAmount: 200_000_000, unpaidAmount: 113_500_000 }
+  ],
+  totalUnpaidAmount: 284_500_000,
+  monthlyData: [
+    { year: 2026, month: 1, yearMonth: '2026-01', salesAmount: 180_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 115_200_000, paidAmount: 115_200_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 18_000_000, paidAmount: 18_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 27_000_000, paidAmount: 27_000_000, unpaidAmount: 0 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 19_800_000, paidAmount: 19_800_000, unpaidAmount: 0 }
+    ]},
+    { year: 2026, month: 2, yearMonth: '2026-02', salesAmount: 220_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 140_800_000, paidAmount: 140_800_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 22_000_000, paidAmount: 22_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 33_000_000, paidAmount: 33_000_000, unpaidAmount: 0 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 24_200_000, paidAmount: 24_200_000, unpaidAmount: 0 }
+    ]},
+    { year: 2026, month: 3, yearMonth: '2026-03', salesAmount: 250_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 160_000_000, paidAmount: 160_000_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 25_000_000, paidAmount: 25_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 37_500_000, paidAmount: 37_500_000, unpaidAmount: 0 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 27_500_000, paidAmount: 27_500_000, unpaidAmount: 0 }
+    ]},
+    { year: 2026, month: 4, yearMonth: '2026-04', salesAmount: 280_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 179_200_000, paidAmount: 179_200_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 28_000_000, paidAmount: 28_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 42_000_000, paidAmount: 42_000_000, unpaidAmount: 0 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 30_800_000, paidAmount: 30_800_000, unpaidAmount: 0 }
+    ]},
+    { year: 2026, month: 5, yearMonth: '2026-05', salesAmount: 200_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 128_000_000, paidAmount: 128_000_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 20_000_000, paidAmount: 20_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 30_000_000, paidAmount: 30_000_000, unpaidAmount: 0 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 22_000_000, paidAmount: 22_000_000, unpaidAmount: 0 }
+    ]},
+    { year: 2026, month: 6, yearMonth: '2026-06', salesAmount: 320_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 204_800_000, paidAmount: 204_800_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 32_000_000, paidAmount: 32_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 48_000_000, paidAmount: 48_000_000, unpaidAmount: 0 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 35_200_000, paidAmount: 35_200_000, unpaidAmount: 0 }
+    ]},
+    { year: 2026, month: 7, yearMonth: '2026-07', salesAmount: 290_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 185_600_000, paidAmount: 185_600_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 29_000_000, paidAmount: 29_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 43_500_000, paidAmount: 39_000_000, unpaidAmount: 4_500_000 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 31_900_000, paidAmount: 20_000_000, unpaidAmount: 11_900_000 }
+    ]},
+    { year: 2026, month: 8, yearMonth: '2026-08', salesAmount: 240_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 153_600_000, paidAmount: 153_600_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 24_000_000, paidAmount: 24_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 36_000_000, paidAmount: 0, unpaidAmount: 36_000_000 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 26_400_000, paidAmount: 0, unpaidAmount: 26_400_000 }
+    ]},
+    { year: 2026, month: 9, yearMonth: '2026-09', salesAmount: 270_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 172_800_000, paidAmount: 172_800_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 27_000_000, paidAmount: 27_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 40_500_000, paidAmount: 0, unpaidAmount: 40_500_000 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 29_700_000, paidAmount: 0, unpaidAmount: 29_700_000 }
+    ]},
+    { year: 2026, month: 10, yearMonth: '2026-10', salesAmount: 210_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 134_400_000, paidAmount: 134_400_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 21_000_000, paidAmount: 21_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 31_500_000, paidAmount: 0, unpaidAmount: 31_500_000 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 23_100_000, paidAmount: 0, unpaidAmount: 23_100_000 }
+    ]},
+    { year: 2026, month: 11, yearMonth: '2026-11', salesAmount: 190_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 121_600_000, paidAmount: 121_600_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 19_000_000, paidAmount: 19_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 28_500_000, paidAmount: 0, unpaidAmount: 28_500_000 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 20_900_000, paidAmount: 0, unpaidAmount: 20_900_000 }
+    ]},
+    { year: 2026, month: 12, yearMonth: '2026-12', salesAmount: 200_000_000, distributions: [
+      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 128_000_000, paidAmount: 128_000_000, unpaidAmount: 0 },
+      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 20_000_000, paidAmount: 20_000_000, unpaidAmount: 0 },
+      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 30_000_000, paidAmount: 0, unpaidAmount: 30_000_000 },
+      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 22_000_000, paidAmount: 0, unpaidAmount: 22_000_000 }
+    ]}
+  ]
+}
 
 // Computed
 const currentYear = new Date().getFullYear()
 const minYear = currentYear - 4
 const maxYear = currentYear + 1
 
-const summary = computed<AnnualCommissionSummary>(() => commissionStore.annualSummary || {
-  year: selectedYear.value,
-  totalSalesAmount: 0,
-  totalCommissionAmount: 0,
-  totalPaidAmount: 0,
-  totalUnpaidAmount: 0,
-  averageCommissionRate: 0,
-  monthlyData: [],
-  quarterlyData: [],
-  settlements: []
+const summary = computed<AnnualDistributionSummary>(() => {
+  if (useMockData.value) {
+    return mockDistributionSummary
+  }
+  // 실제 데이터 사용 시 store에서 가져옴
+  return mockDistributionSummary // TODO: 실제 API 연동
 })
 
 const monthlyData = computed(() => summary.value.monthlyData || [])
-const quarterlyData = computed(() => summary.value.quarterlyData || [])
 
-const paymentRate = computed(() => {
-  if (!summary.value.totalCommissionAmount) return 0
-  return Math.round((summary.value.totalPaidAmount / summary.value.totalCommissionAmount) * 100)
+const totalDistributionAmount = computed(() => {
+  return summary.value.totalDistributions?.reduce((sum, d) => sum + d.amount, 0) || 0
 })
 
-const tierProgressPercent = computed(() => {
-  if (!summary.value.currentTier || !summary.value.amountToNextTier) return 0
-  const currentAmount = summary.value.totalSalesAmount
-  const tierMin = summary.value.currentTier.minAmount
-  const toNext = summary.value.amountToNextTier
-  const tierRange = currentAmount - tierMin + toNext
-  return Math.min(100, Math.round(((currentAmount - tierMin) / tierRange) * 100))
+const totalPaidAmount = computed(() => {
+  return summary.value.totalDistributions?.reduce((sum, d) => sum + d.paidAmount, 0) || 0
+})
+
+const paymentRate = computed(() => {
+  if (!totalDistributionAmount.value) return 0
+  return Math.round((totalPaidAmount.value / totalDistributionAmount.value) * 100)
 })
 
 // Methods
@@ -303,10 +420,57 @@ const changeYear = (delta: number) => {
   loadDashboard()
 }
 
+const getTierRange = () => {
+  const tier = summary.value.currentTier
+  if (!tier) return '-'
+  const min = formatCurrency(tier.minAmount)
+  const max = tier.maxAmount ? formatCurrency(tier.maxAmount) : '무제한'
+  return `${min} ~ ${max}`
+}
+
+const getPaymentStatusClass = (dist: StakeholderDistribution) => {
+  if (dist.unpaidAmount === 0) return 'completed'
+  if (dist.paidAmount === 0) return 'pending'
+  return 'partial'
+}
+
+const getPaymentStatusText = (dist: StakeholderDistribution) => {
+  if (dist.unpaidAmount === 0) return '완료'
+  if (dist.paidAmount === 0) return '미지급'
+  return '일부지급'
+}
+
+const getDistributionAmount = (item: MonthlyDistribution, stakeholder: Stakeholder): number => {
+  const dist = item.distributions.find(d => d.stakeholder === stakeholder)
+  return dist?.amount || 0
+}
+
+const getTotalByStakeholder = (stakeholder: Stakeholder): number => {
+  const dist = summary.value.totalDistributions?.find(d => d.stakeholder === stakeholder)
+  return dist?.amount || 0
+}
+
+const getMonthPaymentStatusClass = (item: MonthlyDistribution) => {
+  const totalUnpaid = item.distributions.reduce((sum, d) => sum + d.unpaidAmount, 0)
+  const totalPaid = item.distributions.reduce((sum, d) => sum + d.paidAmount, 0)
+  if (totalUnpaid === 0) return 'completed'
+  if (totalPaid === 0) return 'pending'
+  return 'partial'
+}
+
+const getMonthPaymentStatusText = (item: MonthlyDistribution) => {
+  const totalUnpaid = item.distributions.reduce((sum, d) => sum + d.unpaidAmount, 0)
+  const totalPaid = item.distributions.reduce((sum, d) => sum + d.paidAmount, 0)
+  if (totalUnpaid === 0) return '완료'
+  if (totalPaid === 0) return '미지급'
+  return '일부지급'
+}
+
 const loadDashboard = async () => {
   loading.value = true
   try {
-    await commissionStore.fetchAnnualSummary(selectedYear.value)
+    // TODO: 실제 API 호출
+    await new Promise(resolve => setTimeout(resolve, 300))
   } catch (error) {
     console.error('대시보드 조회 실패:', error)
   } finally {
@@ -316,11 +480,6 @@ const loadDashboard = async () => {
   }
 }
 
-const getMonthPaymentRate = (item: MonthlyCommissionData): number => {
-  if (!item.commissionAmount) return 0
-  return Math.round((item.paidAmount / item.commissionAmount) * 100)
-}
-
 const renderCharts = async () => {
   // Dynamic import Chart.js
   if (!Chart) {
@@ -328,15 +487,44 @@ const renderCharts = async () => {
     Chart = chartModule.default
   }
 
-  // Monthly Bar Chart
+  // 지분율 도넛 차트
+  if (shareChartRef.value) {
+    if (shareChart) shareChart.destroy()
+
+    const data = summary.value.totalDistributions?.map(d => d.rate) || []
+    const labels = summary.value.totalDistributions?.map(d => d.name) || []
+
+    shareChart = new Chart(shareChartRef.value, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: stakeholderColors,
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context: any) => `${context.label}: ${context.raw}%`
+            }
+          }
+        },
+        cutout: '65%'
+      }
+    })
+  }
+
+  // 월별 매출 차트 (Stacked Bar)
   if (monthlyChartRef.value) {
-    if (monthlyChart) {
-      monthlyChart.destroy()
-    }
+    if (monthlyChart) monthlyChart.destroy()
 
     const labels = monthlyData.value.map(d => `${d.month}월`)
-    const commissionData = monthlyData.value.map(d => d.commissionAmount)
-    const paidData = monthlyData.value.map(d => d.paidAmount)
 
     monthlyChart = new Chart(monthlyChartRef.value, {
       type: 'bar',
@@ -344,16 +532,28 @@ const renderCharts = async () => {
         labels,
         datasets: [
           {
-            label: '커미션',
-            data: commissionData,
-            backgroundColor: '#8b5cf6',
-            borderRadius: 4
+            label: '제조사',
+            data: monthlyData.value.map(d => getDistributionAmount(d, 'MANUFACTURER')),
+            backgroundColor: stakeholderColors[0],
+            stack: 'distribution'
           },
           {
-            label: '지급',
-            data: paidData,
-            backgroundColor: '#10b981',
-            borderRadius: 4
+            label: '본사',
+            data: monthlyData.value.map(d => getDistributionAmount(d, 'HEADQUARTERS')),
+            backgroundColor: stakeholderColors[1],
+            stack: 'distribution'
+          },
+          {
+            label: '대리점',
+            data: monthlyData.value.map(d => getDistributionAmount(d, 'AGENT')),
+            backgroundColor: stakeholderColors[2],
+            stack: 'distribution'
+          },
+          {
+            label: '협력사',
+            data: monthlyData.value.map(d => getDistributionAmount(d, 'PARTNER')),
+            backgroundColor: stakeholderColors[3],
+            stack: 'distribution'
           }
         ]
       },
@@ -361,9 +561,7 @@ const renderCharts = async () => {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: {
-            position: 'top'
-          },
+          legend: { position: 'top' },
           tooltip: {
             callbacks: {
               label: (context: any) => `${context.dataset.label}: ${formatCurrency(context.raw)}`
@@ -371,7 +569,9 @@ const renderCharts = async () => {
           }
         },
         scales: {
+          x: { stacked: true },
           y: {
+            stacked: true,
             beginAtZero: true,
             ticks: {
               callback: (value: any) => formatCurrency(value)
@@ -382,38 +582,51 @@ const renderCharts = async () => {
     })
   }
 
-  // Quarterly Doughnut Chart
-  if (quarterlyChartRef.value) {
-    if (quarterlyChart) {
-      quarterlyChart.destroy()
-    }
+  // 지분자별 배분 수평 막대 차트
+  if (stakeholderChartRef.value) {
+    if (stakeholderChart) stakeholderChart.destroy()
 
-    const data = quarterlyData.value.map(d => d.commissionAmount)
+    const distributions = summary.value.totalDistributions || []
 
-    quarterlyChart = new Chart(quarterlyChartRef.value, {
-      type: 'doughnut',
+    stakeholderChart = new Chart(stakeholderChartRef.value, {
+      type: 'bar',
       data: {
-        labels: quarterlyData.value.map(d => d.quarterLabel),
-        datasets: [{
-          data,
-          backgroundColor: quarterColors,
-          borderWidth: 0
-        }]
+        labels: distributions.map(d => d.name),
+        datasets: [
+          {
+            label: '지급완료',
+            data: distributions.map(d => d.paidAmount),
+            backgroundColor: '#10b981'
+          },
+          {
+            label: '미지급',
+            data: distributions.map(d => d.unpaidAmount),
+            backgroundColor: '#f59e0b'
+          }
+        ]
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { position: 'top' },
           tooltip: {
             callbacks: {
-              label: (context: any) => `${context.label}: ${formatCurrency(context.raw)}`
+              label: (context: any) => `${context.dataset.label}: ${formatCurrency(context.raw)}`
             }
           }
         },
-        cutout: '60%'
+        scales: {
+          x: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: {
+              callback: (value: any) => formatCurrency(value)
+            }
+          },
+          y: { stacked: true }
+        }
       }
     })
   }
@@ -490,7 +703,7 @@ onMounted(() => {
 .loading-container i {
   font-size: 3rem;
   margin-bottom: 1rem;
-  color: #8b5cf6;
+  color: #6366f1;
 }
 
 /* KPI 섹션 */
@@ -520,8 +733,8 @@ onMounted(() => {
 }
 
 .kpi-card.primary::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-.kpi-card.success::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
-.kpi-card.info::before { background: linear-gradient(90deg, #10b981, #34d399); }
+.kpi-card.info::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
+.kpi-card.success::before { background: linear-gradient(90deg, #10b981, #34d399); }
 .kpi-card.warning::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 
 .kpi-header {
@@ -542,8 +755,8 @@ onMounted(() => {
 }
 
 .kpi-card.primary .kpi-icon { background: #eff6ff; color: #3b82f6; }
-.kpi-card.success .kpi-icon { background: #faf5ff; color: #8b5cf6; }
-.kpi-card.info .kpi-icon { background: #f0fdf4; color: #10b981; }
+.kpi-card.info .kpi-icon { background: #eef2ff; color: #6366f1; }
+.kpi-card.success .kpi-icon { background: #f0fdf4; color: #10b981; }
 .kpi-card.warning .kpi-icon { background: #fffbeb; color: #f59e0b; }
 
 .kpi-label {
@@ -559,32 +772,47 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
+.kpi-value.tier-value {
+  font-size: 1.25rem;
+  color: #6366f1;
+}
+
 .kpi-footer {
   font-size: 0.8125rem;
 }
 
 .kpi-sub { color: #9ca3af; }
-.kpi-rate { color: #8b5cf6; font-weight: 600; }
 .kpi-progress { color: #10b981; font-weight: 600; }
 .kpi-remaining { color: #f59e0b; font-weight: 600; }
 
-/* 현재 구간 카드 */
-.tier-info-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-  border: 1px solid #e9d5ff;
+/* 지분율 구조 카드 */
+.share-structure-card {
+  background: white;
   border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 1.5rem;
 }
 
-.tier-content {
+.share-header {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.section-title i {
+  color: #6366f1;
 }
 
 .tier-badge {
@@ -592,66 +820,84 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: white;
+  background: #eef2ff;
   border-radius: 8px;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  color: #8b5cf6;
+  color: #6366f1;
 }
 
-.tier-detail {
+.share-content {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.share-chart-wrapper {
+  height: 180px;
+  position: relative;
+}
+
+.share-legend {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
   gap: 0.75rem;
 }
 
-.tier-name {
-  font-size: 1.25rem;
+.legend-row {
+  display: grid;
+  grid-template-columns: 16px 80px 50px 1fr 80px;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.legend-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.legend-name {
+  font-weight: 600;
+  color: #374151;
+}
+
+.legend-rate {
   font-weight: 700;
+  color: #6366f1;
+}
+
+.legend-amount {
+  text-align: right;
+  font-weight: 600;
   color: #1f2937;
 }
 
-.tier-rate {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #8b5cf6;
-}
-
-.tier-range {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.tier-progress {
-  flex: 1;
-  max-width: 300px;
-}
-
-.progress-label {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-  font-size: 0.8125rem;
-  color: #6b7280;
-}
-
-.progress-label .amount {
+.legend-status {
+  text-align: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #8b5cf6;
 }
 
-.progress-bar {
-  height: 8px;
-  background: #e9d5ff;
-  border-radius: 4px;
-  overflow: hidden;
+.legend-status.completed {
+  background: #dcfce7;
+  color: #16a34a;
 }
 
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-  border-radius: 4px;
-  transition: width 0.3s;
+.legend-status.partial {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.legend-status.pending {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 /* 차트 그리드 */
@@ -680,7 +926,7 @@ onMounted(() => {
 }
 
 .chart-title i {
-  color: #8b5cf6;
+  color: #6366f1;
 }
 
 .chart-wrapper {
@@ -688,38 +934,8 @@ onMounted(() => {
   position: relative;
 }
 
-.chart-wrapper.quarter {
-  height: 200px;
-}
-
-.quarter-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8125rem;
-}
-
-.legend-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-}
-
-.legend-label {
-  color: #6b7280;
-  flex: 1;
-}
-
-.legend-value {
-  font-weight: 600;
-  color: #1f2937;
+.chart-wrapper.bar {
+  height: 250px;
 }
 
 /* 상세 테이블 */
@@ -742,7 +958,7 @@ onMounted(() => {
 }
 
 .table-title i {
-  color: #8b5cf6;
+  color: #6366f1;
 }
 
 .table-container {
@@ -755,19 +971,29 @@ onMounted(() => {
 }
 
 .detail-table th {
-  padding: 0.875rem 1rem;
+  padding: 0.875rem 0.75rem;
   text-align: center;
   background: #f9fafb;
   font-weight: 600;
   color: #374151;
   border-bottom: 2px solid #e5e7eb;
   font-size: 0.8125rem;
+  white-space: nowrap;
 }
 
+.detail-table th.stakeholder-col {
+  font-size: 0.75rem;
+}
+
+.detail-table th.manufacturer { color: #6366f1; }
+.detail-table th.headquarters { color: #3b82f6; }
+.detail-table th.agent { color: #10b981; }
+.detail-table th.partner { color: #f59e0b; }
+
 .detail-table td {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem;
   border-bottom: 1px solid #f3f4f6;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .detail-table tr:hover {
@@ -795,32 +1021,33 @@ onMounted(() => {
   color: #374151;
 }
 
-.commission { color: #8b5cf6; font-weight: 600; }
-.paid { color: #10b981; font-weight: 600; }
-.unpaid { color: #f59e0b; font-weight: 600; }
+.manufacturer { color: #6366f1; font-weight: 600; }
+.headquarters { color: #3b82f6; font-weight: 600; }
+.agent { color: #10b981; font-weight: 600; }
+.partner { color: #f59e0b; font-weight: 600; }
 
-/* 미니 프로그레스 */
-.mini-progress {
-  width: 60px;
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 3px;
-  overflow: hidden;
+/* 지급 상태 배지 */
+.payment-status-badge {
   display: inline-block;
-  vertical-align: middle;
-  margin-right: 0.5rem;
-}
-
-.mini-progress-fill {
-  height: 100%;
-  background: #10b981;
-  border-radius: 3px;
-  transition: width 0.3s;
-}
-
-.progress-text {
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
   font-size: 0.75rem;
-  color: #6b7280;
+  font-weight: 600;
+}
+
+.payment-status-badge.completed {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.payment-status-badge.partial {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.payment-status-badge.pending {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 /* 빠른 링크 */
@@ -859,7 +1086,7 @@ onMounted(() => {
 
 .link-icon.blue { background: #eff6ff; color: #3b82f6; }
 .link-icon.green { background: #f0fdf4; color: #10b981; }
-.link-icon.purple { background: #faf5ff; color: #8b5cf6; }
+.link-icon.purple { background: #eef2ff; color: #6366f1; }
 
 .link-content {
   flex: 1;
@@ -887,6 +1114,10 @@ onMounted(() => {
   .kpi-section {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .share-content {
+    grid-template-columns: 160px 1fr;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -894,19 +1125,13 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
-  .tier-info-card {
-    flex-direction: column;
-    align-items: stretch;
+  .share-content {
+    grid-template-columns: 1fr;
   }
 
-  .tier-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .tier-progress {
-    max-width: 100%;
+  .share-chart-wrapper {
+    max-width: 200px;
+    margin: 0 auto;
   }
 
   .quick-links {
@@ -917,6 +1142,16 @@ onMounted(() => {
 @media (max-width: 768px) {
   .kpi-section {
     grid-template-columns: 1fr;
+  }
+
+  .legend-row {
+    grid-template-columns: 16px 1fr 50px;
+    gap: 0.5rem;
+  }
+
+  .legend-amount,
+  .legend-status {
+    display: none;
   }
 }
 </style>

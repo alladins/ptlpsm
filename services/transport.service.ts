@@ -180,7 +180,12 @@ class TransportService {
         body: JSON.stringify(requestData)
       })
       if (!response.ok) {
-        throw new Error(`운송장 수정 실패: ${response.status}`)
+        // 에러 응답 파싱 (백엔드 표준 포맷: { timestamp, status, error, message, details })
+        const errorData = await response.json().catch(() => ({}))
+        const error = new Error(errorData.message || `운송장 수정 실패: ${response.status}`) as any
+        error.status = response.status
+        error.serverMessage = errorData.message
+        throw error
       }
       return await response.json()
     } catch (error) {

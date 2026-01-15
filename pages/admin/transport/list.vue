@@ -13,7 +13,12 @@
           <i v-else class="fas fa-search"></i>
           검색
         </button>
-        <button class="btn-action btn-primary" @click="goRegister">
+        <button
+          class="btn-action btn-primary"
+          @click="goRegister"
+          :disabled="!canWrite"
+          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+        >
           <i class="fas fa-plus"></i>
           등록
         </button>
@@ -169,7 +174,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, defineAsyncComponent } from 'vue'
-import { useRouter } from '#imports'
+import { useRouter, useRoute } from '#imports'
 import { transportService } from '~/services/transport.service'
 import type { TransportDetail } from '~/services/transport.service'
 import { deliveryService } from '~/services/delivery.service'
@@ -178,6 +183,7 @@ import type { OrderDetailResponse } from '~/types/order'
 import { formatDate, formatDateTime } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
 import { useCommonStatus } from '~/composables/useCommonStatus'
+import { usePermission } from '~/composables/usePermission'
 
 // 동적 import로 변경
 const OrderSelectPopup = defineAsyncComponent(() =>
@@ -190,6 +196,10 @@ definePageMeta({
 })
 
 const router = useRouter()
+const route = useRoute()
+
+// 권한
+const { canWrite } = usePermission()
 
 // 상태 관리 (DB 기반)
 const { statusOptions, getStatusLabel } = useCommonStatus()
@@ -242,6 +252,7 @@ const {
   changePageSize,
   changeSort,
   search,
+  refresh,
   reset
 } = useDataTable<TransportDetail>({
   fetchFunction: async (params) => {
@@ -320,9 +331,12 @@ const goRegister = () => {
   router.push('/admin/transport/register')
 }
 
-// 운송장 수정 페이지로 이동
+// 운송장 수정 페이지로 이동 (현재 페이지 번호를 쿼리로 전달)
 const goToEdit = (transportId: number) => {
-  router.push(`/admin/transport/edit/${transportId}`)
+  router.push({
+    path: `/admin/transport/edit/${transportId}`,
+    query: { returnPage: String(currentPage.value) }
+  })
 }
 
 // 메시지 전송 가능 여부 체크
@@ -388,6 +402,18 @@ const sendMessage = async (transport: TransportDetail) => {
 
 // 초기 데이터 로드
 onMounted(() => {
+  // URL 쿼리에서 페이지 번호 복원 (상세 페이지에서 돌아올 때)
+  const pageFromQuery = route.query.page || route.query.returnPage
+  if (pageFromQuery) {
+    const pageNum = parseInt(pageFromQuery as string, 10)
+    if (!isNaN(pageNum) && pageNum >= 0) {
+      currentPage.value = pageNum
+      // 페이지 번호가 있으면 해당 페이지로 데이터 로드 (search()는 페이지를 0으로 리셋함)
+      refresh()
+      return
+    }
+  }
+  // 페이지 번호가 없으면 첫 페이지부터 검색
   search()
 })
 </script>

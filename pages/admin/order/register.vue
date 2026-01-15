@@ -155,11 +155,12 @@
                 </option>
               </select>
             </FormField>
-            <FormField label="제조사">
+            <FormField label="제조사" required>
               <select
                 v-model="contractForm.oemCompanyId"
                 @change="handleOemChange"
                 class="form-input-sm"
+                required
               >
                 <option :value="null">선택하세요</option>
                 <option
@@ -241,9 +242,9 @@
                 <td><input v-model="item.name" type="text" readonly></td>
                 <td><input v-model="item.specification" type="text" readonly></td>
                 <td><input v-model="item.unit" type="text" readonly></td>
-                <td class="text-right"><input v-model="item.unitPrice" type="text" readonly class="text-right"></td>
-                <td class="text-right"><input v-model="item.quantity" type="text" class="text-right"></td>
-                <td class="text-right"><input v-model="item.totalAmount" type="text" readonly class="text-right"></td>
+                <td class="text-right"><input :value="formatNumber(item.unitPrice)" type="text" readonly class="text-right"></td>
+                <td class="text-right"><input :value="formatQuantity(item.quantity)" type="text" readonly class="text-right"></td>
+                <td class="text-right"><input :value="formatNumber(item.totalAmount)" type="text" readonly class="text-right"></td>
                 <td><input v-model="item.deliveryLocation" type="text"></td>
                 <td><input v-model="item.deliveryDeadline" type="text"></td>
                 <td><input v-model="item.deliveryTerms" type="text"></td>
@@ -274,8 +275,8 @@
           type="button"
           @click="register"
           class="btn-primary"
-          :disabled="submitting || isDuplicate"
-          :title="isDuplicate ? '이미 등록된 납품요구번호입니다' : ''"
+          :disabled="submitting || isDuplicate || !canWrite"
+          :title="!canWrite ? '등록 권한이 없습니다' : isDuplicate ? '이미 등록된 납품요구번호입니다' : ''"
         >
           {{ submitting ? '등록 중...' : '등록' }}
         </button>
@@ -313,6 +314,8 @@ import ErrorPopup from '~/components/admin/common/ErrorPopup.vue'
 import ContractTypeSelectModal from '~/components/admin/order/ContractTypeSelectModal.vue'
 import type { OrderItemCreateRequest, ContractTypeCheckResult, ContractType } from '~/types/order'
 import type { CompanyInfoResponse } from '~/types/company'
+import { usePermission } from '~/composables/usePermission'
+import { formatNumber, formatQuantity } from '~/utils/format'
 
 definePageMeta({
   layout: 'admin',
@@ -320,6 +323,10 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 권한
+const { canWrite } = usePermission()
+
 const submitting = ref(false)
 
 // 중복 체크 상태
@@ -521,6 +528,14 @@ const handleFileUpload = async (event: Event) => {
   target.value = ''
 }
 
+// 쉼표가 포함된 문자열을 숫자로 변환 (PDF 파싱 데이터용)
+const parseFormattedNumber = (value: any): number => {
+  if (value === null || value === undefined || value === '') return 0
+  const str = String(value).replace(/,/g, '')
+  const num = parseFloat(str)
+  return isNaN(num) ? 0 : num
+}
+
 // 추출된 품목 데이터로 items 배열 채우기
 const fillItemsWithExtractedData = (deliveryItems: any[]) => {
   items.value = deliveryItems.map((item, index) => ({
@@ -532,9 +547,9 @@ const fillItemsWithExtractedData = (deliveryItems: any[]) => {
     name: item.name || '',
     specification: item.specification || '',
     unit: item.unit || '',
-    unitPrice: String(item.unitPrice || ''),
-    quantity: Number(item.quantity) || 0,
-    totalAmount: String(item.totalAmount || ''),
+    unitPrice: parseFormattedNumber(item.unitPrice),
+    quantity: parseFormattedNumber(item.quantity),
+    totalAmount: parseFormattedNumber(item.totalAmount),
     deliveryLocation: item.deliveryLocation || '',
     deliveryDeadline: item.deliveryDeadline || '',
     deliveryTerms: item.deliveryTerms || '',
@@ -653,6 +668,12 @@ const handleContractTypeCancel = () => {
 const register = async () => {
   if (submitting.value) return
 
+  // 제조사 필수 검사
+  if (!contractForm.value.oemCompanyId) {
+    alert('제조사를 선택해주세요.')
+    return
+  }
+
   submitting.value = true
   try {
     const contractData = {
@@ -706,9 +727,9 @@ const register = async () => {
         name: item.name,
         specification: item.specification,
         unit: item.unit,
-        unitPrice: item.unitPrice,
+        unitPrice: String(item.unitPrice),
         quantity: String(item.quantity),
-        totalAmount: item.totalAmount,
+        totalAmount: String(item.totalAmount),
         deliveryLocation: item.deliveryLocation,
         deliveryDeadline: item.deliveryDeadline,
         deliveryTerms: item.deliveryTerms,

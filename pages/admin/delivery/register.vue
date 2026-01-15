@@ -123,9 +123,17 @@
 
       <!-- 하단 버튼 -->
       <div class="bottom-actions">
-        <button class="btn-primary" @click="register">등록</button>
+        <button
+          class="btn-primary"
+          @click="register"
+          :disabled="!canWrite"
+          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+        >등록</button>
         <button class="btn-secondary" @click="modify">수정</button>
-        <button class="btn-secondary" @click="cancel">취소</button>
+        <button class="btn-secondary" @click="handleGoBack">
+          <i class="fas fa-list"></i>
+          목록
+        </button>
         <button class="btn-delete" @click="deleteDelivery">삭제</button>
       </div>
     </div>
@@ -198,7 +206,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from '#imports'
+import { useRouter, useRoute } from '#imports'
+import { usePermission } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -206,6 +215,10 @@ definePageMeta({
 })
 
 const router = useRouter()
+const route = useRoute()
+
+// 권한
+const { canWrite } = usePermission()
 
 // 납품확인 정보 폼
 const deliveryForm = ref({
@@ -298,9 +311,14 @@ const modify = () => {
   console.log('수정')
 }
 
-// 취소
-const cancel = () => {
-  router.push('/admin/delivery/list')
+// 목록으로 이동 (returnPage 처리)
+const handleGoBack = () => {
+  const returnPage = route.query.returnPage
+  if (returnPage) {
+    router.push({ path: '/admin/delivery/list', query: { page: returnPage as string } })
+  } else {
+    router.push('/admin/delivery/list')
+  }
 }
 
 // 삭제

@@ -61,18 +61,21 @@ function extractArrayFromResponse<T>(data: any, possibleKeys: string[]): T[] | n
  * - 코드관리: 기초정보 → 시스템관리로 이동
  * - 메뉴권한관리: 시스템관리 → 기초정보로 이동
  * - 계좌조회: 시스템관리 → 기초정보로 이동
+ * - 커미션율 설정: 커미션관리 → 시스템관리로 이동
  */
 function reorganizeMenuStructure(menus: Menu[]): Menu[] {
   // 메뉴 코드 기준으로 이동할 항목 정의
-  const MOVE_TO_SYSTEM = ['CODE_MANAGE']  // 시스템관리로 이동
+  const MOVE_TO_SYSTEM = ['CODE_MANAGE']  // 시스템관리로 이동 (기초정보에서)
   const MOVE_TO_BASIC_INFO = ['MENU_AUTH', 'BANK_ACCOUNT']  // 기초정보로 이동
+  const MOVE_COMMISSION_RATES_TO_SYSTEM = ['COMMISSION_RATES']  // 시스템관리로 이동 (커미션관리에서)
 
   // 깊은 복사
   const result = JSON.parse(JSON.stringify(menus)) as Menu[]
 
-  // 기초정보와 시스템관리 메뉴 찾기
+  // 기초정보, 시스템관리, 커미션관리 메뉴 찾기
   const basicInfoMenu = result.find(m => m.menuCode === 'BASIC_INFO')
   const systemMenu = result.find(m => m.menuCode === 'SYSTEM')
+  const commissionMenu = result.find(m => m.menuCode === 'COMMISSION')
 
   if (!basicInfoMenu || !systemMenu) {
     console.warn('[메뉴 재배치] 기초정보 또는 시스템관리 메뉴를 찾을 수 없습니다.')
@@ -85,6 +88,20 @@ function reorganizeMenuStructure(menus: Menu[]): Menu[] {
     basicInfoMenu.children = basicInfoMenu.children.filter(child => {
       if (MOVE_TO_SYSTEM.includes(child.menuCode)) {
         menusToMoveToSystem.push(child)
+        return false
+      }
+      return true
+    })
+  }
+
+  // 커미션관리에서 시스템관리로 이동할 메뉴 추출 (커미션율 설정)
+  const commissionRatesToMove: Menu[] = []
+  if (commissionMenu?.children) {
+    commissionMenu.children = commissionMenu.children.filter(child => {
+      if (MOVE_COMMISSION_RATES_TO_SYSTEM.includes(child.menuCode)) {
+        // URL 변경: /admin/commission/rates → /admin/system/commission-rates
+        child.menuUrl = '/admin/system/commission-rates'
+        commissionRatesToMove.push(child)
         return false
       }
       return true
@@ -107,13 +124,17 @@ function reorganizeMenuStructure(menus: Menu[]): Menu[] {
   if (systemMenu.children && menusToMoveToSystem.length > 0) {
     systemMenu.children.push(...menusToMoveToSystem)
   }
+  if (systemMenu.children && commissionRatesToMove.length > 0) {
+    systemMenu.children.push(...commissionRatesToMove)
+  }
   if (basicInfoMenu.children && menusToMoveToBasicInfo.length > 0) {
     basicInfoMenu.children.push(...menusToMoveToBasicInfo)
   }
 
   console.log('[메뉴 재배치] 완료:', {
     toSystem: menusToMoveToSystem.map(m => m.menuName),
-    toBasicInfo: menusToMoveToBasicInfo.map(m => m.menuName)
+    toBasicInfo: menusToMoveToBasicInfo.map(m => m.menuName),
+    commissionRatesToSystem: commissionRatesToMove.map(m => m.menuName)
   })
 
   return result

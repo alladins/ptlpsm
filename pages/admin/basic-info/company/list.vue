@@ -10,7 +10,12 @@
           <i class="fas fa-search"></i>
           검색
         </button>
-        <button class="btn-action btn-success" @click="goToRegister">
+        <button
+          class="btn-action btn-success"
+          @click="goToRegister"
+          :disabled="!canWrite"
+          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+        >
           <i class="fas fa-plus"></i>
           등록
         </button>
@@ -123,6 +128,7 @@ import { useRouter } from '#imports'
 import { companyService } from '~/services/company.service'
 import type { CompanyInfoResponse } from '~/types/company'
 import { formatDate } from '~/utils/format'
+import { usePermission } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -130,6 +136,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 권한
+const { canWrite } = usePermission()
 
 // 검색 폼
 const searchForm = ref({

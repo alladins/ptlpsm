@@ -1,10 +1,114 @@
 /**
- * 커미션 관리 관련 타입 정의
- * @description 연간 매출 구간별 커미션율, 정산, 지급 관련 인터페이스
+ * 수익 배분 관리 관련 타입 정의
+ * @description 연간 매출 구간별 지분율, 정산, 지급 관련 인터페이스
  * @created 2026-01-08
+ * @updated 2026-01-15 수익 배분 모델로 확장
  */
 
 import type { BaseEntity } from './common'
+
+// ============ 지분자 (Stakeholder) 관련 ============
+
+/**
+ * 지분자 타입
+ * - MANUFACTURER: 제조사 (원가)
+ * - HEADQUARTERS: 본사 (리드파워)
+ * - AGENT: 대리점 (영업직원)
+ * - PARTNER: 협력사 (에코암스)
+ */
+export type Stakeholder = 'MANUFACTURER' | 'HEADQUARTERS' | 'AGENT' | 'PARTNER'
+
+/**
+ * 지분자 라벨
+ */
+export const STAKEHOLDER_LABELS: Record<Stakeholder, string> = {
+  MANUFACTURER: '제조사',
+  HEADQUARTERS: '본사',
+  AGENT: '대리점',
+  PARTNER: '협력사'
+}
+
+/**
+ * 지분자별 지분율
+ */
+export interface StakeholderRate {
+  /** 지분자 */
+  stakeholder: Stakeholder
+  /** 지분자명 */
+  name: string
+  /** 지분율 (%) */
+  rate: number
+}
+
+/**
+ * 지분율 구간
+ */
+export interface ShareTier {
+  /** 구간 ID */
+  tierId: number
+  /** 연도 */
+  year: number
+  /** 구간명 (예: "10억~50억 구간") */
+  tierName: string
+  /** 최소 매출 */
+  minAmount: number
+  /** 최대 매출 (null이면 무제한) */
+  maxAmount: number | null
+  /** 지분자별 지분율 */
+  rates: StakeholderRate[]
+}
+
+/**
+ * 지분자별 배분 금액
+ */
+export interface StakeholderDistribution {
+  /** 지분자 */
+  stakeholder: Stakeholder
+  /** 지분자명 */
+  name: string
+  /** 지분율 (%) */
+  rate: number
+  /** 배분 금액 */
+  amount: number
+  /** 지급 완료 금액 */
+  paidAmount: number
+  /** 미지급 금액 */
+  unpaidAmount: number
+}
+
+/**
+ * 월별 수익 배분 데이터
+ */
+export interface MonthlyDistribution {
+  /** 연도 */
+  year: number
+  /** 월 (1-12) */
+  month: number
+  /** 월 표시 (예: '2026-01') */
+  yearMonth: string
+  /** 해당 월 매출액 */
+  salesAmount: number
+  /** 지분자별 배분 */
+  distributions: StakeholderDistribution[]
+}
+
+/**
+ * 연간 수익 배분 요약
+ */
+export interface AnnualDistributionSummary {
+  /** 연도 */
+  year: number
+  /** 연간 총 매출액 */
+  totalSalesAmount: number
+  /** 현재 적용 구간 */
+  currentTier: ShareTier
+  /** 지분자별 총 배분 */
+  totalDistributions: StakeholderDistribution[]
+  /** 총 미지급 금액 */
+  totalUnpaidAmount: number
+  /** 월별 데이터 */
+  monthlyData: MonthlyDistribution[]
+}
 
 // ============ 커미션율 설정 ============
 

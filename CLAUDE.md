@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -138,10 +138,30 @@ git merge develop
 git push origin main
 ```
 
+## 언어 규칙
+
+- **응답/주석/커밋**: 한국어
+- **변수/함수명**: 영어 (camelCase)
+- **컴포넌트/타입명**: 영어 (PascalCase)
+
+## 코드 패턴
+
+### API 호출 시 인증 헤더
+```typescript
+import { getAuthHeaders } from '@/services/api'
+const response = await fetch(url, { headers: getAuthHeaders() })
+```
+
+### 모달 컴포넌트
+```vue
+<Teleport to="body">
+  <div v-if="isOpen" class="modal-overlay">...</div>
+</Teleport>
+```
+
 ## Important Notes
 
 - **Memory**: 정적 빌드 시 4GB 할당 (`--max-old-space-size=4096`)
-- **HMR**: 비활성화됨 (`hmr: false`)
 - **Language**: 한국어 (`lang: 'ko'`)
 
 ## 페이징 규칙 (중요!)

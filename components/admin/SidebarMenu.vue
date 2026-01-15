@@ -302,23 +302,11 @@ const manualMenus = ref<MenuWithAuth[]>([
       {
         menuId: 61,
         menuCode: 'COMMISSION_DASHBOARD',
-        menuName: '커미션 대시보드',
+        menuName: '수익배분 대시보드',
         menuUrl: '/admin/commission/dashboard',
         menuIcon: 'fas fa-chart-line',
         menuLevel: 2,
         sortOrder: 1,
-        visible: 'Y',
-        useYn: 'Y',
-        children: []
-      },
-      {
-        menuId: 62,
-        menuCode: 'COMMISSION_RATES',
-        menuName: '커미션율 설정',
-        menuUrl: '/admin/commission/rates',
-        menuIcon: 'fas fa-sliders-h',
-        menuLevel: 2,
-        sortOrder: 2,
         visible: 'Y',
         useYn: 'Y',
         children: []
@@ -330,7 +318,7 @@ const manualMenus = ref<MenuWithAuth[]>([
         menuUrl: '/admin/commission/settlements',
         menuIcon: 'fas fa-file-invoice-dollar',
         menuLevel: 2,
-        sortOrder: 3,
+        sortOrder: 2,
         visible: 'Y',
         useYn: 'Y',
         children: []
@@ -342,7 +330,7 @@ const manualMenus = ref<MenuWithAuth[]>([
         menuUrl: '/admin/commission/payments',
         menuIcon: 'fas fa-credit-card',
         menuLevel: 2,
-        sortOrder: 4,
+        sortOrder: 3,
         visible: 'Y',
         useYn: 'Y',
         children: []
@@ -563,6 +551,18 @@ const manualMenus = ref<MenuWithAuth[]>([
         menuIcon: 'fas fa-history',
         menuLevel: 2,
         sortOrder: 3,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 94,
+        menuCode: 'COMMISSION_RATES',
+        menuName: '커미션율 설정',
+        menuUrl: '/admin/system/commission-rates',
+        menuIcon: 'fas fa-sliders-h',
+        menuLevel: 2,
+        sortOrder: 4,
         visible: 'Y',
         useYn: 'Y',
         children: []

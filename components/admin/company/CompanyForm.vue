@@ -296,7 +296,12 @@
 
     <!-- 버튼 영역 -->
     <div class="form-actions" v-if="mode !== 'view'">
-      <button type="submit" class="btn-primary" :disabled="saving">
+      <button
+        type="submit"
+        class="btn-primary"
+        :disabled="saving || (canWrite === false)"
+        :title="canWrite === false ? (mode === 'create' ? '등록 권한이 없습니다' : '수정 권한이 없습니다') : ''"
+      >
         <i v-if="saving" class="fas fa-spinner fa-spin"></i>
         <i v-else class="fas fa-save"></i>
         {{ mode === 'create' ? '등록' : '수정' }}
@@ -331,6 +336,7 @@ declare global {
 interface Props {
   mode: 'view' | 'create' | 'edit'
   initialData?: CompanyInfoResponse
+  canWrite?: boolean
 }
 
 const props = defineProps<Props>()

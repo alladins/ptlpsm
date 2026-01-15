@@ -67,7 +67,7 @@
         <!-- 권한 문의 안내 -->
         <div class="contact-info">
           <span class="contact-text">권한 관련 문의:</span>
-          <a href="mailto:admin@leadpower.co.kr" class="contact-link">admin@leadpower.co.kr</a>
+          <a href="mailto:admin@platree.com" class="contact-link">admin@platree.com</a>
         </div>
       </div>
     </div>
