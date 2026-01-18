@@ -12,7 +12,7 @@
                     <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </div>
-                <h3 class="ccm-success-title">수금 확인 완료</h3>
+                <h3 class="ccm-success-title">{{ successTitle }}</h3>
                 <p class="ccm-success-message">{{ getSuccessMessage() }}</p>
               </div>
             </div>
@@ -25,10 +25,7 @@
                 <component :is="getPaymentIcon()" />
               </div>
               <div class="ccm-header-text">
-                <h2 class="ccm-modal-title">수금 확인</h2>
-                <span class="ccm-type-badge" :class="typeBadgeClass">
-                  {{ paymentTypeLabel }}
-                </span>
+                <h2 class="ccm-modal-title">{{ modalTitle }}</h2>
               </div>
             </div>
             <button class="ccm-close-button" @click="handleClose" :disabled="isSubmitting">
@@ -49,6 +46,43 @@
               <div v-if="approvedAmount && approvedAmount !== requestAmount" class="ccm-amount-row ccm-approved">
                 <span class="ccm-amount-label">승인 금액</span>
                 <span class="ccm-amount-value">{{ formatCurrency(approvedAmount) }}</span>
+              </div>
+              <!-- 기성금 수금 시 선급금 차감 정보 표시 -->
+              <template v-if="paymentType === 'progress' && advanceDeductionAmount > 0">
+                <div class="ccm-amount-divider"></div>
+                <div class="ccm-amount-row ccm-deduction">
+                  <span class="ccm-amount-label">(-) 선급금 차감액</span>
+                  <span class="ccm-amount-value ccm-negative">- {{ formatCurrency(advanceDeductionAmount) }}</span>
+                </div>
+                <div class="ccm-amount-row ccm-actual">
+                  <span class="ccm-amount-label">(=) 실수금액 (입금 예정액)</span>
+                  <span class="ccm-amount-value ccm-highlight">{{ formatCurrency(actualReceivableAmount) }}</span>
+                </div>
+              </template>
+            </div>
+
+            <!-- 선급금 정산 현황 (기성금 수금 확인 시) -->
+            <div v-if="paymentType === 'progress' && advanceDeductionAmount > 0" class="ccm-settlement-info">
+              <div class="ccm-settlement-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18M3 12h18M3 18h18"/>
+                </svg>
+                <span>정산 현황 (수금 확인 후)</span>
+              </div>
+              <div class="ccm-settlement-row">
+                <span class="ccm-settlement-label">선급금 정산 누계</span>
+                <span class="ccm-settlement-value">
+                  {{ formatCurrency(currentSettledTotal) }}
+                  <span class="ccm-arrow">→</span>
+                  {{ formatCurrency(currentSettledTotal + advanceDeductionAmount) }}
+                </span>
+              </div>
+              <div class="ccm-settlement-row">
+                <span class="ccm-settlement-label">미정산 선급금 잔액</span>
+                <span class="ccm-settlement-value" :class="{ 'ccm-complete': newUnsettledBalance === 0 }">
+                  {{ formatCurrency(newUnsettledBalance) }}
+                  <span v-if="newUnsettledBalance === 0" class="ccm-complete-badge">✓ 정산완료</span>
+                </span>
               </div>
             </div>
 
@@ -107,8 +141,8 @@
                   >
                     전액 입력
                   </button>
-                  <span v-if="amountDifference !== 0" class="ccm-amount-diff" :class="{ 'ccm-negative': amountDifference < 0 }">
-                    {{ amountDifference > 0 ? '+' : '' }}{{ formatCurrency(amountDifference) }}
+                  <span class="ccm-remaining-amount">
+                    {{ formatCurrency(remainingAmount) }}
                   </span>
                 </div>
                 <span v-if="errors.paidAmount" class="ccm-error-message">{{ errors.paidAmount }}</span>
@@ -197,10 +231,19 @@ interface Props {
   paymentId: number // advanceId, paymentId, or balanceRequestId
   requestAmount: number
   approvedAmount?: number
+  // 선급금 차감 관련 (기성금 수금 확인 시)
+  advanceDeductionAmount?: number
+  actualReceivableAmount?: number
+  currentSettledTotal?: number
+  currentUnsettledBalance?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  approvedAmount: 0
+  approvedAmount: 0,
+  advanceDeductionAmount: 0,
+  actualReceivableAmount: 0,
+  currentSettledTotal: 0,
+  currentUnsettledBalance: 0
 })
 
 // Emits
@@ -249,6 +292,26 @@ const paymentTypeLabel = computed(() => {
   return labels[props.paymentType] || '자금'
 })
 
+// 모달 제목 (탭별로 다르게 표시)
+const modalTitle = computed(() => {
+  const titles = {
+    advance: '선급금 입금확인',
+    progress: '기성금 입금확인',
+    balance: '잔금 입금확인'
+  }
+  return titles[props.paymentType] || '입금확인'
+})
+
+// 성공 메시지 제목
+const successTitle = computed(() => {
+  const titles = {
+    advance: '선급금 입금확인 완료',
+    progress: '기성금 입금확인 완료',
+    balance: '잔금 입금확인 완료'
+  }
+  return titles[props.paymentType] || '입금확인 완료'
+})
+
 const headerIconClass = computed(() => {
   const classes = {
     advance: 'ccm-icon-orange',
@@ -258,23 +321,28 @@ const headerIconClass = computed(() => {
   return classes[props.paymentType] || 'ccm-icon-blue'
 })
 
-const typeBadgeClass = computed(() => {
-  const classes = {
-    advance: 'ccm-badge-orange',
-    progress: 'ccm-badge-blue',
-    balance: 'ccm-badge-green'
-  }
-  return classes[props.paymentType] || 'ccm-badge-blue'
-})
-
-const targetAmount = computed(() => props.approvedAmount || props.requestAmount)
-
-const amountDifference = computed(() => {
-  return formData.paidAmount - targetAmount.value
-})
-
 const isFormValid = computed(() => {
   return formData.paymentDate && formData.paidAmount > 0
+})
+
+// 목표 금액 - 기성금이고 선급금 차감이 있으면 실수금액 사용
+const targetAmount = computed(() => {
+  // 기성금 수금 시 선급금 차감이 있으면 실수금액(actualReceivableAmount) 사용
+  if (props.paymentType === 'progress' && props.advanceDeductionAmount > 0) {
+    return props.actualReceivableAmount
+  }
+  // 그 외에는 승인 금액 또는 신청 금액 사용
+  return props.approvedAmount || props.requestAmount
+})
+
+// 남은 금액 (미입금액) = 목표 금액 - 입력한 금액
+const remainingAmount = computed(() => {
+  return targetAmount.value - formData.paidAmount
+})
+
+// 수금 확인 후 미정산 선급금 잔액
+const newUnsettledBalance = computed(() => {
+  return Math.max(0, props.currentUnsettledBalance - props.advanceDeductionAmount)
 })
 
 // Icon Components
@@ -422,5 +490,81 @@ watch(() => props.isOpen, (newVal) => {
 <style scoped>
 @import '@/assets/css/admin-modals.css';
 
-/* 컴포넌트 전용 스타일은 필요 없음 - 모두 공통 CSS로 처리됨 */
+/* 선급금 차감 관련 스타일 */
+.ccm-amount-divider {
+  border-top: 1px dashed #d1d5db;
+  margin: 0.75rem 0;
+}
+
+.ccm-amount-row.ccm-deduction .ccm-amount-value.ccm-negative {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.ccm-amount-row.ccm-actual .ccm-amount-value.ccm-highlight {
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+/* 정산 현황 섹션 */
+.ccm-settlement-info {
+  background: #fef3c7;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.ccm-settlement-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.ccm-settlement-header svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ccm-settlement-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+}
+
+.ccm-settlement-label {
+  color: #78350f;
+}
+
+.ccm-settlement-value {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ccm-settlement-value .ccm-arrow {
+  color: #9ca3af;
+  margin: 0 0.5rem;
+}
+
+.ccm-settlement-value.ccm-complete {
+  color: #16a34a;
+}
+
+.ccm-complete-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  background: #dcfce7;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #16a34a;
+}
 </style>

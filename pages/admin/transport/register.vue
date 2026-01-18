@@ -17,7 +17,7 @@
           :title="!canWrite ? '등록 권한이 없습니다' : ''"
         >
           <i class="fas fa-save"></i>
-          {{ submitting ? '등록 중...' : '등록' }}
+          {{ submitting ? '저장 중...' : '저장' }}
         </button>
       </template>
     </PageHeader>
@@ -36,13 +36,13 @@
             <span>출하 정보</span>
           </div>
           <div class="info-grid grid-2">
-            <FormField label="출하ID" required :error="errors.shipmentId">
+            <FormField label="출하NO" required :error="errors.shipmentNo">
               <div class="search-group">
                 <input
                   type="text"
-                  v-model="formData.shipmentId"
+                  v-model="formData.shipmentNo"
                   class="form-input-md"
-                  placeholder="출하ID를 선택하세요"
+                  placeholder="출하NO를 선택하세요"
                   readonly
                 >
                 <button type="button" class="btn-search" @click="searchShipment">
@@ -107,7 +107,7 @@
                   @change="handleReceiverChange"
                   class="form-input-sm"
                 >
-                  <option value="direct">직접 입력</option>
+                  <option value="">현장소장을 선택하세요</option>
                   <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
                     {{ manager.userName }}
                   </option>
@@ -116,19 +116,18 @@
                   type="text"
                   v-model="formData.receiverName"
                   class="form-input-md"
-                  placeholder="인수자명을 입력하세요"
-                  :disabled="selectedReceiverId !== 'direct'"
+                  placeholder="기사 선택 시 자동 입력"
+                  readonly
                 >
               </div>
             </FormField>
-            <FormField label="인수자 연락처">
+            <FormField label="인수자 연락처" :error="errors.receiverPhone">
               <input
                 type="tel"
                 v-model="formData.receiverPhone"
                 class="form-input-md"
                 placeholder="010-0000-0000"
-                @input="handleReceiverPhoneInput"
-                :disabled="selectedReceiverId !== 'direct'"
+                readonly
               >
             </FormField>
           </div>
@@ -170,6 +169,8 @@
                   class="form-input-sm"
                   placeholder="우편번호"
                   readonly
+                  @click="searchAddress"
+                  style="cursor: pointer;"
                 >
                 <button type="button" class="btn-search" @click="searchAddress">
                   <i class="fas fa-search"></i>
@@ -189,8 +190,10 @@
                 type="text"
                 v-model="formData.deliveryAddress"
                 class="form-input-xl"
-                placeholder="배송지 주소"
+                placeholder="배송지 주소를 검색하세요"
                 readonly
+                @click="searchAddress"
+                style="cursor: pointer;"
               >
             </FormField>
             <FormField label="상세주소" full-width>
@@ -263,6 +266,9 @@
                 placeholder="날짜와 시간을 선택하세요"
                 auto-apply
                 :teleport="true"
+                :min-date="minDispatchDate"
+                :clearable="false"
+                @update:model-value="onDispatchAtChange"
               />
             </FormField>
             <FormField label="도착 예정 시각">
@@ -276,6 +282,8 @@
                 placeholder="날짜와 시간을 선택하세요"
                 auto-apply
                 :teleport="true"
+                :min-date="minExpectedArrivalDate"
+                :clearable="false"
               />
             </FormField>
             <FormField label="운송장번호" full-width>
@@ -307,14 +315,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { transportService } from '~/services/transport.service'
 import { shipmentService } from '~/services/shipment.service'
 import { userService } from '~/services/user.service'
 import type { ShipmentListItem } from '~/services/shipment.service'
 import type { UserByRole } from '~/types/user'
-import { formatPhoneNumber } from '~/utils/format'
+import { formatPhoneNumber, formatPhoneNumberInput, getLocalDateTimeString, getLocalDateString } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { usePermission } from '~/composables/usePermission'
@@ -339,7 +347,7 @@ const deliveryDrivers = ref<UserByRole[]>([])  // DELIVERY_DRIVER (운송기사)
 
 // 선택된 사용자 ID
 const selectedSupervisorId = ref<number | ''>('')  // 현장소장
-const selectedReceiverId = ref<number | 'direct'>('direct')    // 현장 인수자 ('direct' = 직접입력)
+const selectedReceiverId = ref<number | ''>('')    // 현장 인수자 (선택만 가능)
 const selectedDriverId = ref<number | ''>('')      // 기사
 
 // useRegisterForm 사용
@@ -374,11 +382,12 @@ const {
   successRoute: '/admin/transport/list',
   defaultValues: {
     shipmentId: '',
+    shipmentNo: '',
     projectName: '',
     deliveryRequestNo: '',
     clientName: '',
     vehicleNo: '',
-    deliveryDate: new Date().toISOString().split('T')[0],
+    deliveryDate: getLocalDateString(),
     zipcode: '',
     deliveryAddress: '',
     addressDetail: '',
@@ -387,8 +396,8 @@ const {
     carrierName: '',
     driverName: '',
     driverPhone: '',
-    dispatchAt: new Date().toISOString().slice(0, 16),
-    expectedArrival: new Date(Date.now() + 3600000).toISOString().slice(0, 16),
+    dispatchAt: getLocalDateTimeString(),           // 현재 로컬 시간
+    expectedArrival: getLocalDateTimeString(60),    // 현재 시간 + 1시간
     deliveryMemo: '',
     status: 'PENDING',
     trackingNumber: ''
@@ -404,13 +413,44 @@ const {
 
 // useFormValidation 사용
 const { errors, validateAll, rules } = useFormValidation({
-  shipmentId: '',
+  shipmentNo: '',
   deliveryDate: '',
   deliveryAddress: '',
   siteManagerId: '',
   receiverName: '',
-  driverPhone: ''
+  driverPhone: '',
+  receiverPhone: ''
 })
+
+// 배차/출차 시각: 현재 시간 이전 선택 불가
+const minDispatchDate = computed(() => new Date())
+
+// 도착 예정 시각: 배차/출차 시각 이후로만 선택 가능
+const minExpectedArrivalDate = computed(() => {
+  if (formData.dispatchAt) {
+    return new Date(formData.dispatchAt)
+  }
+  return new Date()
+})
+
+// 배차/출차 시각 변경 시 도착 예정 시각 자동 조정
+const onDispatchAtChange = (newValue: string | Date | null) => {
+  if (!newValue) return
+
+  const dispatchTime = new Date(newValue)
+  const expectedTime = formData.expectedArrival ? new Date(formData.expectedArrival) : null
+
+  // 도착 예정 시각이 배차 시각보다 이전이면 배차 시각 + 1시간으로 자동 조정
+  if (!expectedTime || expectedTime <= dispatchTime) {
+    const newExpectedTime = new Date(dispatchTime.getTime() + 60 * 60 * 1000) // +1시간
+    const year = newExpectedTime.getFullYear()
+    const month = String(newExpectedTime.getMonth() + 1).padStart(2, '0')
+    const day = String(newExpectedTime.getDate()).padStart(2, '0')
+    const hours = String(newExpectedTime.getHours()).padStart(2, '0')
+    const minutes = String(newExpectedTime.getMinutes()).padStart(2, '0')
+    formData.expectedArrival = `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+}
 
 // 팝업 상태
 const showShipmentPopup = ref(false)
@@ -490,6 +530,7 @@ const handleShipmentSelect = async (shipment: ShipmentListItem) => {
     const detail = await shipmentService.getShipmentDetail(shipment.shipmentId) as any
 
     formData.shipmentId = detail.shipmentId.toString()
+    formData.shipmentNo = detail.shipmentNo || ''
     formData.projectName = detail.projectName || ''
     formData.deliveryRequestNo = detail.deliveryRequestNo || ''
     formData.clientName = detail.client || ''
@@ -509,13 +550,24 @@ const handleShipmentSelect = async (shipment: ShipmentListItem) => {
   }
 }
 
+// 주소 검색 팝업 열림 상태
+const isAddressPopupOpen = ref(false)
+
 // 주소 검색
 const searchAddress = () => {
+  // 이미 팝업이 열려있으면 무시
+  if (isAddressPopupOpen.value) return
+
+  isAddressPopupOpen.value = true
   new window.daum.Postcode({
     oncomplete: (data: any) => {
       formData.zipcode = data.zonecode
       formData.deliveryAddress = data.address
       formData.addressDetail = ''
+      isAddressPopupOpen.value = false
+    },
+    onclose: () => {
+      isAddressPopupOpen.value = false
     }
   }).open()
 }
@@ -537,8 +589,8 @@ const handleSupervisorChange = () => {
 
 // 현장 인수자 선택 시 자동 입력
 const handleReceiverChange = () => {
-  if (selectedReceiverId.value === 'direct') {
-    // 직접 입력 선택 시 입력창 초기화
+  if (!selectedReceiverId.value) {
+    // 선택 안됨 - 초기화
     formData.receiverName = ''
     formData.receiverPhone = ''
   } else {
@@ -551,14 +603,9 @@ const handleReceiverChange = () => {
   }
 }
 
-// 인수자 연락처 입력 시 포맷 적용
-const handleReceiverPhoneInput = () => {
-  formData.receiverPhone = formatPhoneNumber(formData.receiverPhone || '')
-}
-
-// 기사 연락처 입력 시 포맷 적용
+// 기사 연락처 입력 시 포맷 적용 (숫자만 허용 + 자동 포맷팅)
 const handleDriverPhoneInput = () => {
-  formData.driverPhone = formatPhoneNumber(formData.driverPhone || '')
+  formData.driverPhone = formatPhoneNumberInput(formData.driverPhone || '')
 }
 
 // 기사 선택 시 자동 입력
@@ -587,12 +634,13 @@ const handleSubmit = async () => {
 
   // 유효성 검사
   const validationRules = {
-    shipmentId: [rules.required('출하 정보')],
+    shipmentNo: [rules.required('출하NO')],
     deliveryDate: [rules.required('배송예정일')],
     deliveryAddress: [rules.required('배송지 주소')],
     siteManagerId: [rules.required('현장소장')],
     receiverName: [rules.required('현장 인수자')],
-    driverPhone: [rules.required('기사 연락처')]
+    receiverPhone: [rules.phone()],
+    driverPhone: [rules.required('기사 연락처'), rules.phone()]
   }
 
   if (!validateAll(validationData, validationRules)) {
@@ -601,6 +649,22 @@ const handleSubmit = async () => {
 
   if (!formData.dispatchAt || !formData.expectedArrival) {
     alert('배차시각과 도착예정시각을 입력해주세요.')
+    return
+  }
+
+  // 배차/출차 시각이 현재 시간 - 30분 이전인지 체크 (폼 작성 시간 고려)
+  const now = new Date()
+  const allowedPastTime = new Date(now.getTime() - 30 * 60 * 1000) // 30분 전까지 허용
+  const dispatchTime = new Date(formData.dispatchAt)
+  if (dispatchTime < allowedPastTime) {
+    alert('배차/출차 시각은 현재 시간 기준 30분 이전까지만 설정 가능합니다.')
+    return
+  }
+
+  // 도착 예정 시각이 배차/출차 시각 이전인지 체크
+  const expectedTime = new Date(formData.expectedArrival)
+  if (expectedTime <= dispatchTime) {
+    alert('도착 예정 시각은 배차/출차 시각 이후로 설정해주세요.')
     return
   }
 

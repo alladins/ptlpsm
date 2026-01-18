@@ -101,17 +101,49 @@
 
           <!-- 자동 계산 결과 -->
           <div v-if="hasAvailableShipments" class="calculation-result">
-            <div class="result-row">
-              <label>선택한 출하 수</label>
-              <span class="count">{{ selectedShipmentIds.length }}건</span>
+            <!-- 청구 금액 계산 섹션 -->
+            <div class="result-section">
+              <div class="result-section-header">청구 금액 계산</div>
+              <div class="result-row">
+                <label>선택한 출하 수</label>
+                <span class="count">{{ selectedShipmentIds.length }}건</span>
+              </div>
+              <div class="result-row highlight">
+                <label>청구 금액</label>
+                <span class="amount primary">{{ formatCurrency(selectedTotalAmount) }}</span>
+              </div>
             </div>
-            <div class="result-row">
-              <label>청구 금액</label>
-              <span class="amount primary">{{ formatCurrency(selectedTotalAmount) }}</span>
+
+            <!-- 선급금 차감 계산 섹션 -->
+            <div v-if="hasAdvancePayment" class="result-section deduction-section">
+              <div class="result-section-header">선급금 차감 계산</div>
+              <div class="result-row">
+                <label>선급금 비율</label>
+                <span class="rate">{{ advancePaymentRate }}%</span>
+              </div>
+              <div class="result-row">
+                <label>미정산 선급금 잔액</label>
+                <span class="amount">{{ formatCurrency(advanceUnsettledBalance) }}</span>
+              </div>
+              <div class="result-row deduction">
+                <label>(-) 선급금 차감액</label>
+                <span class="amount negative">- {{ formatCurrency(advanceDeductionAmount) }}</span>
+              </div>
+              <div class="result-row hint-row">
+                <span class="hint-text">※ MIN(청구금액×{{ advancePaymentRate }}%, 미정산잔액)</span>
+              </div>
+              <div class="result-row highlight">
+                <label>(=) 실수금액</label>
+                <span class="amount actual">{{ formatCurrency(actualReceivableAmount) }}</span>
+              </div>
             </div>
-            <div class="result-row">
-              <label>OEM 지급 예정 금액</label>
-              <span class="amount">{{ formatCurrency(oemPaymentAmount) }}</span>
+
+            <!-- OEM 지급 예정 섹션 -->
+            <div class="result-section oem-section">
+              <div class="result-row">
+                <label>OEM 지급 예정 금액</label>
+                <span class="amount oem">{{ formatCurrency(oemPaymentAmount) }}</span>
+              </div>
             </div>
           </div>
 
@@ -249,9 +281,39 @@ const selectedTotalAmount = computed(() => {
     .reduce((sum, s) => sum + (s.totalAmount || 0), 0)
 })
 
-// OEM 지급 예정 금액 (예시: 청구금액의 70%)
+// 선급금 관련 계산
+/** 선급금 신청 여부 */
+const hasAdvancePayment = computed(() => {
+  return fundStore.hasAdvancePayment
+})
+
+/** 선급금 비율 (%) */
+const advancePaymentRate = computed(() => {
+  return fundStore.detail?.advancePaymentRate || 70
+})
+
+/** 미정산 선급금 잔액 계산 - 백엔드 필드명 사용 */
+const advanceUnsettledBalance = computed(() => {
+  const advanceAmount = fundStore.detail?.advancePaymentAmount || 0
+  const deductedTotal = fundStore.detail?.advanceDeductedTotal || 0
+  return Math.max(0, advanceAmount - deductedTotal)
+})
+
+/** 선급금 차감액 = MIN(청구금액 × 선급금율, 미정산잔액) */
+const advanceDeductionAmount = computed(() => {
+  if (!hasAdvancePayment.value) return 0
+  const calculated = Math.floor(selectedTotalAmount.value * (advancePaymentRate.value / 100))
+  return Math.min(calculated, advanceUnsettledBalance.value)
+})
+
+/** 실수금액 = 청구금액 - 선급금차감액 */
+const actualReceivableAmount = computed(() => {
+  return selectedTotalAmount.value - advanceDeductionAmount.value
+})
+
+// OEM 지급 예정 금액 (선급금 비율 기준)
 const oemPaymentAmount = computed(() => {
-  return Math.round(selectedTotalAmount.value * 0.7)
+  return Math.round(selectedTotalAmount.value * (advancePaymentRate.value / 100))
 })
 
 // 유효성 검사
@@ -299,7 +361,12 @@ const submitClaim = async () => {
     deliveryRequestNo: fundStore.detail?.deliveryRequestNo || '',
     demandOrganization: fundStore.detail?.client || '',  // client가 수요기관
     projectName: fundStore.detail?.projectName || fundStore.detail?.siteName || '',
-    totalAmount: selectedTotalAmount.value
+    totalAmount: selectedTotalAmount.value,
+    // 선급금 차감 관련 데이터
+    advancePaymentRate: advancePaymentRate.value,
+    advanceDeductionAmount: advanceDeductionAmount.value,
+    actualReceivableAmount: actualReceivableAmount.value,
+    advanceUnsettledBalance: advanceUnsettledBalance.value
   }
 
   // 서명 발송 모달 표시
@@ -354,7 +421,9 @@ watch(() => props.isOpen, (isOpen) => {
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .modal-large {
@@ -398,6 +467,9 @@ watch(() => props.isOpen, (isOpen) => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .modal-footer {
@@ -473,6 +545,11 @@ watch(() => props.isOpen, (isOpen) => {
 }
 
 /* 테이블 섹션 */
+.table-section {
+  flex-shrink: 0;
+  min-height: 200px;
+}
+
 .table-section .table-header {
   display: flex;
   justify-content: space-between;
@@ -494,12 +571,22 @@ watch(() => props.isOpen, (isOpen) => {
 
 .table-container {
   overflow-x: auto;
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+}
+
+.data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .data-table th {
@@ -560,18 +647,64 @@ watch(() => props.isOpen, (isOpen) => {
 
 /* 계산 결과 */
 .calculation-result {
-  background: #f0fdf4;
+  background: #f9fafb;
   border-radius: 8px;
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0;
+  border: 1px solid #e5e7eb;
+}
+
+.result-section {
+  padding: 0.75rem 1rem;
+}
+
+.result-section:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.result-section-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.deduction-section {
+  background: #fef3c7;
+}
+
+.oem-section {
+  background: #f0fdf4;
 }
 
 .result-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0.25rem 0;
+}
+
+.result-row.highlight {
+  padding: 0.5rem 0;
+  margin-top: 0.25rem;
+}
+
+.result-row.deduction {
+  color: #dc2626;
+}
+
+.result-row.hint-row {
+  justify-content: flex-end;
+}
+
+.hint-text {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-style: italic;
 }
 
 .result-row label {
@@ -585,14 +718,39 @@ watch(() => props.isOpen, (isOpen) => {
   color: #1f2937;
 }
 
+.result-row .rate {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
 .result-row .amount {
-  font-size: 1.125rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
   color: #1f2937;
 }
 
 .result-row .amount.primary {
+  font-size: 1.125rem;
+  font-weight: 700;
   color: #059669;
+}
+
+.result-row .amount.negative {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.result-row .amount.actual {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+.result-row .amount.oem {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #16a34a;
 }
 
 /* 폼 필드 */

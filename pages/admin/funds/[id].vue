@@ -74,8 +74,8 @@
             </div>
             <div class="summary-content">
               <div class="summary-label">선급금</div>
-              <div class="summary-value">{{ formatCurrency(fundDetail.advancePaymentAmount) }}</div>
-              <div class="summary-sub">{{ fundDetail.advancePaymentRate || 0 }}%</div>
+              <div class="summary-value">{{ formatCurrency(fundDetail.advancePaymentAmount || 0) }}</div>
+              <div class="summary-sub">{{ getAdvancePaymentRate().toFixed(1) }}%</div>
             </div>
           </div>
           <div class="summary-card">
@@ -86,6 +86,19 @@
               <div class="summary-label">기성금 누계</div>
               <div class="summary-value">{{ formatCurrency(fundDetail.progressPaymentTotal) }}</div>
               <div class="summary-sub">{{ progressPayments.length || 0 }}회</div>
+            </div>
+          </div>
+          <!-- 선급금 차감 현황 카드 -->
+          <div v-if="hasAdvancePayment" class="summary-card">
+            <div class="summary-icon" style="background: #fef3c7; color: #b45309;">
+              <i class="fas fa-balance-scale"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">선급금 차감</div>
+              <div class="summary-value">{{ formatCurrency(advanceSettledTotal) }}</div>
+              <div class="summary-sub" :class="advanceUnsettledBalance > 0 ? 'text-warning' : 'text-success'">
+                미정산: {{ formatCurrency(advanceUnsettledBalance) }}
+              </div>
             </div>
           </div>
           <div class="summary-card">
@@ -197,7 +210,7 @@
           <div v-else class="advance-info">
             <div class="info-row">
               <label>신청 금액</label>
-              <span class="amount">{{ formatCurrency(advanceDetail?.requestAmount) }}</span>
+              <span class="amount">{{ formatCurrency(advanceDetail?.requestAmount || 0) }}</span>
             </div>
             <div class="info-row">
               <label>신청일</label>
@@ -226,14 +239,14 @@
               <span>{{ advanceDetail.remarks }}</span>
             </div>
 
-            <!-- 수금확인 버튼 (승인 상태일 때만 표시) -->
-            <div v-if="advanceDetail?.status === 'APPROVED'" class="collection-confirm-section">
+            <!-- 수금확인 버튼 (신청 또는 승인 상태일 때 표시) -->
+            <div v-if="advanceDetail?.status === 'REQUESTED' || advanceDetail?.status === 'APPROVED'" class="collection-confirm-section">
               <button
                 class="btn-collection-confirm-lg"
                 @click="openCollectionConfirmModal('advance', advanceDetail)"
               >
                 <i class="fas fa-check-circle"></i>
-                수금 확인하기
+                입금 확인하기
               </button>
             </div>
 
@@ -289,6 +302,8 @@
                   <th>차수</th>
                   <th>청구일</th>
                   <th class="col-amount">청구금액</th>
+                  <th v-if="hasAdvancePayment" class="col-amount">선급금차감</th>
+                  <th v-if="hasAdvancePayment" class="col-amount">실수금액</th>
                   <th>서명상태</th>
                   <th>수금일</th>
                   <th>상태</th>
@@ -298,12 +313,18 @@
               </thead>
               <tbody>
                 <tr v-if="progressPayments.length === 0">
-                  <td colspan="8" class="no-data">기성금 이력이 없습니다.</td>
+                  <td :colspan="hasAdvancePayment ? 10 : 8" class="no-data">기성금 이력이 없습니다.</td>
                 </tr>
                 <tr v-else v-for="payment in progressPayments" :key="payment.requestId || payment.paymentId">
                   <td>{{ payment.paymentSeq }}차</td>
                   <td>{{ payment.requestDate }}</td>
                   <td class="text-right">{{ formatCurrency(payment.requestAmount) }}</td>
+                  <td v-if="hasAdvancePayment" class="text-right deduction-amount">
+                    {{ payment.advanceDeductionAmount ? '-' + formatCurrency(payment.advanceDeductionAmount) : '-' }}
+                  </td>
+                  <td v-if="hasAdvancePayment" class="text-right actual-amount">
+                    {{ formatCurrency(payment.netPaymentAmount || payment.requestAmount) }}
+                  </td>
                   <td>
                     <span class="signature-status" :class="getSignatureStatusClass(payment.signatureStatus)">
                       {{ getSignatureStatusLabel(payment.signatureStatus) }}
@@ -384,7 +405,7 @@
               </button>
               <!-- 잔금등록 버튼 (납품완료 상태 && 잔금 미입금 시에만) -->
               <button
-                v-if="(fundDetail.isDeliveryCompleted || deliveryDoneStatus === 'COMPLETED') && !fundDetail.balancePaidAmount"
+                v-if="(fundDetail.isDeliveryCompleted || fundDetail.deliveryDoneStatus === 'COMPLETED') && !fundDetail.balancePaidAmount"
                 class="btn-primary"
                 @click="openBalanceConfirmModal"
               >
@@ -500,20 +521,28 @@
                     </span>
                   </td>
                   <td>
-                    <button
-                      v-if="oem.status === 'SCHEDULED'"
-                      class="btn-oem-complete"
-                      @click="openOemCompleteModal(oem)"
-                      title="지급 완료 처리"
-                    >
-                      <i class="fas fa-check"></i>
-                      지급완료
-                    </button>
+                    <div v-if="oem.status === 'PENDING'" class="oem-action-buttons">
+                      <button
+                        class="btn-oem-complete"
+                        @click="openOemCompleteModal(oem)"
+                        title="지급 완료 처리"
+                      >
+                        <i class="fas fa-check"></i>
+                        지급완료
+                      </button>
+                      <button
+                        class="btn-oem-delete"
+                        @click="confirmDeleteOemPayment(oem)"
+                        title="삭제"
+                      >
+                        <i class="fas fa-trash-alt"></i>
+                        삭제
+                      </button>
+                    </div>
                     <span v-else-if="oem.status === 'PAID'" class="oem-completed">
                       <i class="fas fa-check-circle"></i>
                       완료
                     </span>
-                    <span v-else class="oem-cancelled">취소됨</span>
                   </td>
                 </tr>
               </tbody>
@@ -547,7 +576,7 @@
       :is-open="showAdvancePaymentModal"
       :fund-id="Number(route.params.id)"
       :total-contract-amount="fundDetail?.contractTotalAmount || 0"
-      :advance-payment-rate="fundDetail?.advancePaymentRate || 10"
+      :advance-payment-rate="fundDetail?.advancePaymentRate || 70"
       @close="closeAdvancePaymentModal"
       @submitted="handleAdvancePaymentSubmitted"
     />
@@ -568,6 +597,10 @@
       :payment-id="collectionPaymentId"
       :request-amount="collectionRequestAmount"
       :approved-amount="collectionApprovedAmount"
+      :advance-deduction-amount="collectionAdvanceDeductionAmount"
+      :actual-receivable-amount="collectionActualReceivableAmount"
+      :current-settled-total="advanceSettledTotal"
+      :current-unsettled-balance="advanceUnsettledBalance"
       @close="closeCollectionConfirmModal"
       @confirmed="handleCollectionConfirmed"
     />
@@ -578,6 +611,7 @@
       :fund-id="Number(route.params.id)"
       :existing-payment="selectedOemPayment"
       :linked-payment="linkedProgressPayment"
+      :progress-payments="paidProgressPayments"
       @close="closeOemPaymentModal"
       @submitted="handleOemPaymentSubmitted"
     />
@@ -601,7 +635,6 @@ import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { baselineService } from '~/services/baseline.service'
 import { fundService } from '~/services/fund.service'
 import { advancePaymentService } from '~/services/advance-payment.service'
-import { getDeliveryDoneByOrderId } from '~/services/delivery-done.service'
 import type { AdvancePdfType, AdvancePayment, OemPayment, OemPaymentStatus } from '~/types/fund'
 import { OEM_PAYMENT_STATUS_LABELS } from '~/types/fund'
 
@@ -634,6 +667,8 @@ const collectionPaymentType = ref<'advance' | 'progress' | 'balance'>('progress'
 const collectionPaymentId = ref(0)
 const collectionRequestAmount = ref(0)
 const collectionApprovedAmount = ref(0)
+const collectionAdvanceDeductionAmount = ref(0)
+const collectionActualReceivableAmount = ref(0)
 
 // OEM 지급 관련 상태
 const showOemPaymentModal = ref(false)
@@ -643,14 +678,17 @@ const oemPayments = ref<OemPayment[]>([])
 
 // 기성청구 Validation용 상태
 const completedDeliveryCount = ref(0)  // 서명 완료된 출하 수
-const deliveryDoneStatus = ref<string | null>(null)  // 납품완료계 상태
-const oemCompanyId = ref<number | null>(null)  // OEM 업체 ID (deliveryDone에서 가져옴)
 
 // OEM 지급 완료 총액 계산
 const oemPaidTotal = computed(() => {
   return oemPayments.value
     .filter(p => p.status === 'PAID' && p.paidAmount)
     .reduce((sum, p) => sum + (p.paidAmount || 0), 0)
+})
+
+// 수금 완료된 기성금 목록 (OEM 지급 대상)
+const paidProgressPayments = computed(() => {
+  return progressPayments.value.filter(p => p.status === 'PAID')
 })
 
 // 탭 정의
@@ -671,6 +709,17 @@ const hasAdvancePayment = computed(() => fundStore.hasAdvancePayment)
 
 /** 선급금 상세 정보 (첫 번째 선급금 이력) */
 const advanceDetail = computed<AdvancePayment | null>(() => fundStore.advances[0] || null)
+
+/** 선급금 차감 누계 (정산 완료된 선급금 총액) - 백엔드 값 사용 */
+const advanceSettledTotal = computed(() => {
+  return fundDetail.value?.advanceDeductedTotal || 0
+})
+
+/** 미정산 선급금 잔액 - 계산: 선급금 총액 - 차감 누계 */
+const advanceUnsettledBalance = computed(() => {
+  const advanceAmount = fundDetail.value?.advancePaymentAmount || 0
+  return Math.max(0, advanceAmount - advanceSettledTotal.value)
+})
 
 /** 선급금 예상액 계산 */
 const expectedAdvanceAmount = computed(() => {
@@ -695,12 +744,12 @@ const canRequestAdvance = computed(() => completedDeliveryCount.value === 0)
 const canRequestProgress = computed(() =>
   completedDeliveryCount.value > 0 &&
   !fundDetail.value?.isDeliveryCompleted &&
-  deliveryDoneStatus.value !== 'COMPLETED'
+  fundDetail.value?.deliveryDoneStatus !== 'COMPLETED'
 )
 
 /** 납품완료 처리 가능 여부 (delivery_done 상태가 PENDING_SIGNATURE) */
 const canCompleteFinalDelivery = computed(() =>
-  deliveryDoneStatus.value === 'PENDING_SIGNATURE'
+  fundDetail.value?.deliveryDoneStatus === 'PENDING_SIGNATURE'
 )
 
 /** 선급금 버튼 툴팁 */
@@ -716,7 +765,7 @@ const getAdvanceButtonTooltip = () => {
 
 /** 기성금 버튼 툴팁 */
 const getProgressButtonTooltip = () => {
-  if (fundDetail.value?.isDeliveryCompleted || deliveryDoneStatus.value === 'COMPLETED') {
+  if (fundDetail.value?.isDeliveryCompleted || fundDetail.value?.deliveryDoneStatus === 'COMPLETED') {
     return '납품완료된 발주는 기성금 청구가 불가능합니다.'
   }
   if (completedDeliveryCount.value === 0) {
@@ -756,16 +805,11 @@ const loadValidationData = async () => {
   if (!fundDetail.value?.orderId) return
 
   try {
-    // 1. 서명 완료된 출하 수 조회 (기성금 이력에서 카운트)
+    // 서명 완료된 출하 수 조회 (기성금 이력에서 카운트)
     // availableShipments는 이미 서명 완료된 출하 목록이므로 해당 수를 사용
     const baselineData = await baselineService.getAvailableShipments(fundDetail.value.orderId)
     completedDeliveryCount.value = baselineData?.length || 0
-
-    // 2. 납품완료계 상태 조회
-    const deliveryDone = await getDeliveryDoneByOrderId(fundDetail.value.orderId)
-    deliveryDoneStatus.value = deliveryDone?.status || null
-    // OEM 업체 ID 저장 (OEM 지급 등록 시 사용)
-    oemCompanyId.value = deliveryDone?.oemCompanyId || null
+    // 참고: deliveryDoneStatus, oemCompanyId는 fundDetail에서 직접 사용
   } catch (error) {
     console.error('Validation 데이터 로드 실패:', error)
   }
@@ -776,11 +820,13 @@ const goBack = () => {
 }
 
 /**
- * 선급금 비율 계산
+ * 선급금 비율 계산 (실제 입금된 금액 기준)
  */
 const getAdvancePaymentRate = (): number => {
   if (!fundDetail.value?.contractTotalAmount || fundDetail.value.contractTotalAmount <= 0) return 0
-  return ((fundDetail.value.advancePaymentAmount || 0) / fundDetail.value.contractTotalAmount) * 100
+  // 서버의 advancePaymentAmount 사용 (실제 입금된 선급금)
+  const advanceAmount = fundDetail.value.advancePaymentAmount || 0
+  return (advanceAmount / fundDetail.value.contractTotalAmount) * 100
 }
 
 /**
@@ -792,11 +838,13 @@ const getProgressPaymentRate = (): number => {
 }
 
 /**
- * 잔금 비율 계산 (이미 지급된 잔금)
+ * 잔금 비율 계산 (실제 입금된 잔금 기준)
  */
 const getBalancePaymentRate = (): number => {
-  // balanceAmount는 미지급 잔금이므로, 지급된 잔금 = 0 (현재 로직)
-  return 0
+  if (!fundDetail.value?.contractTotalAmount || fundDetail.value.contractTotalAmount <= 0) return 0
+  // 서버의 balancePaidAmount 사용 (실제 입금된 잔금)
+  const paidBalance = fundDetail.value.balancePaidAmount || 0
+  return (paidBalance / fundDetail.value.contractTotalAmount) * 100
 }
 
 /**
@@ -804,7 +852,12 @@ const getBalancePaymentRate = (): number => {
  */
 const getCollectionRate = (): number => {
   if (!fundDetail.value?.contractTotalAmount || fundDetail.value.contractTotalAmount <= 0) return 0
-  return fundDetail.value.collectionRate || (getAdvancePaymentRate() + getProgressPaymentRate())
+  // 서버에서 collectionRate를 제공하면 사용 (0도 유효한 값이므로 null/undefined 체크)
+  if (fundDetail.value.collectionRate != null) {
+    return fundDetail.value.collectionRate
+  }
+  // fallback: 프론트에서 계산
+  return getAdvancePaymentRate() + getProgressPaymentRate()
 }
 
 /**
@@ -939,21 +992,29 @@ const viewAdvancePdf = (pdfType: AdvancePdfType) => {
 }
 
 /**
- * 선급금 PDF 다운로드
+ * 선급금 PDF 다운로드 (JWT 토큰 포함)
  */
-const downloadAdvancePdf = (pdfType: AdvancePdfType) => {
+const downloadAdvancePdf = async (pdfType: AdvancePdfType) => {
   if (!advanceDetail.value) return
-  const url = advancePaymentService.getPdfUrl(advanceDetail.value.advanceId, pdfType)
-  window.open(url, '_blank')
+  try {
+    await advancePaymentService.downloadPdf(advanceDetail.value.advanceId, pdfType)
+  } catch (error) {
+    console.error('PDF 다운로드 실패:', error)
+    alert('PDF 다운로드에 실패했습니다.')
+  }
 }
 
 /**
- * 선급금 전체 PDF 다운로드 (ZIP)
+ * 선급금 전체 PDF 다운로드 (ZIP, JWT 토큰 포함)
  */
-const downloadAllAdvancePdfs = () => {
+const downloadAllAdvancePdfs = async () => {
   if (!advanceDetail.value) return
-  const url = advancePaymentService.getDownloadAllPdfUrl(advanceDetail.value.advanceId)
-  window.open(url, '_blank')
+  try {
+    await advancePaymentService.downloadAllPdfs(advanceDetail.value.advanceId)
+  } catch (error) {
+    console.error('전체 PDF 다운로드 실패:', error)
+    alert('전체 PDF 다운로드에 실패했습니다.')
+  }
 }
 
 /**
@@ -1081,16 +1142,23 @@ const openCollectionConfirmModal = (
   // 유형별 ID 및 금액 설정
   if (type === 'advance') {
     collectionPaymentId.value = payment.advanceId
-    collectionRequestAmount.value = payment.requestAmount
+    collectionRequestAmount.value = payment.requestAmount || 0
     collectionApprovedAmount.value = payment.approvedAmount || 0
+    collectionAdvanceDeductionAmount.value = 0
+    collectionActualReceivableAmount.value = 0
   } else if (type === 'progress') {
     collectionPaymentId.value = payment.paymentId || payment.requestId
-    collectionRequestAmount.value = payment.requestAmount || payment.amount
+    collectionRequestAmount.value = payment.requestAmount || payment.amount || 0
     collectionApprovedAmount.value = 0 // 기성금은 승인금액이 별도로 없음
+    // 선급금 차감 정보 설정 (백엔드 필드명 사용)
+    collectionAdvanceDeductionAmount.value = payment.advanceDeductionAmount || 0
+    collectionActualReceivableAmount.value = payment.netPaymentAmount || collectionRequestAmount.value
   } else if (type === 'balance') {
     collectionPaymentId.value = payment.balanceRequestId
-    collectionRequestAmount.value = payment.requestAmount
+    collectionRequestAmount.value = payment.requestAmount || 0
     collectionApprovedAmount.value = payment.approvedAmount || 0
+    collectionAdvanceDeductionAmount.value = 0
+    collectionActualReceivableAmount.value = 0
   }
 
   showCollectionConfirmModal.value = true
@@ -1158,9 +1226,8 @@ const handleCollectionConfirmed = async (data: {
 const getOemPaymentStatusClass = (status?: OemPaymentStatus): string => {
   if (!status) return ''
   const classMap: Record<OemPaymentStatus, string> = {
-    SCHEDULED: 'status-scheduled',
-    PAID: 'status-paid',
-    CANCELLED: 'status-cancelled'
+    PENDING: 'status-pending',
+    PAID: 'status-paid'
   }
   return classMap[status] || ''
 }
@@ -1192,6 +1259,26 @@ const openOemCompleteModal = (payment: OemPayment) => {
 }
 
 /**
+ * OEM 지급 삭제 확인 및 처리
+ */
+const confirmDeleteOemPayment = async (oem: OemPayment) => {
+  if (!confirm(`${oem.paymentSeq}차 OEM 지급(${formatCurrency(oem.scheduledAmount)})을 삭제하시겠습니까?`)) {
+    return
+  }
+
+  try {
+    const fundId = Number(route.params.id)
+    await fundService.deleteOemPayment(fundId, oem.oemPaymentId)
+    alert('OEM 지급이 삭제되었습니다.')
+    // OEM 지급 목록 새로고침
+    oemPayments.value = await fundService.getOemPayments(fundId)
+  } catch (error) {
+    console.error('OEM 지급 삭제 실패:', error)
+    alert('삭제에 실패했습니다.')
+  }
+}
+
+/**
  * OEM 지급 모달 닫기
  */
 const closeOemPaymentModal = () => {
@@ -1216,7 +1303,7 @@ const handleOemPaymentSubmitted = async (data: {
   try {
     if (data.isComplete && selectedOemPayment.value) {
       // 지급 완료 처리
-      await fundService.completeOemPayment(fundId, selectedOemPayment.value.oemPaymentId, {
+      await fundService.confirmOemPayment(fundId, selectedOemPayment.value.oemPaymentId, {
         paidAmount: data.amount,
         paidDate: data.paymentDate,
         bankAccount: data.bankAccount,
@@ -1229,7 +1316,7 @@ const handleOemPaymentSubmitted = async (data: {
         paymentAmount: data.amount,
         paymentDate: data.paymentDate,
         oemCompanyName: data.oemCompanyName,
-        oemCompanyId: oemCompanyId.value || undefined,  // OEM 업체 ID 추가
+        oemCompanyId: fundDetail.value?.oemCompanyId || undefined,  // OEM 업체 ID (Fund API에서 제공)
         bankAccount: data.bankAccount,
         remarks: data.remarks
       })
@@ -1628,6 +1715,25 @@ onMounted(() => {
   padding: 2rem;
 }
 
+/* 선급금 차감/실수금액 스타일 */
+.deduction-amount {
+  color: #dc2626 !important;
+  font-weight: 600;
+}
+
+.actual-amount {
+  color: #1d4ed8 !important;
+  font-weight: 700;
+}
+
+.text-warning {
+  color: #d97706;
+}
+
+.text-success {
+  color: #16a34a;
+}
+
 /* 상태 배지 */
 .status-badge {
   display: inline-block;
@@ -1916,6 +2022,90 @@ onMounted(() => {
 .status-scheduled {
   background: #fef3c7;
   color: #d97706;
+}
+
+/* ===== OEM 테이블 개선 스타일 ===== */
+
+/* OEM 테이블 컨테이너 */
+.tab-content[v-if="activeTab === 'oem'"] .table-container,
+div[class*="tab-content"]:has(.oem-summary-card) .table-container {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* OEM 테이블 헤더 */
+.tab-content .data-table thead th {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 0.875rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* OEM 테이블 행 스타일 */
+.tab-content .data-table tbody tr {
+  transition: all 0.15s ease;
+}
+
+.tab-content .data-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.tab-content .data-table tbody tr:hover {
+  background: #f0f9ff;
+}
+
+.tab-content .data-table tbody td {
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+/* 금액 컬럼 강조 */
+.tab-content .data-table tbody td.text-right {
+  font-weight: 600;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #1e293b;
+}
+
+/* OEM 상태 배지 개선 */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.status-badge.status-pending {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.status-badge.status-paid {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #047857;
+  border: 1px solid #6ee7b7;
+}
+
+/* 빈 데이터 표시 */
+.tab-content .data-table .no-data {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9375rem;
+  background: #f8fafc;
 }
 
 /* OEM 지급 버튼 스타일 - admin-buttons.css로 이동됨 */

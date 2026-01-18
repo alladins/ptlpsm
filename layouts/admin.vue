@@ -96,16 +96,16 @@ const currentPageTitle = computed(() => {
     '/admin/order': '주문관리',
     '/admin/shipping': '출하관리',
     '/admin/transport': '출하관리',      // 출하관리 하위 메뉴
-    '/admin/delivery': '납품관리',       // 수정: 납품확인관리 → 납품관리
-    '/admin/delivery-done': '납품관리',  // 수정: 납품완료계 → 납품관리
-    '/admin/funds': '납품관리',          // 추가: 기성청구도 납품관리 하위
-    '/admin/statistics': '통계',
+    '/admin/delivery': '납품관리',
+    '/admin/delivery-done': '납품관리',
+    '/admin/funds': '납품관리',          // 기성청구는 납품관리 하위
+    '/admin/statistics': '통계',         // 기성통계(/admin/statistics/funds)도 여기에 포함
     '/admin/message': '문자관리',
     '/admin/basic-info': '기초정보',
     '/admin/system': '시스템관리'
   }
 
-  // 정확한 경로 매칭
+  // 경로 매칭
   for (const [path, title] of Object.entries(pathMap)) {
     if (route.path.startsWith(path)) {
       return title

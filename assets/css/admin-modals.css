@@ -501,15 +501,12 @@
   cursor: not-allowed;
 }
 
-.ccm-amount-diff {
-  font-size: 0.75rem;
+/* 남은 금액 (미입금액) 표시 - 파란색 */
+.ccm-remaining-amount {
+  font-size: 0.875rem;
   font-weight: 600;
-  color: #10b981;
+  color: #3b82f6;
   font-feature-settings: 'tnum';
-}
-
-.ccm-amount-diff.ccm-negative {
-  color: #ef4444;
 }
 
 /* 에러 메시지 */

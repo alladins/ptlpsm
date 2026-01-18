@@ -30,14 +30,14 @@ npm run preview       # 프로덕션 빌드 미리보기
 | 구분 | 개발 (DEV) | 운영 (PROD) |
 |------|------------|-------------|
 | **도메인** | leadpower.platree.com | shipmg.lphydrofoam.com |
-| **API 포트** | 9031 | 9030 |
+| **API 포트** | 9031 | 9032 |
 | **서버 경로** | /app/leadpower | /app/shipmg |
 | **용도** | 개발/테스트 | 운영 |
 
 ### API URL
 - 로컬: `http://localhost:9031/api`
 - 개발: `http://leadpower.platree.com:9031/api`
-- 운영: `http://shipmg.lphydrofoam.com:9030/api`
+- 운영: `http://shipmg.lphydrofoam.com:9032/api`
 
 ## Directory Structure
 
@@ -94,7 +94,7 @@ assets/css/                # 공통 CSS
 브라우저 콘솔에서:
 ```javascript
 apiEnvironment.printStatus()       // 현재 환경 정보 출력
-apiEnvironment.forceProduction()   // 운영 API (shipmg:9030)
+apiEnvironment.forceProduction()   // 운영 API (shipmg:9032)
 apiEnvironment.forceDevelopment()  // 개발 API (leadpower:9031)
 ```
 

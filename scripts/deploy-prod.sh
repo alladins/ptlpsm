@@ -1,13 +1,13 @@
 #!/bin/bash
 # 운영 환경 배포 스크립트
-# 대상: shipmg.lphydrofoam.com (포트 9030)
+# 대상: shipmg.lphydrofoam.com (포트 9032)
 
 set -e
 
 echo "🚀 운영 환경 배포 시작..."
 echo "========================================="
 echo "대상 서버: shipmg.lphydrofoam.com"
-echo "API 포트: 9030"
+echo "API 포트: 9032"
 echo "========================================="
 
 # 배포 전 확인

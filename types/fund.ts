@@ -120,6 +120,14 @@ export interface FundDetail extends Fund {
   profitRate: number
   /** 기성금 이력 목록 */
   payments?: ProgressPaymentRequest[]
+  /** 납품완료계 상태 (delivery_done.status) */
+  deliveryDoneStatus?: string
+  /** OEM 업체 ID (delivery_done.oem_company_id) */
+  oemCompanyId?: number
+  /** 선급금 차감 누계 (정산 완료된 선급금 총액) - 백엔드 필드명 */
+  advanceDeductedTotal?: number
+  /** 미정산 선급금 잔액 (계산: advancePaymentAmount - advanceDeductedTotal) */
+  advanceUnsettledBalance?: number
 }
 
 /**
@@ -169,6 +177,10 @@ export interface ProgressPaymentRequest extends BaseEntity {
   inspectorSigned?: boolean
   /** 요청 ID (서버 응답 호환용) */
   paymentId?: number
+  /** 선급금 차감액 */
+  advanceDeductionAmount?: number
+  /** 실수금액 (청구금액 - 선급금차감액) - 백엔드 필드명: netPaymentAmount */
+  netPaymentAmount?: number
 }
 
 /**
@@ -650,22 +662,31 @@ export interface ProgressClaimData {
   projectName: string
   /** 청구 총액 */
   totalAmount: number
+  /** 선급금 비율 (%) */
+  advancePaymentRate?: number
+  /** 선급금 차감액 */
+  advanceDeductionAmount?: number
+  /** 실수금액 (청구금액 - 선급금차감액) */
+  actualReceivableAmount?: number
+  /** 미정산 선급금 잔액 (차감 전) */
+  advanceUnsettledBalance?: number
 }
 
 // ============ OEM 지급 (OEM Payment) ============
 
 /**
  * OEM 지급 상태
+ * - PENDING: 지급 예정 (서버 API 기준)
+ * - PAID: 지급 완료
  */
-export type OemPaymentStatus = 'SCHEDULED' | 'PAID' | 'CANCELLED'
+export type OemPaymentStatus = 'PENDING' | 'PAID'
 
 /**
  * OEM 지급 상태 라벨
  */
 export const OEM_PAYMENT_STATUS_LABELS: Record<OemPaymentStatus, string> = {
-  SCHEDULED: '지급예정',
-  PAID: '지급완료',
-  CANCELLED: '취소'
+  PENDING: '지급예정',
+  PAID: '지급완료'
 }
 
 /**

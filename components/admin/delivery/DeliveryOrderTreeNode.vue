@@ -16,7 +16,7 @@
           <span class="date-value">{{ formatDate(order.deliveryRequestDate) }}</span>
         </span>
 
-        <span class="separator">|</span>
+        <span class="separator narrow">|</span>
 
         <span class="client-name">
           <i class="fas fa-building"></i>
@@ -31,6 +31,10 @@
 
         <span class="quantity-info">
           {{ formatQuantity(order.totalDeliveredQuantity) }} / {{ formatQuantity(order.totalOrderedQuantity) }} {{ order.unit }}
+        </span>
+
+        <span class="shipment-count-badge">
+          {{ order.shipments?.length || 0 }}건
         </span>
 
         <span class="delivery-rate-badge" :class="getRateColorClass()">
@@ -209,6 +213,12 @@ const getRateColorClass = () => {
   flex-shrink: 0;
 }
 
+/* 구분자 - 좁은 간격 (납품요구일-수요기관 사이) */
+.separator.narrow {
+  margin-left: -0.2rem;
+  margin-right: -0.2rem;
+}
+
 /* 발주처 */
 .client-name {
   display: inline-flex;
@@ -244,6 +254,20 @@ const getRateColorClass = () => {
   color: #374151;
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* 출하 건수 뱃지 */
+.shipment-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 /* 납품율 뱃지 */

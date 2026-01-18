@@ -102,6 +102,7 @@
           <thead>
             <tr>
               <th>No</th>
+              <th>출하NO</th>
               <th>납품요구번호</th>
               <th>납품요구일자</th>
               <th>수요기관</th>
@@ -120,10 +121,11 @@
               style="cursor: pointer;"
             >
               <td>{{ startIndex + index }}</td>
+              <td>{{ item.shipmentNo || '-' }}</td>
               <td>{{ item.deliveryRequestNo }}</td>
               <td>{{ formatDate(item.deliveryRequestDate) }}</td>
               <td>{{ item.client }}</td>
-              <td>{{ item.projectName }}</td>
+              <td class="project-name-cell" :title="item.projectName">{{ item.projectName }}</td>
               <td>{{ formatDate(item.shipmentDate) }}</td>
               <td>
                 <span :class="getStatusClass(item.status)">
@@ -136,7 +138,7 @@
           </tbody>
           <tfoot v-if="shippingData.length > 0">
             <tr>
-              <td colspan="7" class="text-right"><strong>총 출하수량</strong></td>
+              <td colspan="8" class="text-right"><strong>총 출하수량</strong></td>
               <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
               <td class="text-right"><strong>{{ formatCurrency(totalShippingAmount) }}</strong></td>
             </tr>
@@ -204,10 +206,10 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`
 }
 
-// 3개월 전 날짜 계산 (로컬 시간 기준)
-const getThreeMonthsAgo = () => {
+// 6개월 전 날짜 계산 (로컬 시간 기준)
+const getSixMonthsAgo = () => {
   const date = new Date()
-  date.setMonth(date.getMonth() - 3)
+  date.setMonth(date.getMonth() - 6)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -216,7 +218,7 @@ const getThreeMonthsAgo = () => {
 
 // 검색 폼 데이터
 const searchForm = ref({
-  startDate: getThreeMonthsAgo(),
+  startDate: getSixMonthsAgo(),
   endDate: getTodayDate(),
   orderId: null as number | null,
   deliveryRequestNo: '',
@@ -305,7 +307,7 @@ const handleSearch = () => {
 // 검색 초기화
 const handleReset = () => {
   searchForm.value = {
-    startDate: getThreeMonthsAgo(),
+    startDate: getSixMonthsAgo(),
     endDate: getTodayDate(),
     orderId: null,
     deliveryRequestNo: '',
@@ -423,6 +425,15 @@ onMounted(async () => {
   font-weight: 500;
   background-color: #ffedd5;
   color: #c2410c;
+}
+
+/* 사업명 셀 - 왼쪽 정렬 및 말줄임 처리 */
+.project-name-cell {
+  text-align: left;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 반응형 - 페이지 특화 스타일만 유지 */

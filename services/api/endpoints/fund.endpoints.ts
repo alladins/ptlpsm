@@ -246,13 +246,13 @@ export const FUND_ENDPOINTS = {
   },
 
   /**
-   * OEM 지급 완료 처리
+   * OEM 지급 완료 처리 (입금확인)
    * @param fundId - 자금 ID
    * @param oemPaymentId - OEM 지급 ID
-   * @returns POST /admin/funds/{fundId}/oem-payments/{oemPaymentId}/complete
+   * @returns PUT /admin/funds/{fundId}/oem-payments/{oemPaymentId}/confirm
    */
-  completeOemPayment: (fundId: number, oemPaymentId: number) => {
+  confirmOemPayment: (fundId: number, oemPaymentId: number) => {
     const baseUrl = getApiBaseUrl()
-    return `${baseUrl}/admin/funds/${fundId}/oem-payments/${oemPaymentId}/complete`
+    return `${baseUrl}/admin/funds/${fundId}/oem-payments/${oemPaymentId}/confirm`
   }
 } as const

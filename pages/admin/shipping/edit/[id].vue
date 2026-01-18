@@ -262,13 +262,13 @@
                       {{ formatQuantity(item.otherShipmentsQuantity) }}
                     </td>
                     <td class="text-right">
-                      {{ formatQuantity(item.remainingQuantity) }}
+                      {{ formatQuantity(getCalculatedRemainingQuantity(item)) }}
                       <button
-                        v-if="canEdit && canEditQuantity && item.remainingQuantity > 0"
+                        v-if="canEdit && canEditQuantity && getCalculatedRemainingQuantity(item) > 0"
                         type="button"
                         class="btn-max-quantity"
-                        @click="setMaxQuantity(item)"
-                        :title="'전체수량 입력 (' + formatQuantity(item.remainingQuantity) + ')'"
+                        @click="addRemainingQuantity(item)"
+                        :title="'잔여수량 추가 (' + formatQuantity(getCalculatedRemainingQuantity(item)) + ')'"
                       >▶</button>
                     </td>
                     <td class="text-right quantity-col">
@@ -892,8 +892,22 @@ const validateQuantity = (item: OrderItem) => {
   }
 }
 
-// 잔여수량 전체 입력
-const setMaxQuantity = (item: OrderItem) => {
+/**
+ * 실시간 잔여수량 계산
+ * 최대 수정 가능 수량 - 현재 입력된 출하수량
+ * (maxEditableQuantity = 원래 출하수량 + 서버에서 받은 잔여수량)
+ */
+const getCalculatedRemainingQuantity = (item: OrderItem): number => {
+  const remaining = item.maxEditableQuantity - item.shippingQuantity
+  // 부동소수점 연산 오차 방지
+  return parseFloat(Math.max(0, remaining).toFixed(2))
+}
+
+/**
+ * 잔여수량을 현재 출하수량에 추가
+ * (출하수량을 최대 수정 가능 수량으로 설정)
+ */
+const addRemainingQuantity = (item: OrderItem) => {
   item.shippingQuantity = item.maxEditableQuantity
 }
 

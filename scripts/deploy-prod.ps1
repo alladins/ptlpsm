@@ -1,12 +1,12 @@
 # 운영 환경 배포 스크립트 (Windows PowerShell)
-# 대상: shipmg.lphydrofoam.com (포트 9030)
+# 대상: shipmg.lphydrofoam.com (포트 9032)
 
 $ErrorActionPreference = "Stop"
 
 Write-Host "🚀 운영 환경 배포 시작..." -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Gray
 Write-Host "대상 서버: shipmg.lphydrofoam.com" -ForegroundColor Yellow
-Write-Host "API 포트: 9030" -ForegroundColor Yellow
+Write-Host "API 포트: 9032" -ForegroundColor Yellow
 Write-Host "=========================================" -ForegroundColor Gray
 
 # 배포 전 확인

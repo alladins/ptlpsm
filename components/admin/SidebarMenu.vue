@@ -364,7 +364,7 @@ const manualMenus = ref<MenuWithAuth[]>([
         menuId: 72,
         menuCode: 'STAT_FUND',
         menuName: '기성통계',
-        menuUrl: '/admin/funds/statistics',
+        menuUrl: '/admin/statistics/funds',
         menuIcon: 'fas fa-chart-pie',
         menuLevel: 2,
         sortOrder: 2,
@@ -1011,6 +1011,61 @@ watch(
     }
   },
   { deep: true }
+)
+
+// 현재 경로에 해당하는 메뉴를 자동으로 열어주는 함수
+const expandMenuForCurrentPath = () => {
+  const currentPath = route.path
+
+  console.log('🔍 [메뉴 자동 열기] 현재 경로:', currentPath)
+  console.log('🔍 [메뉴 자동 열기] 메뉴 개수:', menus.value.length)
+
+  // 현재 경로와 매칭되는 메인 메뉴 찾기
+  const matchingMenu = menus.value.find(menu => {
+    if (menu.children && menu.children.length > 0) {
+      // 자식 메뉴 중에 현재 경로와 일치하거나 시작하는 게 있는지 확인
+      // 예: /admin/delivery/list 또는 /admin/order/edit/123 등
+      const matched = menu.children.some(submenu => {
+        if (!submenu.menuUrl) return false
+        // 정확히 일치하거나, 현재 경로가 메뉴 URL로 시작하는 경우
+        return currentPath === submenu.menuUrl ||
+               currentPath.startsWith(submenu.menuUrl + '/') ||
+               currentPath.startsWith(submenu.menuUrl.replace('/list', '/'))
+      })
+      if (matched) {
+        console.log('✅ [메뉴 자동 열기] 매칭된 메뉴:', menu.menuName, 'menuId:', menu.menuId)
+      }
+      return matched
+    }
+    return currentPath === menu.menuUrl
+  })
+
+  if (matchingMenu && matchingMenu.children && matchingMenu.children.length > 0) {
+    // 현재 경로의 부모 메뉴 열기
+    console.log('✅ [메뉴 자동 열기] 메뉴 열기:', matchingMenu.menuName, 'menuId:', matchingMenu.menuId)
+    expandedMenus.value = [matchingMenu.menuId]
+  } else {
+    console.log('⚠️ [메뉴 자동 열기] 매칭되는 메뉴 없음')
+  }
+}
+
+// 라우트 변경 감시 - 메뉴 자동 열기
+watch(
+  () => route.path,
+  () => {
+    expandMenuForCurrentPath()
+  }
+)
+
+// 메뉴 로드 완료 후 현재 경로에 맞는 메뉴 열기
+watch(
+  () => menus.value,
+  (newMenus) => {
+    if (newMenus.length > 0) {
+      expandMenuForCurrentPath()
+    }
+  },
+  { immediate: true }
 )
 </script>
 

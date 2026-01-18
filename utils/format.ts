@@ -54,6 +54,37 @@ export function formatDateTime(dateString?: string | Date | null): string {
 }
 
 /**
+ * 현재 로컬 시간을 datetime-local 입력 형식으로 반환
+ * @param offsetMinutes - 현재 시간에 추가할 분 (기본값: 0)
+ * @returns yyyy-MM-ddTHH:mm 형식의 문자열
+ */
+export function getLocalDateTimeString(offsetMinutes: number = 0): string {
+  const now = new Date()
+  if (offsetMinutes) {
+    now.setMinutes(now.getMinutes() + offsetMinutes)
+  }
+  // 로컬 시간 기준으로 yyyy-MM-ddTHH:mm 형식 생성
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+/**
+ * 현재 로컬 날짜를 date 입력 형식으로 반환
+ * @returns yyyy-MM-dd 형식의 문자열
+ */
+export function getLocalDateString(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/**
  * 통화를 한국 원화 형식으로 포맷팅
  * @param amount - 금액 (숫자)
  * @param suffix - 접미사 (기본값: '원')

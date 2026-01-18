@@ -371,10 +371,10 @@ const statistics = ref<ShipmentStatisticsResponse>({
   recentShipments: []
 })
 
-// 기본 날짜 (3개월 전 ~ 오늘)
+// 기본 날짜 (6개월 전 ~ 오늘)
 function getDefaultStartDate(): string {
   const now = new Date()
-  now.setMonth(now.getMonth() - 3)
+  now.setMonth(now.getMonth() - 6)
   return now.toISOString().split('T')[0]
 }
 

@@ -2,7 +2,7 @@
   <div v-if="show" class="popup-overlay">
     <div class="popup-content large" @click.stop>
       <div class="popup-header">
-        <h2>출하ID 조회</h2>
+        <h2>출하NO 조회</h2>
         <button class="popup-close" @click="close">
           <i class="fas fa-times"></i>
         </button>
@@ -35,7 +35,7 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>출하ID</th>
+                <th>출하NO</th>
                 <th>납품요구번호</th>
                 <th>수요기관</th>
                 <th>출하일자</th>
@@ -48,7 +48,7 @@
                 <td colspan="6" class="empty-message">검색 결과가 없습니다.</td>
               </tr>
               <tr v-for="shipment in shipments" :key="shipment.shipmentId">
-                <td>{{ shipment.shipmentId }}</td>
+                <td>{{ shipment.shipmentNo }}</td>
                 <td>{{ shipment.deliveryRequestNo }}</td>
                 <td>{{ shipment.client }}</td>
                 <td>{{ formatDate(shipment.shipmentDate) }}</td>

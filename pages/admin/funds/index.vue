@@ -281,15 +281,10 @@ const goToDetail = (fundId: number) => {
 }
 
 /**
- * 수금률 계산
+ * 수금률 - 서버에서 계산된 값 사용
  */
 const getCollectionRate = (item: FundListItem): number => {
-  const contractAmount = item.totalContractAmount || item.contractTotalAmount || 0
-  if (contractAmount <= 0) return 0
-  const collected = (item.advancePaymentAmount || item.advancePayment || 0) +
-                    (item.progressPaymentTotal || 0) +
-                    (item.balanceAmount || item.balancePayment || 0)
-  return (collected / contractAmount) * 100
+  return item.collectionRate || 0
 }
 
 /**

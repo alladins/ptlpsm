@@ -1,11 +1,11 @@
 // API 환경 설정 서비스
 // 환경별 설정
 const ENV_CONFIG = {
-  // 운영 환경: shipmg.lphydrofoam.com (포트 9030)
+  // 운영 환경: shipmg.lphydrofoam.com (포트 9032)
   production: {
     domain: 'shipmg.lphydrofoam.com',
-    apiUrl: 'http://shipmg.lphydrofoam.com:9030/api',
-    port: 9030
+    apiUrl: 'http://shipmg.lphydrofoam.com:9032/api',
+    port: 9032
   },
   // 개발 환경: leadpower.platree.com (포트 9031)
   development: {

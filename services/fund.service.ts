@@ -645,19 +645,38 @@ export const fundService = {
 
       const result = await response.json()
 
+      // 서버 응답을 프론트엔드 타입으로 변환하는 매핑 함수
+      const mapServerToOemPayment = (item: any): OemPayment => ({
+        oemPaymentId: item.paymentId || item.oemPaymentId || item.historyId,
+        fundId: item.fundId,
+        paymentId: item.requestId,
+        paymentSeq: item.paymentSeq || 1,
+        scheduledAmount: item.paymentAmount || item.scheduledAmount || 0,
+        paidAmount: item.paidAmount || null,
+        scheduledDate: item.paymentDate || item.scheduledDate || '',
+        paidDate: item.paidDate || null,
+        oemCompanyName: item.oemCompanyName,
+        oemCompanyId: item.oemCompanyId,
+        bankAccount: item.bankAccount,
+        status: item.status || 'PENDING',  // 서버 상태값: PENDING | PAID
+        remarks: item.remarks,
+        createdAt: item.createdAt
+      })
+
       // 배열 응답 처리
       if (Array.isArray(result)) {
-        return result
+        return result.map(mapServerToOemPayment)
       }
 
       // data 래핑 처리
       if (result.data) {
-        return Array.isArray(result.data) ? result.data : []
+        const data = Array.isArray(result.data) ? result.data : []
+        return data.map(mapServerToOemPayment)
       }
 
       // content 래핑 처리 (페이징)
       if (result.content) {
-        return result.content
+        return result.content.map(mapServerToOemPayment)
       }
 
       return []
@@ -697,15 +716,15 @@ export const fundService = {
   },
 
   /**
-   * OEM 지급 완료 처리
+   * OEM 지급 완료 처리 (입금확인)
    */
-  async completeOemPayment(fundId: number, oemPaymentId: number, data: OemPaymentCompleteRequest): Promise<OemPayment> {
+  async confirmOemPayment(fundId: number, oemPaymentId: number, data: OemPaymentCompleteRequest): Promise<OemPayment> {
     try {
-      const url = FUND_ENDPOINTS.completeOemPayment(fundId, oemPaymentId)
-      console.log('OEM 지급 완료 API 호출:', url, data)
+      const url = FUND_ENDPOINTS.confirmOemPayment(fundId, oemPaymentId)
+      console.log('OEM 입금확인 API 호출:', url, data)
 
       const response = await fetch(url, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -720,7 +739,33 @@ export const fundService = {
       const result = await response.json()
       return result.data || result
     } catch (error) {
-      console.error('OEM 지급 완료 처리 실패:', error)
+      console.error('OEM 입금확인 처리 실패:', error)
+      throw error
+    }
+  },
+
+  /**
+   * OEM 지급 삭제
+   * DELETE /admin/funds/{fundId}/oem-payments/{oemPaymentId}
+   */
+  async deleteOemPayment(fundId: number, oemPaymentId: number): Promise<void> {
+    try {
+      const url = FUND_ENDPOINTS.oemPaymentDetail(fundId, oemPaymentId)
+      console.log('OEM 지급 삭제 API 호출:', url)
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+      }
+    } catch (error) {
+      console.error('OEM 지급 삭제 실패:', error)
       throw error
     }
   }

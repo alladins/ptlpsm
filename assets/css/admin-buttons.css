@@ -734,41 +734,97 @@
 .btn-oem-complete {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.625rem;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
   white-space: nowrap;
+  min-width: 80px;
 }
 
 .btn-oem-complete:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.btn-oem-complete:active {
+  transform: translateY(0);
 }
 
 .btn-oem-complete i {
   font-size: 0.75rem;
 }
 
+/* OEM 지급 삭제 버튼 */
+.btn-oem-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background: white;
+  color: #dc2626;
+  border: 1.5px solid #fca5a5;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 60px;
+}
+
+.btn-oem-delete:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+  color: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+}
+
+.btn-oem-delete:active {
+  transform: translateY(0);
+}
+
+.btn-oem-delete i {
+  font-size: 0.75rem;
+}
+
+/* OEM 액션 버튼 그룹 */
+.oem-action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
 /* OEM 지급 완료 표시 */
 .oem-completed {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: #ecfdf5;
   color: #059669;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
+  border-radius: 20px;
+  border: 1px solid #a7f3d0;
 }
 
 .oem-completed i {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
+  color: #10b981;
 }
 
 /* OEM 취소 표시 */

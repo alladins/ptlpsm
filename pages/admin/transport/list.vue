@@ -105,13 +105,12 @@
             <thead>
                 <tr>
                   <th>No</th>
+                  <th>출하NO</th>
                   <th>납품요구번호</th>
                   <th>배송지</th>
                   <th>배송예정일</th>
-                  <th>운송사</th>
                   <th>운송장번호</th>
                   <th>기사명</th>
-                  <th>차량번호</th>
                   <th>배송상태</th>
                   <th>등록자</th>
                   <th>등록일시</th>
@@ -121,6 +120,7 @@
             <tbody>
                 <tr v-for="(item, index) in transportList" :key="item.transportId" class="table-row" @click="goToEdit(item.transportId)" style="cursor: pointer;">
                   <td>{{ startIndex + index }}</td>
+                  <td>{{ item.shipmentNo || '-' }}</td>
                   <td>{{ item.deliveryRequestNo }}</td>
                   <td>
                     <span class="address-text" :title="item.addressDetail">
@@ -128,10 +128,8 @@
                     </span>
                   </td>
                   <td>{{ formatDate(item.deliveryDate) }}</td>
-                  <td>{{ item.carrierName || '-' }}</td>
                   <td>{{ item.trackingNumber || '-' }}</td>
                   <td>{{ item.driverName || '-' }}</td>
-                  <td>{{ item.vehicleNo || '-' }}</td>
                   <td>{{ formatStatus(item.status) }}</td>
                   <td>{{ item.createdBy }}</td>
                   <td>{{ formatDateTime(item.createdAt) }}</td>
@@ -216,10 +214,10 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`
 }
 
-// 1개월 전 날짜 계산 (로컬 시간 기준)
-const getOneMonthAgo = () => {
+// 6개월 전 날짜 계산 (로컬 시간 기준)
+const getSixMonthsAgo = () => {
   const date = new Date()
-  date.setMonth(date.getMonth() - 1)
+  date.setMonth(date.getMonth() - 6)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -228,7 +226,7 @@ const getOneMonthAgo = () => {
 
 // 검색 폼 데이터
 const searchForm = ref({
-  startDate: getOneMonthAgo(),
+  startDate: getSixMonthsAgo(),
   endDate: getTodayDate(),
   deliveryRequestNo: '',
   shipmentId: null as number | null,
@@ -301,7 +299,7 @@ const handleSearch = () => {
 // 검색 초기화
 const handleReset = () => {
   searchForm.value = {
-    startDate: getOneMonthAgo(),
+    startDate: getSixMonthsAgo(),
     endDate: getTodayDate(),
     deliveryRequestNo: '',
     shipmentId: null,

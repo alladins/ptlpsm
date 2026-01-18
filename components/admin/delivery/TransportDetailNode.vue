@@ -50,8 +50,8 @@
 
       <!-- 납품확인 정보 -->
       <div class="transport-body">
-        <!-- 납품확인 완료 (deliveryId가 있어야 실제 완료) -->
-        <div v-if="transport.deliveryConfirmation?.deliveryId" class="delivery-confirmation-compact">
+        <!-- 납품확인 완료 (status가 COMPLETED일 때만 완료로 표시) -->
+        <div v-if="transport.deliveryConfirmation?.status === 'COMPLETED'" class="delivery-confirmation-compact">
           <div class="confirmation-header-compact">
             <i class="fas fa-check-circle"></i>
             <span>납품확인 완료</span>

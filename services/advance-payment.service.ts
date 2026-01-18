@@ -6,6 +6,7 @@
  * @description 선급금 관련 PDF 생성 및 다운로드 API 호출 서비스
  */
 
+import { getAuthHeaders } from './api'
 import { ADVANCE_PAYMENT_ENDPOINTS } from './api/endpoints/advance-payment.endpoints'
 import type { AdvancePdfType } from '~/types/fund'
 
@@ -142,5 +143,60 @@ export const advancePaymentService = {
    */
   getDownloadAllPdfUrl(advancePaymentId: number): string {
     return ADVANCE_PAYMENT_ENDPOINTS.downloadAllPdf(advancePaymentId)
+  },
+
+  /**
+   * 단일 PDF 다운로드 (JWT 토큰 포함)
+   * @param advancePaymentId - 선급금 ID
+   * @param pdfType - PDF 유형
+   */
+  async downloadPdf(advancePaymentId: number, pdfType: AdvancePdfType): Promise<void> {
+    const url = this.getPdfUrl(advancePaymentId, pdfType)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`PDF 다운로드 실패: ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = `선급금_${pdfType}_${advancePaymentId}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+  },
+
+  /**
+   * 전체 PDF ZIP 다운로드 (JWT 토큰 포함)
+   * @param advancePaymentId - 선급금 ID
+   */
+  async downloadAllPdfs(advancePaymentId: number): Promise<void> {
+    const url = ADVANCE_PAYMENT_ENDPOINTS.downloadAllPdf(advancePaymentId)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`전체 PDF 다운로드 실패: ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = `선급금_전체_${advancePaymentId}.zip`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
   }
 }

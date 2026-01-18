@@ -649,7 +649,7 @@ const handleSave = async () => {
       acceptanceAgency: orderData.value!.acceptanceAgency || '',
       siteManagerId: formData.value.siteManagerId,
       builderCompanyId: formData.value.builderCompanyId,
-      builderCompany: formData.value.builderCompany || null,
+      builderCompanyName: formData.value.builderCompany || null,
       oemCompanyId: formData.value.oemCompanyId,
       oemCompany: formData.value.oemCompany || null,
       items: orderData.value!.items.map((item: any, index: number) => ({

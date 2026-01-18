@@ -26,6 +26,7 @@ export interface ShipmentOrderStatus {
 
 export interface ShipmentListItem {
   shipmentId: number
+  shipmentNo: string              // 출하NO (표시용)
   orderId: number
   deliveryRequestNo: string
   shipmentDate: string

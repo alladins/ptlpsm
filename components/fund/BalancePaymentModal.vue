@@ -102,6 +102,31 @@
                 <span class="calc-value primary">{{ formatCurrency(calculatedBalance) }}</span>
               </div>
             </div>
+
+            <!-- 미정산 선급금 차감 안내 -->
+            <div v-if="unsettledAdvanceBalance > 0" class="unsettled-advance-notice">
+              <div class="notice-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>미정산 선급금 잔액: {{ formatCurrency(unsettledAdvanceBalance) }}</span>
+              </div>
+              <p class="notice-text">
+                잔금 청구 시 미정산 선급금 잔액이 전액 차감됩니다.
+              </p>
+              <div class="notice-calculation">
+                <div class="notice-row">
+                  <span>잔금 계산액</span>
+                  <span>{{ formatCurrency(calculatedBalance) }}</span>
+                </div>
+                <div class="notice-row minus">
+                  <span>(-) 미정산 선급금</span>
+                  <span>- {{ formatCurrency(unsettledAdvanceBalance) }}</span>
+                </div>
+                <div class="notice-row result">
+                  <span>(=) 최종 입금 예정액</span>
+                  <span class="result-value">{{ formatCurrency(Math.max(0, calculatedBalance - unsettledAdvanceBalance)) }}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- 신청 폼 -->
@@ -199,9 +224,12 @@ import type { BalanceInfo, BalanceCalculationBasis, BalanceStatus } from '~/type
 interface Props {
   isOpen: boolean
   fundId: number
+  unsettledAdvanceBalance?: number // 미정산 선급금 잔액
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  unsettledAdvanceBalance: 0
+})
 
 // Emits
 const emit = defineEmits<{
@@ -252,6 +280,16 @@ const calculatedBalance = computed(() => {
   return calculationBasis.value === 'REQUESTED'
     ? balanceInfo.value.balanceByRequested
     : balanceInfo.value.balanceByPaid
+})
+
+// 미정산 선급금 잔액 (props에서 전달받거나 API 응답에서 가져옴)
+const unsettledAdvanceBalance = computed(() => {
+  // props에서 전달받은 값이 있으면 우선 사용
+  if (props.unsettledAdvanceBalance > 0) {
+    return props.unsettledAdvanceBalance
+  }
+  // API 응답에 포함된 경우
+  return (balanceInfo.value as any)?.unsettledAdvanceBalance || 0
 })
 
 // 금액 불일치 경고
@@ -662,6 +700,65 @@ watch(calculationBasis, () => {
 
 .calc-value.primary {
   color: #2563eb;
+}
+
+/* 미정산 선급금 차감 안내 */
+.unsettled-advance-notice {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+}
+
+.notice-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+}
+
+.notice-header i {
+  color: #d97706;
+}
+
+.notice-text {
+  font-size: 0.875rem;
+  color: #78350f;
+  margin: 0 0 0.75rem 0;
+}
+
+.notice-calculation {
+  background: white;
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.notice-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.notice-row.minus {
+  color: #dc2626;
+}
+
+.notice-row.result {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+  font-weight: 600;
+}
+
+.notice-row .result-value {
+  color: #1d4ed8;
+  font-size: 1rem;
 }
 
 /* 폼 섹션 */

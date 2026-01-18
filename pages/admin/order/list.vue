@@ -252,19 +252,19 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`
 }
 
-// 3개월 전 날짜 계산 (로컬 시간 기준)
-const getThreeMonthsAgo = () => {
+// 6개월 전 날짜 계산 (로컬 시간 기준)
+const getSixMonthsAgo = () => {
   const date = new Date()
-  date.setMonth(date.getMonth() - 3)
+  date.setMonth(date.getMonth() - 6)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
-// 검색 폼 데이터 (납품요구일자 기본값: 최근 3개월)
+// 검색 폼 데이터 (납품요구일자 기본값: 최근 6개월)
 const searchForm = ref({
-  startDate: getThreeMonthsAgo(),
+  startDate: getSixMonthsAgo(),
   endDate: getTodayDate(),
   client: '',
   keyword: '',
@@ -313,7 +313,7 @@ const handleSearch = () => {
 // 검색 초기화
 const handleReset = () => {
   searchForm.value = {
-    startDate: getThreeMonthsAgo(),
+    startDate: getSixMonthsAgo(),
     endDate: getTodayDate(),
     client: '',
     keyword: '',

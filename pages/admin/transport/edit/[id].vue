@@ -48,10 +48,10 @@
             <span>출하 정보</span>
           </div>
           <div class="info-grid grid-2">
-            <FormField label="출하ID" required>
+            <FormField label="출하NO" required>
               <input
                 type="text"
-                v-model="formData.shipmentId"
+                v-model="formData.shipmentNo"
                 class="form-input-md"
                 readonly
                 disabled
@@ -200,6 +200,9 @@
                   class="form-input-sm"
                   placeholder="우편번호"
                   readonly
+                  :disabled="!isSavableStatus"
+                  @click="isSavableStatus && searchAddress()"
+                  :style="isSavableStatus ? 'cursor: pointer;' : ''"
                 >
                 <button type="button" class="btn-search" @click="searchAddress" :disabled="!isSavableStatus">
                   <i class="fas fa-search"></i>
@@ -221,8 +224,11 @@
                 type="text"
                 v-model="formData.deliveryAddress"
                 class="form-input-xl"
-                placeholder="배송지 주소"
+                placeholder="배송지 주소를 검색하세요"
                 readonly
+                :disabled="!isSavableStatus"
+                @click="isSavableStatus && searchAddress()"
+                :style="isSavableStatus ? 'cursor: pointer;' : ''"
               >
             </FormField>
             <FormField label="상세주소" full-width>
@@ -297,6 +303,7 @@
                 auto-apply
                 :teleport="true"
                 :disabled="!isSavableStatus"
+                :clearable="false"
               />
             </FormField>
             <FormField label="도착 예정 시각">
@@ -311,6 +318,7 @@
                 auto-apply
                 :teleport="true"
                 :disabled="!isSavableStatus"
+                :clearable="false"
               />
             </FormField>
             <FormField label="운송장번호" full-width>
@@ -370,6 +378,7 @@ import { useCommonStatus } from '~/composables/useCommonStatus'
 import { usePermission } from '~/composables/usePermission'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { formatPhoneNumberInput, formatPhoneNumber } from '~/utils/format'
+import { validatePhoneNumber } from '~/utils/validate'
 
 
 definePageMeta({
@@ -406,6 +415,7 @@ const selectedReceiverId = ref<number | 'direct'>('direct')    // 현장 인수�
 const formData = ref({
   transportId: 0,
   shipmentId: '',
+  shipmentNo: '',
   orderId: 0,
   deliveryRequestNo: '',
   projectName: '',
@@ -438,13 +448,24 @@ const handleDriverPhoneInput = (event: Event) => {
   formData.value.driverPhone = formatPhoneNumberInput(input.value)
 }
 
+// 주소 검색 팝업 열림 상태
+const isAddressPopupOpen = ref(false)
+
 // 주소 검색
 const searchAddress = () => {
+  // 이미 팝업이 열려있으면 무시
+  if (isAddressPopupOpen.value) return
+
+  isAddressPopupOpen.value = true
   new window.daum.Postcode({
     oncomplete: (data: any) => {
       formData.value.zipcode = data.zonecode
       formData.value.deliveryAddress = data.address
       formData.value.addressDetail = ''
+      isAddressPopupOpen.value = false
+    },
+    onclose: () => {
+      isAddressPopupOpen.value = false
     }
   }).open()
 }
@@ -511,6 +532,7 @@ onMounted(async () => {
     formData.value = {
       transportId: transportDetail.transportId,
       shipmentId: transportDetail.shipmentId?.toString() || '',
+      shipmentNo: transportDetail.shipmentNo || shipmentDetail?.shipmentNo || '',
       orderId: transportDetail.orderId || 0,
       deliveryRequestNo: shipmentDetail?.deliveryRequestNo || transportDetail.deliveryRequestNo || '',
       projectName: shipmentDetail?.projectName || '',
@@ -593,6 +615,18 @@ const saveTransport = async () => {
 
     if (!formData.value.driverPhone) {
       alert('기사 연락처를 입력해주세요.')
+      return
+    }
+
+    // 기사 연락처 형식 검증
+    if (!validatePhoneNumber(formData.value.driverPhone)) {
+      alert('기사 연락처는 10자리 또는 11자리 숫자로 입력해주세요.')
+      return
+    }
+
+    // 인수자 연락처 형식 검증 (입력된 경우에만)
+    if (formData.value.receiverPhone && !validatePhoneNumber(formData.value.receiverPhone)) {
+      alert('인수자 연락처는 10자리 또는 11자리 숫자로 입력해주세요.')
       return
     }
 

@@ -76,21 +76,12 @@
                   <i class="fas fa-truck"></i>
                   <span>출하 정보</span>
                 </div>
-                <div class="info-grid grid-5">
+                <div class="info-grid grid-4">
                   <FormField label="출하일자" required :error="errors.shippingDate">
                     <input
                       type="date"
                       v-model="formData.shippingDate"
                       class="form-input-sm text-center"
-                    >
-                  </FormField>
-
-                  <FormField label="운송장번호" :error="errors.trackingNumber">
-                    <input
-                      type="text"
-                      v-model="formData.trackingNumber"
-                      class="form-input-md text-center"
-                      placeholder="운송장번호"
                     >
                   </FormField>
 
@@ -354,7 +345,6 @@ const {
     projectName: '',
     clientManagerName: '',
     shippingDate: new Date().toISOString().split('T')[0],
-    trackingNumber: '',
     status: 'PENDING'
   },
   onCreateSuccess: () => {
@@ -375,7 +365,6 @@ const { errors, validateField, validateAll, rules } = useFormValidation({
   deliveryRequestNo: '',
   client: '',
   shippingDate: '',
-  trackingNumber: '',
   status: ''
 })
 
@@ -533,6 +522,16 @@ const handleSubmit = async () => {
 /* Page-specific: Shipping register page wrapper */
 .shipping-register {
   padding: 0;
+}
+
+/* Page-specific: info-group-header 중앙정렬 */
+.info-group-header {
+  justify-content: center;
+}
+
+/* Page-specific: items-section-header 중앙정렬 */
+.items-section-header {
+  justify-content: center;
 }
 
 /* Page-specific: Total quantity display (blue highlight) */

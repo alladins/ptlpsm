@@ -13,7 +13,7 @@
  * - Download Usage Agreement PDF: GET /admin/advance-payments/{advancePaymentId}/pdf/usage-agreement
  * - Download Usage Pledge PDF: GET /admin/advance-payments/{advancePaymentId}/pdf/usage-pledge
  * - Download Settlement PDF: GET /admin/advance-payments/{advancePaymentId}/pdf/settlement
- * - Download All PDFs (ZIP): POST /admin/advance-payments/{advancePaymentId}/pdf/download-all
+ * - Download All PDFs (ZIP): GET /admin/advance-payments/{advancePaymentId}/pdf/download-all
  */
 
 import { getApiBaseUrl } from '../config'
@@ -93,7 +93,7 @@ export const ADVANCE_PAYMENT_ENDPOINTS = {
   /**
    * 전체 PDF ZIP 다운로드
    * @param advancePaymentId - 선급금 ID
-   * @returns POST /admin/advance-payments/{advancePaymentId}/pdf/download-all
+   * @returns GET /admin/advance-payments/{advancePaymentId}/pdf/download-all
    */
   downloadAllPdf: (advancePaymentId: number) => {
     const baseUrl = getApiBaseUrl()

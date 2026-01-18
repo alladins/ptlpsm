@@ -40,7 +40,58 @@
 
           <!-- Modal Body -->
           <div class="ccm-modal-body">
-            <!-- 기성금 연결 정보 (등록 모드에서만) -->
+            <!-- 기성금 다중 선택 (등록 모드에서만, linkedPayment가 없을 때) -->
+            <div v-if="!isCompleteMode && !linkedPayment && progressPayments.length > 0" class="ccm-form-group">
+              <label class="ccm-form-label">
+                <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                  <rect x="9" y="3" width="6" height="4" rx="1"/>
+                  <path d="M9 12l2 2 4-4"/>
+                </svg>
+                기준 기성금 선택
+                <span class="ccm-optional-tag">복수 선택</span>
+              </label>
+              <div class="oem-payment-selector">
+                <div
+                  v-for="payment in progressPayments"
+                  :key="payment.requestId || payment.paymentId"
+                  class="oem-payment-card"
+                  :class="{ 'selected': selectedPaymentIds.includes(payment.requestId || payment.paymentId || 0) }"
+                  @click="togglePaymentSelection(payment.requestId || payment.paymentId || 0)"
+                >
+                  <div class="oem-payment-checkbox">
+                    <input
+                      type="checkbox"
+                      :checked="selectedPaymentIds.includes(payment.requestId || payment.paymentId || 0)"
+                      :disabled="isSubmitting"
+                      @click.stop
+                      @change="togglePaymentSelection(payment.requestId || payment.paymentId || 0)"
+                    />
+                  </div>
+                  <div class="oem-payment-info">
+                    <span class="oem-payment-seq">{{ payment.paymentSeq }}차 기성금</span>
+                    <span class="oem-payment-amount">{{ formatCurrency(payment.requestAmount || payment.amount) }}</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 선택 합계 표시 -->
+              <Transition name="fade-slide">
+                <div v-if="baseAmountForPercent > 0" class="oem-selected-summary">
+                  <div class="oem-summary-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 12l2 2 4-4"/>
+                      <circle cx="12" cy="12" r="10"/>
+                    </svg>
+                  </div>
+                  <div class="oem-summary-content">
+                    <span class="oem-summary-label">선택 합계 ({{ selectedPaymentIds.length }}건)</span>
+                    <span class="oem-summary-value">{{ formatCurrency(baseAmountForPercent) }}</span>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+
+            <!-- linkedPayment로 전달된 경우 정보 표시 -->
             <div v-if="!isCompleteMode && linkedPayment" class="ccm-linked-card">
               <div class="ccm-card-header">
                 <i class="fas fa-link"></i>
@@ -49,7 +100,7 @@
               <div class="ccm-card-content">
                 <div class="ccm-info-item">
                   <span class="ccm-label">{{ linkedPayment.paymentSeq }}차 기성금</span>
-                  <span class="ccm-value">{{ formatCurrency(linkedPayment.requestAmount) }}</span>
+                  <span class="ccm-value">{{ formatCurrency(linkedPayment.requestAmount || linkedPayment.amount) }}</span>
                 </div>
                 <div class="ccm-info-item">
                   <span class="ccm-label">OEM 지급 예정 (70%)</span>
@@ -102,16 +153,49 @@
                   />
                   <span class="ccm-input-suffix">원</span>
                 </div>
-                <div v-if="!isCompleteMode && suggestedOemAmount > 0" class="ccm-amount-actions">
-                  <button
-                    type="button"
-                    class="ccm-amount-preset-btn ccm-orange"
-                    @click="setSuggestedAmount"
-                    :disabled="isSubmitting"
-                  >
-                    70% 자동 입력
-                  </button>
-                </div>
+                <Transition name="fade-slide">
+                  <div v-if="!isCompleteMode && baseAmountForPercent > 0" class="oem-percent-buttons">
+                    <span class="oem-percent-label">비율 선택</span>
+                    <div class="oem-percent-group">
+                      <button
+                        type="button"
+                        class="oem-percent-btn"
+                        @click="setPercentAmount(10)"
+                        :disabled="isSubmitting"
+                      >
+                        <span class="oem-percent-value">10%</span>
+                        <span class="oem-percent-amount">{{ formatCurrencyShort(baseAmountForPercent * 0.1) }}</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="oem-percent-btn"
+                        @click="setPercentAmount(30)"
+                        :disabled="isSubmitting"
+                      >
+                        <span class="oem-percent-value">30%</span>
+                        <span class="oem-percent-amount">{{ formatCurrencyShort(baseAmountForPercent * 0.3) }}</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="oem-percent-btn"
+                        @click="setPercentAmount(61)"
+                        :disabled="isSubmitting"
+                      >
+                        <span class="oem-percent-value">61%</span>
+                        <span class="oem-percent-amount">{{ formatCurrencyShort(baseAmountForPercent * 0.61) }}</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="oem-percent-btn"
+                        @click="setPercentAmount(64)"
+                        :disabled="isSubmitting"
+                      >
+                        <span class="oem-percent-value">64%</span>
+                        <span class="oem-percent-amount">{{ formatCurrencyShort(baseAmountForPercent * 0.64) }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </Transition>
                 <div v-if="isCompleteMode && existingPayment" class="ccm-amount-actions">
                   <button
                     type="button"
@@ -256,12 +340,15 @@ interface Props {
   linkedPayment?: ProgressPaymentRequest | null
   /** OEM 지급률 (기본 70%) */
   oemPaymentRate?: number
+  /** 수금 완료된 기성금 목록 (OEM 지급 대상) */
+  progressPayments?: ProgressPaymentRequest[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   existingPayment: null,
   linkedPayment: null,
-  oemPaymentRate: 70
+  oemPaymentRate: 70,
+  progressPayments: () => []
 })
 
 // Emits
@@ -290,6 +377,7 @@ const isSubmitting = ref(false)
 const isSuccess = ref(false)
 const displayAmount = ref('')
 const isAmountFocused = ref(false)
+const selectedPaymentIds = ref<number[]>([])
 
 const formData = reactive({
   paymentDate: new Date().toISOString().split('T')[0],
@@ -304,10 +392,24 @@ const errors = reactive<FormErrors>({})
 // Computed
 const isCompleteMode = computed(() => !!props.existingPayment)
 
+// 선택된 기성금들 (다중 선택)
+const selectedProgressPayments = computed(() => {
+  if (props.linkedPayment) return [props.linkedPayment]
+  return props.progressPayments?.filter(p =>
+    selectedPaymentIds.value.includes(p.requestId || p.paymentId || 0)
+  ) || []
+})
+
+// 비율 계산 기준 금액 (선택된 기성금들의 합계)
+const baseAmountForPercent = computed(() => {
+  return selectedProgressPayments.value.reduce(
+    (sum, p) => sum + (p.requestAmount || p.amount || 0), 0
+  )
+})
+
 const suggestedOemAmount = computed(() => {
-  if (!props.linkedPayment) return 0
-  const baseAmount = props.linkedPayment.requestAmount || props.linkedPayment.amount || 0
-  return Math.floor((baseAmount * props.oemPaymentRate) / 100)
+  if (baseAmountForPercent.value <= 0) return 0
+  return Math.floor((baseAmountForPercent.value * props.oemPaymentRate) / 100)
 })
 
 const isFormValid = computed(() => {
@@ -318,6 +420,19 @@ const isFormValid = computed(() => {
 const formatCurrency = (value: number | undefined): string => {
   if (!value) return '0원'
   return new Intl.NumberFormat('ko-KR').format(value) + '원'
+}
+
+// 축약형 금액 포맷 (비율 버튼용)
+const formatCurrencyShort = (value: number | undefined): string => {
+  if (!value) return '0'
+  const rounded = Math.floor(value)
+  if (rounded >= 100000000) {
+    return (rounded / 100000000).toFixed(1).replace(/\.0$/, '') + '억'
+  }
+  if (rounded >= 10000) {
+    return (rounded / 10000).toFixed(0) + '만'
+  }
+  return new Intl.NumberFormat('ko-KR').format(rounded)
 }
 
 const formatNumberInput = (value: string): string => {
@@ -356,10 +471,29 @@ const setSuggestedAmount = () => {
   displayAmount.value = formatNumberInput(suggestedOemAmount.value.toString())
 }
 
+// 비율에 따른 금액 설정 (10%, 30%, 61%, 64%)
+const setPercentAmount = (percent: number) => {
+  if (baseAmountForPercent.value <= 0) return
+  const calculatedAmount = Math.floor((baseAmountForPercent.value * percent) / 100)
+  formData.amount = calculatedAmount
+  displayAmount.value = formatNumberInput(calculatedAmount.toString())
+}
+
 const setScheduledAmount = () => {
   if (props.existingPayment) {
     formData.amount = props.existingPayment.scheduledAmount
     displayAmount.value = formatNumberInput(props.existingPayment.scheduledAmount.toString())
+  }
+}
+
+// 기성금 선택 토글
+const togglePaymentSelection = (paymentId: number) => {
+  if (isSubmitting.value) return
+  const index = selectedPaymentIds.value.indexOf(paymentId)
+  if (index > -1) {
+    selectedPaymentIds.value.splice(index, 1)
+  } else {
+    selectedPaymentIds.value.push(paymentId)
   }
 }
 
@@ -434,6 +568,7 @@ const resetForm = () => {
   isSuccess.value = false
   errors.amount = undefined
   errors.paymentDate = undefined
+  selectedPaymentIds.value = []
 }
 
 // Watch for modal open to reset/initialize form
@@ -460,5 +595,208 @@ watch(() => props.isOpen, (newVal) => {
 <style scoped>
 @import '@/assets/css/admin-modals.css';
 
-/* 컴포넌트 전용 스타일은 필요 없음 - 모두 공통 CSS로 처리됨 */
+/* 모달 바디 스크롤 */
+.ccm-modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* ===== 기성금 선택 카드 ===== */
+.oem-payment-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.oem-payment-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oem-payment-card:hover {
+  border-color: #fdba74;
+  background: #fffbf7;
+}
+
+.oem-payment-card.selected {
+  border-color: #f97316;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.15);
+}
+
+.oem-payment-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oem-payment-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #f97316;
+  border-radius: 4px;
+}
+
+.oem-payment-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.oem-payment-seq {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.oem-payment-card.selected .oem-payment-seq {
+  color: #c2410c;
+}
+
+.oem-payment-amount {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.oem-payment-card.selected .oem-payment-amount {
+  color: #ea580c;
+}
+
+/* ===== 선택 합계 요약 ===== */
+.oem-selected-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+}
+
+.oem-summary-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+
+.oem-summary-icon svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.oem-summary-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.oem-summary-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.oem-summary-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ===== 비율 버튼 그룹 ===== */
+.oem-percent-buttons {
+  margin-top: 0.75rem;
+  padding: 0.875rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.oem-percent-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.625rem;
+}
+
+.oem-percent-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.oem-percent-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 0.5rem;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oem-percent-btn:hover:not(:disabled) {
+  border-color: #f97316;
+  background: #fff7ed;
+  transform: translateY(-1px);
+}
+
+.oem-percent-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.oem-percent-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.oem-percent-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f97316;
+}
+
+.oem-percent-amount {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-top: 0.125rem;
+}
+
+/* ===== 트랜지션 ===== */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
 </style>

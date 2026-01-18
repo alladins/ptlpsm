@@ -187,14 +187,14 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>납품요구번호</th>
-                <th>현장명</th>
-                <th>계약금액</th>
-                <th>수금액</th>
-                <th>미수금</th>
-                <th>수금률</th>
-                <th>OEM 지급</th>
-                <th>수익</th>
+                <th class="col-delivery-no">납품요구번호</th>
+                <th class="col-project-name">현장명</th>
+                <th class="col-amount">계약금액</th>
+                <th class="col-amount">수금액</th>
+                <th class="col-amount">미수금</th>
+                <th class="col-rate">수금률</th>
+                <th class="col-amount">OEM 지급</th>
+                <th class="col-amount">수익</th>
               </tr>
             </thead>
             <tbody>
@@ -202,23 +202,25 @@
                 <td colspan="8" class="no-data">자금 데이터가 없습니다.</td>
               </tr>
               <tr v-else v-for="fund in statistics.fundDetails" :key="fund.fundId">
-                <td>
+                <td class="col-delivery-no">
                   <a href="#" @click.prevent="goToFundDetail(fund.fundId)" class="link">
                     {{ fund.deliveryRequestNo }}
                   </a>
                 </td>
-                <td>{{ fund.projectName }}</td>
-                <td class="text-right">{{ formatCurrency(fund.totalContractAmount) }}</td>
-                <td class="text-right text-success">{{ formatCurrency(fund.collected) }}</td>
-                <td class="text-right text-danger">{{ formatCurrency(fund.uncollected) }}</td>
-                <td class="text-center">
+                <td class="col-project-name text-left" :title="fund.projectName">
+                  {{ fund.projectName }}
+                </td>
+                <td class="col-amount text-right">{{ formatCurrency(fund.totalContractAmount) }}</td>
+                <td class="col-amount text-right text-success">{{ formatCurrency(fund.collected) }}</td>
+                <td class="col-amount text-right text-danger">{{ formatCurrency(fund.uncollected) }}</td>
+                <td class="col-rate text-center">
                   <div class="mini-progress">
                     <div class="mini-progress-bar" :style="{ width: fund.collectionRate + '%' }"></div>
                   </div>
                   <span class="progress-text">{{ fund.collectionRate?.toFixed(1) || 0 }}%</span>
                 </td>
-                <td class="text-right">{{ formatCurrency(fund.oemPaid) }}</td>
-                <td class="text-right" :class="(fund.profit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
+                <td class="col-amount text-right">{{ formatCurrency(fund.oemPaid) }}</td>
+                <td class="col-amount text-right" :class="(fund.profit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
                   {{ formatCurrency(fund.profit ?? 0) }}
                 </td>
               </tr>
@@ -226,12 +228,12 @@
             <tfoot v-if="statistics.fundDetails && statistics.fundDetails.length > 0">
               <tr>
                 <td colspan="2" class="text-right"><strong>합계</strong></td>
-                <td class="text-right"><strong>{{ formatCurrency(statistics.totalContractAmount) }}</strong></td>
-                <td class="text-right text-success"><strong>{{ formatCurrency(statistics.totalCollected) }}</strong></td>
-                <td class="text-right text-danger"><strong>{{ formatCurrency(statistics.totalOutstanding) }}</strong></td>
-                <td class="text-center"><strong>{{ getCollectionRate() }}%</strong></td>
-                <td class="text-right"><strong>{{ formatCurrency(statistics.totalOemPaid) }}</strong></td>
-                <td class="text-right" :class="(statistics.currentProfit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
+                <td class="col-amount text-right"><strong>{{ formatCurrency(statistics.totalContractAmount) }}</strong></td>
+                <td class="col-amount text-right text-success"><strong>{{ formatCurrency(statistics.totalCollected) }}</strong></td>
+                <td class="col-amount text-right text-danger"><strong>{{ formatCurrency(statistics.totalOutstanding) }}</strong></td>
+                <td class="col-rate text-center"><strong>{{ getCollectionRate() }}%</strong></td>
+                <td class="col-amount text-right"><strong>{{ formatCurrency(statistics.totalOemPaid) }}</strong></td>
+                <td class="col-amount text-right" :class="(statistics.currentProfit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
                   <strong>{{ formatCurrency(statistics.currentProfit ?? 0) }}</strong>
                 </td>
               </tr>
@@ -816,6 +818,38 @@ onMounted(() => {
 .progress-text {
   font-size: 0.75rem;
   color: #6b7280;
+}
+
+/* 테이블 컬럼 폭 설정 */
+.col-delivery-no {
+  width: 150px;
+  min-width: 150px;
+  white-space: nowrap;
+}
+
+.col-project-name {
+  width: auto;
+  min-width: 200px;
+  max-width: 350px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-amount {
+  width: 110px;
+  min-width: 110px;
+  white-space: nowrap;
+}
+
+.col-rate {
+  width: 100px;
+  min-width: 100px;
+  white-space: nowrap;
+}
+
+.data-table td.text-left {
+  text-align: left;
 }
 
 /* 반응형 */

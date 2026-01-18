@@ -25,6 +25,7 @@ export interface TransportSearchParams {
 export interface TransportDetail {
   transportId: number
   shipmentId: number
+  shipmentNo: string              // 출하NO (표시용)
   orderId: number
   deliveryRequestNo: string
   zipcode: string
