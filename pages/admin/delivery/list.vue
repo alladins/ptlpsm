@@ -10,15 +10,6 @@
           <i class="fas fa-search"></i>
           검색
         </button>
-        <button
-          class="btn-action btn-primary"
-          @click="goToRegister"
-          :disabled="!canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : ''"
-        >
-          <i class="fas fa-plus"></i>
-          등록
-        </button>
       </template>
     </PageHeader>
 
@@ -115,7 +106,6 @@ import { useRouter, useRoute } from '#imports'
 import { deliveryService } from '~/services/delivery.service'
 import { useDataTable } from '~/composables/useDataTable'
 import { useCommonStatus } from '~/composables/useCommonStatus'
-import { usePermission } from '~/composables/usePermission'
 import type { OrderTreeNode } from '~/types/delivery'
 
 definePageMeta({
@@ -125,9 +115,6 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
-
-// 권한
-const { canWrite } = usePermission()
 
 // 상태 관리 (DB 기반)
 const { statusOptions } = useCommonStatus()
@@ -205,14 +192,6 @@ const handleReset = () => {
     status: ''
   }
   reset()
-}
-
-// 등록 페이지로 이동 (현재 페이지 번호를 쿼리로 전달)
-const goToRegister = () => {
-  router.push({
-    path: '/admin/delivery/register',
-    query: { returnPage: String(currentPage.value) }
-  })
 }
 
 // 페이지 변경

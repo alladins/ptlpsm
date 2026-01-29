@@ -116,5 +116,55 @@ export const SHIPMENT_ENDPOINTS = {
   getPreviousReceipts: (shipmentId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/shipments/${shipmentId}/previous-receipts`
+  },
+
+  // ========================================
+  // 변경 이력 되돌리기 API
+  // ========================================
+
+  /**
+   * 개별 이력 되돌리기
+   * @param shipmentId - 출하 ID
+   * @param historyId - 이력 ID
+   * @returns POST /admin/shipments/{shipmentId}/quantity-history/{historyId}/revert
+   */
+  revertChangeHistory: (shipmentId: number, historyId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/shipments/${shipmentId}/quantity-history/${historyId}/revert`
+  },
+
+  /**
+   * 그룹 전체 이력 되돌리기
+   * @param shipmentId - 출하 ID
+   * @returns POST /admin/shipments/{shipmentId}/quantity-history/revert-group
+   */
+  revertChangeHistoryGroup: (shipmentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/shipments/${shipmentId}/quantity-history/revert-group`
+  },
+
+  // ========================================
+  // 발주서 PDF API (2026-01-26 추가)
+  // ========================================
+
+  /**
+   * 발주서 PDF 다운로드
+   * PDF가 없으면 자동 생성 후 다운로드
+   * @param shipmentId - 출하 ID
+   * @returns GET /admin/shipments/{shipmentId}/purchase-order-pdf
+   */
+  purchaseOrderPdf: (shipmentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/shipments/${shipmentId}/purchase-order-pdf`
+  },
+
+  /**
+   * 발주서 PDF 재생성
+   * @param shipmentId - 출하 ID
+   * @returns POST /admin/shipments/{shipmentId}/generate-purchase-order
+   */
+  generatePurchaseOrder: (shipmentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/shipments/${shipmentId}/generate-purchase-order`
   }
 } as const

@@ -152,6 +152,105 @@
                   </FormField>
                 </div>
               </div>
+
+              <!-- 4. OEM 제조사 정보 (신규) -->
+              <div class="info-group">
+                <div class="info-group-header">
+                  <i class="fas fa-industry"></i>
+                  <span>OEM 제조사</span>
+                </div>
+                <div class="info-grid grid-1">
+                  <FormField label="OEM 제조사" required :error="errors.oemCompanyId">
+                    <select
+                      v-model="formData.oemCompanyId"
+                      class="form-select"
+                      :disabled="loadingOemCompanies"
+                    >
+                      <option :value="null">{{ loadingOemCompanies ? '로딩 중...' : '선택하세요' }}</option>
+                      <option
+                        v-for="company in oemCompanies"
+                        :key="company.id"
+                        :value="company.id"
+                      >
+                        {{ company.companyName }}
+                      </option>
+                    </select>
+                  </FormField>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. 배송지 정보 - 발주서 생성 시 입력하므로 등록 시에는 숨김 -->
+          <div v-if="false" class="full-width-section">
+            <div class="info-group">
+              <div class="info-group-header">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>배송지 정보</span>
+                <span class="optional-badge">선택</span>
+              </div>
+              <div class="info-grid grid-5">
+                <FormField label="우편번호">
+                  <input
+                    type="text"
+                    v-model="formData.zipcode"
+                    class="form-input-sm text-center"
+                    placeholder="우편번호"
+                    maxlength="10"
+                  >
+                </FormField>
+                <FormField label="배송지 주소" class="col-span-2">
+                  <input
+                    type="text"
+                    v-model="formData.deliveryAddress"
+                    class="form-input-xl"
+                    placeholder="배송지 주소"
+                  >
+                </FormField>
+                <FormField label="상세주소" class="col-span-2">
+                  <input
+                    type="text"
+                    v-model="formData.addressDetail"
+                    class="form-input-xl"
+                    placeholder="상세주소"
+                  >
+                </FormField>
+              </div>
+              <div class="info-grid grid-4" style="margin-top: 0.5rem;">
+                <FormField label="현장담당자">
+                  <select
+                    v-model="formData.siteManagerId"
+                    class="form-select"
+                    :disabled="loadingSiteManagers"
+                  >
+                    <option :value="null">{{ loadingSiteManagers ? '로딩 중...' : '선택하세요' }}</option>
+                    <option
+                      v-for="manager in siteManagers"
+                      :key="manager.userid"
+                      :value="manager.userid"
+                    >
+                      {{ manager.userName }} ({{ manager.phone }})
+                      <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
+                    </option>
+                  </select>
+                </FormField>
+                <FormField label="현장 인수자">
+                  <input
+                    type="text"
+                    v-model="formData.receiverName"
+                    class="form-input-sm"
+                    placeholder="인수자명"
+                  >
+                </FormField>
+                <FormField label="인수자 연락처">
+                  <input
+                    type="text"
+                    v-model="formData.receiverPhone"
+                    class="form-input-sm"
+                    placeholder="010-0000-0000"
+                  >
+                </FormField>
+              </div>
             </div>
           </div>
         </FormSection>
@@ -159,8 +258,19 @@
         <FormSection style="margin-top: -20px">
           <div class="items-section-wrapper">
             <div class="items-section-header">
-              <i class="fas fa-box"></i>
-              <span>품목 정보</span>
+              <div class="header-left">
+                <i class="fas fa-box"></i>
+                <span>품목 정보</span>
+              </div>
+              <button
+                v-if="formData.orderId"
+                type="button"
+                class="btn-add-item"
+                @click="openSkuSelector"
+              >
+                <i class="fas fa-plus"></i>
+                품목 추가
+              </button>
             </div>
             <div class="items-table-wrapper">
               <table class="items-table">
@@ -178,14 +288,17 @@
                     <th style="width: 80px" class="quantity-col">출하수량</th>
                     <th style="width: 70px">단가</th>
                     <th style="width: 80px">금액</th>
+                    <th style="width: 120px">비고</th>
+                    <th style="width: 50px">삭제</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-if="selectedOrderItems.length === 0">
-                    <td colspan="12" class="empty-message">
+                  <tr v-if="selectedOrderItems.length === 0 && newItems.length === 0">
+                    <td colspan="14" class="empty-message">
                       납품요구번호를 선택하면 품목이 표시됩니다.
                     </td>
                   </tr>
+                  <!-- 기존 발주 품목 -->
                   <tr v-for="item in selectedOrderItems" :key="item.itemId">
                     <td>{{ item.itemId }}</td>
                     <td>{{ item.itemName }}</td>
@@ -217,15 +330,58 @@
                     </td>
                     <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
                     <td class="text-right">{{ formatCurrency(item.shippingQuantity * item.unitPrice) }}</td>
+                    <td class="remark-cell" :title="item.remark || ''">{{ item.remark || '-' }}</td>
+                    <td class="text-center">
+                      <span class="text-muted">-</span>
+                    </td>
+                  </tr>
+                  <!-- 신규 추가 품목 -->
+                  <tr v-for="item in newItems" :key="'new-' + item.skuId" class="new-item-row">
+                    <td class="text-center">
+                      <span class="badge-new">신규</span>
+                    </td>
+                    <td>{{ item.itemName }}</td>
+                    <td class="text-center">{{ item.skuId }}</td>
+                    <td>{{ item.skuName }}</td>
+                    <td class="specification-cell" :title="item.specification">{{ item.specification }}</td>
+                    <td class="text-center">{{ item.unit }}</td>
+                    <!-- 발주수량: 병합 시 수량 표시, 아니면 "-" -->
+                    <td class="text-right">{{ item.quantity ? formatQuantity(item.quantity) : '-' }}</td>
+                    <!-- 기출하 -->
+                    <td class="text-right">{{ item.shippedQuantity !== undefined ? formatQuantity(item.shippedQuantity) : '-' }}</td>
+                    <!-- 잔여수량 -->
+                    <td class="text-right">{{ item.remainingQuantity ? formatQuantity(item.remainingQuantity - item.shippingQuantity) : '-' }}</td>
+                    <td class="text-right quantity-col">
+                      <input
+                        type="number"
+                        v-model.number="item.shippingQuantity"
+                        :min="0"
+                        class="table-input text-right input-w75"
+                      />
+                    </td>
+                    <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
+                    <td class="text-right">{{ formatCurrency(item.shippingQuantity * item.unitPrice) }}</td>
+                    <td class="remark-cell" :title="item.remark || ''">{{ item.remark || '-' }}</td>
+                    <td class="text-center">
+                      <button
+                        type="button"
+                        class="btn-remove"
+                        @click="removeNewItem(item.skuId)"
+                        title="삭제"
+                      >
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
-                <tfoot v-if="selectedOrderItems.length > 0">
+                <tfoot v-if="selectedOrderItems.length > 0 || newItems.length > 0">
                   <tr>
                     <td colspan="7" class="text-right"></td>
                     <td colspan="2" class="text-right"><strong>총 출하수량</strong></td>
                     <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
                     <td class="text-right"><strong>총 금액</strong></td>
                     <td class="text-right"><strong>{{ formatCurrency(totalAmount) }}</strong></td>
+                    <td colspan="2"></td>
                   </tr>
                 </tfoot>
               </table>
@@ -243,15 +399,44 @@
       @close="closeOrderSelectPopup"
       @select="handleOrderSelect"
     />
+
+    <!-- SKU 선택 팝업 -->
+    <ItemSkuSelector
+      v-model="showSkuSelector"
+      @sku-selected="handleSkuSelected"
+    />
+
+    <!-- 품목 병합 모달 -->
+    <ItemMergeSelectModal
+      v-if="pendingNewItem"
+      :is-open="showMergeModal"
+      :new-item="pendingNewItem"
+      :existing-items="selectedOrderItems.map(item => ({
+        skuId: item.skuId,
+        skuName: item.skuName,
+        currentQuantity: item.shippingQuantity,
+        remainingQuantity: item.remainingQuantity
+      }))"
+      @close="handleMergeClose"
+      @confirm="handleMergeConfirm"
+      @skip="handleMergeSkip"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
+import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
+import ItemMergeSelectModal from '~/components/shipment/ItemMergeSelectModal.vue'
 import type { OrderDetailResponse } from '~/types/order'
+import type { CompanyInfoResponse } from '~/types/company'
+import type { UserByRole } from '~/types/user'
+import type { Item, ItemSku } from '~/services/item.service'
 import { shipmentService } from '~/services/shipment.service'
+import { companyService } from '~/services/company.service'
+import { userService } from '~/services/user.service'
 import { formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
@@ -268,6 +453,39 @@ const router = useRouter()
 
 // 권한
 const { canWrite } = usePermission()
+
+// OEM 제조사 목록
+const oemCompanies = ref<CompanyInfoResponse[]>([])
+const loadingOemCompanies = ref(false)
+
+// 현장담당자 목록
+const siteManagers = ref<UserByRole[]>([])
+const loadingSiteManagers = ref(false)
+
+// OEM 및 배송지/현장담당자 데이터 로드
+onMounted(async () => {
+  // OEM 제조사 목록 로드
+  loadingOemCompanies.value = true
+  try {
+    const companies = await companyService.getCompanies()
+    oemCompanies.value = companies
+  } catch (error) {
+    console.error('OEM 제조사 목록 로드 실패:', error)
+  } finally {
+    loadingOemCompanies.value = false
+  }
+
+  // 현장담당자 목록 로드
+  loadingSiteManagers.value = true
+  try {
+    const users = await userService.getUsersByRoles(['SITE_MANAGER'])
+    siteManagers.value = users
+  } catch (error) {
+    console.error('현장담당자 목록 로드 실패:', error)
+  } finally {
+    loadingSiteManagers.value = false
+  }
+})
 
 // 상태 관리 (등록 시에는 항상 '대기' 상태로 고정)
 
@@ -288,6 +506,7 @@ interface OrderItem {
   deliveryLocation?: string
   deliveryDeadline?: string
   deliveryTerms?: string
+  remark?: string  // 비고 (병합 사유)
   optionItemNumber?: string
   itemClassificationNumber?: string
   itemIdentificationNumber?: string
@@ -296,6 +515,194 @@ interface OrderItem {
   sortOrder?: number
   orderId: number
   orderItemId: string
+}
+
+// 신규 추가 품목 인터페이스
+interface NewItem {
+  skuId: string
+  itemId: string
+  itemName: string
+  skuName: string
+  specification: string
+  unit: string
+  unitPrice: number
+  shippingQuantity: number
+  isNew: true
+  remark?: string           // 비고 (병합 사유)
+  quantity?: number         // 병합 시 발주수량
+  shippedQuantity?: number  // 병합 시 기출하 (0)
+  remainingQuantity?: number // 병합 시 잔여수량
+  mergeSourceSkuIds?: string[] // 병합 출처 SKU ID 목록
+}
+
+// 신규 추가 품목 목록
+const newItems = ref<NewItem[]>([])
+
+// SKU 선택 팝업 표시 여부
+const showSkuSelector = ref(false)
+
+// 병합 모달 관련 상태
+const showMergeModal = ref(false)
+const pendingNewItem = ref<{
+  skuId: string
+  itemId: string
+  itemName: string
+  skuName: string
+  specification: string
+  unit: string
+  unitPrice: number
+} | null>(null)
+
+// SKU 선택 팝업 열기
+const openSkuSelector = () => {
+  showSkuSelector.value = true
+}
+
+// SKU 선택 완료 핸들러
+const handleSkuSelected = (item: Item, sku: ItemSku) => {
+  const skuIdStr = String(sku.skuId)
+
+  // 기존 발주 품목에 있는지 확인
+  const existsInOrder = selectedOrderItems.value.some(i => i.skuId === skuIdStr)
+  if (existsInOrder) {
+    alert('이미 발주 목록에 있는 품목입니다.')
+    return
+  }
+
+  // 신규 품목에 이미 추가되었는지 확인
+  const existsInNew = newItems.value.some(i => i.skuId === skuIdStr)
+  if (existsInNew) {
+    alert('이미 추가된 품목입니다.')
+    return
+  }
+
+  // 규격 문자열 생성
+  const specParts: string[] = []
+  if (item.itemNm) specParts.push(item.itemNm)
+  if (sku.skuNm) specParts.push(sku.skuNm)
+  if (sku.width) specParts.push(`${sku.width}mm`)
+  if (sku.height) specParts.push(`${sku.height}mm`)
+  if (sku.thickness) specParts.push(`${sku.thickness}T`)
+
+  // 기존 품목이 있으면 병합 모달 표시
+  if (selectedOrderItems.value.length > 0) {
+    pendingNewItem.value = {
+      skuId: skuIdStr,
+      itemId: item.itemId,
+      itemName: item.itemNm,
+      skuName: sku.skuNm || `${sku.thickness}T`,
+      specification: specParts.join(', '),
+      unit: 'm2',
+      unitPrice: sku.unitPrice || 0
+    }
+    showSkuSelector.value = false
+    showMergeModal.value = true
+  } else {
+    // 기존 품목 없으면 바로 추가
+    newItems.value.push({
+      skuId: skuIdStr,
+      itemId: item.itemId,
+      itemName: item.itemNm,
+      skuName: sku.skuNm || `${sku.thickness}T`,
+      specification: specParts.join(', '),
+      unit: 'm2',
+      unitPrice: sku.unitPrice || 0,
+      shippingQuantity: 0,
+      isNew: true
+    })
+    showSkuSelector.value = false
+  }
+}
+
+// 신규 품목 삭제
+const removeNewItem = (skuId: string) => {
+  const index = newItems.value.findIndex(item => item.skuId === skuId)
+  if (index !== -1) {
+    newItems.value.splice(index, 1)
+  }
+}
+
+// 병합 결과 인터페이스
+interface MergeResult {
+  newItem: {
+    skuId: string
+    itemId: string
+    itemName: string
+    skuName: string
+    specification: string
+    unit: string
+    unitPrice: number
+    shippingQuantity: number
+  }
+  deductions: { skuId: string; skuName: string; amount: number }[]
+}
+
+// 병합 확인 핸들러
+const handleMergeConfirm = (result: MergeResult) => {
+  // 1. 신규 품목 추가 (발주수량 = 입력한 병합 수량)
+  const deductionSkuIds = result.deductions.map(d => d.skuId)
+  const deductionSkuNames = result.deductions.map(d => d.skuName).join(', ')
+  const mergeQuantity = result.newItem.shippingQuantity  // 입력한 병합 수량
+  newItems.value.push({
+    ...result.newItem,
+    isNew: true,
+    quantity: mergeQuantity,         // 발주수량 = 병합 수량
+    shippedQuantity: 0,              // 기출하 = 0
+    remainingQuantity: mergeQuantity, // 잔여수량 = 병합 수량
+    remark: `병합: ${deductionSkuNames}에서 이전`,
+    mergeSourceSkuIds: deductionSkuIds // 병합 출처 SKU ID 목록
+  })
+
+  // 2. 기존 품목의 발주수량(quantity) 감소 + 출하수량 조정 (인덱스 기반 업데이트로 반응성 보장)
+  result.deductions.forEach(deduction => {
+    const index = selectedOrderItems.value.findIndex(i => i.skuId === deduction.skuId)
+    if (index !== -1) {
+      const item = selectedOrderItems.value[index]
+
+      // 새 발주수량
+      const newQuantity = item.quantity - deduction.amount
+      // 새 잔여수량
+      const newRemainingQuantity = item.remainingQuantity - deduction.amount
+      // 출하수량 조정: 발주수량 - 기출하를 초과할 수 없음
+      const maxShippingQuantity = newQuantity - item.shippedQuantity
+      const newShippingQuantity = Math.min(item.shippingQuantity, Math.max(0, maxShippingQuantity))
+
+      // 새 객체로 교체하여 반응성 트리거
+      selectedOrderItems.value[index] = {
+        ...item,
+        // 발주수량 감소 (핵심!)
+        quantity: newQuantity,
+        // 잔여수량도 함께 감소
+        remainingQuantity: newRemainingQuantity,
+        // 출하수량 조정 (발주수량 초과 방지)
+        shippingQuantity: newShippingQuantity,
+        // 기출하는 건드리지 않음!
+        remark: `병합: ${result.newItem.skuName}로 ${deduction.amount} 이전`
+      }
+    }
+  })
+
+  showMergeModal.value = false
+  pendingNewItem.value = null
+}
+
+// 병합 없이 추가
+const handleMergeSkip = () => {
+  if (pendingNewItem.value) {
+    newItems.value.push({
+      ...pendingNewItem.value,
+      shippingQuantity: 0,
+      isNew: true
+    })
+  }
+  showMergeModal.value = false
+  pendingNewItem.value = null
+}
+
+// 병합 모달 닫기
+const handleMergeClose = () => {
+  showMergeModal.value = false
+  pendingNewItem.value = null
 }
 
 // useRegisterForm 사용
@@ -307,20 +714,10 @@ const {
   reset
 } = useRegisterForm<any, any, any>({
   createFunction: async (data) => {
-    // 출하수량이 있는 품목 필터링
-    const shippingItems = selectedOrderItems.value.filter(item => item.shippingQuantity > 0)
-
-    if (shippingItems.length === 0) {
-      throw new Error('출하할 품목이 없습니다. 출하수량을 입력해주세요.')
-    }
-
-    // 출하 정보 저장
-    const shipmentData = {
-      orderId: shippingItems[0].orderId,
-      deliveryRequestNo: data.deliveryRequestNo,
-      shipmentDate: data.shippingDate,
-      status: data.status,
-      items: shippingItems.map(item => ({
+    // 기존 품목 중 출하수량이 있거나 병합 비고가 있는 것 (수량 0도 포함)
+    const existingItems = selectedOrderItems.value
+      .filter(item => item.shippingQuantity > 0 || item.remark)
+      .map(item => ({
         skuId: item.skuId,
         itemId: item.itemId,
         skuName: item.skuName,
@@ -330,14 +727,57 @@ const {
         unitPrice: item.unitPrice,
         amount: item.shippingQuantity * item.unitPrice,
         orderId: item.orderId,
-        orderItemId: item.orderItemId
+        orderItemId: item.orderItemId,
+        isNew: false,
+        remark: item.remark || null
       }))
+
+    // 신규 품목 중 출하수량이 있는 것
+    const newShippingItems = newItems.value
+      .filter(item => item.shippingQuantity > 0)
+      .map(item => ({
+        skuId: item.skuId,
+        itemId: item.itemId,
+        skuName: item.skuName,
+        specification: item.specification,
+        unit: item.unit,
+        shipmentQuantity: item.shippingQuantity,
+        unitPrice: item.unitPrice,
+        amount: item.shippingQuantity * item.unitPrice,
+        isNew: true,
+        remark: item.remark || null,
+        // 병합 출처 SKU ID 목록 (병합된 품목인 경우에만)
+        mergeSourceSkuIds: item.mergeSourceSkuIds || null
+      }))
+
+    const allItems = [...existingItems, ...newShippingItems]
+
+    if (allItems.length === 0) {
+      throw new Error('출하할 품목이 없습니다. 출하수량을 입력해주세요.')
+    }
+
+    // 출하 정보 저장
+    const shipmentData = {
+      orderId: existingItems.length > 0 ? existingItems[0].orderId : data.orderId,
+      deliveryRequestNo: data.deliveryRequestNo,
+      shipmentDate: data.shippingDate,
+      status: data.status,
+      // OEM 및 배송지 정보 (신규)
+      oemCompanyId: data.oemCompanyId,
+      siteManagerId: data.siteManagerId || null,
+      zipcode: data.zipcode || null,
+      deliveryAddress: data.deliveryAddress || null,
+      addressDetail: data.addressDetail || null,
+      receiverName: data.receiverName || null,
+      receiverPhone: data.receiverPhone || null,
+      items: allItems
     }
 
     return await shipmentService.createShipment(shipmentData)
   },
   successRoute: '/admin/shipping/list',
   defaultValues: {
+    orderId: null as number | null,  // 품목 추가 버튼 표시 조건
     deliveryRequestNo: '',
     deliveryRequestDate: '',
     client: '',
@@ -345,7 +785,15 @@ const {
     projectName: '',
     clientManagerName: '',
     shippingDate: new Date().toISOString().split('T')[0],
-    status: 'PENDING'
+    status: 'PENDING',
+    // OEM 및 배송지 정보 (신규)
+    oemCompanyId: null as number | null,
+    siteManagerId: null as number | null,
+    zipcode: '',
+    deliveryAddress: '',
+    addressDetail: '',
+    receiverName: '',
+    receiverPhone: ''
   },
   onCreateSuccess: () => {
     alert('출하 정보가 저장되었습니다.')
@@ -365,7 +813,8 @@ const { errors, validateField, validateAll, rules } = useFormValidation({
   deliveryRequestNo: '',
   client: '',
   shippingDate: '',
-  status: ''
+  status: '',
+  oemCompanyId: ''
 })
 
 // 선택된 발주의 품목 목록
@@ -388,6 +837,7 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
 
   try {
     // 폼 데이터 업데이트
+    formData.orderId = order.orderId  // 품목 추가 버튼 표시 조건
     formData.deliveryRequestNo = order.deliveryRequestNo
     formData.deliveryRequestDate = order.deliveryRequestDate || ''
     formData.client = order.client
@@ -407,6 +857,9 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
         // 백엔드에서 계산된 잔여수량 사용 (부동소수점 오차 없음)
         const remainingQuantity = statusItem?.remainingQuantity || 0
         const shippedQuantity = statusItem?.totalShippedQuantity || 0
+        // 추가변경 반영: shipmentStatus의 orderQuantity 우선 사용 (delivery_done 테이블 기준)
+        const orderQuantity = statusItem?.orderQuantity || item.quantity
+        const unitPrice = typeof item.unitPrice === 'string' ? parseFloat(item.unitPrice) : item.unitPrice
 
         return {
           itemId: item.itemId,
@@ -415,12 +868,12 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
           skuName: item.skuNm || item.skuName || '',
           specification: item.specification,
           unit: item.unit || item.unitCd,
-          quantity: item.quantity,
+          quantity: orderQuantity,
           shippingQuantity: 0,
           remainingQuantity,
           shippedQuantity,
-          unitPrice: typeof item.unitPrice === 'string' ? parseFloat(item.unitPrice) : item.unitPrice,
-          amount: item.quantity * (typeof item.unitPrice === 'string' ? parseFloat(item.unitPrice) : item.unitPrice),
+          unitPrice,
+          amount: orderQuantity * unitPrice,
           deliveryLocation: item.deliveryLocation,
           deliveryDeadline: item.deliveryDeadline,
           deliveryTerms: item.deliveryTerms,
@@ -451,7 +904,7 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
 }
 
 // 실시간 잔여수량 계산 (발주수량 - 기출하 - 현재 입력된 출하수량)
-// 사용자가 출하수량을 입력하면 실시간으로 남은 수량 표시
+// 병합 시 quantity가 감소되므로 자동으로 잔여수량도 감소됨
 const getCalculatedRemainingQuantity = (item: OrderItem): number => {
   const remaining = item.quantity - item.shippedQuantity - item.shippingQuantity
   // 부동소수점 연산 오차 방지
@@ -460,28 +913,49 @@ const getCalculatedRemainingQuantity = (item: OrderItem): number => {
 
 // 전체수량 설정
 const setMaxQuantity = (item: OrderItem) => {
-  // 기출하를 제외한 실제 잔여수량을 출하수량에 설정
-  item.shippingQuantity = item.remainingQuantity
+  const index = selectedOrderItems.value.findIndex(i => i.skuId === item.skuId)
+  if (index === -1) return
+
+  // 기출하를 제외한 실제 잔여수량을 출하수량에 설정 (인덱스 기반 업데이트)
+  selectedOrderItems.value[index] = {
+    ...item,
+    shippingQuantity: item.remainingQuantity
+  }
 }
 
 // 출하수량 업데이트
 const updateShippingQuantity = (item: OrderItem) => {
-  if (item.shippingQuantity > item.remainingQuantity) {
+  const index = selectedOrderItems.value.findIndex(i => i.skuId === item.skuId)
+  if (index === -1) return
+
+  let newShippingQuantity = item.shippingQuantity
+
+  if (newShippingQuantity > item.remainingQuantity) {
     alert('출하수량은 잔여수량을 초과할 수 없습니다.')
-    item.shippingQuantity = item.remainingQuantity
-  } else if (item.shippingQuantity < 0) {
-    item.shippingQuantity = 0
+    newShippingQuantity = item.remainingQuantity
+  } else if (newShippingQuantity < 0) {
+    newShippingQuantity = 0
+  }
+
+  // 인덱스 기반 업데이트로 반응성 보장
+  selectedOrderItems.value[index] = {
+    ...item,
+    shippingQuantity: newShippingQuantity
   }
 }
 
-// 총 출하수량
+// 총 출하수량 (기존 + 신규)
 const totalShippingQuantity = computed(() => {
-  return selectedOrderItems.value.reduce((sum, item) => sum + (item.shippingQuantity || 0), 0)
+  const existingTotal = selectedOrderItems.value.reduce((sum, item) => sum + (item.shippingQuantity || 0), 0)
+  const newTotal = newItems.value.reduce((sum, item) => sum + (item.shippingQuantity || 0), 0)
+  return existingTotal + newTotal
 })
 
-// 총 금액
+// 총 금액 (기존 + 신규)
 const totalAmount = computed(() => {
-  return selectedOrderItems.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * item.unitPrice), 0)
+  const existingTotal = selectedOrderItems.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * item.unitPrice), 0)
+  const newTotal = newItems.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * item.unitPrice), 0)
+  return existingTotal + newTotal
 })
 
 // 제출 처리
@@ -500,7 +974,8 @@ const handleSubmit = async () => {
       //   return null
       // }
     ],
-    status: [rules.required('상태')]
+    status: [rules.required('상태')],
+    oemCompanyId: [rules.required('OEM 제조사')]
   }
 
   if (!validateAll(formData, validationRules)) {
@@ -524,15 +999,7 @@ const handleSubmit = async () => {
   padding: 0;
 }
 
-/* Page-specific: info-group-header 중앙정렬 */
-.info-group-header {
-  justify-content: center;
-}
-
-/* Page-specific: items-section-header 중앙정렬 */
-.items-section-header {
-  justify-content: center;
-}
+/* 삭제됨 - 기본 왼쪽 정렬 사용 */
 
 /* Page-specific: Total quantity display (blue highlight) */
 .total-quantity-display {
@@ -580,5 +1047,133 @@ const handleSubmit = async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 전체 너비 섹션 (배송지 정보용) */
+.full-width-section {
+  margin-top: 1rem;
+}
+
+/* 선택 배지 */
+.optional-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+/* 그리드 1열 */
+.info-grid.grid-1 {
+  grid-template-columns: 1fr;
+}
+
+/* 그리드 5열 */
+.info-grid.grid-5 {
+  grid-template-columns: 100px 1fr 1fr 1fr 1fr;
+}
+
+/* 2열 스팬 */
+.col-span-2 {
+  grid-column: span 2;
+}
+
+/* 폼 셀렉트 스타일 */
+.form-select {
+  width: 100%;
+  height: 32px;
+  padding: 0 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background: white;
+  cursor: pointer;
+}
+
+.form-select:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* 반응형 */
+@media (max-width: 1200px) {
+  .info-grid.grid-5 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .col-span-2 {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .info-grid.grid-5 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 신규 품목 행 스타일 */
+.new-item-row {
+  background: #f0fdf4 !important;
+}
+
+.new-item-row:hover {
+  background: #dcfce7 !important;
+}
+
+/* 신규 뱃지 */
+.badge-new {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  background: #10b981;
+  color: white;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+/* 삭제 버튼 */
+.btn-remove {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.btn-remove:hover {
+  background: #fee2e2;
+}
+
+/* 품목 추가 버튼 */
+.btn-add-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-item:hover {
+  background: #059669;
 }
 </style>

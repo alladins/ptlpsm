@@ -33,7 +33,7 @@
           <div class="recipient-grid" :class="{ 'single-column': documentType === 'COMPLETION' }">
             <!-- 시공사 현장소장 (납품확인서만 표시) -->
             <div class="form-group" v-if="documentType === 'CONFIRMATION'">
-              <label>시공사 현장소장</label>
+              <label class="required">시공사 현장소장</label>
               <select
                 v-model="selectedSiteSupervisorId"
                 class="form-select"
@@ -54,7 +54,7 @@
 
             <!-- 현장감리원 -->
             <div class="form-group">
-              <label>현장감리원</label>
+              <label class="required">현장감리원</label>
               <select
                 v-model="selectedInspectorId"
                 class="form-select"
@@ -198,16 +198,31 @@ const selectedCount = computed(() => {
   return count
 })
 
-// 발송 가능 여부 (최소 1명 선택)
+// 발송 가능 여부
 const canSend = computed(() => {
-  return selectedCount.value > 0
+  if (props.documentType === 'CONFIRMATION') {
+    // 납품확인서: 현장소장 + 현장감리원 둘 다 필수
+    return !!selectedSupervisorInfo.value && !!selectedInspectorInfo.value
+  } else {
+    // 납품완료계: 현장감리원만 필수
+    return !!selectedInspectorInfo.value
+  }
 })
 
 // 발송 버튼 텍스트
 const sendButtonText = computed(() => {
-  if (selectedCount.value === 0) return 'URL 발송'
-  if (selectedCount.value === 1) return 'URL 발송'
-  return `URL 발송 (${selectedCount.value}명)`
+  if (props.documentType === 'CONFIRMATION') {
+    // 납품확인서: 둘 다 선택 필요
+    if (!selectedSupervisorInfo.value || !selectedInspectorInfo.value) {
+      return '담당자를 모두 선택하세요'
+    }
+  } else {
+    // 납품완료계: 감리원만 필요
+    if (!selectedInspectorInfo.value) {
+      return '감리원을 선택하세요'
+    }
+  }
+  return selectedCount.value > 1 ? `URL 발송 (${selectedCount.value}명)` : 'URL 발송'
 })
 
 // 모달 오픈 시 사용자 목록 로드

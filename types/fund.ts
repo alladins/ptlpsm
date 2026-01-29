@@ -128,6 +128,40 @@ export interface FundDetail extends Fund {
   advanceDeductedTotal?: number
   /** 미정산 선급금 잔액 (계산: advancePaymentAmount - advanceDeductedTotal) */
   advanceUnsettledBalance?: number
+  /** OEM 예정 총액 (원가 합계) */
+  oemExpectedTotal?: number
+  /** OEM 잔여 금액 (예정총액 - 지급누계) */
+  oemRemainingAmount?: number
+  /** 납품완료계 ID (B급 품목 관리용) */
+  deliveryDoneId?: number
+  /** 출하 목록 (B급 품목 등록용) */
+  shipments?: FundShipmentInfo[]
+}
+
+/**
+ * 자금 상세용 출하 정보 (B급 품목 등록용)
+ */
+export interface FundShipmentInfo {
+  shipmentId: number
+  shipmentNo: string | null
+  shipmentDate: string
+  items: FundShipmentItemInfo[]
+  /** 출하 상태 (COMPLETED인 경우만 B급 조정 가능) */
+  status?: string
+  /** 해당 출하의 납품완료계 ID (B급 품목 등록 시 사용) */
+  deliveryDoneId?: number
+}
+
+/**
+ * 자금 상세용 출하 품목 정보
+ */
+export interface FundShipmentItemInfo {
+  skuId: string
+  skuName: string
+  specification: string
+  unit: string
+  quantity: number
+  unitPrice: number
 }
 
 /**
@@ -231,6 +265,8 @@ export interface FundStatistics {
   totalReceived?: number
   /** OEM 미지급 총액 */
   totalOemOutstanding?: number
+  /** 총 예상 원가금액 (OEM 예정 총액) */
+  totalOemExpected?: number
   /** 현재 수익 */
   currentProfit?: number
   /** 수익률 (%) */

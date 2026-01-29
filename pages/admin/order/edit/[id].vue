@@ -115,30 +115,13 @@
             <i class="fas fa-clipboard-list"></i>
             <span>기타 정보</span>
           </div>
-          <!-- 건설사/제조사 선택 (수정 가능) -->
-          <div class="info-grid grid-2">
+          <!-- 건설사 선택 (OEM 제조사는 출하 등록 시 선택) -->
+          <div class="info-grid grid-4">
             <FormField label="건설사">
               <select
                 v-model="formData.builderCompanyId"
                 @change="handleBuilderChange"
                 class="form-input-sm"
-              >
-                <option :value="null">선택하세요</option>
-                <option
-                  v-for="company in companies"
-                  :key="company.id"
-                  :value="company.id"
-                >
-                  {{ company.companyName }}
-                </option>
-              </select>
-            </FormField>
-            <FormField label="제조사" required>
-              <select
-                v-model="formData.oemCompanyId"
-                @change="handleOemChange"
-                class="form-input-sm"
-                required
               >
                 <option :value="null">선택하세요</option>
                 <option
@@ -199,16 +182,16 @@
           <table class="items-table">
             <thead>
               <tr>
-                <th style="width: 30px">순번</th>
-                <th style="width: 60px">품명</th>
-                <th style="width: 280px">규격</th>
-                <th style="width: 30px">단위</th>
-                <th style="width: 50px">단가</th>
-                <th style="width: 60px">수량</th>
-                <th style="width: 80px">금액</th>
-                <th style="width: 100px">납품장소</th>
-                <th style="width: 80px">납품기한</th>
-                <th style="width: 100px">납품조건</th>
+                <th class="col-no">순번</th>
+                <th class="col-name">품명</th>
+                <th class="col-spec">규격</th>
+                <th class="col-unit">단위</th>
+                <th class="col-price">단가</th>
+                <th class="col-qty">수량</th>
+                <th class="col-amount">금액</th>
+                <th class="col-location">납품장소</th>
+                <th class="col-deadline">납품기한</th>
+                <th class="col-terms">납품조건</th>
               </tr>
             </thead>
             <tbody>
@@ -271,10 +254,6 @@
               <span>진행 현황: </span>
               <strong>{{ baselineProgress.confirmed }}/{{ baselineProgress.total }} 확정</strong>
             </div>
-            <button class="btn-primary" @click="openProgressPaymentModal">
-              <i class="fas fa-plus"></i>
-              기성 청구하기
-            </button>
           </div>
 
           <!-- 차수 목록 테이블 -->
@@ -424,15 +403,6 @@
       </div>
     </div>
 
-    <!-- 기성 청구 모달 -->
-    <ProgressPaymentModal
-      :is-open="showProgressPaymentModal"
-      :order-id="orderId"
-      :fund-id="fundSummary.fundId || 0"
-      @close="closeProgressPaymentModal"
-      @submitted="handleProgressPaymentSubmitted"
-    />
-
     <!-- 수금 확인 모달 -->
     <CollectionConfirmModal
       :is-open="showCollectionConfirmModal"
@@ -469,7 +439,6 @@ import { SIGNATURE_STATUS_LABELS, SIGNATURE_STATUS_CLASSES } from '~/types/basel
 import type { ProgressPaymentRequest, PaymentStatus } from '~/types/fund'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
-import ProgressPaymentModal from '~/components/fund/ProgressPaymentModal.vue'
 import CollectionConfirmModal from '~/components/fund/CollectionConfirmModal.vue'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { usePermission } from '~/composables/usePermission'
@@ -484,7 +453,7 @@ const route = useRoute()
 const orderId = computed(() => Number(route.params.id))
 
 // 권한
-const { canEdit, canDelete } = usePermission()
+const { canEdit, canDelete, isFullAccess } = usePermission()
 
 // 상태
 const loading = ref(true)
@@ -494,27 +463,34 @@ const items = ref<any[]>([])
 
 // 탭 관련 상태
 const activeTab = ref('info')
-const tabs = computed(() => [
-  { id: 'info', label: '기본정보', icon: 'fas fa-info-circle' },
-  { id: 'baseline', label: '기성/납품확인', icon: 'fas fa-check-double', badge: progressPayments.value.length > 0 ? progressPayments.value.length : null },
-  { id: 'fund', label: '자금', icon: 'fas fa-coins' }
-])
+const tabs = computed(() => {
+  const baseTabs: Array<{ id: string; label: string; icon: string; badge?: number | null }> = [
+    { id: 'info', label: '기본정보', icon: 'fas fa-info-circle' }
+  ]
+
+  // 시스템관리자, 리드파워담당자만 기성/납품확인, 자금 탭 표시
+  if (isFullAccess.value) {
+    baseTabs.push(
+      { id: 'baseline', label: '기성/납품확인', icon: 'fas fa-check-double', badge: progressPayments.value.length > 0 ? progressPayments.value.length : null },
+      { id: 'fund', label: '자금', icon: 'fas fa-coins' }
+    )
+  }
+
+  return baseTabs
+})
 
 // 회사 목록 (건설사/제조사 선택용)
 const companies = ref<CompanyInfoResponse[]>([])
 
-// 수정 가능한 폼 데이터
+// 수정 가능한 폼 데이터 (OEM 제조사는 출하 등록 시 선택)
 const formData = ref({
   siteManagerId: null as number | null,     // deprecated
   builderCompanyId: null as number | null,  // 건설사 ID
-  builderCompany: '',                       // 건설사명
-  oemCompanyId: null as number | null,      // 제조사 ID
-  oemCompany: ''                            // 제조사명
+  builderCompany: ''                        // 건설사명
 })
 
 // 기성/납품확인 관련 상태 (자금관리와 동일한 API 사용)
 const progressPayments = ref<ProgressPaymentRequest[]>([])
-const showProgressPaymentModal = ref(false)
 
 // 수금 확인 모달 상태
 const showCollectionConfirmModal = ref(false)
@@ -568,14 +544,10 @@ const loadData = async () => {
       deliveryTerms: item.deliveryTerms
     }))
 
-    // 건설사/제조사 정보 복원
+    // 건설사 정보 복원 (OEM 제조사는 출하 등록 시 선택)
     if (data.builderCompanyId) {
       formData.value.builderCompanyId = data.builderCompanyId
       formData.value.builderCompany = data.builderCompanyName || ''
-    }
-    if (data.oemCompanyId) {
-      formData.value.oemCompanyId = data.oemCompanyId
-      formData.value.oemCompany = data.oemCompanyName || ''
     }
     // 레거시 siteManagerId 호환
     if (data.siteManagerId && !data.builderCompanyId) {
@@ -604,21 +576,12 @@ const handleBuilderChange = () => {
   formData.value.builderCompany = selected?.companyName || ''
 }
 
-// 제조사 선택 핸들러
-const handleOemChange = () => {
-  const selected = companies.value.find(c => c.id === formData.value.oemCompanyId)
-  formData.value.oemCompany = selected?.companyName || ''
-}
-
 // 저장
 const handleSave = async () => {
   if (submitting.value) return
 
-  // 제조사 필수 검사
-  if (!formData.value.oemCompanyId) {
-    alert('제조사를 선택해주세요.')
-    return
-  }
+  // OEM 제조사 선택은 선택사항 (출하 등록 시 선택)
+  // 필수 검사 제거됨
 
   try {
     submitting.value = true
@@ -650,8 +613,9 @@ const handleSave = async () => {
       siteManagerId: formData.value.siteManagerId,
       builderCompanyId: formData.value.builderCompanyId,
       builderCompanyName: formData.value.builderCompany || null,
-      oemCompanyId: formData.value.oemCompanyId,
-      oemCompany: formData.value.oemCompany || null,
+      // OEM 제조사는 출하 등록 시 선택 (납품요구에서 제거됨)
+      oemCompanyId: null,
+      oemCompany: null,
       items: orderData.value!.items.map((item: any, index: number) => ({
         itemOrder: index + 1,
         skuId: item.skuId,
@@ -727,23 +691,6 @@ const loadFundSummary = async () => {
   } catch (error) {
     console.error('자금 요약 조회 실패:', error)
   }
-}
-
-// 기성 청구 모달 열기
-const openProgressPaymentModal = () => {
-  showProgressPaymentModal.value = true
-}
-
-// 기성 청구 모달 닫기
-const closeProgressPaymentModal = () => {
-  showProgressPaymentModal.value = false
-}
-
-// 기성 청구 완료 후 처리
-const handleProgressPaymentSubmitted = async () => {
-  closeProgressPaymentModal()
-  await loadFundSummary()
-  await loadProgressPayments()
 }
 
 // 기성 유형 클래스

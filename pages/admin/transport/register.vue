@@ -6,6 +6,15 @@
       description="운송장 정보를 등록합니다."
     >
       <template #actions>
+        <button
+          v-if="formData.shipmentId"
+          class="btn-action btn-info"
+          @click="handleDownloadPurchaseOrder"
+          title="발주서 PDF 다운로드"
+        >
+          <i class="fas fa-file-pdf"></i>
+          발주서
+        </button>
         <button class="btn-secondary" @click="goBack">
           <i class="fas fa-times"></i>
           취소
@@ -81,52 +90,38 @@
           </div>
         </div>
 
-        <!-- 2. 현장 담당자 정보 -->
+        <!-- 2. 현장 담당자 정보 (출하에서 가져온 정보 - 읽기전용) -->
         <div class="info-group">
           <div class="info-group-header">
             <i class="fas fa-user-hard-hat"></i>
             <span>현장 담당자 정보</span>
+            <span class="readonly-badge">출하 정보에서 자동 입력</span>
           </div>
           <div class="info-grid grid-2">
-            <FormField label="현장소장" required :error="errors.siteManagerId">
-              <select
-                v-model="selectedSupervisorId"
-                @change="handleSupervisorChange"
-                class="form-input-md"
+            <FormField label="현장소장">
+              <input
+                type="text"
+                v-model="formData.siteManagerName"
+                class="form-input-md readonly-field"
+                placeholder="출하 선택 시 자동 입력"
+                readonly
               >
-                <option value="">현장소장을 선택하세요</option>
-                <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
-                  {{ manager.userName }} ({{ manager.companyName || '회사 정보 없음' }})
-                </option>
-              </select>
             </FormField>
-            <FormField label="현장 인수자" required :error="errors.receiverName">
-              <div class="input-with-select">
-                <select
-                  v-model="selectedReceiverId"
-                  @change="handleReceiverChange"
-                  class="form-input-sm"
-                >
-                  <option value="">현장소장을 선택하세요</option>
-                  <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
-                    {{ manager.userName }}
-                  </option>
-                </select>
-                <input
-                  type="text"
-                  v-model="formData.receiverName"
-                  class="form-input-md"
-                  placeholder="기사 선택 시 자동 입력"
-                  readonly
-                >
-              </div>
+            <FormField label="현장 인수자">
+              <input
+                type="text"
+                v-model="formData.receiverName"
+                class="form-input-md readonly-field"
+                placeholder="출하 선택 시 자동 입력"
+                readonly
+              >
             </FormField>
-            <FormField label="인수자 연락처" :error="errors.receiverPhone">
+            <FormField label="인수자 연락처">
               <input
                 type="tel"
                 v-model="formData.receiverPhone"
-                class="form-input-md"
-                placeholder="010-0000-0000"
+                class="form-input-md readonly-field"
+                placeholder="출하 선택 시 자동 입력"
                 readonly
               >
             </FormField>
@@ -154,54 +149,47 @@
 
       <!-- 우측 컬럼 -->
       <div class="right-column">
-        <!-- 1. 배송지 정보 -->
+        <!-- 1. 배송지 정보 (출하에서 가져온 정보 - 읽기전용) -->
         <div class="info-group">
           <div class="info-group-header">
             <i class="fas fa-map-marker-alt"></i>
             <span>배송지 정보</span>
+            <span class="readonly-badge">출하 정보에서 자동 입력</span>
           </div>
           <div class="info-grid grid-2">
             <FormField label="우편번호">
-              <div class="search-group">
-                <input
-                  type="text"
-                  v-model="formData.zipcode"
-                  class="form-input-sm"
-                  placeholder="우편번호"
-                  readonly
-                  @click="searchAddress"
-                  style="cursor: pointer;"
-                >
-                <button type="button" class="btn-search" @click="searchAddress">
-                  <i class="fas fa-search"></i>
-                  검색
-                </button>
-              </div>
+              <input
+                type="text"
+                v-model="formData.zipcode"
+                class="form-input-sm readonly-field"
+                placeholder="출하 선택 시 자동 입력"
+                readonly
+              >
             </FormField>
             <FormField label="배송예정일" required :error="errors.deliveryDate">
               <input
                 type="date"
                 v-model="formData.deliveryDate"
                 class="form-input-md"
+                @change="onDeliveryDateChange"
               >
             </FormField>
-            <FormField label="배송지 주소" required full-width :error="errors.deliveryAddress">
+            <FormField label="배송지 주소" full-width>
               <input
                 type="text"
                 v-model="formData.deliveryAddress"
-                class="form-input-xl"
-                placeholder="배송지 주소를 검색하세요"
+                class="form-input-xl readonly-field"
+                placeholder="출하 선택 시 자동 입력"
                 readonly
-                @click="searchAddress"
-                style="cursor: pointer;"
               >
             </FormField>
             <FormField label="상세주소" full-width>
               <input
                 type="text"
                 v-model="formData.addressDetail"
-                class="form-input-lg"
-                placeholder="상세주소를 입력하세요"
+                class="form-input-lg readonly-field"
+                placeholder="출하 선택 시 자동 입력"
+                readonly
               >
             </FormField>
           </div>
@@ -342,12 +330,9 @@ const route = useRoute()
 const { canWrite } = usePermission()
 
 // 사용자 목록
-const siteManagers = ref<UserByRole[]>([])     // SITE_MANAGER (시공사 담당자)
 const deliveryDrivers = ref<UserByRole[]>([])  // DELIVERY_DRIVER (운송기사)
 
 // 선택된 사용자 ID
-const selectedSupervisorId = ref<number | ''>('')  // 현장소장
-const selectedReceiverId = ref<number | ''>('')    // 현장 인수자 (선택만 가능)
 const selectedDriverId = ref<number | ''>('')      // 기사
 
 // useRegisterForm 사용
@@ -362,10 +347,11 @@ const {
       shipmentId: Number(data.shipmentId),
       vehicleNo: data.vehicleNo,
       deliveryDate: data.deliveryDate,
+      // 배송지/현장담당자는 출하에서 가져온 값 사용
       zipcode: data.zipcode,
       deliveryAddress: data.deliveryAddress,
       addressDetail: data.addressDetail,
-      siteManagerId: selectedSupervisorId.value || null,
+      siteManagerId: data.siteManagerId || null,
       receiverName: data.receiverName,
       receiverPhone: data.receiverPhone,
       carrierName: data.carrierName,
@@ -391,6 +377,8 @@ const {
     zipcode: '',
     deliveryAddress: '',
     addressDetail: '',
+    siteManagerId: null as number | null,  // 출하에서 가져옴
+    siteManagerName: '',                    // 출하에서 가져옴
     receiverName: '',
     receiverPhone: '',
     carrierName: '',
@@ -415,11 +403,7 @@ const {
 const { errors, validateAll, rules } = useFormValidation({
   shipmentNo: '',
   deliveryDate: '',
-  deliveryAddress: '',
-  siteManagerId: '',
-  receiverName: '',
-  driverPhone: '',
-  receiverPhone: ''
+  driverPhone: ''
 })
 
 // 배차/출차 시각: 현재 시간 이전 선택 불가
@@ -452,22 +436,42 @@ const onDispatchAtChange = (newValue: string | Date | null) => {
   }
 }
 
+// 배송 예정일 변경 시 배차/출차 시각, 도착 예정 시각의 날짜도 함께 변경
+const onDeliveryDateChange = () => {
+  const newDate = formData.deliveryDate
+  if (!newDate) return
+
+  // 배차/출차 시각의 날짜 부분만 변경 (시간은 유지)
+  if (formData.dispatchAt) {
+    const dispatchTime = new Date(formData.dispatchAt)
+    const [year, month, day] = newDate.split('-').map(Number)
+    dispatchTime.setFullYear(year, month - 1, day)
+    const hours = String(dispatchTime.getHours()).padStart(2, '0')
+    const minutes = String(dispatchTime.getMinutes()).padStart(2, '0')
+    formData.dispatchAt = `${newDate}T${hours}:${minutes}`
+  }
+
+  // 도착 예정 시각의 날짜 부분만 변경 (시간은 유지)
+  if (formData.expectedArrival) {
+    const expectedTime = new Date(formData.expectedArrival)
+    const [year, month, day] = newDate.split('-').map(Number)
+    expectedTime.setFullYear(year, month - 1, day)
+    const hours = String(expectedTime.getHours()).padStart(2, '0')
+    const minutes = String(expectedTime.getMinutes()).padStart(2, '0')
+    formData.expectedArrival = `${newDate}T${hours}:${minutes}`
+  }
+}
+
 // 팝업 상태
 const showShipmentPopup = ref(false)
 
 // URL 파라미터에서 데이터 로드
 onMounted(async () => {
-  // 사용자 목록 로드
+  // 운송기사 목록 로드
   try {
-    // SITE_MANAGER 목록 조회 (현장소장/현장담당자)
-    const managers = await userService.getUsersByRoles(['SITE_MANAGER'])
-    siteManagers.value = managers
-
     // DELIVERY_DRIVER 목록 조회 (운송기사)
     const driverList = await userService.getUsersByRoles(['DELIVERY_DRIVER'])
     deliveryDrivers.value = driverList
-
-    console.log('현장 담당자 목록:', siteManagers.value)
     console.log('운송기사 목록:', deliveryDrivers.value)
   } catch (error) {
     console.error('사용자 목록 조회 실패:', error)
@@ -526,21 +530,59 @@ const closeShipmentPopup = () => {
 // 출하 선택 처리
 const handleShipmentSelect = async (shipment: ShipmentListItem) => {
   try {
-    // 출하 상세 정보 조회 (발주 정보 + 현장소장 정보 포함)
+    // 출하 상세 정보 조회 (발주 정보 + 배송지 + 현장담당자 정보 포함)
     const detail = await shipmentService.getShipmentDetail(shipment.shipmentId) as any
 
+    // 기본 정보
     formData.shipmentId = detail.shipmentId.toString()
     formData.shipmentNo = detail.shipmentNo || ''
     formData.projectName = detail.projectName || ''
     formData.deliveryRequestNo = detail.deliveryRequestNo || ''
     formData.clientName = detail.client || ''
 
-    // 현장소장 정보 매핑 (서버 응답 데이터 직접 사용)
-    if (detail.siteManagerId) {
-      selectedSupervisorId.value = detail.siteManagerId
-      selectedReceiverId.value = detail.siteManagerId
-      formData.receiverName = detail.siteManagerName || ''
-      formData.receiverPhone = formatPhoneNumber(detail.siteManagerPhone || '')
+    // 배송지 정보 (출하에서 가져옴 - 읽기전용)
+    formData.zipcode = detail.zipcode || ''
+    formData.deliveryAddress = detail.deliveryAddress || ''
+    formData.addressDetail = detail.addressDetail || ''
+
+    // 현장담당자 정보 (출하에서 가져옴 - 읽기전용)
+    formData.siteManagerId = detail.siteManagerId || null
+    formData.siteManagerName = detail.siteManagerName || ''
+    formData.receiverName = detail.receiverName || detail.siteManagerName || ''
+    formData.receiverPhone = formatPhoneNumber(detail.receiverPhone || detail.siteManagerPhone || '')
+
+    // 배송 일정 정보 - expectedArrivalDatetime(현장 도착 예정일시) 기준으로 설정
+    // 서버 필드명: expectedArrivalDatetime (프론트엔드 별칭: expectedArrivalAt)
+    const expectedArrival = detail.expectedArrivalDatetime || detail.expectedArrivalAt
+    if (expectedArrival) {
+      const arrivalDateTime = new Date(expectedArrival)
+
+      // 1. 배송예정일: 현장 도착 예정일시의 날짜 부분
+      const year = arrivalDateTime.getFullYear()
+      const month = String(arrivalDateTime.getMonth() + 1).padStart(2, '0')
+      const day = String(arrivalDateTime.getDate()).padStart(2, '0')
+      formData.deliveryDate = `${year}-${month}-${day}`
+
+      // 2. 도착 예정 시각: 현장 도착 예정일시 그대로
+      const hours = String(arrivalDateTime.getHours()).padStart(2, '0')
+      const minutes = String(arrivalDateTime.getMinutes()).padStart(2, '0')
+      formData.expectedArrival = `${year}-${month}-${day}T${hours}:${minutes}`
+
+      // 3. 배차/출차 시각: 도착 예정 시각 - 2시간
+      const dispatchDateTime = new Date(arrivalDateTime.getTime() - 2 * 60 * 60 * 1000)
+      const dispatchYear = dispatchDateTime.getFullYear()
+      const dispatchMonth = String(dispatchDateTime.getMonth() + 1).padStart(2, '0')
+      const dispatchDay = String(dispatchDateTime.getDate()).padStart(2, '0')
+      const dispatchHours = String(dispatchDateTime.getHours()).padStart(2, '0')
+      const dispatchMinutes = String(dispatchDateTime.getMinutes()).padStart(2, '0')
+      formData.dispatchAt = `${dispatchYear}-${dispatchMonth}-${dispatchDay}T${dispatchHours}:${dispatchMinutes}`
+
+      console.log('[운송장 등록] 배송 일정 자동 설정:', {
+        expectedArrivalDatetime: expectedArrival,
+        deliveryDate: formData.deliveryDate,
+        expectedArrival: formData.expectedArrival,
+        dispatchAt: formData.dispatchAt
+      })
     }
 
     closeShipmentPopup()
@@ -550,56 +592,19 @@ const handleShipmentSelect = async (shipment: ShipmentListItem) => {
   }
 }
 
-// 주소 검색 팝업 열림 상태
-const isAddressPopupOpen = ref(false)
-
-// 주소 검색
-const searchAddress = () => {
-  // 이미 팝업이 열려있으면 무시
-  if (isAddressPopupOpen.value) return
-
-  isAddressPopupOpen.value = true
-  new window.daum.Postcode({
-    oncomplete: (data: any) => {
-      formData.zipcode = data.zonecode
-      formData.deliveryAddress = data.address
-      formData.addressDetail = ''
-      isAddressPopupOpen.value = false
-    },
-    onclose: () => {
-      isAddressPopupOpen.value = false
-    }
-  }).open()
-}
-
-// 현장소장 선택 시 인수자 기본값 자동 입력
-const handleSupervisorChange = () => {
-  if (selectedSupervisorId.value) {
-    const supervisor = siteManagers.value.find(m => m.userid === selectedSupervisorId.value)
-    if (supervisor) {
-      // 인수자가 비어있으면 현장소장으로 기본값 설정
-      if (!formData.receiverName) {
-        selectedReceiverId.value = supervisor.userid
-        formData.receiverName = supervisor.userName
-        formData.receiverPhone = formatPhoneNumber(supervisor.phone || '')
-      }
-    }
+// 발주서 PDF 다운로드
+const handleDownloadPurchaseOrder = async () => {
+  if (!formData.shipmentId) {
+    alert('출하를 먼저 선택해 주세요.')
+    return
   }
-}
-
-// 현장 인수자 선택 시 자동 입력
-const handleReceiverChange = () => {
-  if (!selectedReceiverId.value) {
-    // 선택 안됨 - 초기화
-    formData.receiverName = ''
-    formData.receiverPhone = ''
-  } else {
-    // 현장소장 선택 시 자동 입력
-    const receiver = siteManagers.value.find(m => m.userid === selectedReceiverId.value)
-    if (receiver) {
-      formData.receiverName = receiver.userName
-      formData.receiverPhone = formatPhoneNumber(receiver.phone || '')
-    }
+  try {
+    await shipmentService.downloadPurchaseOrderPdf(Number(formData.shipmentId))
+  } catch (error) {
+    console.error('발주서 PDF 다운로드 실패:', error)
+    // 백엔드 에러 메시지 표시
+    const errorMessage = error instanceof Error ? error.message : '발주서 PDF 처리에 실패했습니다.'
+    alert(errorMessage)
   }
 }
 
@@ -626,24 +631,20 @@ const handleDriverChange = () => {
 
 // 제출 처리
 const handleSubmit = async () => {
-  // 유효성 검사용 데이터 (formData + 별도 ref 값 포함)
-  const validationData = {
-    ...formData,
-    siteManagerId: selectedSupervisorId.value || ''
-  }
-
-  // 유효성 검사
+  // 유효성 검사 (배송지/현장담당자는 출하에서 자동 입력되므로 제외)
   const validationRules = {
     shipmentNo: [rules.required('출하NO')],
     deliveryDate: [rules.required('배송예정일')],
-    deliveryAddress: [rules.required('배송지 주소')],
-    siteManagerId: [rules.required('현장소장')],
-    receiverName: [rules.required('현장 인수자')],
-    receiverPhone: [rules.phone()],
     driverPhone: [rules.required('기사 연락처'), rules.phone()]
   }
 
-  if (!validateAll(validationData, validationRules)) {
+  if (!validateAll(formData, validationRules)) {
+    return
+  }
+
+  // 출하 선택 여부 확인
+  if (!formData.shipmentId) {
+    alert('출하를 선택해 주세요.')
     return
   }
 
@@ -710,6 +711,24 @@ const handleSubmit = async () => {
 
 .input-with-select input {
   flex: 1;
+}
+
+/* 읽기전용 배지 */
+.readonly-badge {
+  margin-left: auto;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+/* 읽기전용 필드 스타일 */
+.readonly-field {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
 }
 
 /* Responsive */

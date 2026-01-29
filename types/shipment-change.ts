@@ -13,6 +13,16 @@ export interface AdditionalChangeItem {
   currentQuantity: number
   /** 변경 수량 */
   newQuantity: number
+  /** 신규 추가 품목 여부 */
+  isNew?: boolean
+  /** 단가 (신규 품목 추가 시 필요) */
+  unitPrice?: number
+  /** 품목명 (신규 품목 추가 시 필요) */
+  itemName?: string
+  /** 규격 (신규 품목 추가 시 필요) */
+  specification?: string
+  /** 단위 (신규 품목 추가 시 필요) */
+  unit?: string
 }
 
 /**
@@ -82,6 +92,8 @@ export interface QuantityChangeHistoryRaw {
  * 수량 변경 이력 품목 (그룹화된 뷰용)
  */
 export interface QuantityChangeHistoryItem {
+  /** 이력 ID (개별 되돌리기 시 필요) */
+  historyId: number
   /** SKU ID */
   skuId: string
   /** 품목명 */
@@ -137,3 +149,33 @@ export type ShipmentChangeableStatus =
   | 'PENDING_SIGNATURE' // 운송완료/서명대기 - 변경 가능 (재서명 필요)
   | 'COMPLETED'         // 기성완료/납품완료 - 변경 불가
   | 'CANCELLED'         // 취소 - 변경 불가
+
+/**
+ * 개별 이력 되돌리기 요청
+ */
+export interface QuantityHistoryRevertRequest {
+  /** 되돌리기 사유 */
+  revertReason: string
+}
+
+/**
+ * 그룹 이력 되돌리기 요청
+ */
+export interface QuantityHistoryGroupRevertRequest {
+  /** 그룹 식별자 - 변경일시 (ISO 8601) */
+  changedAt: string
+  /** 그룹 식별자 - 변경사유 */
+  changeReason: string
+  /** 되돌리기 사유 */
+  revertReason: string
+}
+
+/**
+ * 되돌리기 응답 (공통)
+ */
+export interface QuantityHistoryRevertResponse {
+  /** 성공 여부 */
+  success: boolean
+  /** 응답 메시지 */
+  message: string
+}

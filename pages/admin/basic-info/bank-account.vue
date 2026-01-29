@@ -264,7 +264,7 @@ const selectedAccount = ref<BankAccount | null>(null)
 const transLoading = ref(false)
 const transError = ref<string | null>(null)
 const transData = reactive<TransactionResponse>({
-  currentPage: 1,
+  currentPage: 0,
   totalPages: 0,
   totalCount: 0,
   pageSize: 20,
@@ -277,7 +277,7 @@ const transSearchForm = reactive({
   endDate: getDefaultEndDate(),
   transDirection: 1,
   orderDirection: 2,
-  page: 1,
+  page: 0,
   size: 20
 })
 
@@ -385,7 +385,7 @@ function resetTransSearch() {
   transSearchForm.endDate = getDefaultEndDate()
   transSearchForm.transDirection = 1
   transSearchForm.orderDirection = 2
-  transSearchForm.page = 1
+  transSearchForm.page = 0
   transSearchForm.size = 20
 }
 

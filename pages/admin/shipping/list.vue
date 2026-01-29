@@ -103,14 +103,14 @@
             <tr>
               <th>No</th>
               <th>출하NO</th>
-              <th>납품요구번호</th>
               <th>납품요구일자</th>
-              <th>수요기관</th>
+              <th class="text-left">수요기관</th>
               <th>사업명</th>
               <th>출하일자</th>
               <th>상태</th>
               <th>출하수량</th>
               <th>출하금액</th>
+              <th>추가변경</th>
             </tr>
           </thead>          <tbody>
             <tr
@@ -122,9 +122,8 @@
             >
               <td>{{ startIndex + index }}</td>
               <td>{{ item.shipmentNo || '-' }}</td>
-              <td>{{ item.deliveryRequestNo }}</td>
               <td>{{ formatDate(item.deliveryRequestDate) }}</td>
-              <td>{{ item.client }}</td>
+              <td class="text-left">{{ item.client }}</td>
               <td class="project-name-cell" :title="item.projectName">{{ item.projectName }}</td>
               <td>{{ formatDate(item.shipmentDate) }}</td>
               <td>
@@ -134,13 +133,19 @@
               </td>
               <td class="text-right">{{ formatQuantity(item.shipmentQuantity) }}</td>
               <td class="text-right">{{ formatCurrency(item.shipmentAmount) }}</td>
+              <td class="text-center">
+                <span v-if="item.additionalChangeCount && item.additionalChangeCount > 0" class="change-badge">
+                  변경
+                </span>
+              </td>
             </tr>
           </tbody>
           <tfoot v-if="shippingData.length > 0">
             <tr>
-              <td colspan="8" class="text-right"><strong>총 출하수량</strong></td>
+              <td colspan="7" class="text-right"><strong>총 출하수량</strong></td>
               <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
               <td class="text-right"><strong>{{ formatCurrency(totalShippingAmount) }}</strong></td>
+              <td></td>
             </tr>
           </tfoot>
           </table>
@@ -433,6 +438,18 @@ onMounted(async () => {
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 추가변경 배지 */
+.change-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
   white-space: nowrap;
 }
 

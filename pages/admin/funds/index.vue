@@ -92,6 +92,26 @@
               <option value="CANCELLED">취소</option>
             </select>
           </div>
+
+          <!-- 수금구성 범례 -->
+          <div class="collection-legend">
+            <div class="legend-item">
+              <span class="legend-color advance"></span>
+              <span>선급금</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color progress-payment"></span>
+              <span>기성금</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color balance"></span>
+              <span>잔금</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color remaining"></span>
+              <span>미수금</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -122,14 +142,15 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>No</th>
-                <th>납품요구번호</th>
+                <th style="width: 50px;">No</th>
+                <th style="width: 160px;">납품요구번호</th>
                 <th>사업명</th>
-                <th>선급금</th>
-                <th>기성금 누계</th>
-                <th>잔금</th>
-                <th>수금률</th>
-                <th>상태</th>
+                <th style="width: 130px;">선급금</th>
+                <th style="width: 130px;">기성금 누계</th>4r
+                <th style="width: 130px;">잔금</th>
+                <th style="width: 140px;">수금률</th>
+                <th style="width: 140px;">수금구성</th>
+                <th style="width: 70px;">상태</th>
               </tr>
             </thead>
             <tbody>
@@ -141,7 +162,7 @@
               >
                 <td>{{ startIndex + index }}</td>
                 <td>{{ item.deliveryRequestNo }}</td>
-                <td>{{ item.projectName || item.siteName }}</td>
+                <td class="text-left">{{ item.projectName || item.siteName }}</td>
                 <td class="text-right">{{ formatCurrency(item.advancePaymentAmount || item.advancePayment || 0) }}</td>
                 <td class="text-right">{{ formatCurrency(item.progressPaymentTotal || 0) }}</td>
                 <td class="text-right">{{ formatCurrency(item.balancePayment || item.balanceAmount || 0) }}</td>
@@ -155,6 +176,14 @@
                       ></div>
                     </div>
                     <span class="progress-text">{{ getCollectionRate(item).toFixed(1) }}%</span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div class="collection-composition">
+                    <span v-if="(item.advancePaymentAmount || item.advancePayment || 0) > 0" class="comp-item advance">선급금</span>
+                    <span v-if="(item.progressPaymentTotal || 0) > 0" class="comp-item progress">기성금</span>
+                    <span v-if="(item.balancePayment || item.balanceAmount || 0) > 0" class="comp-item balance">잔금</span>
+                    <span v-if="!hasAnyCollection(item)" class="no-collection">-</span>
                   </div>
                 </td>
                 <td class="text-center">
@@ -320,6 +349,16 @@ const getStatusClass = (status?: FundStatus): string => {
 const getStatusLabel = (status?: FundStatus): string => {
   if (!status) return '-'
   return FUND_STATUS_LABELS[status] || status
+}
+
+/**
+ * 수금 여부 확인
+ */
+const hasAnyCollection = (item: FundListItem): boolean => {
+  const advance = item.advancePaymentAmount || item.advancePayment || 0
+  const progress = item.progressPaymentTotal || 0
+  const balance = item.balancePayment || item.balanceAmount || 0
+  return advance > 0 || progress > 0 || balance > 0
 }
 
 /**
@@ -547,6 +586,10 @@ onMounted(async () => {
   text-align: center !important;
 }
 
+.text-left {
+  text-align: left !important;
+}
+
 /* 진행률 셀 */
 .progress-cell {
   display: flex;
@@ -660,5 +703,84 @@ onMounted(async () => {
   .select-input {
     width: 100%;
   }
+
+  .collection-legend {
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+}
+
+/* 수금구성 범례 */
+.collection-legend {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legend-color.advance {
+  background: #fbbf24;
+}
+
+.legend-color.progress-payment {
+  background: #10b981;
+}
+
+.legend-color.balance {
+  background: #3b82f6;
+}
+
+.legend-color.remaining {
+  background: #e5e7eb;
+}
+
+/* 수금구성 컬럼 */
+.collection-composition {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.comp-item {
+  font-size: 0.625rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.comp-item.advance {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.comp-item.progress {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.comp-item.balance {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.no-collection {
+  color: #6b7280;
+  font-size: 0.75rem;
 }
 </style>

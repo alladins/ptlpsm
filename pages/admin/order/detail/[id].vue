@@ -14,9 +14,9 @@
     </PageHeader>
 
     <LoadingSection v-if="loading" />
-    <ErrorSection v-else-if="!orderData && !loading" message="납품요구 정보를 찾을 수 없습니다." />
+    <ErrorSection v-else-if="!orderData" message="납품요구 정보를 찾을 수 없습니다." />
 
-    <div v-else class="content-section">
+    <div v-else-if="orderData" class="content-section">
       <!-- 분할납품요구서 정보 -->
       <FormSection title="분할납품요구서 정보">
         <!-- 1. 계약 정보 -->
@@ -143,16 +143,16 @@
           <table class="items-table">
             <thead>
               <tr>
-                <th style="width: 30px">순번</th>
-                <th style="width: 60px">품명</th>
-                <th style="width: 280px">규격</th>
-                <th style="width: 30px">단위</th>
-                <th style="width: 50px">단가</th>
-                <th style="width: 40px">수량</th>
-                <th style="width: 60px">금액</th>
-                <th style="width: 100px">납품장소</th>
-                <th style="width: 80px">납품기한</th>
-                <th style="width: 100px">납품조건</th>
+                <th>순번</th>
+                <th>품명</th>
+                <th class="col-spec">규격</th>
+                <th>단위</th>
+                <th>단가</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>납품장소</th>
+                <th>납품기한</th>
+                <th>납품조건</th>
               </tr>
             </thead>
             <tbody>
@@ -265,6 +265,34 @@ onMounted(() => {
 .order-detail {
   padding: 0;
   margin-bottom: 0;
+}
+
+/* 납품 목록 테이블 - 컴팩트 레이아웃 (공통 CSS 덮어쓰기) */
+.items-table {
+  table-layout: auto !important;  /* fixed → auto 강제 변경 */
+  min-width: auto !important;     /* 최소 너비 해제 */
+}
+
+.items-table th,
+.items-table td {
+  padding: 0.25rem 0.375rem !important;  /* 4px 6px */
+}
+
+/* 규격 컬럼(3번째)만 넓게 */
+.items-table th.col-spec,
+.items-table td:nth-child(3) {
+  width: 300px !important;
+}
+
+/* input 스타일 - 패딩 최소화 */
+.items-table input[type="text"] {
+  padding: 0.125rem 0.25rem !important;  /* 2px 4px */
+  width: auto !important;                 /* 내용에 맞게 */
+}
+
+/* 규격 컬럼 input만 전체 너비 */
+.items-table td:nth-child(3) input {
+  width: 100% !important;
 }
 
 /* Responsive - page specific adjustments */

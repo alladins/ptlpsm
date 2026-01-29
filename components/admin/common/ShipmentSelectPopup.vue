@@ -40,12 +40,13 @@
                 <th>수요기관</th>
                 <th>출하일자</th>
                 <th>상태</th>
+                <th>발주서</th>
                 <th>선택</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="shipments.length === 0">
-                <td colspan="6" class="empty-message">검색 결과가 없습니다.</td>
+                <td colspan="7" class="empty-message">검색 결과가 없습니다.</td>
               </tr>
               <tr v-for="shipment in shipments" :key="shipment.shipmentId">
                 <td>{{ shipment.shipmentNo }}</td>
@@ -58,7 +59,20 @@
                   </span>
                 </td>
                 <td>
-                  <button class="btn-success" @click="selectShipment(shipment)">
+                  <span v-if="shipment.purchaseOrderPdfPath" class="status-badge status-generated">
+                    <i class="fas fa-check-circle"></i> 생성됨
+                  </span>
+                  <span v-else class="status-badge status-not-generated">
+                    <i class="fas fa-times-circle"></i> 미생성
+                  </span>
+                </td>
+                <td>
+                  <button
+                    class="btn-success"
+                    @click="selectShipment(shipment)"
+                    :disabled="!shipment.purchaseOrderPdfPath"
+                    :title="!shipment.purchaseOrderPdfPath ? '발주서 생성 후 선택 가능' : ''"
+                  >
                     선택
                   </button>
                 </td>
@@ -89,14 +103,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { ShipmentListItem } from '~/services/shipment.service'
 import { shipmentService } from '~/services/shipment.service'
 import { useCommonStatus } from '~/composables/useCommonStatus'
+import { useAuthStore } from '~/stores/auth'
 
 const props = defineProps<{
   show: boolean
 }>()
+
+// 로그인 사용자 정보
+const authStore = useAuthStore()
+const userCompanyId = computed(() => authStore.user?.companyId)
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -126,7 +145,7 @@ const changePage = async (page: number) => {
   await loadShipments()
 }
 
-// 출하 목록 로드 (PENDING 상태만 필터링)
+// 출하 목록 로드 (PENDING 상태 + OEM 회사 필터링)
 const loadShipments = async () => {
   try {
     const response = await shipmentService.getShipments({
@@ -136,15 +155,25 @@ const loadShipments = async () => {
       sort: 'createdAt,desc'
     })
 
-    // ✅ PENDING(대기) 상태만 필터링
-    const filteredShipments = response.content.filter(shipment =>
-      shipment.status === 'PENDING'
-    )
+    // 필터링 조건:
+    // 1. PENDING 상태만
+    // 2. OEM 제조사 == 로그인 사용자의 회사 (userCompanyId가 있을 때만)
+    const filteredShipments = response.content.filter(shipment => {
+      // PENDING 상태 필터
+      if (shipment.status !== 'PENDING') return false
+
+      // OEM 회사 필터 (userCompanyId가 있을 때만 필터링, 관리자는 모두 표시)
+      if (userCompanyId.value && shipment.oemCompanyId !== userCompanyId.value) {
+        return false
+      }
+
+      return true
+    })
 
     shipments.value = filteredShipments
     totalPages.value = response.totalPages
 
-    console.log(`[출하 선택 팝업] 전체: ${response.content.length}개, 필터링 후: ${filteredShipments.length}개 (PENDING만 표시)`)
+    console.log(`[출하 선택 팝업] 전체: ${response.content.length}개, 필터링 후: ${filteredShipments.length}개 (PENDING + OEM 회사 필터)`)
   } catch (error) {
     console.error('출하 목록 로드 오류:', error)
     shipments.value = []
@@ -297,5 +326,34 @@ onMounted(() => {
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: 500;
+}
+
+/* 발주서 상태 배지 */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-generated {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-not-generated {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* 비활성화된 선택 버튼 */
+.btn-success:disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 </style>

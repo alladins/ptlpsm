@@ -1,75 +1,42 @@
 <template>
   <div class="item-management">
-    <!-- 페이지 헤더 - 리팩토링: PageHeader 컴포넌트 사용 -->
-    <PageHeader
-      title="품목관리"
-      description="품목 정보, 스펙정보, SKU 정보를 관리합니다."
-    />
+    <!-- 페이지 헤더 - 컴팩트 -->
+    <div class="page-header-compact">
+      <h1>품목관리</h1>
+      <span class="page-description">품목 정보, 스펙정보, SKU 정보를 관리합니다.</span>
+    </div>
 
     <!-- 품목 관리 컨테이너 -->
     <div class="item-management-container">
-      <!-- 좌측: 품목 기본 정보 관리 -->
+      <!-- 품목 기본 정보 관리 -->
       <div class="item-basic-section">
-        <div class="section-header">
-          <h2 class="section-title">품목 기본 정보</h2>
-          <button @click="openAddModal" class="btn-primary">
+        <div class="section-header-inline">
+          <h2>품목 기본 정보</h2>
+          <!-- 검색 인라인 -->
+          <div class="search-inline">
+            <input
+              type="text"
+              v-model="searchForm.keyword"
+              placeholder="품목코드, 품목명 검색"
+              class="search-input-sm"
+              @keyup.enter="searchItems"
+            >
+            <select v-model="searchForm.useYn" class="search-select-sm">
+              <option value="">전체</option>
+              <option value="Y">사용</option>
+              <option value="N">미사용</option>
+            </select>
+            <button class="btn-search-sm" @click="searchItems">
+              <i class="fas fa-search"></i> 검색
+            </button>
+          </div>
+          <button @click="openAddModal" class="btn-primary-sm">
             <i class="fas fa-plus"></i> 새 품목
           </button>
         </div>
 
-                 <!-- 검색 조건 섹션 -->
-         <div class="search-section">
-           <div class="search-form">
-             <div class="form-row">
-                               <div class="form-group search-input-group">
-                  <div class="search-labels">
-                    <label>통합 검색</label>
-                    <label>사용여부</label>
-                  </div>
-                  <div class="search-input-wrapper">
-                    <input 
-                      type="text" 
-                      v-model="searchForm.keyword" 
-                      placeholder="품목코드, 품목명, 카테고리, 유형, 단위로 검색" 
-                      class="form-input search-input"
-                      @keyup.enter="searchItems"
-                    >
-                    <div class="form-group">
-                       <select v-model="searchForm.useYn" class="form-select">
-                         <option value="">전체</option>
-                         <option value="Y">사용중</option>
-                         <option value="N">사용중지</option>
-                       </select>
-                     </div>
-                  </div>
-                </div>
-               
-               <div class="form-group button-group">
-                 <button class="btn-primary search-btn" @click="searchItems">
-                   <i class="fas fa-search"></i>
-                   <span>검색</span>
-                 </button>
-                </div>
-             </div>
-           </div>
-         </div>
-
         <!-- 품목 목록 테이블 -->
         <div class="table-section">
-          <!-- 테이블 헤더: 리팩토링 - useDataTable의 변수 사용 -->
-          <div class="table-header">
-            <div class="table-info">
-              <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
-            </div>
-            <div class="table-actions">
-              <select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
-                <option :value="10">10개씩</option>
-                <option :value="20">20개씩</option>
-                <option :value="50">50개씩</option>
-              </select>
-            </div>
-          </div>
-
           <div class="table-container">
             <table class="data-table">
                              <thead>
@@ -83,10 +50,10 @@
                  </tr>
                </thead>
               <tbody>
-                <tr v-for="item in items" :key="item.itemId || ''" class="table-row"
-                    :class="{ 'selected': selectedItemId === item.itemId?.toString() }"
+                <tr v-for="item in items" :key="item.itemClassificationNumber || ''" class="table-row"
+                    :class="{ 'selected': selectedItemId === item.itemClassificationNumber?.toString() }"
                     @click="selectItem(item)">
-                  <td>{{ item.itemId }}</td>
+                  <td>{{ item.itemClassificationNumber }}</td>
                   <td>{{ item.itemNm }}</td>
                   <td>{{ item.itemTypeCd || '-' }}</td>
                   <td>{{ item.unitCd || '-' }}</td>
@@ -140,33 +107,15 @@
             </div>
           </div>
 
-          <!-- 페이지네이션 - 리팩토링: Pagination 컴포넌트 사용 -->
-          <Pagination
-            v-if="totalPages > 0"
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            :disabled="loading"
-            @change="handlePageChange"
-          />
         </div>
       </div>
 
-      <!-- 우측: 스펙정보 및 SKU 정보 관리 -->
+      <!-- 하단: 스펙정보 및 SKU 정보 관리 -->
       <div class="item-detail-section">
-        <div class="section-header">
-          <h2 class="section-title">상세 정보 관리</h2>
-          <div class="section-info">
-            <span v-if="selectedItem" class="selected-item-info">
-              선택된 품목: <strong>{{ selectedItem.itemNm }}</strong>
-            </span>
-            <span v-else class="no-selection-info">
-              품목을 선택해주세요
-            </span>
-          </div>
-        </div>
-
-        <!-- 탭 네비게이션 -->
-        <div class="tab-navigation">
+        <div class="section-header-inline">
+          <h2>상세 정보 관리</h2>
+          <!-- 탭 네비게이션 인라인 -->
+          <div class="tab-navigation-inline">
            <button
              @click="activeTab = 'skus'"
              :class="['tab-button', { active: activeTab === 'skus' }]"
@@ -185,13 +134,18 @@
              스펙정보
              <span v-if="selectedItem" class="tab-count">({{ selectedItem.itemSpecs.length }})</span>
            </button>
+          </div>
+          <span v-if="selectedItem" class="selected-item-badge">
+            {{ selectedItem.itemNm }}
+          </span>
+          <span v-else class="no-selection-hint">품목을 선택해주세요</span>
         </div>
 
         <!-- 스펙정보 탭 -->
         <div v-if="activeTab === 'specs'" class="tab-content">
-          <div class="tab-header">
-            <h3>스펙정보 관리</h3>
-            <button @click="openSpecModal('create')" class="btn-primary" :disabled="!selectedItem">
+          <div class="tab-header-sm">
+            <span>스펙정보</span>
+            <button @click="openSpecModal('create')" class="btn-primary-sm" :disabled="!selectedItem">
               <i class="fas fa-plus"></i> 새 스펙
             </button>
           </div>
@@ -247,9 +201,9 @@
 
         <!-- SKU 정보 탭 -->
         <div v-if="activeTab === 'skus'" class="tab-content">
-          <div class="tab-header">
-            <h3>SKU 정보 관리</h3>
-            <button @click="openSkuModal('create')" class="btn-primary" :disabled="!selectedItem">
+          <div class="tab-header-sm">
+            <span>SKU 정보</span>
+            <button @click="openSkuModal('create')" class="btn-primary-sm" :disabled="!selectedItem">
               <i class="fas fa-plus"></i> 새 SKU
             </button>
           </div>
@@ -264,15 +218,14 @@
                    <th>높이</th>
                    <th>두께</th>
                    <th>납품단가</th>
-                   <th>원가</th>
-                   <th>마진율</th>
+                   <th>OEM 원가</th>
                    <th>재고수량</th>
                    <th>관리</th>
                  </tr>
                </thead>
               <tbody>
                                  <tr v-if="!selectedItem" class="no-selection-row">
-                   <td colspan="10" class="no-selection-message">
+                   <td colspan="9" class="no-selection-message">
                      <div class="empty-state">
                        <i class="fas fa-info-circle"></i>
                        <span>품목을 선택해주세요</span>
@@ -280,7 +233,7 @@
                    </td>
                  </tr>
                  <tr v-else-if="selectedItem.itemSkus.length === 0" class="no-data-row">
-                   <td colspan="10" class="no-data-message">
+                   <td colspan="9" class="no-data-message">
                      <div class="empty-state">
                        <i class="fas fa-inbox"></i>
                        <span>등록된 SKU가 없습니다</span>
@@ -295,30 +248,13 @@
                    <td>{{ sku.thickness || '-' }}</td>
                    <td>{{ formatCurrency(sku.unitPrice) }}</td>
                    <td>
-                     <span v-if="sku.costPrice !== undefined && sku.costPrice !== null">
-                       {{ formatCurrency(sku.costPrice) }}
-                     </span>
-                     <button v-else class="btn-cost-edit" @click.stop="openCostPriceModal(sku)" title="원가 설정">
-                       <i class="fas fa-edit"></i>
-                       <span>설정</span>
+                     <button class="btn-oem-cost" @click.stop="goToOemCostPage(sku.skuId)" title="OEM 원가 관리">
+                       <i class="fas fa-industry"></i>
+                       <span>관리</span>
                      </button>
-                   </td>
-                   <td>
-                     <span
-                       v-if="calculateMarginRate(sku.unitPrice, sku.costPrice) !== null"
-                       class="margin-badge"
-                       :class="getMarginRateClass(calculateMarginRate(sku.unitPrice, sku.costPrice))"
-                     >
-                       {{ calculateMarginRate(sku.unitPrice, sku.costPrice)?.toFixed(1) }}%
-                     </span>
-                     <span v-else class="margin-badge margin-none">-</span>
                    </td>
                    <td>{{ sku.stockQty || '-' }}</td>
                    <td class="action-buttons">
-                     <button @click="openCostPriceModal(sku)" class="btn-cost" title="원가 수정">
-                       <i class="fas fa-won-sign"></i>
-                       <span>원가</span>
-                     </button>
                      <button @click="openSkuModal('edit', sku)" class="btn-edit" title="수정">
                        <i class="fas fa-edit"></i>
                        <span>수정</span>
@@ -637,7 +573,7 @@
               <div class="detail-grid">
                 <div class="detail-item">
                   <label>품목코드:</label>
-                  <span>{{ viewingItem?.itemId }}</span>
+                  <span>{{ viewingItem?.itemClassificationNumber }}</span>
                 </div>
                 <div class="detail-item">
                   <label>품목명:</label>
@@ -697,8 +633,6 @@
                        <th>높이</th>
                        <th>두께</th>
                        <th>납품단가</th>
-                       <th>원가</th>
-                       <th>마진율</th>
                        <th>재고수량</th>
                      </tr>
                    </thead>
@@ -710,17 +644,6 @@
                        <td>{{ sku.height || '-' }}</td>
                        <td>{{ sku.thickness || '-' }}</td>
                        <td>{{ formatCurrency(sku.unitPrice) }}</td>
-                       <td>{{ sku.costPrice !== undefined && sku.costPrice !== null ? formatCurrency(sku.costPrice) : '미설정' }}</td>
-                       <td>
-                         <span
-                           v-if="calculateMarginRate(sku.unitPrice, sku.costPrice) !== null"
-                           class="margin-badge"
-                           :class="getMarginRateClass(calculateMarginRate(sku.unitPrice, sku.costPrice))"
-                         >
-                           {{ calculateMarginRate(sku.unitPrice, sku.costPrice)?.toFixed(1) }}%
-                         </span>
-                         <span v-else>-</span>
-                       </td>
                        <td>{{ sku.stockQty || '-' }}</td>
                      </tr>
                    </tbody>
@@ -996,28 +919,16 @@
       </div>
     </div>
 
-    <!-- 원가 수정 모달 -->
-    <CostPriceEditModal
-      v-if="costPriceEditTarget"
-      :is-open="showCostPriceModal"
-      :item-id="costPriceEditTarget.itemId"
-      :item-name="costPriceEditTarget.itemName"
-      :unit-price="costPriceEditTarget.unitPrice"
-      :current-cost-price="costPriceEditTarget.currentCostPrice"
-      @close="closeCostPriceModal"
-      @saved="handleCostPriceSaved"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { itemService, type Item, type ItemCreateRequest, type ItemUpdateRequest } from '~/services/item.service'
 // 리팩토링: 공통 composable import
 import { useDataTable } from '~/composables/useDataTable'
 import { formatCurrency } from '~/utils/format'
-// 원가 수정 모달 컴포넌트
-import CostPriceEditModal from '~/components/item/CostPriceEditModal.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -1074,7 +985,7 @@ const {
       return response
     }
   },
-  initialPageSize: 10
+  initialPageSize: 1000
 })
 
 // 선택된 품목 및 탭 관리
@@ -1091,14 +1002,8 @@ const showSkuModal = ref(false)
 const editingItem = ref<Item | null>(null)
 const viewingItem = ref<Item | null>(null)
 
-// 원가 수정 모달 상태
-const showCostPriceModal = ref(false)
-const costPriceEditTarget = ref<{
-  itemId: string
-  itemName: string
-  unitPrice: number
-  currentCostPrice?: number
-} | null>(null)
+// 라우터 (OEM 원가 페이지 이동용)
+const router = useRouter()
 
 // 모달 모드
 const specModalMode = ref<'create' | 'edit'>('create')
@@ -1167,7 +1072,7 @@ const skuForm = ref<SkuForm>({
 // 품목 선택
 const selectItem = (item: Item) => {
   selectedItem.value = item
-  selectedItemId.value = item.itemId?.toString() ?? ''
+  selectedItemId.value = item.itemClassificationNumber?.toString() ?? ''
   activeTab.value = 'skus'
 }
 
@@ -1218,7 +1123,7 @@ const openAddModal = () => {
 const openEditModal = (item: Item) => {
   editingItem.value = item
   formData.value = {
-    itemId: item.itemId,
+    itemId: item.itemClassificationNumber,
     itemNm: item.itemNm,
     itemTypeCd: item.itemTypeCd || '',
     unitCd: item.unitCd || '',
@@ -1441,7 +1346,7 @@ const submitEdit = async () => {
       itemSkus: formData.value.itemSkus
     }
     
-    await itemService.updateItem(editingItem.value.itemId, updateData)
+    await itemService.updateItem(editingItem.value.itemClassificationNumber, updateData)
     closeModal()
     // 선택된 품목 초기화
     selectedItem.value = null
@@ -1486,7 +1391,7 @@ const submitSpec = async () => {
         itemSkus: selectedItem.value.itemSkus
       }
       
-      await itemService.updateItem(selectedItem.value.itemId, updateData)
+      await itemService.updateItem(selectedItem.value.itemClassificationNumber, updateData)
     } else {
       // 기존 스펙 수정
       const specIndex = selectedItem.value.itemSpecs.findIndex(spec => spec.id === specForm.value.id)
@@ -1515,14 +1420,14 @@ const submitSpec = async () => {
           itemSkus: selectedItem.value.itemSkus
         }
         
-        await itemService.updateItem(selectedItem.value.itemId, updateData)
+        await itemService.updateItem(selectedItem.value.itemClassificationNumber, updateData)
       }
     }
-    
+
     closeSpecModal()
-    
+
     // 등록/수정 후 즉시 데이터 새로고침
-    await refreshItemDetail(selectedItem.value.itemId)
+    await refreshItemDetail(selectedItem.value.itemClassificationNumber)
     
     alert(`스펙이 성공적으로 ${specModalMode.value === 'create' ? '등록' : '수정'}되었습니다.`)
   } catch (error) {
@@ -1532,7 +1437,7 @@ const submitSpec = async () => {
     if (error instanceof Error) {
       if (error.message.includes('404') || error.message.includes('Not Found')) {
         alert('품목 정보를 찾을 수 없습니다. 페이지를 새로고침해주세요.')
-        await refreshItemDetail(selectedItem.value.itemId)
+        await refreshItemDetail(selectedItem.value.itemClassificationNumber)
       } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
         alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
       } else {
@@ -1565,7 +1470,7 @@ const submitSku = async () => {
       }
       
       // API를 통한 SKU 등록
-      await itemService.createSku(selectedItem.value.itemId, skuData)
+      await itemService.createSku(selectedItem.value.itemClassificationNumber, skuData)
     } else {
       // 기존 SKU 수정 - 품목 업데이트 API 사용
       const skuIndex = selectedItem.value.itemSkus.findIndex(sku => sku.skuId === (skuForm.value.skuId?.toString() ?? ''))
@@ -1597,14 +1502,14 @@ const submitSku = async () => {
           itemSkus: selectedItem.value.itemSkus
         }
         
-        await itemService.updateItem(selectedItem.value.itemId, updateData)
+        await itemService.updateItem(selectedItem.value.itemClassificationNumber, updateData)
       }
     }
-    
+
     closeSkuModal()
-    
+
     // 등록/수정 후 즉시 데이터 새로고침
-    await refreshItemDetail(selectedItem.value.itemId)
+    await refreshItemDetail(selectedItem.value.itemClassificationNumber)
     
     alert(`SKU가 성공적으로 ${skuModalMode.value === 'create' ? '등록' : '수정'}되었습니다.`)
   } catch (error) {
@@ -1620,7 +1525,7 @@ const submitSku = async () => {
         alert('SKU코드가 중복되었습니다. 다른 코드를 사용해주세요.')
       } else if (errorMessage.includes('404') || errorMessage.includes('not found')) {
         alert('품목 정보를 찾을 수 없습니다. 페이지를 새로고침해주세요.')
-        await refreshItemDetail(selectedItem.value.itemId)
+        await refreshItemDetail(selectedItem.value.itemClassificationNumber)
       } else if (errorMessage.includes('500') || errorMessage.includes('internal server error')) {
         // 500 에러 시 실제 서버 에러 메시지 표시
         alert(`서버 오류가 발생했습니다.\n\n상세 정보: ${error.message}\n\n관리자에게 문의해주세요.`)
@@ -1645,9 +1550,9 @@ const deleteItem = async (item: Item) => {
   if (!confirm('정말 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) return
   
   try {
-    await itemService.deleteItem(item.itemId)
+    await itemService.deleteItem(item.itemClassificationNumber)
     // 선택된 품목이 삭제된 품목이면 초기화
-    if (selectedItem.value && selectedItem.value.itemId === item.itemId) {
+    if (selectedItem.value && selectedItem.value.itemClassificationNumber === item.itemClassificationNumber) {
       selectedItem.value = null
       selectedItemId.value = null
     }
@@ -1679,10 +1584,10 @@ const deleteSpec = async (specId: string | number) => {
     if (!confirmed) return
     
     // API를 통한 스펙 삭제
-    await itemService.deleteSpec(selectedItem.value.itemId, specId?.toString() ?? '')
-    
+    await itemService.deleteSpec(selectedItem.value.itemClassificationNumber, specId?.toString() ?? '')
+
     // 삭제 후 즉시 데이터 새로고침
-    await refreshItemDetail(selectedItem.value.itemId)
+    await refreshItemDetail(selectedItem.value.itemClassificationNumber)
     
     alert('스펙이 성공적으로 삭제되었습니다.')
   } catch (error) {
@@ -1693,7 +1598,7 @@ const deleteSpec = async (specId: string | number) => {
       if (error.message.includes('404') || error.message.includes('Not Found')) {
         alert('삭제할 스펙을 찾을 수 없습니다. 페이지를 새로고침해주세요.')
         // 데이터 동기화 문제로 인식하여 전체 새로고침
-        await refreshItemDetail(selectedItem.value.itemId)
+        await refreshItemDetail(selectedItem.value.itemClassificationNumber)
       } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
         alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
       } else {
@@ -1725,10 +1630,10 @@ const deleteSku = async (skuId: string) => {
     if (!confirmed) return
     
     // API를 통한 SKU 삭제
-    await itemService.deleteSku(selectedItem.value.itemId, skuId)
-    
+    await itemService.deleteSku(selectedItem.value.itemClassificationNumber, skuId)
+
     // 삭제 후 즉시 데이터 새로고침
-    await refreshItemDetail(selectedItem.value.itemId)
+    await refreshItemDetail(selectedItem.value.itemClassificationNumber)
     
     alert('SKU가 성공적으로 삭제되었습니다.')
   } catch (error) {
@@ -1739,7 +1644,7 @@ const deleteSku = async (skuId: string) => {
       if (error.message.includes('404') || error.message.includes('Not Found')) {
         alert('삭제할 SKU를 찾을 수 없습니다. 페이지를 새로고침해주세요.')
         // 데이터 동기화 문제로 인식하여 전체 새로고침
-        await refreshItemDetail(selectedItem.value.itemId)
+        await refreshItemDetail(selectedItem.value.itemClassificationNumber)
       } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
         alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
       } else {
@@ -1779,65 +1684,17 @@ const isItemDeletable = (item: Item): boolean => {
   return !hasSpecs && !hasSkus
 }
 
-// ========== 원가 관련 함수 ==========
+// ========== OEM 원가 관련 함수 ==========
 
 /**
- * 마진율 계산
- * @param unitPrice 납품단가
- * @param costPrice 원가
- * @returns 마진율 (%) 또는 null
+ * OEM 원가 관리 페이지로 이동
+ * @param skuId SKU ID
  */
-const calculateMarginRate = (unitPrice?: number, costPrice?: number): number | null => {
-  if (!unitPrice || unitPrice <= 0 || costPrice === undefined || costPrice === null) {
-    return null
-  }
-  const margin = unitPrice - costPrice
-  return (margin / unitPrice) * 100
-}
-
-/**
- * 마진율에 따른 CSS 클래스 반환
- */
-const getMarginRateClass = (marginRate: number | null): string => {
-  if (marginRate === null) return ''
-  if (marginRate >= 30) return 'margin-high'
-  if (marginRate >= 15) return 'margin-normal'
-  if (marginRate >= 0) return 'margin-low'
-  return 'margin-negative'
-}
-
-/**
- * 원가 수정 모달 열기
- */
-const openCostPriceModal = (sku: any) => {
-  if (!selectedItem.value) return
-
-  costPriceEditTarget.value = {
-    itemId: selectedItem.value.itemId,
-    itemName: `${selectedItem.value.itemNm} - ${sku.skuNm}`,
-    unitPrice: sku.unitPrice || 0,
-    currentCostPrice: sku.costPrice
-  }
-  showCostPriceModal.value = true
-}
-
-/**
- * 원가 수정 모달 닫기
- */
-const closeCostPriceModal = () => {
-  showCostPriceModal.value = false
-  costPriceEditTarget.value = null
-}
-
-/**
- * 원가 수정 완료 처리
- */
-const handleCostPriceSaved = async () => {
-  closeCostPriceModal()
-  // 선택된 품목 정보 새로고침
-  if (selectedItem.value) {
-    await refreshItemDetail(selectedItem.value.itemId)
-  }
+const goToOemCostPage = (skuId: string) => {
+  router.push({
+    path: '/admin/basic-info/oem-cost',
+    query: { skuId }
+  })
 }
 
 // 초기 데이터 로드
@@ -1857,7 +1714,28 @@ onMounted(() => {
 
 /* 페이지 특화 스타일만 작성 */
 
-/* 1단계: 페이지 컨테이너 - 그라데이션 배경 */
+/* 컴팩트 페이지 헤더 */
+.page-header-compact {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+}
+
+.page-header-compact h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.page-header-compact .page-description {
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+/* 1단계: 페이지 컨테이너 */
 .item-management {
   max-width: 100%;
   margin: 0 auto;
@@ -1866,11 +1744,11 @@ onMounted(() => {
   padding: 0.5rem;
 }
 
-/* 2열 레이아웃 컨테이너 */
+/* 상하 레이아웃 컨테이너 */
 .item-management-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   background: transparent;
 }
 
@@ -1878,16 +1756,112 @@ onMounted(() => {
 .item-basic-section,
 .item-detail-section {
   background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-              0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(226, 232, 240, 0.8);
   display: flex;
   flex-direction: column;
 }
 
-/* 2단계: 검색 섹션 - 카드 스타일 */
+/* 품목 기본 정보 섹션 - 높이 제한 해제, 테이블 높이만 제한 */
+.item-basic-section .table-container {
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* 인라인 섹션 헤더 (검색 포함) */
+.section-header-inline {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.section-header-inline h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+/* 인라인 검색 */
+.search-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-input-sm {
+  flex: 1;
+  height: 32px;
+  padding: 0 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+}
+
+.search-input-sm:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.search-select-sm {
+  height: 32px;
+  padding: 0 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  min-width: 70px;
+}
+
+.btn-search-sm {
+  height: 32px;
+  padding: 0 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-search-sm:hover {
+  background: #2563eb;
+}
+
+.btn-primary-sm {
+  height: 32px;
+  padding: 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-primary-sm:hover {
+  background: #2563eb;
+}
+
+/* 2단계: 검색 섹션 - 컴팩트 스타일 */
 .search-section {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border: 1px solid #e2e8f0;
@@ -1896,12 +1870,59 @@ onMounted(() => {
   margin-bottom: 1.5rem;
 }
 
-.search-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.search-section.compact {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
 }
 
+.search-form-inline {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-field:first-child {
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-field.narrow {
+  flex: 0 0 auto;
+}
+
+.search-field label {
+  white-space: nowrap;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.8125rem;
+}
+
+.search-field .form-input,
+.search-field .form-select {
+  height: 38px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.search-field .search-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-field .form-select {
+  min-width: 100px;
+}
+
+/* 기존 form-row, form-group 등은 모달에서 사용 */
 .form-row {
   display: flex;
   align-items: flex-end;
@@ -1930,42 +1951,11 @@ onMounted(() => {
   grid-column: 1 / -1;
 }
 
-.search-input-group {
-  flex: 1;
-}
-
-.search-labels {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.search-labels label {
-  font-weight: 600;
-  color: #475569;
-  font-size: 0.8125rem;
-}
-
-.search-labels label:first-child {
-  flex: 1;
-}
-
-.search-labels label:last-child {
-  flex: 0 0 130px;
-  text-align: left;
-}
-
-.search-input-wrapper {
-  display: flex;
-  align-items: stretch;
-  gap: 0.75rem;
-}
-
 .search-input {
   flex: 1;
-  min-width: 300px;
-  height: 42px;
-  border-radius: 10px;
+  min-width: 200px;
+  height: 38px;
+  border-radius: 8px;
   border: 1.5px solid #e2e8f0;
   padding: 0.5rem 1rem;
   box-sizing: border-box;
@@ -2117,10 +2107,10 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid #e2e8f0;
 }
 
@@ -2214,10 +2204,26 @@ onMounted(() => {
   color: #3b82f6;
 }
 
+/* 품목 테이블 컬럼 너비 지정 */
+.item-basic-section .data-table th:nth-child(1),
+.item-basic-section .data-table td:nth-child(1) {
+  min-width: 120px;  /* 품목코드 */
+}
+
+.item-basic-section .data-table th:nth-child(2),
+.item-basic-section .data-table td:nth-child(2) {
+  min-width: 180px;  /* 품목명 */
+}
+
+.item-basic-section .data-table th:nth-child(6),
+.item-basic-section .data-table td:nth-child(6) {
+  min-width: 180px;  /* 관리 버튼 */
+}
+
 /* 4단계: 액션 버튼 - 그라데이션 및 애니메이션 */
 .action-buttons {
   display: flex;
-  gap: 0.375rem;
+  gap: 0.5rem;
   justify-content: flex-start;
   flex-wrap: nowrap;
 }
@@ -2228,8 +2234,8 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
   border: none;
   border-radius: 8px;
   font-size: 0.75rem;
@@ -2237,6 +2243,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  min-width: fit-content;
 }
 
 /* 상세 버튼 (초록) */
@@ -2585,8 +2592,8 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 1.25rem;
-  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
   border-bottom: 2px solid #e2e8f0;
   position: relative;
 }
@@ -2609,56 +2616,74 @@ onMounted(() => {
   letter-spacing: -0.025em;
 }
 
-/* 7단계: 선택된 품목 정보 - 배지 스타일 */
-.section-info {
-  font-size: 0.875rem;
-}
-
-.selected-item-info {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 1rem;
+/* 선택된 품목 배지 - 컴팩트 */
+.selected-item-badge {
+  padding: 0.25rem 0.75rem;
   background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  color: #1e40af;
-  border-radius: 8px;
-  font-weight: 500;
+  color: #1d4ed8;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
   border: 1px solid #bfdbfe;
 }
 
-.selected-item-info strong {
-  font-weight: 700;
-  color: #1d4ed8;
-}
-
-.no-selection-info {
+.no-selection-hint {
   color: #94a3b8;
+  font-size: 0.8125rem;
   font-style: italic;
 }
 
-/* 6단계: 탭 네비게이션 - 세그먼트 컨트롤 */
+/* 탭 네비게이션 인라인 */
+.tab-navigation-inline {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.tab-navigation-inline .tab-button {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  border-radius: 6px;
+}
+
+/* 탭 헤더 컴팩트 */
+.tab-header-sm {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.tab-header-sm span {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* 기존 탭 스타일 (호환성) */
 .tab-navigation {
   display: flex;
   gap: 0.5rem;
   padding: 0.375rem;
   background: #f1f5f9;
   border-radius: 12px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .tab-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  flex: 1;
-  padding: 0.75rem 1.25rem;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
   background: transparent;
   color: #64748b;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -3012,44 +3037,39 @@ onMounted(() => {
   border: 1px solid #e2e8f0;
 }
 
-/* 원가 버튼 스타일 - 그라데이션 */
-.btn-cost {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
-}
-
-.btn-cost:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
-}
-
-.btn-cost-edit {
+/* OEM 원가 관리 버튼 스타일 */
+.btn-oem-cost {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
   padding: 0.25rem 0.5rem;
-  background: white;
-  border: 1.5px dashed #cbd5e1;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border: none;
   border-radius: 6px;
   font-size: 0.75rem;
-  font-weight: 500;
-  color: #64748b;
+  font-weight: 600;
+  color: white;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.btn-cost-edit:hover {
-  background: #f8fafc;
-  border-color: #8b5cf6;
-  color: #7c3aed;
+.btn-oem-cost:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(249, 115, 22, 0.3);
 }
 
-/* 반응형 - 1열 레이아웃 전환 */
+/* 반응형 - 이미 상하 레이아웃이므로 간격만 조정 */
 @media (max-width: 1200px) {
   .item-management-container {
-    grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .item-basic-section {
+    max-height: 450px;
+  }
+
+  .item-basic-section .table-container {
+    max-height: 250px;
   }
 }
 

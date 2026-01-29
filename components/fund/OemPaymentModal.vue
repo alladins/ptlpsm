@@ -40,8 +40,97 @@
 
           <!-- Modal Body -->
           <div class="ccm-modal-body">
-            <!-- 기성금 다중 선택 (등록 모드에서만, linkedPayment가 없을 때) -->
-            <div v-if="!isCompleteMode && !linkedPayment && progressPayments.length > 0" class="ccm-form-group">
+            <!-- 선급금 모드: 선급금이 있으면 기성금 선택 없이 지급예정 버튼 표시 -->
+            <div v-if="!isCompleteMode && hasAdvancePayment && !linkedPayment" class="ccm-form-group">
+              <label class="ccm-form-label">
+                <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                OEM 선급금 지급
+              </label>
+              <div class="advance-oem-info-table">
+                <div class="advance-oem-row">
+                  <span class="advance-oem-label">OEM 예정 총액</span>
+                  <span class="advance-oem-value">{{ formatCurrency(Math.floor(oemExpectedTotal || 0)) }}</span>
+                </div>
+                <div class="advance-oem-row">
+                  <span class="advance-oem-label">선급금 비율</span>
+                  <span class="advance-oem-value">{{ advancePaymentRate }}%</span>
+                </div>
+                <div class="advance-oem-row highlight">
+                  <span class="advance-oem-label">OEM 선급금 지급 예정액</span>
+                  <span class="advance-oem-value">{{ formatCurrency(Math.floor((oemExpectedTotal || 0) * (advancePaymentRate || 0) / 100)) }}</span>
+                </div>
+                <div class="advance-oem-row">
+                  <span class="advance-oem-label">기존 지급 총액</span>
+                  <span class="advance-oem-value">{{ formatCurrency(Math.floor(oemTotalPaid || 0)) }}</span>
+                </div>
+                <div class="advance-oem-row">
+                  <span class="advance-oem-label">잔여 지급 한도</span>
+                  <span class="advance-oem-value success">{{ formatCurrency(Math.floor(remainingOemLimit)) }}</span>
+                </div>
+              </div>
+              <!-- 지급예정 버튼 (버튼과 금액 분리) -->
+              <div class="oem-percent-buttons">
+                <span class="oem-percent-label">지급 예정</span>
+                <div class="advance-payment-row">
+                  <button
+                    type="button"
+                    class="advance-payment-btn"
+                    @click="applyRemainingAmount"
+                    :disabled="isSubmitting || displayRemainingAmount <= 0"
+                  >
+                    지급예정
+                  </button>
+                  <span class="advance-payment-amount">{{ formatCurrency(displayRemainingAmount) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 기본 모드: 선급금도 기성금도 없는 경우 OEM 예정 총액 기준으로 비율 선택 -->
+            <div v-if="!isCompleteMode && !linkedPayment && !hasAdvancePayment && progressPayments.length === 0 && oemExpectedTotal > 0" class="ccm-form-group">
+              <label class="ccm-form-label">
+                <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                OEM 지급
+              </label>
+              <div class="advance-oem-info-table">
+                <div class="advance-oem-row">
+                  <span class="advance-oem-label">OEM 예정 총액</span>
+                  <span class="advance-oem-value">{{ formatCurrency(Math.floor(oemExpectedTotal || 0)) }}</span>
+                </div>
+                <div class="advance-oem-row">
+                  <span class="advance-oem-label">기존 지급 총액</span>
+                  <span class="advance-oem-value">{{ formatCurrency(Math.floor(oemTotalPaid || 0)) }}</span>
+                </div>
+                <div class="advance-oem-row highlight">
+                  <span class="advance-oem-label">잔여 지급 한도</span>
+                  <span class="advance-oem-value success">{{ formatCurrency(Math.floor(remainingOemLimit)) }}</span>
+                </div>
+              </div>
+              <!-- 비율 선택 버튼 -->
+              <div class="oem-percent-buttons">
+                <span class="oem-percent-label">비율 선택</span>
+                <div class="oem-percent-group">
+                  <button type="button" class="oem-percent-btn" @click="setPercentAmountFromTotal(30)" :disabled="isSubmitting">
+                    <span class="oem-percent-value">30%</span>
+                    <span class="oem-percent-amount">{{ formatCurrencyShort((oemExpectedTotal || 0) * 0.3) }}</span>
+                  </button>
+                  <button type="button" class="oem-percent-btn" @click="setPercentAmountFromTotal(61)" :disabled="isSubmitting">
+                    <span class="oem-percent-value">61%</span>
+                    <span class="oem-percent-amount">{{ formatCurrencyShort((oemExpectedTotal || 0) * 0.61) }}</span>
+                  </button>
+                  <button type="button" class="oem-percent-btn" @click="setPercentAmountFromTotal(64)" :disabled="isSubmitting">
+                    <span class="oem-percent-value">64%</span>
+                    <span class="oem-percent-amount">{{ formatCurrencyShort((oemExpectedTotal || 0) * 0.64) }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 기성금 다중 선택 (등록 모드에서만, linkedPayment가 없고 선급금 모드가 아닐 때) -->
+            <div v-if="!isCompleteMode && !linkedPayment && !hasAdvancePayment && progressPayments.length > 0" class="ccm-form-group">
               <label class="ccm-form-label">
                 <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
@@ -103,7 +192,7 @@
                   <span class="ccm-value">{{ formatCurrency(linkedPayment.requestAmount || linkedPayment.amount) }}</span>
                 </div>
                 <div class="ccm-info-item">
-                  <span class="ccm-label">OEM 지급 예정 (70%)</span>
+                  <span class="ccm-label">OEM 지급 예정</span>
                   <span class="ccm-value ccm-highlight">{{ formatCurrency(suggestedOemAmount) }}</span>
                 </div>
               </div>
@@ -342,13 +431,25 @@ interface Props {
   oemPaymentRate?: number
   /** 수금 완료된 기성금 목록 (OEM 지급 대상) */
   progressPayments?: ProgressPaymentRequest[]
+  /** 선급금 유무 */
+  hasAdvancePayment?: boolean
+  /** OEM 예정 총액 (원가 합계) */
+  oemExpectedTotal?: number
+  /** 선급금 비율 (%) */
+  advancePaymentRate?: number
+  /** 기존 OEM 지급 총액 */
+  oemTotalPaid?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   existingPayment: null,
   linkedPayment: null,
   oemPaymentRate: 70,
-  progressPayments: () => []
+  progressPayments: () => [],
+  hasAdvancePayment: false,
+  oemExpectedTotal: 0,
+  advancePaymentRate: 0,
+  oemTotalPaid: 0
 })
 
 // Emits
@@ -378,6 +479,7 @@ const isSuccess = ref(false)
 const displayAmount = ref('')
 const isAmountFocused = ref(false)
 const selectedPaymentIds = ref<number[]>([])
+const displayRemainingAmount = ref(0)  // 지급예정 버튼 옆 표시 금액 (클릭 시 0으로 변경)
 
 const formData = reactive({
   paymentDate: new Date().toISOString().split('T')[0],
@@ -414,6 +516,21 @@ const suggestedOemAmount = computed(() => {
 
 const isFormValid = computed(() => {
   return formData.paymentDate && formData.amount > 0
+})
+
+// OEM 선급금 지급 예정액 (OEM예정총액 × 선급금비율)
+const advanceOemPaymentAmount = computed(() => {
+  return Math.floor((props.oemExpectedTotal || 0) * (props.advancePaymentRate || 0) / 100)
+})
+
+// OEM 지급 잔여 한도 (선급금 모드: 선급금 지급 예정액 - 기존 지급총액)
+const remainingOemLimit = computed(() => {
+  if (props.hasAdvancePayment) {
+    // 선급금 모드: 선급금 지급 예정액이 상한
+    return Math.max(0, Math.floor(advanceOemPaymentAmount.value - (props.oemTotalPaid || 0)))
+  }
+  // 일반 모드: 전체 OEM 예정총액이 상한
+  return Math.max(0, Math.floor((props.oemExpectedTotal || 0) - (props.oemTotalPaid || 0)))
 })
 
 // Methods
@@ -471,10 +588,18 @@ const setSuggestedAmount = () => {
   displayAmount.value = formatNumberInput(suggestedOemAmount.value.toString())
 }
 
-// 비율에 따른 금액 설정 (10%, 30%, 61%, 64%)
+// 비율에 따른 금액 설정 (10%, 30%, 61%, 64%) - 기성금 선택 기준
 const setPercentAmount = (percent: number) => {
   if (baseAmountForPercent.value <= 0) return
   const calculatedAmount = Math.floor((baseAmountForPercent.value * percent) / 100)
+  formData.amount = calculatedAmount
+  displayAmount.value = formatNumberInput(calculatedAmount.toString())
+}
+
+// OEM 예정 총액 기준 비율 계산 (기본 모드용)
+const setPercentAmountFromTotal = (percent: number) => {
+  if ((props.oemExpectedTotal || 0) <= 0) return
+  const calculatedAmount = Math.floor((props.oemExpectedTotal || 0) * percent / 100)
   formData.amount = calculatedAmount
   displayAmount.value = formatNumberInput(calculatedAmount.toString())
 }
@@ -497,6 +622,15 @@ const togglePaymentSelection = (paymentId: number) => {
   }
 }
 
+// 선급금 모드: 지급예정 버튼 클릭 시 잔여 한도 금액 입력 및 표시 금액 0으로 변경
+const applyRemainingAmount = () => {
+  const amount = Math.floor(remainingOemLimit.value)
+  formData.amount = amount
+  displayAmount.value = formatNumberInput(amount.toString())
+  // 버튼 옆 표시 금액을 0으로 변경
+  displayRemainingAmount.value = 0
+}
+
 const validateForm = (): boolean => {
   errors.amount = undefined
   errors.paymentDate = undefined
@@ -509,6 +643,15 @@ const validateForm = (): boolean => {
   if (formData.amount <= 0) {
     errors.amount = '지급 금액을 입력해주세요.'
     return false
+  }
+
+  // 금액 초과 검증 (OEM예정총액 기준)
+  if (props.oemExpectedTotal && props.oemExpectedTotal > 0) {
+    const newTotal = (props.oemTotalPaid || 0) + formData.amount
+    if (newTotal > props.oemExpectedTotal) {
+      alert(`OEM 지급 총액(${formatCurrency(newTotal)})이 OEM 예정 총액(${formatCurrency(props.oemExpectedTotal)})을 초과합니다.\n금액을 조정해주세요.`)
+      return false
+    }
   }
 
   return true
@@ -569,6 +712,13 @@ const resetForm = () => {
   errors.amount = undefined
   errors.paymentDate = undefined
   selectedPaymentIds.value = []
+  // 선급금 모드용 표시 금액 초기화 (선급금 예정액 기준)
+  if (props.hasAdvancePayment) {
+    const advanceAmount = Math.floor((props.oemExpectedTotal || 0) * (props.advancePaymentRate || 0) / 100)
+    displayRemainingAmount.value = Math.max(0, advanceAmount - (props.oemTotalPaid || 0))
+  } else {
+    displayRemainingAmount.value = Math.floor((props.oemExpectedTotal || 0) - (props.oemTotalPaid || 0))
+  }
 }
 
 // Watch for modal open to reset/initialize form
@@ -599,6 +749,102 @@ watch(() => props.isOpen, (newVal) => {
 .ccm-modal-body {
   max-height: 70vh;
   overflow-y: auto;
+}
+
+/* ===== 선급금 모드 OEM 지급 정보 (테이블 형태) ===== */
+.advance-oem-info-table {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+  border: 1px solid #fde047;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.advance-oem-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px dashed #fde047;
+}
+
+.advance-oem-row:last-child {
+  border-bottom: none;
+}
+
+.advance-oem-row.highlight {
+  background: rgba(234, 179, 8, 0.15);
+}
+
+.advance-oem-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #78716c;
+}
+
+.advance-oem-row.highlight .advance-oem-label {
+  font-weight: 600;
+  color: #a16207;
+}
+
+.advance-oem-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.advance-oem-row.highlight .advance-oem-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.advance-oem-value.success {
+  color: #16a34a;
+}
+
+/* ===== 선급금 모드 지급예정 버튼 행 (버튼 + 금액 분리) ===== */
+.advance-payment-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 2px solid #fdba74;
+  border-radius: 8px;
+}
+
+.advance-payment-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.advance-payment-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  transform: translateY(-1px);
+}
+
+.advance-payment-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+.advance-payment-amount {
+  flex: 1;
+  text-align: right;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #ea580c;
 }
 
 /* ===== 기성금 선택 카드 ===== */

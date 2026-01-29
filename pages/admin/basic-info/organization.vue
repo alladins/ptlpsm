@@ -72,7 +72,7 @@
               <tr>
                 <th>수요기관코드</th>
                 <th>수요기관명</th>
-                <th>수요기관약어명</th>
+                <th>나라장터등록번호</th>
                 <th>사업자등록번호</th>
                 <th>지역명</th>
                 <th>전화번호</th>
@@ -84,7 +84,7 @@
               <tr v-for="organization in organizations" :key="organization.id" class="table-row">
                 <td>{{ organization.dminsttCd }}</td>
                 <td>{{ organization.dminsttNm }}</td>
-                <td>{{ organization.dminsttAbrvtNm || '-' }}</td>
+                <td>{{ organization.naraJangteoNo || '-' }}</td>
                 <td>{{ organization.bizno || '-' }}</td>
                 <td>{{ organization.rgnNm || '-' }}</td>
                 <td>{{ organization.telNo || '-' }}</td>
@@ -173,8 +173,8 @@
                   v-model="formData.dminsttCd" 
                   type="text" 
                   required
-                  placeholder="7자리 수요기관코드"
-                  maxlength="7"
+                  placeholder="수요기관코드"
+                  maxlength="10"
                   class="form-input"
                 >
               </div>
@@ -193,22 +193,22 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label>수요기관약어명</label>
-                <input 
-                  v-model="formData.dminsttAbrvtNm" 
-                  type="text" 
-                  placeholder="수요기관약어명"
-                  maxlength="100"
+                <label>나라장터등록번호</label>
+                <input
+                  v-model="formData.naraJangteoNo"
+                  type="text"
+                  placeholder="나라장터등록번호"
+                  maxlength="50"
                   class="form-input"
                 >
               </div>
               <div class="form-group">
-                <label>수요기관영문명</label>
-                <input 
-                  v-model="formData.dminsttEngNm" 
-                  type="text" 
-                  placeholder="수요기관영문명"
-                  maxlength="400"
+                <label>사업자등록번호</label>
+                <input
+                  v-model="formData.bizno"
+                  type="text"
+                  placeholder="사업자등록번호"
+                  maxlength="10"
                   class="form-input"
                 >
               </div>
@@ -217,21 +217,21 @@
             <div class="form-row">
               <div class="form-group">
                 <label>법인등록번호</label>
-                <input 
-                  v-model="formData.corprtRgstNo" 
-                  type="text" 
+                <input
+                  v-model="formData.corprtRgstNo"
+                  type="text"
                   placeholder="법인등록번호"
                   maxlength="13"
                   class="form-input"
                 >
               </div>
               <div class="form-group">
-                <label>사업자등록번호</label>
-                <input 
-                  v-model="formData.bizno" 
-                  type="text" 
-                  placeholder="사업자등록번호"
-                  maxlength="10"
+                <label>수요기관영문명</label>
+                <input
+                  v-model="formData.dminsttEngNm"
+                  type="text"
+                  placeholder="수요기관영문명"
+                  maxlength="400"
                   class="form-input"
                 >
               </div>
@@ -240,9 +240,9 @@
             <!--div class="form-row">
               <div class="form-group">
                 <label>소관구분명</label>
-                <input 
-                  v-model="formData.jrsdctnDivNm" 
-                  type="text" 
+                <input
+                  v-model="formData.jrsdctnDivNm"
+                  type="text"
                   placeholder="소관구분명"
                   maxlength="200"
                   class="form-input"
@@ -487,22 +487,22 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label>수요기관약어명</label>
-                <input 
-                  v-model="formData.dminsttAbrvtNm" 
-                  type="text" 
-                  placeholder="수요기관약어명"
-                  maxlength="100"
+                <label>나라장터등록번호</label>
+                <input
+                  v-model="formData.naraJangteoNo"
+                  type="text"
+                  placeholder="나라장터등록번호"
+                  maxlength="50"
                   class="form-input"
                 >
               </div>
               <div class="form-group">
-                <label>수요기관영문명</label>
-                <input 
-                  v-model="formData.dminsttEngNm" 
-                  type="text" 
-                  placeholder="수요기관영문명"
-                  maxlength="400"
+                <label>사업자등록번호</label>
+                <input
+                  v-model="formData.bizno"
+                  type="text"
+                  placeholder="사업자등록번호"
+                  maxlength="10"
                   class="form-input"
                 >
               </div>
@@ -511,21 +511,21 @@
             <div class="form-row">
               <div class="form-group">
                 <label>법인등록번호</label>
-                <input 
-                  v-model="formData.corprtRgstNo" 
-                  type="text" 
+                <input
+                  v-model="formData.corprtRgstNo"
+                  type="text"
                   placeholder="법인등록번호"
                   maxlength="13"
                   class="form-input"
                 >
               </div>
               <div class="form-group">
-                <label>사업자등록번호</label>
-                <input 
-                  v-model="formData.bizno" 
-                  type="text" 
-                  placeholder="사업자등록번호"
-                  maxlength="10"
+                <label>수요기관영문명</label>
+                <input
+                  v-model="formData.dminsttEngNm"
+                  type="text"
+                  placeholder="수요기관영문명"
+                  maxlength="400"
                   class="form-input"
                 >
               </div>
@@ -534,9 +534,9 @@
             <!--div class="form-row">
               <div class="form-group">
                 <label>소관구분명</label>
-                <input 
-                  v-model="formData.jrsdctnDivNm" 
-                  type="text" 
+                <input
+                  v-model="formData.jrsdctnDivNm"
+                  type="text"
                   placeholder="소관구분명"
                   maxlength="200"
                   class="form-input"
@@ -801,6 +801,7 @@ const formData = ref<DemandOrganization>({
   dminsttEngNm: '',
   corprtRgstNo: '',
   bizno: '',
+  naraJangteoNo: '',
   jrsdctnDivNm: '',
   insttTyCdLrgclsfcNm: '',
   insttTyCdMidclsfcNm: '',
@@ -949,6 +950,7 @@ const openAddModal = () => {
     dminsttEngNm: '',
     corprtRgstNo: '',
     bizno: '',
+    naraJangteoNo: '',
     jrsdctnDivNm: '',
     insttTyCdLrgclsfcNm: '',
     insttTyCdMidclsfcNm: '',
@@ -1003,8 +1005,8 @@ const closeModal = () => {
 
 // 유효성 검사
 const validateForm = async (): Promise<boolean> => {
-  if (!formData.value.dminsttCd || formData.value.dminsttCd.length !== 7) {
-    alert('수요기관코드는 7자리여야 합니다.')
+  if (!formData.value.dminsttCd || formData.value.dminsttCd.length > 10) {
+    alert('수요기관코드를 입력해주세요. (최대 10자리)')
     return false
   }
   

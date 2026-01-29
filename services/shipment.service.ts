@@ -1,11 +1,14 @@
-import { apiEnvironment } from './api'
+import { apiEnvironment, getAuthHeaders } from './api'
 import { SHIPMENT_ENDPOINTS } from './api/endpoints/shipment.endpoints'
 import type {
   AdditionalChangeRequest,
   AdditionalChangeResponse,
   QuantityChangeHistoryRaw,
   QuantityChangeHistory,
-  PreviousReceipt
+  PreviousReceipt,
+  QuantityHistoryRevertRequest,
+  QuantityHistoryGroupRevertRequest,
+  QuantityHistoryRevertResponse
 } from '~/types/shipment-change'
 
 export interface ShipmentOrderStatus {
@@ -51,6 +54,14 @@ export interface ShipmentListItem {
   siteManagerName?: string        // 현장소장 이름
   siteManagerPhone?: string       // 현장소장 연락처
   siteManagerCompany?: string     // 현장소장 회사
+  // 추가변경 정보
+  additionalChangeCount?: number  // 추가변경 건수 (0이면 추가변경 없음)
+  // OEM 및 발주서 정보 (운송장 등록 - 출하 조회용)
+  oemCompanyId?: number | null       // OEM 제조사 ID
+  oemCompanyName?: string | null     // OEM 제조사명
+  purchaseOrderPdfPath?: string | null  // 발주서 PDF 경로 (null이면 미생성)
+  // 납품완료 정보 (B급 품목 등록용)
+  deliveryDoneId?: number | null     // 납품완료계 ID (COMPLETED 상태일 때 존재)
 }
 
 export interface ShipmentDetail {
@@ -103,6 +114,22 @@ export interface ShipmentDetailWithOrder {
   isBilled: boolean                 // 기성 포함 여부 (true면 추가변경 불가)
   deliveryDoneStatus?: string       // 납품완료계 상태 (참고용: PENDING, IN_PROGRESS, PENDING_SIGNATURE, COMPLETED)
 
+  // OEM 및 배송지 정보 (2026-01-26 추가)
+  oemCompanyId?: number | null      // OEM 제조사 ID
+  oemCompanyName?: string | null    // OEM 제조사명
+  siteManagerId?: number | null     // 현장담당자 ID
+  siteManagerName?: string | null   // 현장담당자명
+  zipcode?: string | null           // 배송지 우편번호
+  deliveryAddress?: string | null   // 배송지 주소
+  addressDetail?: string | null     // 배송지 상세주소
+  receiverName?: string | null      // 인수자명
+  receiverPhone?: string | null     // 인수자 연락처
+
+  // 발주서 정보 (2026-01-26 추가)
+  purchaseOrderPdfPath?: string | null  // 발주서 PDF 경로 (null이면 미생성)
+  expectedArrivalAt?: string | null     // 현장 도착 예정일시 (프론트엔드용 별칭)
+  expectedArrivalDatetime?: string | null  // 현장 도착 예정일시 (서버 필드명)
+
   // 발주 정보 (평탄화)
   contractId: string
   contractDate: string
@@ -121,11 +148,36 @@ export interface ShipmentDetailWithOrder {
   // 출하 품목 목록
   items: ShipmentItemWithOrder[]
 
+  // B급 품목 목록 (2026-01-27 추가)
+  bgradeItems?: BgradeItemInShipment[]
+
   // 메타 정보
   createdBy: string
   createdAt: string
   updatedBy: string
   updatedAt: string
+}
+
+// 출하 상세에 포함된 B급 품목 정보 (백엔드 API 응답 포맷)
+export interface BgradeItemInShipment {
+  id: number
+  deliveryDoneId: number
+  shipmentId: number
+  skuId: string
+  itemName: string
+  skuName: string              // SKU명 (두께 포함, 예: "60T")
+  specification: string
+  thickness: number            // 두께 (숫자, 예: 60)
+  quantity: number
+  unit: string
+  adjustedUnitPrice: number    // B급 조정 단가
+  originalUnitPrice: number    // 원래 단가
+  amount: number               // 금액 (quantity * adjustedUnitPrice)
+  reason: string | null        // B급 사유
+  createdBy: string
+  createdAt: string
+  updatedBy: string | null
+  updatedAt: string | null
 }
 
 export interface ShipmentItemWithOrder {
@@ -138,7 +190,8 @@ export interface ShipmentItemWithOrder {
 
   // 발주 정보
   orderQuantity: number        // 발주 수량
-  unitPrice: number
+  unitPrice: number            // 계약단가
+  costPrice?: number           // 원가 (OEM 계약 단가)
 
   // 출하 정보 (서버에서 제공)
   shipmentQuantity: number     // 현재 출하 수량
@@ -464,6 +517,7 @@ class ShipmentService {
 
         const group = groupedMap.get(groupKey)!
         group.items.push({
+          historyId: raw.historyId,
           skuId: raw.skuId,
           itemName: raw.itemName,
           skuName: raw.skuName,
@@ -482,6 +536,94 @@ class ShipmentService {
     } catch (error) {
       console.error('[shipment.service] getChangeHistory 에러:', error)
       return []
+    }
+  }
+
+  /**
+   * 개별 이력 되돌리기
+   * @param shipmentId - 출하 ID
+   * @param historyId - 이력 ID
+   * @param request - 되돌리기 요청 (사유)
+   * @returns 되돌리기 응답
+   */
+  async revertChangeHistory(
+    shipmentId: number,
+    historyId: number,
+    request: QuantityHistoryRevertRequest
+  ): Promise<QuantityHistoryRevertResponse> {
+    try {
+      const url = SHIPMENT_ENDPOINTS.revertChangeHistory(shipmentId, historyId)
+      console.log('[shipment.service] revertChangeHistory 호출:', { shipmentId, historyId, url, request })
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request)
+      })
+
+      const data = await response.json()
+      console.log('[shipment.service] 개별 이력 되돌리기 응답:', data)
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data.message || `이력 되돌리기 실패: ${response.status}`
+        }
+      }
+
+      return data
+    } catch (error) {
+      console.error('[shipment.service] revertChangeHistory 에러:', error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : '이력 되돌리기 중 오류가 발생했습니다.'
+      }
+    }
+  }
+
+  /**
+   * 그룹 전체 이력 되돌리기
+   * @param shipmentId - 출하 ID
+   * @param request - 그룹 되돌리기 요청 (changedAt, changeReason, revertReason)
+   * @returns 되돌리기 응답
+   */
+  async revertChangeHistoryGroup(
+    shipmentId: number,
+    request: QuantityHistoryGroupRevertRequest
+  ): Promise<QuantityHistoryRevertResponse> {
+    try {
+      const url = SHIPMENT_ENDPOINTS.revertChangeHistoryGroup(shipmentId)
+      console.log('[shipment.service] revertChangeHistoryGroup 호출:', { shipmentId, url, request })
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request)
+      })
+
+      const data = await response.json()
+      console.log('[shipment.service] 그룹 이력 되돌리기 응답:', data)
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data.message || `그룹 이력 되돌리기 실패: ${response.status}`
+        }
+      }
+
+      return data
+    } catch (error) {
+      console.error('[shipment.service] revertChangeHistoryGroup 에러:', error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : '그룹 이력 되돌리기 중 오류가 발생했습니다.'
+      }
     }
   }
 
@@ -514,6 +656,128 @@ class ShipmentService {
     } catch (error) {
       console.error('[shipment.service] getPreviousReceipts 에러:', error)
       return []
+    }
+  }
+
+  // ========================================
+  // 발주서 PDF 관련 메서드 (2026-01-26 추가)
+  // ========================================
+
+  /**
+   * 발주서 PDF 다운로드 URL 반환
+   * PDF가 없으면 자동 생성 후 다운로드
+   * @param shipmentId - 출하 ID
+   * @returns 다운로드 URL
+   */
+  getPurchaseOrderPdfUrl(shipmentId: number): string {
+    return SHIPMENT_ENDPOINTS.purchaseOrderPdf(shipmentId)
+  }
+
+  /**
+   * 발주서 PDF 다운로드 (JWT 토큰 포함)
+   * @param shipmentId - 출하 ID
+   */
+  async downloadPurchaseOrderPdf(shipmentId: number): Promise<void> {
+    const url = this.getPurchaseOrderPdfUrl(shipmentId)
+    console.log('[shipment.service] 발주서 PDF 다운로드:', { shipmentId, url })
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[shipment.service] 발주서 PDF 다운로드 실패:', {
+          status: response.status,
+          error: errorText
+        })
+        // 백엔드 에러 메시지 파싱
+        let errorMessage = '발주서 PDF 처리에 실패했습니다.'
+        try {
+          const errorJson = JSON.parse(errorText)
+          if (errorJson.message) {
+            errorMessage = errorJson.message
+          }
+        } catch {
+          // JSON 파싱 실패 시 텍스트 그대로 사용
+          if (errorText) {
+            errorMessage = errorText
+          }
+        }
+        throw new Error(errorMessage)
+      }
+
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = `발주서_${shipmentId}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (error) {
+      console.error('[shipment.service] 발주서 PDF 다운로드 오류:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 발주서 PDF 생성
+   * @param shipmentId - 출하 ID
+   * @param requestData - 발주서 생성 데이터
+   * @returns 생성 결과
+   */
+  async generatePurchaseOrder(shipmentId: number, requestData: {
+    orderDate: string
+    expectedArrivalDatetime: string
+    zipcode: string
+    deliveryAddress: string
+    addressDetail?: string
+    siteManagerId: number
+    receiverName?: string
+    receiverPhone?: string
+  }): Promise<{
+    success: boolean
+    message: string
+    timestamp?: string
+  }> {
+    try {
+      const url = SHIPMENT_ENDPOINTS.generatePurchaseOrder(shipmentId)
+      console.log('[shipment.service] generatePurchaseOrder 호출:', { shipmentId, url, requestData })
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[shipment.service] 발주서 생성 실패:', {
+          status: response.status,
+          error: errorText
+        })
+        return {
+          success: false,
+          message: `발주서 생성 실패: ${response.status} - ${errorText}`
+        }
+      }
+
+      const responseData = await response.json()
+      console.log('[shipment.service] 발주서 생성 응답:', responseData)
+      return responseData
+    } catch (error) {
+      console.error('[shipment.service] generatePurchaseOrder 에러:', error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : '발주서 생성 중 오류가 발생했습니다.'
+      }
     }
   }
 }

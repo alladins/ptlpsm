@@ -69,6 +69,8 @@ export interface DeliveryCreateResponse {
   accessToken: string
   tokenExpiresAt: string
   mobileUrl: string
+  messageSentAt?: string       // 메시지 발송 시각
+  messageAlreadySent?: boolean // 중복 발송 여부 (true: 이미 발송됨)
 }
 
 // 납품 정보 조회 (모바일용)

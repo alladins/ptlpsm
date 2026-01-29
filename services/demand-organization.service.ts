@@ -11,6 +11,7 @@ export interface DemandOrganization {
   dminsttEngNm?: string
   corprtRgstNo?: string
   bizno?: string
+  naraJangteoNo?: string  // 나라장터등록번호
   jrsdctnDivNm?: string
   insttTyCdLrgclsfcNm?: string
   insttTyCdMidclsfcNm?: string

@@ -217,6 +217,7 @@
                 class="form-input-md"
                 :readonly="!isSavableStatus"
                 :disabled="!isSavableStatus"
+                @change="onDeliveryDateChange"
               >
             </FormField>
             <FormField label="배송지 주소" full-width>
@@ -498,6 +499,32 @@ const handleReceiverChange = () => {
       formData.value.receiverName = receiver.userName
       formData.value.receiverPhone = formatPhoneNumber(receiver.phone || '')
     }
+  }
+}
+
+// 배송 예정일 변경 시 배차/출차 시각, 도착 예정 시각의 날짜도 함께 변경
+const onDeliveryDateChange = () => {
+  const newDate = formData.value.deliveryDate
+  if (!newDate) return
+
+  // 배차/출차 시각의 날짜 부분만 변경 (시간은 유지)
+  if (formData.value.dispatchAt) {
+    const dispatchTime = new Date(formData.value.dispatchAt)
+    const [year, month, day] = newDate.split('-').map(Number)
+    dispatchTime.setFullYear(year, month - 1, day)
+    const hours = String(dispatchTime.getHours()).padStart(2, '0')
+    const minutes = String(dispatchTime.getMinutes()).padStart(2, '0')
+    formData.value.dispatchAt = `${newDate}T${hours}:${minutes}`
+  }
+
+  // 도착 예정 시각의 날짜 부분만 변경 (시간은 유지)
+  if (formData.value.expectedArrival) {
+    const expectedTime = new Date(formData.value.expectedArrival)
+    const [year, month, day] = newDate.split('-').map(Number)
+    expectedTime.setFullYear(year, month - 1, day)
+    const hours = String(expectedTime.getHours()).padStart(2, '0')
+    const minutes = String(expectedTime.getMinutes()).padStart(2, '0')
+    formData.value.expectedArrival = `${newDate}T${hours}:${minutes}`
   }
 }
 

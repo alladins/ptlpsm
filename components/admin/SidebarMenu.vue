@@ -505,6 +505,18 @@ const manualMenus = ref<MenuWithAuth[]>([
         visible: 'Y',
         useYn: 'Y',
         children: []
+      },
+      {
+        menuId: 87,
+        menuCode: 'OEM_COST',
+        menuName: '제조사 원가',
+        menuUrl: '/admin/basic-info/oem-cost',
+        menuIcon: 'fas fa-won-sign',
+        menuLevel: 2,
+        sortOrder: 7,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
       }
     ]
   },
@@ -898,14 +910,20 @@ const toggleSubmenu = (menu: Menu) => {
 
   // 서브메뉴가 있는 메뉴의 경우
   const menuId = menu.menuId
-  const index = expandedMenus.value.indexOf(menuId)
+  const isExpanded = expandedMenus.value.includes(menuId)
 
-  if (index > -1) {
-    // 이미 열려있는 메뉴를 클릭하면 닫기
-    expandedMenus.value.splice(index, 1)
+  if (isExpanded) {
+    // 이미 열려있는 메뉴를 클릭하면 닫기만 수행
+    expandedMenus.value = expandedMenus.value.filter(id => id !== menuId)
   } else {
-    // 다른 메뉴를 클릭하면 기존 메뉴 모두 닫고 새 메뉴만 열기
+    // 닫혀있으면: 메뉴 열기 + 첫 번째 서브메뉴로 이동
     expandedMenus.value = [menuId]
+
+    // 첫 번째 서브메뉴의 URL로 페이지 이동
+    const firstChild = menu.children[0]
+    if (firstChild?.menuUrl) {
+      router.push(firstChild.menuUrl)
+    }
   }
 }
 

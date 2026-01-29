@@ -137,30 +137,13 @@
             <i class="fas fa-clipboard-list"></i>
             <span>기타 정보</span>
           </div>
-          <!-- 건설사/제조사 선택 -->
-          <div class="info-grid grid-2">
+          <!-- 건설사 선택 (OEM 제조사는 출하 등록 시 선택) -->
+          <div class="info-grid grid-4">
             <FormField label="건설사">
               <select
                 v-model="contractForm.builderCompanyId"
                 @change="handleBuilderChange"
                 class="form-input-sm"
-              >
-                <option :value="null">선택하세요</option>
-                <option
-                  v-for="company in companies"
-                  :key="company.id"
-                  :value="company.id"
-                >
-                  {{ company.companyName }}
-                </option>
-              </select>
-            </FormField>
-            <FormField label="제조사" required>
-              <select
-                v-model="contractForm.oemCompanyId"
-                @change="handleOemChange"
-                class="form-input-sm"
-                required
               >
                 <option :value="null">선택하세요</option>
                 <option
@@ -221,16 +204,16 @@
           <table class="items-table">
             <thead>
               <tr>
-                <th style="width: 30px">순번</th>
-                <th style="width: 60px">품명</th>
-                <th style="width: 280px">규격</th>
-                <th style="width: 30px">단위</th>
-                <th style="width: 50px">단가</th>
-                <th style="width: 40px">수량</th>
-                <th style="width: 60px">금액</th>
-                <th style="width: 100px">납품장소</th>
-                <th style="width: 80px">납품기한</th>
-                <th style="width: 100px">납품조건</th>
+                <th class="col-no">순번</th>
+                <th class="col-name">품명</th>
+                <th class="col-spec">규격</th>
+                <th class="col-unit">단위</th>
+                <th class="col-price">단가</th>
+                <th class="col-qty">수량</th>
+                <th class="col-amount">금액</th>
+                <th class="col-location">납품장소</th>
+                <th class="col-deadline">납품기한</th>
+                <th class="col-terms">납품조건</th>
               </tr>
             </thead>
             <tbody>
@@ -380,12 +363,12 @@ const contractForm = ref({
   siteManagerId: null as number | null,  // deprecated
   builderCompanyId: null as number | null,  // 건설사 ID
   builderCompany: '',                       // 건설사명
-  oemCompanyId: null as number | null,      // 제조사 ID
-  oemCompany: '',                           // 제조사명
+  // OEM 제조사는 출하 등록 시 선택 (납품요구에서 제거됨)
   quantityTotal: '',
   preDiscountAmountTotal: '',
   pdfFilePath: '',
-  contractType: '' as ContractType | ''
+  contractType: '' as ContractType | '',
+  clientBizno: ''  // 수요기관 사업자등록번호
 })
 
 // 계약 유형 선택 관련 상태
@@ -413,12 +396,6 @@ onMounted(async () => {
 const handleBuilderChange = () => {
   const selected = companies.value.find(c => c.id === contractForm.value.builderCompanyId)
   contractForm.value.builderCompany = selected?.companyName || ''
-}
-
-// 제조사 선택 핸들러
-const handleOemChange = () => {
-  const selected = companies.value.find(c => c.id === contractForm.value.oemCompanyId)
-  contractForm.value.oemCompany = selected?.companyName || ''
 }
 
 // 파일 업로드 트리거
@@ -547,9 +524,9 @@ const fillItemsWithExtractedData = (deliveryItems: any[]) => {
     name: item.name || '',
     specification: item.specification || '',
     unit: item.unit || '',
-    unitPrice: parseFormattedNumber(item.unitPrice),
+    unitPrice: String(parseFormattedNumber(item.unitPrice)),
     quantity: parseFormattedNumber(item.quantity),
-    totalAmount: parseFormattedNumber(item.totalAmount),
+    totalAmount: String(parseFormattedNumber(item.totalAmount)),
     deliveryLocation: item.deliveryLocation || '',
     deliveryDeadline: item.deliveryDeadline || '',
     deliveryTerms: item.deliveryTerms || '',
@@ -620,6 +597,8 @@ const fillFormWithExtractedData = (data: any) => {
   if (data.acceptanceAgency) contractForm.value.acceptanceAgency = data.acceptanceAgency
   if (data.quantityTotal) contractForm.value.quantityTotal = String(data.quantityTotal)
   if (data.preDiscountAmountTotal) contractForm.value.preDiscountAmountTotal = String(data.preDiscountAmountTotal)
+  // 수요기관 사업자등록번호
+  if (data.businessRegistrationNumberDemand) contractForm.value.clientBizno = data.businessRegistrationNumberDemand
 }
 
 // 계약 유형 선택 확인 핸들러
@@ -668,11 +647,8 @@ const handleContractTypeCancel = () => {
 const register = async () => {
   if (submitting.value) return
 
-  // 제조사 필수 검사
-  if (!contractForm.value.oemCompanyId) {
-    alert('제조사를 선택해주세요.')
-    return
-  }
+  // OEM 제조사 선택은 선택사항 (출하 등록 시 선택)
+  // 필수 검사 제거됨
 
   submitting.value = true
   try {
@@ -703,7 +679,7 @@ const register = async () => {
         contractor: null,
         representativeName: null,
         businessRegistrationNumber: null,
-        businessRegistrationNumberDemand: null,
+        businessRegistrationNumberDemand: contractForm.value.clientBizno || null,
         businessRegistrationNumberSupplier: null,
         itemTotalAmount: contractForm.value.itemTotalAmount,
         commission: contractForm.value.commission,
@@ -716,8 +692,9 @@ const register = async () => {
         siteManagerId: contractForm.value.siteManagerId,
         builderCompanyId: contractForm.value.builderCompanyId,
         builderCompany: contractForm.value.builderCompany || null,
-        oemCompanyId: contractForm.value.oemCompanyId,
-        oemCompany: contractForm.value.oemCompany || null
+        // OEM 제조사는 출하 등록 시 선택 (납품요구에서 제거됨)
+        oemCompanyId: null,
+        oemCompany: null
       },
       extractedDeliveryItems: items.value.map((item, index) => ({
         sequenceNumber: index + 1,
@@ -781,6 +758,8 @@ const cancel = () => {
   padding: 0;
   margin-bottom: 0;
 }
+
+/* 납품목록 테이블: 공통 스타일은 admin-edit-register.css 참조 */
 
 /* 중복 경고 배너 */
 .duplicate-warning {

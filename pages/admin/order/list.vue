@@ -42,8 +42,8 @@
             <i class="fas fa-calendar-check"></i>
           </div>
           <div class="stat-content">
-            <h3>금일 납품요구</h3>
-            <p>{{ todayCount }}</p>
+            <h3>금월 납품요구</h3>
+            <p>{{ calculatedMonthlyCount }}</p>
           </div>
         </div>
         <div class="stat-card">
@@ -52,16 +52,16 @@
           </div>
           <div class="stat-content">
             <h3>총 납품요구금액</h3>
-            <p>{{ formatNumber(totalContractAmount) }}</p>
+            <p>{{ formatNumber(calculatedTotalAmount) }}</p>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon stat-icon--orange">
-            <i class="fas fa-truck"></i>
+            <i class="fas fa-calculator"></i>
           </div>
           <div class="stat-content">
-            <h3>납품요구 예정</h3>
-            <p>{{ pendingDeliveryCount }}</p>
+            <h3>총 예상 원가금액</h3>
+            <p>{{ formatNumber(totalEstimatedCost) }}</p>
           </div>
         </div>
       </div>
@@ -160,7 +160,7 @@
                   <td>{{ group.baseOrder.clientManagerName }}</td>
                   <td class="project-name-cell text-left">{{ group.baseOrder.projectName }}</td>
                   <td class="text-left">{{ group.baseOrder.builderCompanyName || '-' }}</td>
-                  <td class="text-right">{{ formatNumber(group.baseOrder.totalAmount) }}</td>
+                  <td class="text-right">{{ formatNumber(group.baseOrder.itemTotalAmount) }}</td>
                 </tr>
 
                 <!-- 변경/별도 계약 행들 (하위) -->
@@ -189,7 +189,7 @@
                     <td>{{ child.clientManagerName }}</td>
                     <td class="project-name-cell text-left">{{ child.projectName }}</td>
                     <td class="text-left">{{ child.builderCompanyName || '-' }}</td>
-                    <td class="text-right">{{ formatNumber(child.totalAmount) }}</td>
+                    <td class="text-right">{{ formatNumber(child.itemTotalAmount) }}</td>
                   </tr>
                 </template>
               </template>
@@ -220,7 +220,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { orderService } from '~/services/order.service'
+import { fundService } from '~/services/fund.service'
 import type { OrderDetailResponse, ContractType } from '~/types/order'
+import type { FundStatistics } from '~/types/fund'
 import { CONTRACT_TYPE_LABELS } from '~/types/order'
 // 리팩토링: 공통 모듈 import
 import { formatNumber } from '~/utils/format'
@@ -238,10 +240,9 @@ const route = useRoute()
 // 권한
 const { canWrite } = usePermission()
 
-// 통계 데이터
-const todayCount = ref(0)
-const totalContractAmount = ref(0)
-const pendingDeliveryCount = ref(0)
+// 자금 통계 데이터
+const fundStats = ref<FundStatistics | null>(null)
+const loadingStats = ref(false)
 
 // 오늘 날짜 (로컬 시간 기준)
 const getTodayDate = () => {
@@ -304,6 +305,44 @@ const {
   initialPageSize: 10,
   initialSort: 'createdAt,desc'
 })
+
+// 통계 계산: 총 납품요구금액 (자금 통계 API에서 가져옴)
+const calculatedTotalAmount = computed(() => {
+  return fundStats.value?.totalContractAmount || 0
+})
+
+// 통계 계산: 총 예상 원가금액 (자금 통계 API에서 가져옴)
+const totalEstimatedCost = computed(() => {
+  return fundStats.value?.totalOemExpected || 0
+})
+
+// 통계 계산: 금월 납품요구 건수
+const calculatedMonthlyCount = computed(() => {
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth()
+
+  return orderData.value.filter(order => {
+    const orderDate = new Date(order.deliveryRequestDate)
+    return orderDate.getFullYear() === currentYear &&
+           orderDate.getMonth() === currentMonth
+  }).length
+})
+
+// 자금 통계 로드
+const loadFundStatistics = async () => {
+  try {
+    loadingStats.value = true
+    fundStats.value = await fundService.getStatistics({
+      periodType: 'MONTHS',
+      months: 6
+    })
+  } catch (error) {
+    console.error('자금 통계 조회 실패:', error)
+  } finally {
+    loadingStats.value = false
+  }
+}
 
 // 검색 기능
 const handleSearch = () => {
@@ -479,6 +518,9 @@ const getContractTypeLabel = (contractType?: ContractType): string => {
 
 // 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
+  // 자금 통계 로드
+  loadFundStatistics()
+
   // URL 쿼리에서 페이지 번호 복원 (상세 페이지에서 돌아올 때)
   const pageFromQuery = route.query.page || route.query.returnPage
   if (pageFromQuery) {
