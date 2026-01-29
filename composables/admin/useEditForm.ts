@@ -228,7 +228,7 @@ export function useEditForm<TOriginal, TFormData extends Record<string, any>, TU
     formData,
     loading,
     submitting,
-    originalData,
+    originalData: originalData as Ref<TOriginal | null>,
     submit,
     goBack,
     reload,

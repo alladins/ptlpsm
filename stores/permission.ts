@@ -196,16 +196,14 @@ export const usePermissionStore = defineStore('permission', () => {
 
       return menus
     } catch (err) {
-      console.warn(`[Permission Store] 사용자 메뉴 조회 실패 (${apiUrl}), Mock 데이터 사용:`, err)
+      console.error(`[Permission Store] 사용자 메뉴 조회 실패 (${apiUrl}):`, err)
       error.value = err instanceof Error ? err.message : '알 수 없는 오류'
 
-      // API 실패 시 Mock 데이터 반환
-      const { getMockMenuData } = await import('~/services/menu.service')
-      const mockMenus = getMockMenuData()
-      userMenus.value = mockMenus
+      // API 실패 시 빈 배열 반환
+      userMenus.value = []
       lastFetched.value = Date.now()
 
-      return mockMenus
+      return []
     } finally {
       loading.value = false
     }

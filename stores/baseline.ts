@@ -33,7 +33,7 @@ export const useBaselineStore = defineStore('baseline', () => {
   const currentQuantities = ref<CurrentQuantitySnapshot | null>(null)
 
   /** 수량 변경 이력 */
-  const quantityChanges = ref<QuantityChangeRecord[]>([])
+  const quantityChanges = ref<{ historyList: any[]; itemSummary: any[] }>({ historyList: [], itemSummary: [] })
 
   /** 납품확인서 정보 */
   const deliveryConfirmation = ref<DeliveryConfirmation | null>(null)
@@ -66,7 +66,7 @@ export const useBaselineStore = defineStore('baseline', () => {
   })
 
   /** 수량 변경이 있는지 여부 */
-  const hasQuantityChanges = computed(() => quantityChanges.value.length > 0)
+  const hasQuantityChanges = computed(() => quantityChanges.value.historyList.length > 0)
 
   /** 청구 가능한 출하가 있는지 여부 */
   const hasAvailableShipments = computed(() => availableShipments.value.length > 0)
@@ -140,13 +140,13 @@ export const useBaselineStore = defineStore('baseline', () => {
   /**
    * 수량 변경 이력 조회
    */
-  async function fetchQuantityChanges(orderId: number, sinceDate?: string) {
+  async function fetchQuantityChanges(orderId: number, sinceBaselineId?: number) {
     try {
-      const response = await baselineService.getQuantityChanges(orderId, sinceDate)
+      const response = await baselineService.getQuantityChanges(orderId, sinceBaselineId)
       quantityChanges.value = response
     } catch (err) {
       console.error('수량 변경 이력 조회 실패:', err)
-      quantityChanges.value = []
+      quantityChanges.value = { historyList: [], itemSummary: [] }
     }
   }
 
@@ -257,9 +257,9 @@ export const useBaselineStore = defineStore('baseline', () => {
         .sort((a, b) => b.baselineSeq - a.baselineSeq)[0]
 
       if (latestProgress) {
-        await fetchQuantityChanges(orderId, latestProgress.baselineDate)
+        await fetchQuantityChanges(orderId, latestProgress.baselineId)
       } else {
-        quantityChanges.value = []
+        quantityChanges.value = { historyList: [], itemSummary: [] }
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : '데이터 로드 실패'
@@ -308,7 +308,7 @@ export const useBaselineStore = defineStore('baseline', () => {
     list.value = []
     detail.value = null
     currentQuantities.value = null
-    quantityChanges.value = []
+    quantityChanges.value = { historyList: [], itemSummary: [] }
     deliveryConfirmation.value = null
     availableShipments.value = []
     loading.value = false

@@ -88,7 +88,7 @@ export function useFormBase<T extends Record<string, any>>(
   })
 
   return {
-    formData,
+    formData: formData as T,
     loading,
     submitting,
     goBack,

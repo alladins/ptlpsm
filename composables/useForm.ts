@@ -48,8 +48,8 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
    * 특정 필드 유효성 검증
    */
   function validateField(field: keyof T): string | null {
-    const value = formData[field]
-    const rules = validationRules[field]
+    const value = (formData as T)[field]
+    const rules = (validationRules as Record<keyof T, ValidationRule | undefined>)[field]
 
     if (!rules) return null
 
@@ -57,14 +57,14 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
     if (rules.required) {
       if (value === null || value === undefined || value === '') {
         const message = rules.message || `${String(field)}을(를) 입력해주세요.`
-        errors[field] = message
+        ;(errors as Record<keyof T, string>)[field] = message
         return message
       }
     }
 
     // 값이 없으면 다른 검증 스킵
     if (!value && !rules.required) {
-      delete errors[field]
+      delete (errors as Record<keyof T, string>)[field]
       return null
     }
 
@@ -72,7 +72,7 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
     if (rules.minLength && typeof value === 'string') {
       if (value.length < rules.minLength) {
         const message = rules.message || `최소 ${rules.minLength}자 이상 입력해주세요.`
-        errors[field] = message
+        ;(errors as Record<keyof T, string>)[field] = message
         return message
       }
     }
@@ -81,7 +81,7 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
     if (rules.maxLength && typeof value === 'string') {
       if (value.length > rules.maxLength) {
         const message = rules.message || `최대 ${rules.maxLength}자까지 입력 가능합니다.`
-        errors[field] = message
+        ;(errors as Record<keyof T, string>)[field] = message
         return message
       }
     }
@@ -90,7 +90,7 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
     if (rules.min !== undefined && typeof value === 'number') {
       if (value < rules.min) {
         const message = rules.message || `최솟값은 ${rules.min}입니다.`
-        errors[field] = message
+        ;(errors as Record<keyof T, string>)[field] = message
         return message
       }
     }
@@ -99,7 +99,7 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
     if (rules.max !== undefined && typeof value === 'number') {
       if (value > rules.max) {
         const message = rules.message || `최댓값은 ${rules.max}입니다.`
-        errors[field] = message
+        ;(errors as Record<keyof T, string>)[field] = message
         return message
       }
     }
@@ -108,7 +108,7 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
     if (rules.pattern && typeof value === 'string') {
       if (!rules.pattern.test(value)) {
         const message = rules.message || '올바른 형식이 아닙니다.'
-        errors[field] = message
+        ;(errors as Record<keyof T, string>)[field] = message
         return message
       }
     }
@@ -117,17 +117,17 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
     if (rules.validator) {
       const result = rules.validator(value)
       if (typeof result === 'string') {
-        errors[field] = result
+        ;(errors as Record<keyof T, string>)[field] = result
         return result
       } else if (result === false) {
         const message = rules.message || '유효하지 않은 값입니다.'
-        errors[field] = message
+        ;(errors as Record<keyof T, string>)[field] = message
         return message
       }
     }
 
     // 모든 검증 통과
-    delete errors[field]
+    delete (errors as Record<keyof T, string>)[field]
     return null
   }
 
@@ -147,11 +147,11 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
    * 필드 값 설정
    */
   function setFieldValue<K extends keyof T>(field: K, value: T[K]) {
-    formData[field] = value
+    ;(formData as T)[field] = value
     dirty.value = true
 
     // 해당 필드가 touched 상태면 즉시 검증
-    if (touched[field]) {
+    if ((touched as Record<keyof T, boolean>)[field]) {
       validateField(field)
     }
   }
@@ -160,7 +160,7 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
    * 필드 터치 상태 설정
    */
   function setFieldTouched(field: keyof T, isTouched: boolean = true) {
-    touched[field] = isTouched
+    ;(touched as Record<keyof T, boolean>)[field] = isTouched
 
     // 터치되면 즉시 검증
     if (isTouched) {
@@ -173,9 +173,9 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
    */
   function setFieldError(field: keyof T, error: string | null) {
     if (error) {
-      errors[field] = error
+      ;(errors as Record<keyof T, string>)[field] = error
     } else {
-      delete errors[field]
+      delete (errors as Record<keyof T, string>)[field]
     }
   }
 
@@ -184,7 +184,7 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
    */
   function clearErrors() {
     Object.keys(errors).forEach(key => {
-      delete errors[key as keyof T]
+      delete (errors as Record<string, string>)[key]
     })
   }
 
@@ -195,7 +195,7 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
     Object.assign(formData, { ...initialValues })
     clearErrors()
     Object.keys(touched).forEach(key => {
-      delete touched[key as keyof T]
+      delete (touched as Record<string, boolean>)[key]
     })
     dirty.value = false
     submitError.value = null
@@ -219,7 +219,7 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
 
     // 모든 필드를 touched로 표시
     Object.keys(validationRules).forEach(field => {
-      touched[field as keyof T] = true
+      ;(touched as Record<string, boolean>)[field] = true
     })
 
     // 유효성 검증
@@ -236,8 +236,8 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
     submitError.value = null
 
     try {
-      await onSubmit(formData)
-      onSuccess?.(formData)
+      await onSubmit(formData as T)
+      onSuccess?.(formData as T)
     } catch (error: any) {
       submitError.value = error.message || '제출 중 오류가 발생했습니다.'
       onError?.(error)
@@ -265,14 +265,14 @@ export function useForm<T extends Record<string, any>>(options: UseFormOptions<T
    * 특정 필드의 에러 메시지 가져오기
    */
   function getFieldError(field: keyof T): string | undefined {
-    return errors[field]
+    return (errors as Record<keyof T, string>)[field]
   }
 
   /**
    * 특정 필드가 에러 상태인지 확인
    */
   function hasFieldError(field: keyof T): boolean {
-    return !!errors[field] && !!touched[field]
+    return !!(errors as Record<keyof T, string>)[field] && !!(touched as Record<keyof T, boolean>)[field]
   }
 
   // 폼 데이터 변경 감지

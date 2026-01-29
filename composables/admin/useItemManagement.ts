@@ -61,8 +61,8 @@ export function useItemManagement(options: UseItemManagementOptions = {}) {
    */
   const addItem = () => {
     items.value.push({
-      skuId: 0,
-      itemId: 0,
+      skuId: '',
+      itemId: '',
       itemName: '',
       // salesId: salesId || undefined,
       skuName: '',
@@ -109,8 +109,8 @@ export function useItemManagement(options: UseItemManagementOptions = {}) {
     if (currentItemIndex.value === -1) {
       const newIndex = items.value.length
       items.value.push({
-        skuId: 0,
-        itemId: 0,
+        skuId: '',
+        itemId: '',
         itemName: '',
         skuName: '',
         itemSpecification: '',
@@ -131,10 +131,10 @@ export function useItemManagement(options: UseItemManagementOptions = {}) {
     const currentItem = items.value[currentItemIndex.value]
 
     // 중복 체크 (설정 가능한 필드로)
-    const duplicateValue = sku.id
+    const duplicateValue = sku.skuId
     const isDuplicate = items.value.some((existingItem, index) =>
       index !== currentItemIndex.value &&
-      existingItem[duplicateCheckField] === duplicateValue
+      (existingItem as any)[duplicateCheckField] === duplicateValue
     )
 
     if (isDuplicate) {
@@ -154,8 +154,8 @@ export function useItemManagement(options: UseItemManagementOptions = {}) {
       : parentId
 
     // 필수 필드 설정
-    currentItem.skuId = sku.id ?? 0
-    currentItem.itemId = item.id ?? 0
+    currentItem.skuId = sku.skuId ?? ''
+    currentItem.itemId = item.itemId ?? ''
     currentItem.itemName = item.itemNm ?? ''
     currentItem.skuName = sku.skuNm ?? ''
     // currentItem.salesId = resolvedParentId || undefined

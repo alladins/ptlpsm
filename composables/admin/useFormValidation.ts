@@ -88,13 +88,13 @@ export function useFormValidation<T extends Record<string, any>>(
     for (const rule of rules) {
       const error = rule(value)
       if (error) {
-        errors[field] = error as any
+        ;(errors as Record<string, string>)[field as string] = error
         return false
       }
     }
 
     // 모든 룰 통과
-    errors[field] = '' as any
+    ;(errors as Record<string, string>)[field as string] = ''
     return true
   }
 
@@ -135,7 +135,7 @@ export function useFormValidation<T extends Record<string, any>>(
    * 단일 에러 메시지 설정
    */
   const setError = (field: keyof T, message: string) => {
-    errors[field] = message as any
+    ;(errors as Record<string, string>)[field as string] = message
   }
 
   /**
@@ -146,7 +146,7 @@ export function useFormValidation<T extends Record<string, any>>(
   }
 
   return {
-    errors,
+    errors: errors as T,
     validateField,
     validateAll,
     clearErrors,
