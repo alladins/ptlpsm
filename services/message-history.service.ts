@@ -5,6 +5,7 @@
  */
 
 import { MESSAGE_HISTORY_ENDPOINTS } from './api/endpoints/message-history.endpoints'
+import { getAuthHeaders } from './api'
 import type {
   MessageHistoryResponse,
   MessageHistorySearchRequest,
@@ -38,9 +39,7 @@ export async function searchMessageHistory(
 
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -69,9 +68,7 @@ export async function getMessageHistoryDetail(messageId: number): Promise<Messag
     const url = MESSAGE_HISTORY_ENDPOINTS.detail(messageId)
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -94,9 +91,7 @@ export async function getMessageHistoryByTransport(transportId: number): Promise
     const url = MESSAGE_HISTORY_ENDPOINTS.byTransport(transportId)
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -119,9 +114,7 @@ export async function getMessageHistoryByDelivery(deliveryId: number): Promise<M
     const url = MESSAGE_HISTORY_ENDPOINTS.byDelivery(deliveryId)
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -154,9 +147,7 @@ export async function resendMessage(messageId: number): Promise<MessageResendRes
     const url = MESSAGE_HISTORY_ENDPOINTS.resend(messageId)
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {

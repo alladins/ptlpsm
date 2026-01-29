@@ -6,6 +6,7 @@
  */
 
 import { STATISTICS_ENDPOINTS } from './api/endpoints'
+import { getAuthHeaders } from './api'
 import type {
   ShipmentStatisticsRequest,
   ShipmentStatisticsResponse
@@ -62,9 +63,7 @@ export async function getShipmentStatistics(
 
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {

@@ -1,5 +1,6 @@
 import type { Company, CompanyCreateRequest, CompanyUpdateRequest, CompanyInfoResponse } from '~/types/company'
 import { COMPANY_ENDPOINTS } from './api/endpoints/company.endpoints'
+import { getAuthHeaders } from './api'
 
 // MIGRATED: 2025-01-25 - URL을 COMPANY_ENDPOINTS로 이전
 
@@ -16,7 +17,7 @@ class CompanyService {
             
             const response = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(company)
             })
 
@@ -41,7 +42,7 @@ class CompanyService {
         try {
             const response = await fetch(COMPANY_ENDPOINTS.update(id), {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(company)
             })
 
@@ -64,7 +65,7 @@ class CompanyService {
         try {
             const response = await fetch(COMPANY_ENDPOINTS.delete(id), {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
+                headers: getAuthHeaders()
             })
 
             if (!response.ok) {
@@ -84,10 +85,7 @@ class CompanyService {
         try {
             const response = await fetch(COMPANY_ENDPOINTS.list(), {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                    // Authorization 헤더는 api-interceptor.ts에서 자동 추가
-                }
+                headers: getAuthHeaders()
             })
 
             if (!response.ok) {
@@ -112,9 +110,7 @@ class CompanyService {
         try {
             const response = await fetch(COMPANY_ENDPOINTS.getById(id), {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: getAuthHeaders()
             })
 
             if (!response.ok) {

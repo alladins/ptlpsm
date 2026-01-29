@@ -51,9 +51,7 @@ export async function getDeliveryDoneList(
     const url = `${getApiBaseUrl()}/admin/delivery-done?${queryParams.toString()}`
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -94,9 +92,7 @@ export async function getDeliveryDoneDetail(
     const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}`
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -121,9 +117,7 @@ export async function getDeliveryDoneByOrderId(
     const url = `${getApiBaseUrl()}/admin/delivery-done/by-order/${orderId}`
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -150,9 +144,7 @@ export async function sendSignatureUrl(
     const url = `${getApiBaseUrl()}/admin/delivery-done/${request.deliveryDoneId}/send-signature-url`
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         documentType: request.documentType,
         recipients: request.recipients,
@@ -204,9 +196,7 @@ export async function submitToNara(
     const url = `${getApiBaseUrl()}/admin/delivery-done/${request.deliveryDoneId}/submit`
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         submitterName: request.submitterName,
         submitterPosition: request.submitterPosition,
@@ -346,9 +336,7 @@ export async function getDeliveryDoneByToken(
     const url = `${getApiBaseUrl()}/m/delivery-done/${token}`
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -531,9 +519,7 @@ export async function getDeliveryDonePhotos(
     const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/photos`
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -562,9 +548,7 @@ export async function updatePhotoSelection(
     const url = `${getApiBaseUrl()}/admin/deliveries/${request.deliveryId}/photos/selection`
     const response = await fetch(url, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         photoIds: request.photoIds
       })

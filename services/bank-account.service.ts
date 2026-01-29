@@ -3,6 +3,7 @@
  * 바로빌 API 연동
  */
 import { BANK_ACCOUNT_ENDPOINTS } from './api/endpoints/bank-account.endpoints'
+import { getAuthHeaders } from './api'
 import type {
   BankAccount,
   BankAccountDetail,
@@ -22,10 +23,7 @@ export const bankAccountService = {
     try {
       const response = await fetch(BANK_ACCOUNT_ENDPOINTS.list(availOnly), {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -47,10 +45,7 @@ export const bankAccountService = {
     try {
       const response = await fetch(BANK_ACCOUNT_ENDPOINTS.detail(bankAccountNum), {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -94,10 +89,7 @@ export const bankAccountService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -137,10 +129,7 @@ export const bankAccountService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -180,10 +169,7 @@ export const bankAccountService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {

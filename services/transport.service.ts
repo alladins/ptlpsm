@@ -1,4 +1,4 @@
-import { apiEnvironment } from './api'
+import { apiEnvironment, getAuthHeaders } from './api'
 import { TRANSPORT_ENDPOINTS } from './api/endpoints/transport.endpoints'
 
 // MIGRATED: 2025-01-25 - URL을 TRANSPORT_ENDPOINTS로 이전
@@ -154,9 +154,7 @@ class TransportService {
       console.log('운송장 등록 요청:', requestData)
       const response = await fetch(TRANSPORT_ENDPOINTS.create(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(requestData)
       })
       if (!response.ok) {
@@ -175,9 +173,7 @@ class TransportService {
       console.log('운송장 수정 요청:', requestData)
       const response = await fetch(TRANSPORT_ENDPOINTS.update(transportId), {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(requestData)
       })
       if (!response.ok) {

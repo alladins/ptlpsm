@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from './api'
+import { getApiBaseUrl, getAuthHeaders } from './api'
 
 interface LoginRequest {
   loginId: string      // 로그인 ID (문자열)
@@ -98,10 +98,7 @@ class AuthService {
     try {
       const response = await fetch(`${getApiBaseUrl()}/auth/logout`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           userid: userid,
           loginId: loginId
@@ -124,10 +121,7 @@ class AuthService {
     try {
       const response = await fetch(`${getApiBaseUrl()}/common/users/me`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+        headers: getAuthHeaders()
       })
 
       const data = await response.json()

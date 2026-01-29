@@ -266,8 +266,8 @@ class ShipmentService {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          ...getAuthHeaders(),
+          'Accept': 'application/json'
         }
       })
 
@@ -327,8 +327,8 @@ class ShipmentService {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          ...getAuthHeaders(),
+          'Accept': 'application/json'
         }
       })
 
@@ -363,9 +363,7 @@ class ShipmentService {
   async createShipment(shipment: any): Promise<void> {
     const response = await fetch(SHIPMENT_ENDPOINTS.create(), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(shipment)
     })
     if (!response.ok) {
@@ -377,9 +375,7 @@ class ShipmentService {
   async updateShipment(shipmentId: number, shipment: any): Promise<void> {
     const response = await fetch(SHIPMENT_ENDPOINTS.update(shipmentId), {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(shipment)
     })
     if (!response.ok) {
@@ -432,8 +428,8 @@ class ShipmentService {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          ...getAuthHeaders(),
+          'Accept': 'application/json'
         },
         body: JSON.stringify(requestBody)
       })
@@ -481,8 +477,8 @@ class ShipmentService {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          ...getAuthHeaders(),
+          'Accept': 'application/json'
         }
       })
 
@@ -558,8 +554,8 @@ class ShipmentService {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          ...getAuthHeaders(),
+          'Accept': 'application/json'
         },
         body: JSON.stringify(request)
       })
@@ -601,8 +597,8 @@ class ShipmentService {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          ...getAuthHeaders(),
+          'Accept': 'application/json'
         },
         body: JSON.stringify(request)
       })
@@ -640,8 +636,8 @@ class ShipmentService {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          ...getAuthHeaders(),
+          'Accept': 'application/json'
         }
       })
 

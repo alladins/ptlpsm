@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from './api'
+import { getApiBaseUrl, getAuthHeaders } from './api'
 import { ITEM_ENDPOINTS } from './api/endpoints/item.endpoints'
 
 // MIGRATED: 2025-01-25 - URL을 ITEM_ENDPOINTS로 이전
@@ -132,10 +132,7 @@ export const getItems = async (params: {
 
     const response = await fetch(`${ITEM_ENDPOINTS.list()}?${queryParams}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -156,10 +153,7 @@ export const searchItems = async (searchRequest: ItemSearchRequest): Promise<Pag
   try {
     const response = await fetch(ITEM_ENDPOINTS.search(), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(searchRequest)
     })
 
@@ -181,10 +175,7 @@ export const getItemById = async (itemId: string): Promise<Item> => {
   try {
     const response = await fetch(ITEM_ENDPOINTS.detail(itemId), {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -210,10 +201,7 @@ export const createItem = async (itemData: ItemCreateRequest): Promise<Item> => 
   try {
     const response = await fetch(ITEM_ENDPOINTS.create(), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(itemData)
     })
 
@@ -235,10 +223,7 @@ export const updateItem = async (itemId: string, itemData: ItemUpdateRequest): P
   try {
     const response = await fetch(ITEM_ENDPOINTS.update(itemId), {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(itemData)
     })
 
@@ -260,10 +245,7 @@ export const deleteItem = async (itemId: string): Promise<void> => {
   try {
     const response = await fetch(ITEM_ENDPOINTS.delete(itemId), {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -282,10 +264,7 @@ export const checkItemId = async (itemId: string): Promise<CodeCheckResponse> =>
   try {
     const response = await fetch(ITEM_ENDPOINTS.checkItemId(itemId), {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -312,10 +291,7 @@ export const checkSkuId = async (skuId: string): Promise<CodeCheckResponse> => {
   try {
     const response = await fetch(ITEM_ENDPOINTS.checkSkuId(skuId), {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -344,10 +320,7 @@ export const createSpec = async (itemId: string, specData: Omit<ItemSpec, 'id' |
   try {
     const response = await fetch(ITEM_ENDPOINTS.createSpec(itemId), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(specData)
     })
 
@@ -369,10 +342,7 @@ export const deleteSpec = async (itemId: string, specId: string): Promise<void> 
   try {
     const response = await fetch(ITEM_ENDPOINTS.deleteSpec(itemId, specId), {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -394,10 +364,7 @@ export const createSku = async (itemId: string, skuData: Omit<ItemSku, 'skuId' |
   try {
     const response = await fetch(ITEM_ENDPOINTS.createSku(itemId), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(skuData)
     })
 
@@ -420,10 +387,7 @@ export const deleteSku = async (itemId: string, skuId: string): Promise<void> =>
   try {
     const response = await fetch(ITEM_ENDPOINTS.deleteSku(itemId, skuId), {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {

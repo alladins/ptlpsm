@@ -1,4 +1,4 @@
-import { apiEnvironment } from '~/services/api'
+import { apiEnvironment, getAuthHeaders } from '~/services/api'
 import type { OrderDetailResponse } from '~/types/order'
 import { ORDER_ENDPOINTS } from './api/endpoints/order.endpoints'
 
@@ -55,9 +55,7 @@ export const orderService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -122,9 +120,7 @@ export const orderService = {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -171,9 +167,7 @@ export const orderService = {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -260,9 +254,7 @@ export const orderService = {
       
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {

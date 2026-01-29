@@ -1,3 +1,4 @@
+import { getAuthHeaders } from './api'
 import { DELIVERY_ENDPOINTS } from './api/endpoints/delivery.endpoints'
 
 // MIGRATED: 2025-10-27 - URL을 DELIVERY_ENDPOINTS로 이전
@@ -203,9 +204,7 @@ class DeliveryService {
     try {
       const response = await fetch(DELIVERY_ENDPOINTS.create(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ transportId })
       })
 
@@ -323,9 +322,7 @@ class DeliveryService {
     try {
       const response = await fetch(DELIVERY_ENDPOINTS.confirm(token), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data)
       })
 

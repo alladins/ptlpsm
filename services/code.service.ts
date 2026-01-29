@@ -1,5 +1,5 @@
 // 코드 서비스 - 백엔드 API 스펙에 맞춤
-import { apiEnvironment } from './api'
+import { apiEnvironment, getAuthHeaders } from './api'
 import { CODE_ENDPOINTS } from './api/endpoints/code.endpoints'
 
 // MIGRATED: 2025-01-25 - URL을 CODE_ENDPOINTS로 이전
@@ -41,9 +41,7 @@ export const codeService = {
       
       const response = await fetch(testUrl, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (response.ok) {
@@ -76,9 +74,7 @@ export const codeService = {
     try {
       const response = await fetch(CODE_ENDPOINTS.groups(), {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -103,9 +99,7 @@ export const codeService = {
     try {
       const response = await fetch(CODE_ENDPOINTS.createGroup(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(groupData),
       })
 
@@ -128,9 +122,7 @@ export const codeService = {
     try {
       const response = await fetch(CODE_ENDPOINTS.updateGroup(groupCode), {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(groupData),
       })
 
@@ -153,9 +145,7 @@ export const codeService = {
     try {
       const response = await fetch(CODE_ENDPOINTS.deleteGroup(groupCode), {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -177,9 +167,7 @@ export const codeService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -204,9 +192,7 @@ export const codeService = {
     try {
       const response = await fetch(CODE_ENDPOINTS.createDetail(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(detailData),
       })
 
@@ -229,9 +215,7 @@ export const codeService = {
     try {
       const response = await fetch(CODE_ENDPOINTS.updateDetail(groupCode, code), {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(detailData),
       })
 
@@ -254,9 +238,7 @@ export const codeService = {
     try {
       const response = await fetch(CODE_ENDPOINTS.deleteDetail(groupCode, code), {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {

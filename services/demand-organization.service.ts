@@ -1,4 +1,4 @@
-import { apiEnvironment } from './api'
+import { apiEnvironment, getAuthHeaders } from './api'
 import { DEMAND_ORGANIZATION_ENDPOINTS } from './api/endpoints/demand-organization.endpoints'
 
 // MIGRATED: 2025-01-25 - URL을 DEMAND_ORGANIZATION_ENDPOINTS로 이전
@@ -80,22 +80,20 @@ export const demandOrganizationService = {
 
       const response = await fetch(testUrl, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (response.ok) {
         return {
           success: true,
           message: '백엔드 API 연결 성공',
-          url: baseUrl
+          url: apiEnvironment.getApiBaseUrl()
         }
       } else {
         return {
           success: false,
           message: `백엔드 API 연결 실패: ${response.status} ${response.statusText}`,
-          url: baseUrl
+          url: apiEnvironment.getApiBaseUrl()
         }
       }
     } catch (error) {
@@ -126,12 +124,10 @@ export const demandOrganizationService = {
 
       const url = `${DEMAND_ORGANIZATION_ENDPOINTS.list()}?${queryParams.toString()}`
       console.log('API 호출 URL:', url)
-      
+
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -179,9 +175,7 @@ export const demandOrganizationService = {
       
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(searchRequest),
       })
 
@@ -227,9 +221,7 @@ export const demandOrganizationService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -255,9 +247,7 @@ export const demandOrganizationService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(organizationData),
       })
 
@@ -284,9 +274,7 @@ export const demandOrganizationService = {
 
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(organizationData),
       })
 
@@ -313,9 +301,7 @@ export const demandOrganizationService = {
 
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -338,9 +324,7 @@ export const demandOrganizationService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -372,9 +356,7 @@ export const demandOrganizationService = {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (response.ok) {

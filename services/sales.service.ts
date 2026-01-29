@@ -1,4 +1,4 @@
-import { apiEnvironment } from './api'
+import { apiEnvironment, getAuthHeaders } from './api'
 import { demandOrganizationService } from './demand-organization.service'
 import { SALES_ENDPOINTS } from './api/endpoints/sales.endpoints'
 import { codeService } from './code.service'
@@ -147,9 +147,7 @@ export const salesService = {
       try {
         const response = await fetch(testUrl, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
         })
         
         console.log('📊 API 응답 상태:', response.status, response.statusText)
@@ -224,9 +222,7 @@ export const salesService = {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       console.log('📊 영업관리 목록 조회 응답:', response.status, response.statusText)
@@ -266,9 +262,7 @@ export const salesService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -311,9 +305,7 @@ export const salesService = {
       
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(processedData),
       })
 
@@ -368,9 +360,7 @@ export const salesService = {
       
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(processedData),
       })
 
@@ -409,9 +399,7 @@ export const salesService = {
 
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -511,7 +499,7 @@ export const salesService = {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
           'Accept': 'application/json'
         },
       })
@@ -603,9 +591,7 @@ export const salesService = {
 
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -626,9 +612,7 @@ export const salesService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {

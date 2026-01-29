@@ -1,4 +1,4 @@
-import { apiEnvironment } from '~/services/api'
+import { apiEnvironment, getAuthHeaders } from '~/services/api'
 import { CONTRACT_ENDPOINTS } from './api/endpoints/contract.endpoints'
 
 // MIGRATED: 2025-01-25 - URL을 CONTRACT_ENDPOINTS로 이전
@@ -155,9 +155,7 @@ export const contractService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(contractData)
       })
 
@@ -229,9 +227,7 @@ export const contractService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {

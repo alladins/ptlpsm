@@ -7,6 +7,7 @@
  */
 
 import { MOBILE_ORDER_ENDPOINTS } from './api/endpoints/mobile-order.endpoints'
+import { getAuthHeaders } from './api'
 import type {
   MobileOrderRequest,
   MobileOrderRequestListItem,
@@ -30,9 +31,7 @@ export const mobileOrderService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -73,9 +72,7 @@ export const mobileOrderService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       })
 
@@ -102,9 +99,7 @@ export const mobileOrderService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -149,9 +144,7 @@ export const mobileOrderService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -195,9 +188,7 @@ export const mobileOrderService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -222,9 +213,7 @@ export const mobileOrderService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       })
 
@@ -251,9 +240,7 @@ export const mobileOrderService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       })
 

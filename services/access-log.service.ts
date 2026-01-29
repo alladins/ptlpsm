@@ -4,6 +4,7 @@
  */
 
 import { ACCESS_LOG_ENDPOINTS } from './api/endpoints/access-log.endpoints'
+import { getAuthHeaders } from './api'
 import type {
   AccessLog,
   AccessLogSearchParams,
@@ -30,9 +31,7 @@ export const accessLogService = {
 
     const response = await fetch(url.toString(), {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       credentials: 'include'
     })
 

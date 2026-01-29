@@ -5,6 +5,7 @@
  */
 
 import { MESSAGE_TEMPLATE_ENDPOINTS } from './api/endpoints/message-template.endpoints'
+import { getAuthHeaders } from './api'
 import type {
   MessageTemplate,
   MessageTemplateCreateRequest,
@@ -70,9 +71,7 @@ export async function getMessageTemplateList(
     const url = `${MESSAGE_TEMPLATE_ENDPOINTS.list()}?${queryParams.toString()}`
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -100,9 +99,7 @@ export async function getMessageTemplate(id: number): Promise<MessageTemplate> {
     const url = MESSAGE_TEMPLATE_ENDPOINTS.detail(id)
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -128,9 +125,7 @@ export async function createMessageTemplate(
     const serverData = transformToServerRequest(data)
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(serverData)
     })
 
@@ -158,9 +153,7 @@ export async function updateMessageTemplate(
     const serverData = transformToServerRequest(data)
     const response = await fetch(url, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(serverData)
     })
 
@@ -184,9 +177,7 @@ export async function deleteMessageTemplate(id: number): Promise<void> {
     const url = MESSAGE_TEMPLATE_ENDPOINTS.delete(id)
     const response = await fetch(url, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -206,9 +197,7 @@ export async function toggleMessageTemplateUse(id: number): Promise<MessageTempl
     const url = MESSAGE_TEMPLATE_ENDPOINTS.toggleUse(id)
     const response = await fetch(url, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {

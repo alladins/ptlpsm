@@ -4,6 +4,7 @@
  * @created 2026-01-26
  */
 
+import { getAuthHeaders } from './api'
 import { BGRADE_ITEM_ENDPOINTS } from './api/endpoints/bgrade-item.endpoints'
 import type {
   BgradeItemCreateRequest,
@@ -25,10 +26,7 @@ class BgradeItemService {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -62,10 +60,7 @@ class BgradeItemService {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -103,10 +98,7 @@ class BgradeItemService {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(request)
       })
 
@@ -152,10 +144,7 @@ class BgradeItemService {
 
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(request)
       })
 
@@ -190,9 +179,7 @@ class BgradeItemService {
 
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: {
-          'Accept': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
