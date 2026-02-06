@@ -62,6 +62,8 @@ export interface ShipmentListItem {
   purchaseOrderPdfPath?: string | null  // 발주서 PDF 경로 (null이면 미생성)
   // 납품완료 정보 (B급 품목 등록용)
   deliveryDoneId?: number | null     // 납품완료계 ID (COMPLETED 상태일 때 존재)
+  // B급 품목 여부
+  hasBgradeItems?: boolean           // B급 품목 존재 여부
 }
 
 export interface ShipmentDetail {
@@ -93,6 +95,7 @@ export interface ShipmentSearchParams {
   startDate?: string
   endDate?: string
   deliveryRequestNo?: string
+  shipmentNo?: string
   orderId?: number | null
   status?: string
   hasTransport?: boolean
@@ -113,10 +116,13 @@ export interface ShipmentDetailWithOrder {
   // 추가변경 판단용 필드
   isBilled: boolean                 // 기성 포함 여부 (true면 추가변경 불가)
   deliveryDoneStatus?: string       // 납품완료계 상태 (참고용: PENDING, IN_PROGRESS, PENDING_SIGNATURE, COMPLETED)
+  deliveryDoneId?: number | null    // 납품완료계 ID (COMPLETED 상태일 때 존재, B급 조정용)
 
   // OEM 및 배송지 정보 (2026-01-26 추가)
   oemCompanyId?: number | null      // OEM 제조사 ID
   oemCompanyName?: string | null    // OEM 제조사명
+  builderCompanyId?: number | null  // 건설사(시공사) ID
+  builderCompanyName?: string | null // 건설사(시공사)명
   siteManagerId?: number | null     // 현장담당자 ID
   siteManagerName?: string | null   // 현장담당자명
   zipcode?: string | null           // 배송지 우편번호
@@ -247,6 +253,7 @@ class ShipmentService {
       if (params.startDate !== undefined) queryParams.append('startDate', params.startDate)
       if (params.endDate !== undefined) queryParams.append('endDate', params.endDate)
       if (params.deliveryRequestNo !== undefined) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
+      if (params.shipmentNo !== undefined) queryParams.append('shipmentNo', params.shipmentNo)
       if (params.orderId !== undefined && params.orderId !== null) queryParams.append('orderId', params.orderId.toString())
       if (params.status !== undefined) queryParams.append('status', params.status)
       if (params.hasTransport !== undefined) queryParams.append('hasTransport', params.hasTransport.toString())
@@ -735,6 +742,7 @@ class ShipmentService {
     siteManagerId: number
     receiverName?: string
     receiverPhone?: string
+    oemCompanyId?: number | null  // OEM 제조사 ID
   }): Promise<{
     success: boolean
     message: string

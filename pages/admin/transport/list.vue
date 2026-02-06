@@ -47,10 +47,10 @@
             </button>
           </div>
 
-          <!-- 출하ID -->
+          <!-- 출하NO -->
           <div class="search-item">
-            <label>출하ID:</label>
-            <input type="number" v-model.number="searchForm.shipmentId" placeholder="출하ID" class="text-input" @keyup.enter="handleSearch">
+            <label>출하NO:</label>
+            <input type="text" v-model="searchForm.shipmentNo" placeholder="출하NO" class="text-input" @keyup.enter="handleSearch">
           </div>
 
           <!-- 상태 -->
@@ -221,7 +221,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineAsyncComponent } from 'vue'
+import { ref, onMounted, defineAsyncComponent, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { transportService } from '~/services/transport.service'
 import type { TransportDetail } from '~/services/transport.service'
@@ -283,12 +283,22 @@ const getSixMonthsAgo = () => {
   return `${year}-${month}-${day}`
 }
 
-// 검색 폼 데이터
+// 1개월 후 날짜 계산 (로컬 시간 기준)
+const getOneMonthLater = () => {
+  const date = new Date()
+  date.setMonth(date.getMonth() + 1)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 검색 폼 데이터 (등록일자 기본값: 과거 6개월 ~ 미래 1개월)
 const searchForm = ref({
   startDate: getSixMonthsAgo(),
-  endDate: getTodayDate(),
+  endDate: getOneMonthLater(),
   deliveryRequestNo: '',
-  shipmentId: null as number | null,
+  shipmentNo: '',
   status: ''
 })
 
@@ -317,7 +327,7 @@ const {
       startDate: searchForm.value.startDate,
       endDate: searchForm.value.endDate,
       deliveryRequestNo: searchForm.value.deliveryRequestNo,
-      shipmentId: searchForm.value.shipmentId || 0,
+      shipmentNo: searchForm.value.shipmentNo,
       status: searchForm.value.status,
       page: params.page || 0,
       size: params.size || 10,
@@ -369,6 +379,14 @@ const handleOrderSelect = (order: OrderDetailResponse) => {
   search()
 }
 
+// 상태 필터 변경 시 자동 검색
+watch(
+  () => searchForm.value.status,
+  () => {
+    search()
+  }
+)
+
 // 검색 기능
 const handleSearch = () => {
   search()
@@ -378,9 +396,9 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.value = {
     startDate: getSixMonthsAgo(),
-    endDate: getTodayDate(),
+    endDate: getOneMonthLater(),
     deliveryRequestNo: '',
-    shipmentId: null,
+    shipmentNo: '',
     status: ''
   }
   sortOption.value = 'createdAt,desc'

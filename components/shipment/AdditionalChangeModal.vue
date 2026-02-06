@@ -40,6 +40,8 @@
                 <tr>
                   <th class="col-item-name">품목명</th>
                   <th class="col-spec col-spec-header">규격</th>
+                  <th class="col-quantity">발주수량</th>
+                  <th class="col-quantity">잔여수량</th>
                   <th class="col-quantity">현재수량</th>
                   <th class="col-quantity">변경수량</th>
                   <th class="col-diff">차이</th>
@@ -53,6 +55,8 @@
                     {{ item.itemName }}
                   </td>
                   <td class="col-spec" :title="item.specification || '-'">{{ formatSpecification(item.specification) }}</td>
+                  <td class="text-right">{{ item.isNew ? '-' : (item.orderQuantity != null ? formatNumber(item.orderQuantity) : '-') }}</td>
+                  <td class="text-right">{{ item.isNew ? '-' : (item.remainingQuantity != null ? formatNumber(item.remainingQuantity) : '-') }}</td>
                   <td class="text-right">{{ item.isNew ? '-' : formatNumber(item.currentQuantity) }}</td>
                   <td class="text-right">
                     <input
@@ -60,7 +64,7 @@
                       type="number"
                       class="form-input form-input-sm text-right"
                       min="0"
-                      step="0.01"
+                      step="2"
                       @input="calculateDiff(item)"
                     />
                   </td>
@@ -85,7 +89,7 @@
               </tbody>
               <tfoot>
                 <tr class="total-row">
-                  <td colspan="2" class="text-right"><strong>총 수량</strong></td>
+                  <td colspan="4" class="text-right"><strong>총 수량</strong></td>
                   <td class="text-right"><strong>{{ formatNumber(originalTotalQuantity) }}</strong></td>
                   <td class="text-right"><strong>{{ formatNumber(newTotalQuantity) }}</strong></td>
                   <td class="text-right">
@@ -211,6 +215,8 @@ interface ShipmentItem {
   shipmentQuantity: number
   unitPrice?: number
   unit?: string
+  orderQuantity?: number      // 발주수량
+  remainingQuantity?: number  // 잔여수량
 }
 
 interface Props {
@@ -247,6 +253,8 @@ interface EditableItem {
   isNew: boolean
   unitPrice?: number
   unit?: string
+  orderQuantity?: number      // 발주수량
+  remainingQuantity?: number  // 잔여수량
 }
 
 const editableItems = ref<EditableItem[]>([])
@@ -278,10 +286,9 @@ const hasNewItems = computed(() => {
   return editableItems.value.some(item => item.isNew)
 })
 
-// 총 수량 일치 여부 (신규 품목이 있으면 검증 건너뜀)
+// 총 수량 검증 - 백엔드에서 총 수량 변경을 지원하므로 항상 유효
 const isQuantityValid = computed(() => {
-  if (hasNewItems.value) return true  // 신규 품목 추가 시 검증 안 함
-  return Math.abs(totalDiff.value) < 0.01
+  return true  // 총 수량 제한 없음 (백엔드에서 recalculateShipmentTotals 처리)
 })
 
 const totalDiffClass = computed(() => {
@@ -372,7 +379,9 @@ const initializeItems = () => {
     diff: 0,
     isNew: false,
     unitPrice: item.unitPrice,
-    unit: item.unit
+    unit: item.unit,
+    orderQuantity: item.orderQuantity,
+    remainingQuantity: item.remainingQuantity
   }))
 }
 
@@ -398,12 +407,18 @@ const getDiffText = (item: EditableItem): string => {
   return '0'
 }
 
-// 규격에서 첫 번째 콤마 이후 부분만 표시 (품목명 제외)
+// 규격에서 세 번째 부분(SKU명) 표시 (예: HYDRO-22-110T)
+// specification 구조: 품목명,제조사,SKU명,치수,등급
 const formatSpecification = (spec: string | undefined): string => {
   if (!spec) return '-'
-  const commaIndex = spec.indexOf(',')
-  if (commaIndex === -1) return spec
-  return spec.substring(commaIndex + 1).trim()
+  const parts = spec.split(',')
+  if (parts.length >= 3) {
+    return parts[2].trim()  // index 2 = SKU명 (HYDRO-22-110T)
+  }
+  if (parts.length >= 2) {
+    return parts[1].trim()  // fallback: index 1
+  }
+  return spec
 }
 
 // SKU 선택 팝업 열기
@@ -536,8 +551,8 @@ watch(() => props.isOpen, (isOpen) => {
 }
 
 .modal-large {
-  width: 90%;
-  max-width: 900px;
+  width: auto;
+  max-width: 720px;
 }
 
 .modal-header {
@@ -733,14 +748,14 @@ watch(() => props.isOpen, (isOpen) => {
 
 /* 컬럼별 너비 및 정렬 */
 .col-item-name {
-  width: 120px;
-  min-width: 120px;
+  width: 100px;
+  min-width: 100px;
   text-align: left !important;
 }
 
 .col-spec {
-  width: 280px;
-  max-width: 280px;
+  width: 130px;
+  max-width: 130px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -755,17 +770,17 @@ td.col-spec {
 }
 
 .col-quantity {
-  width: 90px;
+  width: 80px;
   text-align: right !important;
 }
 
 .col-diff {
-  width: 70px;
+  width: 55px;
   text-align: right !important;
 }
 
 .col-action {
-  width: 50px;
+  width: 40px;
   text-align: center !important;
 }
 
@@ -778,7 +793,7 @@ td.col-spec {
 }
 
 .form-input-sm {
-  width: 80px;
+  width: 70px;
   padding: 0.375rem 0.5rem;
   border: 1.5px solid #d1d5db;
   border-radius: 4px;

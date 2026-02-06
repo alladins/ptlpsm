@@ -15,7 +15,7 @@ export interface TransportSearchParams {
   startDate?: string               // 생성일자 시작 (YYYY-MM-DD)
   endDate?: string                 // 생성일자 종료 (YYYY-MM-DD)
   deliveryRequestNo?: string       // 발주번호
-  shipmentId?: number             // 출하 ID (0이면 무시)
+  shipmentNo?: string             // 출하 NO (부분 일치 검색)
   status?: string                 // 상태 (PENDING/IN_PROGRESS/COMPLETED/CANCELLED)
   page: number                    // 페이지 번호 (0부터 시작)
   size: number                    // 페이지 크기
@@ -89,7 +89,7 @@ class TransportService {
       if (params.startDate) queryParams.append('startDate', params.startDate)
       if (params.endDate) queryParams.append('endDate', params.endDate)
       if (params.deliveryRequestNo) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
-      if (params.shipmentId && params.shipmentId > 0) queryParams.append('shipmentId', params.shipmentId.toString())
+      if (params.shipmentNo) queryParams.append('shipmentNo', params.shipmentNo)
       if (params.status) queryParams.append('status', params.status)
       if (params.sort) queryParams.append('sort', params.sort)
       queryParams.append('page', params.page.toString())

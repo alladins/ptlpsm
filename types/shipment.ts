@@ -18,6 +18,10 @@ export interface ShipmentCreateRequest {
   // 신규 추가 필드
   /** OEM 제조사 ID (필수) */
   oemCompanyId: number
+  /** 건설사(시공사) ID */
+  builderCompanyId?: number
+  /** 건설사(시공사)명 */
+  builderCompanyName?: string
   /** 현장담당자 ID */
   siteManagerId?: number
   /** 우편번호 */
@@ -30,6 +34,8 @@ export interface ShipmentCreateRequest {
   receiverName?: string
   /** 현장 인수자 연락처 */
   receiverPhone?: string
+  /** 배송비 (원가에 포함) */
+  shippingCost?: number
 }
 
 /**
@@ -54,6 +60,10 @@ export interface ShipmentUpdateRequest {
   // OEM/배송지 필드 (수정 가능)
   /** OEM 제조사 ID */
   oemCompanyId?: number
+  /** 건설사(시공사) ID */
+  builderCompanyId?: number
+  /** 건설사(시공사)명 */
+  builderCompanyName?: string
   /** 현장담당자 ID */
   siteManagerId?: number
   /** 우편번호 */
@@ -89,6 +99,12 @@ export interface ShipmentResponse {
   /** OEM 제조사명 */
   oemCompanyName: string | null
 
+  // 건설사(시공사) 정보 (신규)
+  /** 건설사(시공사) ID */
+  builderCompanyId: number | null
+  /** 건설사(시공사)명 */
+  builderCompanyName: string | null
+
   // 현장담당자 정보 (신규)
   /** 현장담당자 ID */
   siteManagerId: number | null
@@ -108,6 +124,8 @@ export interface ShipmentResponse {
   receiverName: string | null
   /** 현장 인수자 연락처 */
   receiverPhone: string | null
+  /** 배송비 (원가에 포함) */
+  shippingCost: number | null
 
   // 발주서 관련 (신규)
   /** 발주서 PDF 경로 */
@@ -159,6 +177,7 @@ export function canEditShipment(response: ShipmentResponse): boolean {
 export const SHIPMENT_STATUS = {
   PENDING: 'PENDING',
   IN_PROGRESS: 'IN_PROGRESS',
+  PENDING_SIGNATURE: 'PENDING_SIGNATURE',
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED'
 } as const
@@ -171,6 +190,7 @@ export type ShipmentStatus = typeof SHIPMENT_STATUS[keyof typeof SHIPMENT_STATUS
 export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
   [SHIPMENT_STATUS.PENDING]: '대기',
   [SHIPMENT_STATUS.IN_PROGRESS]: '진행중',
+  [SHIPMENT_STATUS.PENDING_SIGNATURE]: '서명대기',
   [SHIPMENT_STATUS.COMPLETED]: '완료',
   [SHIPMENT_STATUS.CANCELLED]: '취소'
 }

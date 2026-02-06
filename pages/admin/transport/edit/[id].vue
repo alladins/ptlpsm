@@ -13,6 +13,15 @@
           목록
         </button>
         <button
+          v-if="formData.shipmentId"
+          class="btn-action btn-info"
+          @click="handleDownloadPurchaseOrder"
+          title="발주서 PDF 다운로드"
+        >
+          <i class="fas fa-file-pdf"></i>
+          발주서
+        </button>
+        <button
           class="btn-print"
           @click="printTransport"
         >
@@ -23,7 +32,7 @@
           class="btn-primary"
           @click="saveTransport"
           :disabled="!canSave"
-          :title="getSaveDisabledReason"
+          :title="!canSave ? getSaveDisabledReason : ''"
         >
           <i class="fas fa-save"></i>
           저장
@@ -87,7 +96,7 @@
           </div>
         </div>
 
-        <!-- 2. 현장 담당자 정보 -->
+        <!-- 2. 현장 담당자 정보 (수정 페이지에서는 읽기 전용) -->
         <div class="info-group">
           <div class="info-group-header">
             <i class="fas fa-user-hard-hat"></i>
@@ -97,9 +106,8 @@
             <FormField label="현장소장">
               <select
                 v-model="selectedSupervisorId"
-                @change="handleSupervisorChange"
                 class="form-input-md"
-                :disabled="!isSavableStatus"
+                disabled
               >
                 <option value="">현장소장을 선택하세요</option>
                 <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
@@ -111,9 +119,8 @@
               <div class="input-with-select">
                 <select
                   v-model="selectedReceiverId"
-                  @change="handleReceiverChange"
                   class="form-input-sm"
-                  :disabled="!isSavableStatus"
+                  disabled
                 >
                   <option value="direct">직접 입력</option>
                   <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
@@ -125,8 +132,8 @@
                   v-model="formData.receiverName"
                   class="form-input-md"
                   placeholder="인수자명을 입력하세요"
-                  :disabled="!isSavableStatus || selectedReceiverId !== 'direct'"
-                  :readonly="!isSavableStatus"
+                  disabled
+                  readonly
                 >
               </div>
             </FormField>
@@ -136,15 +143,14 @@
                 v-model="formData.receiverPhone"
                 class="form-input-md"
                 placeholder="010-0000-0000"
-                @input="handleReceiverPhoneInput"
-                :disabled="!isSavableStatus || selectedReceiverId !== 'direct'"
-                :readonly="!isSavableStatus"
+                disabled
+                readonly
               >
             </FormField>
           </div>
         </div>
 
-        <!-- 3. 기타 정보 -->
+        <!-- 3. 기타 정보 (수정 페이지에서는 읽기 전용) -->
         <div class="info-group">
           <div class="info-group-header">
             <i class="fas fa-info-circle"></i>
@@ -157,7 +163,8 @@
                 v-model="formData.deliveryMemo"
                 class="form-input-lg"
                 placeholder="배송 관련 메모를 입력하세요"
-                :readonly="!isSavableStatus"
+                disabled
+                readonly
               >
             </FormField>
           </div>
@@ -185,7 +192,7 @@
 
       <!-- 우측 컬럼 -->
       <div class="right-column">
-        <!-- 1. 배송지 정보 -->
+        <!-- 1. 배송지 정보 (수정 페이지에서는 읽기 전용) -->
         <div class="info-group">
           <div class="info-group-header">
             <i class="fas fa-map-marker-alt"></i>
@@ -200,24 +207,21 @@
                   class="form-input-sm"
                   placeholder="우편번호"
                   readonly
-                  :disabled="!isSavableStatus"
-                  @click="isSavableStatus && searchAddress()"
-                  :style="isSavableStatus ? 'cursor: pointer;' : ''"
+                  disabled
                 >
-                <button type="button" class="btn-search" @click="searchAddress" :disabled="!isSavableStatus">
+                <button type="button" class="btn-search" disabled>
                   <i class="fas fa-search"></i>
                   검색
                 </button>
               </div>
             </FormField>
-            <FormField label="배송예정일" required>
+            <FormField label="배송예정일">
               <input
                 type="date"
                 v-model="formData.deliveryDate"
                 class="form-input-md"
-                :readonly="!isSavableStatus"
-                :disabled="!isSavableStatus"
-                @change="onDeliveryDateChange"
+                readonly
+                disabled
               >
             </FormField>
             <FormField label="배송지 주소" full-width>
@@ -227,9 +231,7 @@
                 class="form-input-xl"
                 placeholder="배송지 주소를 검색하세요"
                 readonly
-                :disabled="!isSavableStatus"
-                @click="isSavableStatus && searchAddress()"
-                :style="isSavableStatus ? 'cursor: pointer;' : ''"
+                disabled
               >
             </FormField>
             <FormField label="상세주소" full-width>
@@ -238,7 +240,8 @@
                 v-model="formData.addressDetail"
                 class="form-input-lg"
                 placeholder="상세주소를 입력하세요"
-                :readonly="!isSavableStatus"
+                readonly
+                disabled
               >
             </FormField>
           </div>
@@ -631,15 +634,10 @@ const handleGoBack = () => {
   }
 }
 
-// 운송 정보 저장
+// 운송 정보 저장 (운송 정보 섹션만 수정 가능)
 const saveTransport = async () => {
   try {
-    // 유효성 검사
-    if (!formData.value.deliveryAddress) {
-      alert('배송지 주소를 입력해주세요.')
-      return
-    }
-
+    // 유효성 검사 (운송 정보만)
     if (!formData.value.driverPhone) {
       alert('기사 연락처를 입력해주세요.')
       return
@@ -651,40 +649,23 @@ const saveTransport = async () => {
       return
     }
 
-    // 인수자 연락처 형식 검증 (입력된 경우에만)
-    if (formData.value.receiverPhone && !validatePhoneNumber(formData.value.receiverPhone)) {
-      alert('인수자 연락처는 10자리 또는 11자리 숫자로 입력해주세요.')
-      return
-    }
-
-    if (!formData.value.deliveryDate) {
-      alert('배송예정일을 입력해주세요.')
-      return
-    }
-
     if (!formData.value.dispatchAt || !formData.value.expectedArrival) {
       alert('배차시각과 도착예정시각을 입력해주세요.')
       return
     }
 
+    // 운송 정보만 전송 (다른 섹션은 읽기 전용이므로 제외)
     const transportData = {
       transportId: formData.value.transportId,
       shipmentId: Number(formData.value.shipmentId),
-      vehicleNo: formData.value.vehicleNo,
-      deliveryDate: formData.value.deliveryDate,
-      zipcode: formData.value.zipcode,
-      deliveryAddress: formData.value.deliveryAddress,
-      addressDetail: formData.value.addressDetail,
-      siteManagerId: selectedSupervisorId.value || null,
-      receiverName: formData.value.receiverName,
-      receiverPhone: formData.value.receiverPhone,
+      // 운송 정보 섹션만 수정 가능
       carrierName: formData.value.carrierName,
+      vehicleNo: formData.value.vehicleNo,
       driverName: formData.value.driverName,
       driverPhone: formData.value.driverPhone,
       dispatchAt: formData.value.dispatchAt,
       expectedArrival: formData.value.expectedArrival,
-      status: formData.value.status,
-      deliveryMemo: formData.value.deliveryMemo
+      status: formData.value.status
     }
 
     console.log('운송장 수정 요청:', transportData)
@@ -775,6 +756,21 @@ const canSendMessage = computed(() => {
          formData.value.driverPhone
 })
 
+// 발주서 PDF 다운로드
+const handleDownloadPurchaseOrder = async () => {
+  if (!formData.value.shipmentId) {
+    alert('출하 정보가 없습니다.')
+    return
+  }
+  try {
+    await shipmentService.downloadPurchaseOrderPdf(Number(formData.value.shipmentId))
+  } catch (error) {
+    console.error('발주서 PDF 다운로드 실패:', error)
+    const errorMessage = error instanceof Error ? error.message : '발주서 PDF 처리에 실패했습니다.'
+    alert(errorMessage)
+  }
+}
+
 // 기사에게 메시지 전송 (deliveryService 사용)
 const sendMessageToDriver = async () => {
   const confirmed = confirm(
@@ -792,9 +788,13 @@ const sendMessageToDriver = async () => {
 
     console.log('메시지 발송 결과:', result)
 
-    // URL 팝업 표시 (임시: alert 대신 prompt로 URL 복사 가능하게)
+    // 중복 여부에 따라 다른 메시지 표시
+    const messagePrefix = result.messageAlreadySent
+      ? `이미 메시지가 발송되었습니다.\n(발송 시각: ${result.messageSentAt ? new Date(result.messageSentAt).toLocaleString('ko-KR') : '알 수 없음'})\n\n기존 URL을 재사용합니다.`
+      : `메시지가 발송되었습니다.`
+
     const copyUrl = confirm(
-      `메시지가 생성되었습니다.\n\n` +
+      `${messagePrefix}\n\n` +
       `아래 URL을 기사에게 전달해주세요:\n` +
       `${result.mobileUrl}\n\n` +
       `만료 시간: ${new Date(result.tokenExpiresAt).toLocaleString('ko-KR')}\n\n` +

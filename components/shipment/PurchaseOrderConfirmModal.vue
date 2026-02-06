@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="modal-overlay" @click="closeModal">
+    <div v-if="isOpen" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>발주서 생성</h3>
@@ -215,6 +215,7 @@ interface InitialData {
   siteManagerId: number | null
   receiverName: string
   receiverPhone: string
+  oemCompanyId: number | null  // OEM 제조사 ID
 }
 
 interface Props {
@@ -396,7 +397,8 @@ const handleSubmit = async () => {
       addressDetail: formData.addressDetail,
       siteManagerId: formData.siteManagerId!,
       receiverName: formData.receiverName,
-      receiverPhone: formData.receiverPhone
+      receiverPhone: formData.receiverPhone,
+      oemCompanyId: props.initialData.oemCompanyId  // OEM 제조사 ID 추가
     })
 
     if (!result.success) {

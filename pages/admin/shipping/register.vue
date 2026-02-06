@@ -94,6 +94,17 @@
                     >
                   </FormField>
 
+                  <FormField label="배송비">
+                    <input
+                      type="number"
+                      v-model.number="formData.shippingCost"
+                      class="form-input-sm text-right"
+                      placeholder="0"
+                      min="0"
+                      step="1000"
+                    >
+                  </FormField>
+
                   <FormField label="총 출하수량">
                     <input
                       type="text"
@@ -178,81 +189,46 @@
                   </FormField>
                 </div>
               </div>
+
+              <!-- 5. 현장담당자 및 건설사(시공사) 정보 -->
+              <div class="info-group">
+                <div class="info-group-header">
+                  <i class="fas fa-hard-hat"></i>
+                  <span>현장담당자 / 건설사</span>
+                  <span class="optional-badge">선택</span>
+                </div>
+                <div class="info-grid grid-1">
+                  <FormField label="현장담당자">
+                    <select
+                      v-model="formData.siteManagerId"
+                      class="form-select"
+                      :disabled="loadingSiteManagers"
+                    >
+                      <option :value="null">{{ loadingSiteManagers ? '로딩 중...' : '선택하세요' }}</option>
+                      <option
+                        v-for="manager in siteManagers"
+                        :key="manager.userid"
+                        :value="manager.userid"
+                      >
+                        {{ manager.userName }} ({{ manager.phone }})
+                        <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
+                      </option>
+                    </select>
+                  </FormField>
+                  <FormField label="건설사">
+                    <input
+                      type="text"
+                      :value="formData.builderCompanyName || '(현장담당자 선택 시 자동 설정)'"
+                      class="form-input-md"
+                      readonly
+                    >
+                  </FormField>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- 5. 배송지 정보 - 발주서 생성 시 입력하므로 등록 시에는 숨김 -->
-          <div v-if="false" class="full-width-section">
-            <div class="info-group">
-              <div class="info-group-header">
-                <i class="fas fa-map-marker-alt"></i>
-                <span>배송지 정보</span>
-                <span class="optional-badge">선택</span>
-              </div>
-              <div class="info-grid grid-5">
-                <FormField label="우편번호">
-                  <input
-                    type="text"
-                    v-model="formData.zipcode"
-                    class="form-input-sm text-center"
-                    placeholder="우편번호"
-                    maxlength="10"
-                  >
-                </FormField>
-                <FormField label="배송지 주소" class="col-span-2">
-                  <input
-                    type="text"
-                    v-model="formData.deliveryAddress"
-                    class="form-input-xl"
-                    placeholder="배송지 주소"
-                  >
-                </FormField>
-                <FormField label="상세주소" class="col-span-2">
-                  <input
-                    type="text"
-                    v-model="formData.addressDetail"
-                    class="form-input-xl"
-                    placeholder="상세주소"
-                  >
-                </FormField>
-              </div>
-              <div class="info-grid grid-4" style="margin-top: 0.5rem;">
-                <FormField label="현장담당자">
-                  <select
-                    v-model="formData.siteManagerId"
-                    class="form-select"
-                    :disabled="loadingSiteManagers"
-                  >
-                    <option :value="null">{{ loadingSiteManagers ? '로딩 중...' : '선택하세요' }}</option>
-                    <option
-                      v-for="manager in siteManagers"
-                      :key="manager.userid"
-                      :value="manager.userid"
-                    >
-                      {{ manager.userName }} ({{ manager.phone }})
-                      <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
-                    </option>
-                  </select>
-                </FormField>
-                <FormField label="현장 인수자">
-                  <input
-                    type="text"
-                    v-model="formData.receiverName"
-                    class="form-input-sm"
-                    placeholder="인수자명"
-                  >
-                </FormField>
-                <FormField label="인수자 연락처">
-                  <input
-                    type="text"
-                    v-model="formData.receiverPhone"
-                    class="form-input-sm"
-                    placeholder="010-0000-0000"
-                  >
-                </FormField>
-              </div>
-            </div>
-          </div>
+          <!-- 배송지 정보는 발주서 생성 시 입력 (출하 수정 페이지에서) -->
         </FormSection>
 
         <FormSection style="margin-top: -20px">
@@ -324,6 +300,7 @@
                         v-model.number="item.shippingQuantity"
                         :min="0"
                         :max="item.remainingQuantity"
+                        step="2"
                         class="table-input text-right input-w75"
                         @change="updateShippingQuantity(item)"
                       />
@@ -356,6 +333,7 @@
                         type="number"
                         v-model.number="item.shippingQuantity"
                         :min="0"
+                        step="2"
                         class="table-input text-right input-w75"
                       />
                     </td>
@@ -425,18 +403,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from '#imports'
 import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
 import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
 import ItemMergeSelectModal from '~/components/shipment/ItemMergeSelectModal.vue'
 import type { OrderDetailResponse } from '~/types/order'
 import type { CompanyInfoResponse } from '~/types/company'
-import type { UserByRole } from '~/types/user'
 import type { Item, ItemSku } from '~/services/item.service'
 import { shipmentService } from '~/services/shipment.service'
 import { companyService } from '~/services/company.service'
 import { userService } from '~/services/user.service'
+import type { UserByRole } from '~/types/user'
 import { formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
@@ -458,31 +436,37 @@ const { canWrite } = usePermission()
 const oemCompanies = ref<CompanyInfoResponse[]>([])
 const loadingOemCompanies = ref(false)
 
+// 건설사(시공사) 목록
+const builderCompanies = ref<CompanyInfoResponse[]>([])
+const loadingBuilderCompanies = ref(false)
+
 // 현장담당자 목록
 const siteManagers = ref<UserByRole[]>([])
 const loadingSiteManagers = ref(false)
 
-// OEM 및 배송지/현장담당자 데이터 로드
+// OEM, 건설사, 현장담당자 데이터 병렬 로드
 onMounted(async () => {
-  // OEM 제조사 목록 로드
   loadingOemCompanies.value = true
-  try {
-    const companies = await companyService.getCompanies()
-    oemCompanies.value = companies
-  } catch (error) {
-    console.error('OEM 제조사 목록 로드 실패:', error)
-  } finally {
-    loadingOemCompanies.value = false
-  }
-
-  // 현장담당자 목록 로드
+  loadingBuilderCompanies.value = true
   loadingSiteManagers.value = true
+
   try {
-    const users = await userService.getUsersByRoles(['SITE_MANAGER'])
+    // 병렬로 API 호출 (OEM 제조사는 MANUFACTURER 타입만 조회)
+    const [manufacturers, companies, users] = await Promise.all([
+      companyService.getManufacturers(),  // OEM 제조사만 (companyType=MANUFACTURER)
+      companyService.getCompanies(),       // 건설사용 전체 목록
+      userService.getUsersByRoles(['SITE_MANAGER'])
+    ])
+
+    // OEM 제조사는 제조사 유형만, 건설사는 전체 회사 목록
+    oemCompanies.value = manufacturers
+    builderCompanies.value = companies
     siteManagers.value = users
   } catch (error) {
-    console.error('현장담당자 목록 로드 실패:', error)
+    console.error('초기 데이터 로드 실패:', error)
   } finally {
+    loadingOemCompanies.value = false
+    loadingBuilderCompanies.value = false
     loadingSiteManagers.value = false
   }
 })
@@ -576,22 +560,46 @@ const handleSkuSelected = (item: Item, sku: ItemSku) => {
     return
   }
 
-  // 규격 문자열 생성
+  // 품목명 추출: "폴리우레탄기포단열재,경질2종2호" → "기포단열재"
+  // item_nm에서 쉼표 앞부분의 마지막 부분(폴리우레탄 제거)을 간단한 품목명으로 사용
+  let simpleItemName = '기포단열재'  // 기본값
+  if (item.itemNm) {
+    const parts = item.itemNm.split(',')
+    if (parts.length > 0) {
+      // "폴리우레탄기포단열재" → "기포단열재"
+      simpleItemName = parts[0].replace('폴리우레탄', '')
+    }
+  }
+
+  // 규격 문자열 생성 (기존 형식: "폴리우레탄기포단열재,리드파워,HYDRO-22-130T,1000×1000×130mm,경질2종2호")
   const specParts: string[] = []
-  if (item.itemNm) specParts.push(item.itemNm)
+  // 1. 품목유형 (item_nm의 첫 부분)
+  if (item.itemNm) {
+    const itemParts = item.itemNm.split(',')
+    if (itemParts.length > 0) specParts.push(itemParts[0])
+  }
+  // 2. 브랜드 (리드파워 고정)
+  specParts.push('리드파워')
+  // 3. SKU 이름
   if (sku.skuNm) specParts.push(sku.skuNm)
-  if (sku.width) specParts.push(`${sku.width}mm`)
-  if (sku.height) specParts.push(`${sku.height}mm`)
-  if (sku.thickness) specParts.push(`${sku.thickness}T`)
+  // 4. 크기 (width×height×thickness mm)
+  if (sku.width && sku.height && sku.thickness) {
+    specParts.push(`${sku.width}×${sku.height}×${sku.thickness}mm`)
+  }
+  // 5. 품목유형의 나머지 부분 (경질2종2호 등)
+  if (item.itemNm) {
+    const itemParts = item.itemNm.split(',')
+    if (itemParts.length > 1) specParts.push(itemParts.slice(1).join(','))
+  }
 
   // 기존 품목이 있으면 병합 모달 표시
   if (selectedOrderItems.value.length > 0) {
     pendingNewItem.value = {
       skuId: skuIdStr,
       itemId: item.itemId,
-      itemName: item.itemNm,
+      itemName: simpleItemName,
       skuName: sku.skuNm || `${sku.thickness}T`,
-      specification: specParts.join(', '),
+      specification: specParts.join(','),
       unit: 'm2',
       unitPrice: sku.unitPrice || 0
     }
@@ -602,9 +610,9 @@ const handleSkuSelected = (item: Item, sku: ItemSku) => {
     newItems.value.push({
       skuId: skuIdStr,
       itemId: item.itemId,
-      itemName: item.itemNm,
+      itemName: simpleItemName,
       skuName: sku.skuNm || `${sku.thickness}T`,
-      specification: specParts.join(', '),
+      specification: specParts.join(','),
       unit: 'm2',
       unitPrice: sku.unitPrice || 0,
       shippingQuantity: 0,
@@ -764,12 +772,15 @@ const {
       status: data.status,
       // OEM 및 배송지 정보 (신규)
       oemCompanyId: data.oemCompanyId,
+      builderCompanyId: data.builderCompanyId || null,
+      builderCompanyName: data.builderCompanyName || null,
       siteManagerId: data.siteManagerId || null,
       zipcode: data.zipcode || null,
       deliveryAddress: data.deliveryAddress || null,
       addressDetail: data.addressDetail || null,
       receiverName: data.receiverName || null,
       receiverPhone: data.receiverPhone || null,
+      shippingCost: data.shippingCost || 0,  // 배송비
       items: allItems
     }
 
@@ -788,12 +799,15 @@ const {
     status: 'PENDING',
     // OEM 및 배송지 정보 (신규)
     oemCompanyId: null as number | null,
+    builderCompanyId: null as number | null,
+    builderCompanyName: '' as string,
     siteManagerId: null as number | null,
     zipcode: '',
     deliveryAddress: '',
     addressDetail: '',
     receiverName: '',
-    receiverPhone: ''
+    receiverPhone: '',
+    shippingCost: 0  // 배송비
   },
   onCreateSuccess: () => {
     alert('출하 정보가 저장되었습니다.')
@@ -810,11 +824,11 @@ const {
 
 // useFormValidation 사용
 const { errors, validateField, validateAll, rules } = useFormValidation({
-  deliveryRequestNo: '',
-  client: '',
-  shippingDate: '',
-  status: '',
-  oemCompanyId: ''
+  deliveryRequestNo: '납품요구번호는 필수입니다.',
+  client: '수요기관명은 필수입니다.',
+  shippingDate: '출하일자는 필수입니다.',
+  status: '상태는 필수입니다.',
+  oemCompanyId: '제조사는 필수입니다.'
 })
 
 // 선택된 발주의 품목 목록
@@ -956,6 +970,27 @@ const totalAmount = computed(() => {
   const existingTotal = selectedOrderItems.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * item.unitPrice), 0)
   const newTotal = newItems.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * item.unitPrice), 0)
   return existingTotal + newTotal
+})
+
+// 건설사 선택 변경 핸들러 (현재는 현장담당자 연동으로 대체됨)
+const onBuilderCompanyChange = () => {
+  const selectedCompany = builderCompanies.value.find(c => c.id === formData.builderCompanyId)
+  formData.builderCompanyName = selectedCompany?.companyName || ''
+}
+
+// 현장담당자 선택 시 건설사 자동 설정
+watch(() => formData.siteManagerId, (newManagerId) => {
+  if (newManagerId) {
+    const selectedManager = siteManagers.value.find(m => m.userid === newManagerId)
+    if (selectedManager?.companyId) {
+      formData.builderCompanyId = selectedManager.companyId
+      formData.builderCompanyName = selectedManager.companyName || ''
+    }
+  } else {
+    // 현장담당자 해제 시 건설사도 초기화
+    formData.builderCompanyId = null
+    formData.builderCompanyName = ''
+  }
 })
 
 // 제출 처리

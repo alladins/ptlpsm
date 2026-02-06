@@ -20,7 +20,7 @@
           class="btn-action btn-delete"
           @click="handleDelete"
           :disabled="!canDelete"
-          :title="getDeleteDisabledReason"
+          :title="!canDelete ? getDeleteDisabledReason : ''"
         >
           <i class="fas fa-trash"></i>
           삭제
@@ -33,7 +33,7 @@
           class="btn-action btn-primary"
           @click="handleSubmit"
           :disabled="submitting || !canEdit"
-          :title="getEditDisabledReason"
+          :title="!canEdit ? getEditDisabledReason : ''"
         >
           <i class="fas fa-save"></i>
           {{ submitting ? '저장 중...' : '저장' }}
@@ -148,6 +148,82 @@
                   </FormField>
                 </div>
               </div>
+
+              <!-- 6. 배송지 정보 - 발주서 생성 후에만 표시 (좌측 컬럼으로 이동) -->
+              <div v-if="hasPurchaseOrder" class="info-group">
+                <div class="info-group-header">
+                  <i class="fas fa-map-marker-alt"></i>
+                  <span>배송지 정보</span>
+                </div>
+                <div class="info-grid grid-2">
+                  <FormField label="우편번호">
+                    <input
+                      type="text"
+                      v-model="formData.zipcode"
+                      class="form-input-sm text-center"
+                      placeholder="우편번호"
+                      maxlength="10"
+                      :readonly="!canEditOemAndDelivery"
+                    >
+                  </FormField>
+                  <FormField label="현장 도착 예정일시">
+                    <input
+                      type="text"
+                      :value="formatExpectedArrivalAt(formData.expectedArrivalAt)"
+                      class="form-input-md"
+                      placeholder="예정일시"
+                      readonly
+                    >
+                  </FormField>
+                </div>
+                <div class="info-grid grid-1" style="margin-top: 0.5rem;">
+                  <FormField label="배송지 주소">
+                    <input
+                      type="text"
+                      v-model="formData.deliveryAddress"
+                      class="form-input-xl"
+                      placeholder="배송지 주소"
+                      :readonly="!canEditOemAndDelivery"
+                    >
+                  </FormField>
+                </div>
+                <div class="info-grid grid-1" style="margin-top: 0.5rem;">
+                  <FormField label="상세주소">
+                    <input
+                      type="text"
+                      v-model="formData.addressDetail"
+                      class="form-input-xl"
+                      placeholder="상세주소"
+                      :readonly="!canEditOemAndDelivery"
+                    >
+                  </FormField>
+                </div>
+                <div class="info-grid grid-2" style="margin-top: 0.5rem;">
+                  <FormField label="현장 인수자">
+                    <input
+                      type="text"
+                      v-model="formData.receiverName"
+                      class="form-input-sm"
+                      placeholder="인수자명"
+                      :readonly="!canEditOemAndDelivery"
+                    >
+                  </FormField>
+                  <FormField label="인수자 연락처">
+                    <input
+                      type="text"
+                      v-model="formData.receiverPhone"
+                      class="form-input-sm"
+                      placeholder="010-0000-0000"
+                      :readonly="!canEditOemAndDelivery"
+                    >
+                  </FormField>
+                </div>
+                <!-- 발주서 생성 시 수정 불가 안내 -->
+                <div v-if="hasPurchaseOrder" class="field-notice warning">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  발주서가 생성되어 배송지 정보를 변경할 수 없습니다.
+                </div>
+              </div>
             </div>
 
             <!-- 우측 컬럼 -->
@@ -217,79 +293,24 @@
                   발주서가 생성되어 OEM 제조사를 변경할 수 없습니다.
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- 5. 배송지 정보 - 발주서 생성 후에만 표시 -->
-          <div v-if="hasPurchaseOrder" class="full-width-section">
-            <div class="info-group">
-              <div class="info-group-header">
-                <i class="fas fa-map-marker-alt"></i>
-                <span>배송지 정보</span>
-              </div>
-              <div class="info-grid grid-5">
-                <FormField label="우편번호">
-                  <input
-                    type="text"
-                    v-model="formData.zipcode"
-                    class="form-input-sm text-center"
-                    placeholder="우편번호"
-                    maxlength="10"
-                    :readonly="!canEditOemAndDelivery"
-                  >
-                </FormField>
-                <FormField label="배송지 주소" class="col-span-2">
-                  <input
-                    type="text"
-                    v-model="formData.deliveryAddress"
-                    class="form-input-xl"
-                    placeholder="배송지 주소"
-                    :readonly="!canEditOemAndDelivery"
-                  >
-                </FormField>
-                <FormField label="상세주소" class="col-span-2">
-                  <input
-                    type="text"
-                    v-model="formData.addressDetail"
-                    class="form-input-xl"
-                    placeholder="상세주소"
-                    :readonly="!canEditOemAndDelivery"
-                  >
-                </FormField>
-              </div>
-              <div class="info-grid grid-3" style="margin-top: 0.5rem;">
-                <FormField label="현장 도착 예정일시">
-                  <input
-                    type="text"
-                    :value="formatExpectedArrivalAt(formData.expectedArrivalAt)"
-                    class="form-input-md"
-                    placeholder="예정일시"
-                    readonly
-                  >
-                </FormField>
-                <FormField label="현장 인수자">
-                  <input
-                    type="text"
-                    v-model="formData.receiverName"
-                    class="form-input-sm"
-                    placeholder="인수자명"
-                    :readonly="!canEditOemAndDelivery"
-                  >
-                </FormField>
-                <FormField label="인수자 연락처">
-                  <input
-                    type="text"
-                    v-model="formData.receiverPhone"
-                    class="form-input-sm"
-                    placeholder="010-0000-0000"
-                    :readonly="!canEditOemAndDelivery"
-                  >
-                </FormField>
-              </div>
-              <!-- 발주서 생성 시 수정 불가 안내 -->
-              <div v-if="hasPurchaseOrder" class="field-notice warning">
-                <i class="fas fa-exclamation-triangle"></i>
-                발주서가 생성되어 배송지 정보를 변경할 수 없습니다.
+              <!-- 5. 건설사(시공사) 정보 -->
+              <div class="info-group">
+                <div class="info-group-header">
+                  <i class="fas fa-hard-hat"></i>
+                  <span>건설사(시공사)</span>
+                  <span class="optional-badge">선택</span>
+                </div>
+                <div class="info-grid grid-1">
+                  <FormField label="건설사">
+                    <input
+                      type="text"
+                      :value="formData.builderCompanyName || '(현장담당자 선택 시 자동 설정)'"
+                      class="form-input-md"
+                      readonly
+                    >
+                  </FormField>
+                </div>
               </div>
             </div>
           </div>
@@ -343,10 +364,11 @@
               <table class="items-table">
                 <thead>
                   <tr>
-                    <th>NO</th>
-                    <th>SKU ID</th>
-                    <th>SKU 품명</th>
-                    <th>품목명</th>
+                    <th style="width: 40px"></th>
+                    <th style="width: 60px">NO</th>
+                    <th style="width: 80px">품목명</th>
+                    <th style="width: 80px">SKU ID</th>
+                    <th style="width: 100px">SKU 품명</th>
                     <th class="col-spec">규격</th>
                     <th>단위</th>
                     <th>발주수량</th>
@@ -359,17 +381,20 @@
                 </thead>
                 <tbody>
                   <tr v-if="items.length === 0">
-                    <td colspan="12" class="empty-message">
+                    <td colspan="13" class="empty-message">
                       품목 정보가 없습니다.
                     </td>
                   </tr>
                   <template v-for="item in items" :key="item.skuId">
                     <!-- 원본 품목 행 -->
-                    <tr :class="{ 'has-bgrade': getBgradeItemsForSku(item.skuId).length > 0 }">
+                    <tr>
+                      <td class="text-center">
+                        <span v-if="item.isNewItem" class="badge-new">신규</span>
+                      </td>
                       <td>{{ item.itemId }}</td>
+                      <td>{{ item.itemName || '-' }}</td>
                       <td>{{ item.skuId }}</td>
                       <td>{{ item.skuName }}</td>
-                      <td>{{ item.itemName || '-' }}</td>
                       <td class="specification-cell" :title="item.specification">{{ truncateText(item.specification, 60) }}</td>
                       <td>{{ item.unit }}</td>
                       <td class="text-right">{{ formatQuantity(item.orderQuantity) }}</td>
@@ -394,6 +419,7 @@
                           v-model.number="item.shippingQuantity"
                           :min="0"
                           :max="item.maxEditableQuantity"
+                          step="2"
                           class="table-input text-right input-w66"
                           @focus="saveOriginalQuantity(item)"
                           @change="validateQuantity(item)"
@@ -403,35 +429,11 @@
                       <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
                       <td class="text-right">{{ formatCurrency(item.shippingQuantity * item.unitPrice) }}</td>
                     </tr>
-
-                    <!-- B급 품목 서브 행들 -->
-                    <tr
-                      v-for="bgrade in getBgradeItemsForSku(item.skuId)"
-                      :key="`bgrade-${bgrade.id}`"
-                      class="bgrade-row"
-                    >
-                      <td class="bgrade-indent">
-                        <span class="tree-branch">└─</span>
-                      </td>
-                      <td colspan="2">
-                        <span class="bgrade-badge">B급</span>
-                        {{ bgrade.skuName }}
-                      </td>
-                      <td>{{ bgrade.reason || '-' }}</td>
-                      <td class="specification-cell">{{ bgrade.specification || '-' }}</td>
-                      <td>{{ bgrade.unit }}</td>
-                      <td class="text-right">-</td>
-                      <td class="text-right">-</td>
-                      <td class="text-right">-</td>
-                      <td class="text-right text-warning">{{ formatQuantity(bgrade.quantity) }}</td>
-                      <td class="text-right text-warning">{{ formatNumber(bgrade.originalUnitPrice) }}</td>
-                      <td class="text-right text-warning">{{ formatCurrency(bgrade.quantity * bgrade.originalUnitPrice) }}</td>
-                    </tr>
                   </template>
                 </tbody>
                 <tfoot v-if="items.length > 0">
                   <tr>
-                    <td colspan="7" class="text-right"></td>
+                    <td colspan="8" class="text-right"></td>
                     <td colspan="2" class="text-right"><strong>총 출하수량</strong></td>
                     <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
                     <td class="text-right"><strong>총 금액</strong></td>
@@ -557,7 +559,9 @@
         skuId: item.skuId,
         itemName: item.itemName,
         specification: item.specification,
-        shipmentQuantity: item.shippingQuantity
+        shipmentQuantity: item.shippingQuantity,
+        orderQuantity: item.orderQuantity,
+        remainingQuantity: item.remainingQuantity
       }))"
       @close="showAdditionalChangeModal = false"
       @complete="handleAdditionalChangeComplete"
@@ -599,12 +603,14 @@
         addressDetail: formData.addressDetail,
         siteManagerId: formData.siteManagerId,
         receiverName: formData.receiverName,
-        receiverPhone: formData.receiverPhone
+        receiverPhone: formData.receiverPhone,
+        oemCompanyId: formData.oemCompanyId
       }"
       :site-managers="siteManagers"
       @close="showPurchaseOrderConfirmModal = false"
       @complete="handlePurchaseOrderComplete"
     />
+
   </div>
 </template>
 
@@ -622,7 +628,7 @@
  *   * remainingQuantity: 잔여 수량
  *   * maxEditableQuantity: 최대 수정 가능 수량
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
 import { companyService } from '~/services/company.service'
@@ -679,54 +685,37 @@ const originalQuantities = ref<Map<string, number>>(new Map())
 const oemCompanies = ref<CompanyInfoResponse[]>([])
 const loadingOemCompanies = ref(false)
 
+// 건설사(시공사) 목록
+const builderCompanies = ref<CompanyInfoResponse[]>([])
+const loadingBuilderCompanies = ref(false)
+
 // 현장담당자 목록
 const siteManagers = ref<UserByRole[]>([])
 const loadingSiteManagers = ref(false)
 
-// B급 품목을 SKU별로 그룹핑
-const bgradeBySkuId = computed(() => {
-  const map = new Map<string, typeof shipmentData.value extends { bgradeItems?: infer T } ? T extends Array<infer U> ? U[] : never : never>()
-  if (!shipmentData.value?.bgradeItems) return map
-
-  shipmentData.value.bgradeItems.forEach(item => {
-    const existing = map.get(item.skuId) || []
-    existing.push(item)
-    map.set(item.skuId, existing)
-  })
-  return map
-})
-
-// 특정 SKU의 B급 품목 조회
-const getBgradeItemsForSku = (skuId: string) => {
-  return bgradeBySkuId.value.get(skuId) || []
-}
-
-// B급 품목 존재 여부
-const hasBgradeItems = computed(() => {
-  return (shipmentData.value?.bgradeItems?.length ?? 0) > 0
-})
-
-// OEM 및 현장담당자 데이터 로드
+// OEM, 건설사, 현장담당자 데이터 병렬 로드
 onMounted(async () => {
-  // OEM 제조사 목록 로드
   loadingOemCompanies.value = true
-  try {
-    const companies = await companyService.getCompanies()
-    oemCompanies.value = companies
-  } catch (error) {
-    console.error('OEM 제조사 목록 로드 실패:', error)
-  } finally {
-    loadingOemCompanies.value = false
-  }
-
-  // 현장담당자 목록 로드
+  loadingBuilderCompanies.value = true
   loadingSiteManagers.value = true
+
   try {
-    const users = await userService.getUsersByRoles(['SITE_MANAGER'])
+    // 병렬로 API 호출 (OEM 제조사는 MANUFACTURER 타입만 조회)
+    const [manufacturers, companies, users] = await Promise.all([
+      companyService.getManufacturers(),  // 제조사(MANUFACTURER)만 조회
+      companyService.getCompanies(),
+      userService.getUsersByRoles(['SITE_MANAGER'])
+    ])
+
+    // OEM 제조사는 제조사 타입만, 건설사는 전체 회사 목록 사용
+    oemCompanies.value = manufacturers
+    builderCompanies.value = companies
     siteManagers.value = users
   } catch (error) {
-    console.error('현장담당자 목록 로드 실패:', error)
+    console.error('초기 데이터 로드 실패:', error)
   } finally {
+    loadingOemCompanies.value = false
+    loadingBuilderCompanies.value = false
     loadingSiteManagers.value = false
   }
 })
@@ -794,7 +783,8 @@ const {
           shippingQuantity: item.shipmentQuantity || 0, // 현재 출하 수량
           maxEditableQuantity: maxEditableQuantity,
           orderId: data.orderId,
-          orderItemId: item.skuId
+          orderItemId: item.skuId,
+          isNewItem: item.remarks === '신규 추가' // 신규 추가 품목 여부
         }
       })
       console.log('[출하 수정] 품목 매핑 완료')
@@ -816,6 +806,8 @@ const {
       status: data.status,
       // OEM 및 배송지 정보 (신규)
       oemCompanyId: data.oemCompanyId || null,
+      builderCompanyId: data.builderCompanyId || null,
+      builderCompanyName: data.builderCompanyName || null,
       siteManagerId: data.siteManagerId || null,
       zipcode: data.zipcode || null,
       deliveryAddress: data.deliveryAddress || null,
@@ -899,6 +891,8 @@ const {
       status: shipment.status || 'PENDING',
       // OEM 및 배송지 정보 (신규)
       oemCompanyId: shipment.oemCompanyId || null,
+      builderCompanyId: shipment.builderCompanyId || null,
+      builderCompanyName: shipment.builderCompanyName || '',
       siteManagerId: shipment.siteManagerId || null,
       zipcode: shipment.zipcode || '',
       deliveryAddress: shipment.deliveryAddress || '',
@@ -935,6 +929,27 @@ const { errors, validateAll, rules } = useFormValidation({
   oemCompanyId: ''
 })
 
+// 건설사 선택 변경 핸들러 (현재는 현장담당자 연동으로 대체됨)
+const onBuilderCompanyChange = () => {
+  const selectedCompany = builderCompanies.value.find(c => c.id === formData.builderCompanyId)
+  formData.builderCompanyName = selectedCompany?.companyName || ''
+}
+
+// 현장담당자 선택 시 건설사 자동 설정
+watch(() => formData.siteManagerId, (newManagerId) => {
+  if (newManagerId) {
+    const selectedManager = siteManagers.value.find(m => m.userid === newManagerId)
+    if (selectedManager?.companyId) {
+      formData.builderCompanyId = selectedManager.companyId
+      formData.builderCompanyName = selectedManager.companyName || ''
+    }
+  } else {
+    // 현장담당자 해제 시 건설사도 초기화
+    formData.builderCompanyId = null
+    formData.builderCompanyName = ''
+  }
+})
+
 // 총 출하수량 (현재 편집 중인 수량 합계)
 const totalShippingQuantity = computed(() => {
   return items.value.reduce((sum, item) => sum + (item.shippingQuantity || 0), 0)
@@ -943,11 +958,6 @@ const totalShippingQuantity = computed(() => {
 // 총 금액 (현재 편집 중인 수량 기준)
 const totalAmount = computed(() => {
   return items.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * item.unitPrice), 0)
-})
-
-// 전체 계약물량 합계
-const totalOrderQuantity = computed(() => {
-  return items.value.reduce((sum, item) => sum + (item.orderQuantity || 0), 0)
 })
 
 // 비즈니스 로직: 삭제 가능 상태 (대기 또는 취소 상태만)
@@ -960,9 +970,9 @@ const isEditableStatus = computed(() => {
   return !['COMPLETED', 'CANCELLED'].includes(formData.status)
 })
 
-// 삭제 가능 여부 (권한 + 비즈니스 로직)
+// 삭제 가능 여부 (권한 + 비즈니스 로직 + 발주서 미생성)
 const canDelete = computed(() => {
-  return hasDeletePermission.value && isDeletableStatus.value
+  return hasDeletePermission.value && isDeletableStatus.value && !hasPurchaseOrder.value
 })
 
 // 수량 수정 가능 여부 (대기 상태만 + 수정 권한)
@@ -984,6 +994,7 @@ const getEditDisabledReason = computed(() => {
 
 const getDeleteDisabledReason = computed(() => {
   if (!hasDeletePermission.value) return '삭제 권한이 없습니다'
+  if (hasPurchaseOrder.value) return '발주서가 생성되어 삭제할 수 없습니다'
   if (!isDeletableStatus.value) return '대기 또는 취소 상태에서만 삭제할 수 있습니다'
   return ''
 })
@@ -1108,7 +1119,8 @@ const handleAdditionalChangeComplete = async (response: AdditionalChangeResponse
         shippingQuantity: item.shipmentQuantity || 0,
         maxEditableQuantity: (item.shipmentQuantity || 0) + (item.remainingQuantity || 0),
         orderId: data.orderId,
-        orderItemId: item.skuId
+        orderItemId: item.skuId,
+        isNewItem: item.remarks === '신규 추가'
       }))
 
       // formData 업데이트
@@ -1272,11 +1284,24 @@ const refreshData = async () => {
       shippingQuantity: item.shipmentQuantity || 0,
       maxEditableQuantity: (item.shipmentQuantity || 0) + (item.remainingQuantity || 0),
       orderId: data.orderId,
-      orderItemId: item.skuId
+      orderItemId: item.skuId,
+      isNewItem: item.remarks === '신규 추가'
     }))
 
     // formData 업데이트
     formData.status = data.status
+
+    // 배송지 정보 업데이트
+    formData.zipcode = data.zipcode || ''
+    formData.deliveryAddress = data.deliveryAddress || ''
+    formData.addressDetail = data.addressDetail || ''
+    formData.expectedArrivalAt = data.expectedArrivalDatetime || ''
+    formData.receiverName = data.receiverName || ''
+    formData.receiverPhone = data.receiverPhone || ''
+
+    // OEM 제조사 및 현장담당자 정보 업데이트
+    formData.oemCompanyId = data.oemCompanyId || null
+    formData.siteManagerId = data.siteManagerId || null
 
     // 변경 이력 새로고침
     await loadChangeHistory()
@@ -1304,32 +1329,6 @@ const getStatusStyle = (status: string): string => {
   }
 
   return styleMap[badgeClass] || 'color: #6b7280; font-weight: 500;'
-}
-
-// 납품완료계 상태 라벨 변환
-const getDeliveryDoneStatusLabel = (status?: string): string => {
-  if (!status) return '-'
-  const statusMap: Record<string, string> = {
-    'PENDING': '대기',
-    'IN_PROGRESS': '납품중',
-    'PENDING_SIGNATURE': '서명대기',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소'
-  }
-  return statusMap[status] || status
-}
-
-// 납품완료계 상태별 스타일
-const getDeliveryDoneStatusStyle = (status?: string): string => {
-  if (!status) return 'color: #6b7280; font-weight: 500;'
-  const styleMap: Record<string, string> = {
-    'PENDING': 'color: #6b7280; font-weight: 500;',
-    'IN_PROGRESS': 'color: #2563eb; font-weight: 600;',
-    'PENDING_SIGNATURE': 'color: #d97706; font-weight: 600;',
-    'COMPLETED': 'color: #059669; font-weight: 600;',
-    'CANCELLED': 'color: #dc2626; font-weight: 500;'
-  }
-  return styleMap[status] || 'color: #6b7280; font-weight: 500;'
 }
 
 // 포커스 시 원래 값 저장
@@ -1888,7 +1887,7 @@ const handleDelete = async () => {
 
 /* 전체 너비 섹션 (배송지 정보용) */
 .full-width-section {
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 /* 선택 배지 */
@@ -2005,51 +2004,14 @@ const handleDelete = async () => {
   font-size: 0.8125rem;
 }
 
-/* B급 품목이 있는 원본 행 */
-.items-table tr.has-bgrade {
-  border-bottom: none;
-}
-
-.items-table tr.has-bgrade td {
-  border-bottom: 1px dashed #e5e7eb;
-}
-
-/* B급 품목 서브 행 */
-.bgrade-row {
-  background: #fffbeb;  /* 연한 노란색 배경 */
-}
-
-.bgrade-row td {
-  border-bottom: 1px solid #fcd34d !important;
-  color: #92400e;
-}
-
-.bgrade-indent {
-  padding-left: 1.5rem !important;
-}
-
-.tree-branch {
-  color: #d97706;
-  font-family: monospace;
-  font-weight: bold;
-  margin-right: 0.25rem;
-}
-
-.bgrade-badge {
-  display: inline-flex;
-  align-items: center;
+/* 신규 뱃지 */
+.badge-new {
+  display: inline-block;
   padding: 0.125rem 0.375rem;
-  background: #f59e0b;
+  background: #10b981;
   color: white;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   border-radius: 4px;
-  margin-right: 0.5rem;
-}
-
-/* B급 금액/단가 강조 색상 */
-.text-warning {
-  color: #d97706 !important;
-  font-weight: 500;
 }
 </style>

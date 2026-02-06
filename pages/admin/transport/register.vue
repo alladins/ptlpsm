@@ -406,8 +406,18 @@ const { errors, validateAll, rules } = useFormValidation({
   driverPhone: ''
 })
 
-// 배차/출차 시각: 현재 시간 이전 선택 불가
-const minDispatchDate = computed(() => new Date())
+// 배차/출차 시각: 배송 예정일 - 1일 00:00 이후부터 선택 가능
+const minDispatchDate = computed(() => {
+  if (formData.deliveryDate) {
+    const deliveryDateObj = new Date(formData.deliveryDate)
+    const minDate = new Date(deliveryDateObj)
+    minDate.setDate(minDate.getDate() - 1)
+    minDate.setHours(0, 0, 0, 0)
+    return minDate
+  }
+  // 배송 예정일이 없으면 현재 시간 기준
+  return new Date()
+})
 
 // 도착 예정 시각: 배차/출차 시각 이후로만 선택 가능
 const minExpectedArrivalDate = computed(() => {
@@ -568,8 +578,9 @@ const handleShipmentSelect = async (shipment: ShipmentListItem) => {
       const minutes = String(arrivalDateTime.getMinutes()).padStart(2, '0')
       formData.expectedArrival = `${year}-${month}-${day}T${hours}:${minutes}`
 
-      // 3. 배차/출차 시각: 도착 예정 시각 - 2시간
-      const dispatchDateTime = new Date(arrivalDateTime.getTime() - 2 * 60 * 60 * 1000)
+      // 3. 배차/출차 시각: 도착 예정일 하루 전 같은 시각
+      const dispatchDateTime = new Date(arrivalDateTime)
+      dispatchDateTime.setDate(dispatchDateTime.getDate() - 1)
       const dispatchYear = dispatchDateTime.getFullYear()
       const dispatchMonth = String(dispatchDateTime.getMonth() + 1).padStart(2, '0')
       const dispatchDay = String(dispatchDateTime.getDate()).padStart(2, '0')
@@ -653,12 +664,16 @@ const handleSubmit = async () => {
     return
   }
 
-  // 배차/출차 시각이 현재 시간 - 30분 이전인지 체크 (폼 작성 시간 고려)
-  const now = new Date()
-  const allowedPastTime = new Date(now.getTime() - 30 * 60 * 1000) // 30분 전까지 허용
+  // 배차/출차 시각이 배송 예정일 - 1일 00:00 이전인지 체크
   const dispatchTime = new Date(formData.dispatchAt)
-  if (dispatchTime < allowedPastTime) {
-    alert('배차/출차 시각은 현재 시간 기준 30분 이전까지만 설정 가능합니다.')
+  const deliveryDateObj = new Date(formData.deliveryDate)
+  const minDispatchTime = new Date(deliveryDateObj)
+  minDispatchTime.setDate(minDispatchTime.getDate() - 1)
+  minDispatchTime.setHours(0, 0, 0, 0)
+
+  if (dispatchTime < minDispatchTime) {
+    const minDateStr = `${minDispatchTime.getFullYear()}-${String(minDispatchTime.getMonth() + 1).padStart(2, '0')}-${String(minDispatchTime.getDate()).padStart(2, '0')}`
+    alert(`배차/출차 시각은 ${minDateStr} 00:00 이후로 설정해주세요.\n(배송 예정일 하루 전부터 가능)`)
     return
   }
 

@@ -14,10 +14,10 @@
           검색
         </button>
         <button
+          v-if="showCreateButton"
           class="btn-action btn-primary"
           @click="goToRegister"
-          :disabled="!canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          :title="!canWrite ? '권한이 없습니다' : ''"
         >
           <i class="fas fa-plus"></i>
           등록
@@ -108,6 +108,7 @@
               <th>사업명</th>
               <th>출하일자</th>
               <th>상태</th>
+              <th>발주서</th>
               <th>출하수량</th>
               <th>출하금액</th>
               <th>추가변경</th>
@@ -131,9 +132,16 @@
                   {{ getStatusText(item.status) }}
                 </span>
               </td>
+              <td class="text-center">
+                <span v-if="item.purchaseOrderPdfPath" class="po-badge po-generated">생성됨</span>
+                <span v-else class="po-badge po-not-generated">미생성</span>
+              </td>
               <td class="text-right">{{ formatQuantity(item.shipmentQuantity) }}</td>
               <td class="text-right">{{ formatCurrency(item.shipmentAmount) }}</td>
-              <td class="text-center">
+              <td class="text-center badges-cell">
+                <span v-if="item.hasBgradeItems" class="bgrade-badge">
+                  B급
+                </span>
                 <span v-if="item.additionalChangeCount && item.additionalChangeCount > 0" class="change-badge">
                   변경
                 </span>
@@ -142,7 +150,7 @@
           </tbody>
           <tfoot v-if="shippingData.length > 0">
             <tr>
-              <td colspan="7" class="text-right"><strong>총 출하수량</strong></td>
+              <td colspan="8" class="text-right"><strong>총 출하수량</strong></td>
               <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
               <td class="text-right"><strong>{{ formatCurrency(totalShippingAmount) }}</strong></td>
               <td></td>
@@ -173,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
 import type { ShipmentListItem } from '~/services/shipment.service'
@@ -183,7 +191,7 @@ import type { OrderDetailResponse } from '~/types/order'
 import { formatDate, formatDateTime, formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
 import { useCommonStatus } from '~/composables/useCommonStatus'
-import { usePermission } from '~/composables/usePermission'
+import { usePermission, usePermissionButtons } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -194,7 +202,8 @@ const router = useRouter()
 const route = useRoute()
 
 // 권한
-const { canWrite } = usePermission()
+const { canWrite, canEdit, canDelete } = usePermission()
+const { showCreateButton, showEditButton, showDeleteButton } = usePermissionButtons()
 
 // 상태 관리 (DB 기반)
 const { statusOptions, getStatusLabel, loadStatusCodes } = useCommonStatus()
@@ -221,10 +230,20 @@ const getSixMonthsAgo = () => {
   return `${year}-${month}-${day}`
 }
 
-// 검색 폼 데이터
+// 1개월 후 날짜 계산 (로컬 시간 기준)
+const getOneMonthLater = () => {
+  const date = new Date()
+  date.setMonth(date.getMonth() + 1)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 검색 폼 데이터 (출하일자 기본값: 과거 6개월 ~ 미래 1개월)
 const searchForm = ref({
   startDate: getSixMonthsAgo(),
-  endDate: getTodayDate(),
+  endDate: getOneMonthLater(),
   orderId: null as number | null,
   deliveryRequestNo: '',
   status: '',
@@ -304,6 +323,22 @@ const handleOrderSelect = (order: OrderDetailResponse) => {
   search() // 선택 후 바로 검색 실행
 }
 
+// 상태 필터 변경 시 자동 검색
+watch(
+  () => searchForm.value.status,
+  () => {
+    search()
+  }
+)
+
+// 정렬 변경 시 자동 검색
+watch(
+  () => searchForm.value.sortOrder,
+  () => {
+    search()
+  }
+)
+
 // 검색 기능
 const handleSearch = () => {
   search()
@@ -313,7 +348,7 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.value = {
     startDate: getSixMonthsAgo(),
-    endDate: getTodayDate(),
+    endDate: getOneMonthLater(),
     orderId: null,
     deliveryRequestNo: '',
     status: '',
@@ -441,6 +476,25 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+/* 배지 셀 */
+.badges-cell {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* B급 배지 */
+.bgrade-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background-color: #fef3c7;
+  color: #b45309;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 /* 추가변경 배지 */
 .change-badge {
   display: inline-block;
@@ -451,6 +505,25 @@ onMounted(async () => {
   font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
+}
+
+/* 발주서 상태 배지 */
+.po-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.po-generated {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.po-not-generated {
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
 /* 반응형 - 페이지 특화 스타일만 유지 */
