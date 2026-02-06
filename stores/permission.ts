@@ -60,11 +60,16 @@ export const usePermissionStore = defineStore('permission', () => {
   // State
   // ========================================
 
-  // 사용자 메뉴 목록 (권한 포함)
+  // 사용자 메뉴 목록 (권한 포함, 사이드바 렌더링용)
   const userMenus = ref<Menu[]>([])
 
-  // 메뉴별 권한 캐시 (menuId -> auth)
+  // [레거시] 메뉴별 권한 캐시 (menuId -> auth)
+  // 새 시스템: permissionFlatMap (menuCode 기반)을 사용
+  // 하위 호환성을 위해 유지, 점진적 제거 예정
   const menuPermissions = ref<Map<number, PermissionCacheItem>>(new Map())
+
+  // ✅ 권한 플랫맵 (menuCode -> MenuAuth) - 새 권한 체크 시스템
+  const permissionFlatMap = ref<Map<string, MenuAuth>>(new Map())
 
   // 로딩 상태
   const loading = ref(false)
@@ -233,7 +238,10 @@ export const usePermissionStore = defineStore('permission', () => {
   }
 
   /**
-   * 특정 메뉴 권한 조회
+   * [레거시] 특정 메뉴 권한 조회 (menuId 기반)
+   *
+   * 새 시스템: getPermissionByMenuCode(menuCode)를 사용
+   * 하위 호환성을 위해 유지
    */
   async function fetchMenuAuth(menuId: number): Promise<MenuAuth> {
     const authStore = useAuthStore()
@@ -313,7 +321,12 @@ export const usePermissionStore = defineStore('permission', () => {
   }
 
   /**
-   * URL로 메뉴 찾기
+   * [레거시] URL로 메뉴 찾기
+   *
+   * 새 시스템: inferMenuCodeFromUrl(url) + getPermissionByMenuCode(menuCode)를 사용
+   * 사이드바 메뉴에서 검색하므로 등록/수정 페이지는 찾지 못할 수 있음
+   * 하위 호환성을 위해 유지
+   *
    * - trailing slash 제거하여 비교 (예: /admin/delivery/list/ → /admin/delivery/list)
    */
   function findMenuByUrl(url: string): Menu | null {
@@ -363,8 +376,142 @@ export const usePermissionStore = defineStore('permission', () => {
   function clearCache() {
     userMenus.value = []
     menuPermissions.value.clear()
+    permissionFlatMap.value.clear()
     lastFetched.value = null
     error.value = null
+  }
+
+  // ========================================
+  // 권한 플랫맵 시스템 (새 시스템)
+  // ========================================
+
+  /**
+   * 권한 플랫맵 로드
+   * 로그인 시 1회 호출하여 모든 메뉴 권한을 플랫맵으로 캐시
+   *
+   * @throws Error API 호출 실패 시 (재시도 로직은 호출자에서 처리)
+   */
+  async function fetchPermissionFlatMap(): Promise<void> {
+    const authStore = useAuthStore()
+
+    if (!authStore.user?.loginId) {
+      console.warn('[Permission] 사용자 정보 없음 (loginId)')
+      throw new Error('사용자 정보 없음 (loginId)')
+    }
+
+    const token = localStorage.getItem('auth_access_token')
+    if (!token) {
+      console.warn('[Permission] 액세스 토큰 없음')
+      throw new Error('액세스 토큰 없음')
+    }
+
+    loading.value = true
+    error.value = null
+
+    try {
+      const { MENU_ENDPOINTS } = await import('~/services/api/endpoints/menu.endpoints')
+      const apiUrl = MENU_ENDPOINTS.permissionFlatMap(authStore.user.loginId)
+
+      console.log('[Permission] 권한 플랫맵 로드 시작:', authStore.user.loginId)
+
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '')
+        const errorMsg = `권한 플랫맵 조회 실패: ${response.status} ${errorText}`
+        error.value = errorMsg
+        throw new Error(errorMsg)
+      }
+
+      const data = await response.json()
+
+      // permissions 객체를 Map으로 변환
+      if (data.permissions && typeof data.permissions === 'object') {
+        permissionFlatMap.value = new Map(Object.entries(data.permissions))
+        lastFetched.value = Date.now()
+        console.log('[Permission] 권한 플랫맵 로드 완료:', {
+          사용자: authStore.user.loginId,
+          역할: authStore.user.role,
+          메뉴수: permissionFlatMap.value.size
+        })
+      } else {
+        console.warn('[Permission] 권한 플랫맵 응답 형식 오류:', data)
+        // 빈 응답이지만 에러는 아님 (권한 없는 사용자일 수 있음)
+        permissionFlatMap.value = new Map()
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : '알 수 없는 오류'
+      console.error('[Permission] 권한 플랫맵 로드 실패:', errorMsg)
+      error.value = errorMsg
+      // 실패 시에도 빈 맵으로 초기화 (UI 렌더링 가능하도록)
+      permissionFlatMap.value = new Map()
+      throw err // 재시도 로직을 위해 에러 전파
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 메뉴 코드로 권한 조회 (플랫맵에서 즉시 반환)
+   * @param menuCode 메뉴 코드 (예: ORDER, SHIPPING, TRANSPORT)
+   */
+  function getPermissionByMenuCode(menuCode: string): MenuAuth {
+    const auth = permissionFlatMap.value.get(menuCode)
+    if (auth) {
+      return auth as MenuAuth
+    }
+    // 플랫맵에 없으면 기본 권한 반환
+    return getNoAuth()
+  }
+
+  /**
+   * URL 패턴에서 메뉴 코드 추론
+   * 등록/수정 페이지도 부모 메뉴의 권한을 상속받도록 처리
+   *
+   * @example
+   * /admin/order/list → ORDER
+   * /admin/order/register → ORDER
+   * /admin/order/edit/123 → ORDER
+   * /admin/transport/register → TRANSPORT
+   * /admin/basic-info/company → BASIC_INFO
+   */
+  function inferMenuCodeFromUrl(url: string): string | null {
+    // URL 정규화: trailing slash 제거
+    const normalizedUrl = url.length > 1 ? url.replace(/\/$/, '') : url
+
+    // /admin/{segment}/... 패턴에서 segment 추출
+    const match = normalizedUrl.match(/^\/admin\/([^\/]+)/)
+    if (!match) return null
+
+    const segment = match[1]
+
+    // 특수 케이스 매핑 (하이픈 포함 경로 등)
+    const specialMapping: Record<string, string> = {
+      'basic-info': 'BASIC_INFO',
+      'order-request': 'ORDER_REQUEST',
+      'access-log': 'ACCESS_LOG',
+      'system': 'SYSTEM',
+      'delivery-done': 'DELIVERY_DONE'
+    }
+
+    if (specialMapping[segment]) {
+      return specialMapping[segment]
+    }
+
+    // 일반 케이스: 소문자를 대문자로, 하이픈을 언더스코어로
+    return segment.toUpperCase().replace(/-/g, '_')
+  }
+
+  /**
+   * 플랫맵이 로드되었는지 확인
+   */
+  function isPermissionFlatMapLoaded(): boolean {
+    return permissionFlatMap.value.size > 0
   }
 
   // ========================================
@@ -488,6 +635,7 @@ export const usePermissionStore = defineStore('permission', () => {
     // State
     userMenus,
     menuPermissions,
+    permissionFlatMap,
     loading,
     lastFetched,
     error,
@@ -509,6 +657,12 @@ export const usePermissionStore = defineStore('permission', () => {
     findMenuByUrl,
     findMenuByCode,
     clearCache,
+
+    // 권한 플랫맵 시스템 (새 시스템)
+    fetchPermissionFlatMap,
+    getPermissionByMenuCode,
+    inferMenuCodeFromUrl,
+    isPermissionFlatMapLoaded,
 
     // 데이터 소유권 기반 접근 제어
     canAccessOrder,

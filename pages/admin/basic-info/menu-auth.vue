@@ -561,7 +561,17 @@ function handleReset() {
 }
 
 /**
+ * 선택된 역할의 표시 이름 조회
+ */
+function getSelectedRoleName(): string {
+  const role = roles.value.find(r => r.roleCode === selectedRoleCode.value)
+  return role?.roleName || selectedRoleCode.value
+}
+
+/**
  * 권한 저장
+ *
+ * 권한 변경 시 해당 역할의 모든 사용자가 자동 로그아웃됨을 경고
  */
 async function handleSave() {
   if (!selectedRoleCode.value) {
@@ -574,7 +584,14 @@ async function handleSave() {
     return
   }
 
-  if (!confirm('권한을 저장하시겠습니까?')) return
+  // 권한 변경 경고 메시지
+  const roleName = getSelectedRoleName()
+  const confirmMessage =
+    `[${roleName}] 역할의 권한을 변경하시겠습니까?\n\n` +
+    `주의: 권한이 변경되면 해당 역할의 모든 사용자가\n` +
+    `자동 로그아웃되며, 재로그인 시 새 권한이 적용됩니다.`
+
+  if (!confirm(confirmMessage)) return
 
   saving.value = true
 
@@ -588,7 +605,7 @@ async function handleSave() {
       for (const [menuId, perm] of permissions.value) {
         originalPermissions.value.set(menuId, { ...perm })
       }
-      alert('권한이 저장되었습니다.')
+      alert(`권한이 저장되었습니다.\n\n[${roleName}] 역할의 사용자들은 재로그인이 필요합니다.`)
     } else {
       // API 실패해도 성공으로 처리 (Mock 모드)
       originalPermissions.value.clear()

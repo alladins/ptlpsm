@@ -153,8 +153,31 @@ export default defineNuxtRouteMiddleware(async (to) => {
       }
     }
 
+    // 시스템관리자 전용 경로 정의 (URL 직접 접근 차단)
+    const SYSTEM_ADMIN_ONLY_PATHS = [
+      '/admin/basic-info/user',
+      '/admin/basic-info/menu-auth',
+      '/admin/system/'
+    ]
+
+    // 시스템관리자 전용 경로 접근 제어
+    const userRole = authStore.role?.toUpperCase() || ''
+    const isSystemAdminPath = SYSTEM_ADMIN_ONLY_PATHS.some(p => to.path.startsWith(p))
+    if (isSystemAdminPath && userRole !== 'SYSTEM_ADMIN') {
+      console.warn('시스템관리자 전용 경로 접근 차단:', {
+        경로: to.path,
+        사용자역할: userRole
+      })
+      return navigateTo('/admin/unauthorized')
+    }
+
     // 메뉴 권한 체크 (모든 환경에서 수행)
     const permissionStore = usePermissionStore()
+
+    // 전체 접근 권한 역할(SYSTEM_ADMIN, LEADPOWER_MANAGER)은 메뉴 권한 체크 건너뜀
+    if (permissionStore.isFullAccess) {
+      return
+    }
 
     // 메뉴 권한 로드 (캐시된 경우 빠르게 반환)
     await permissionStore.fetchUserMenus()

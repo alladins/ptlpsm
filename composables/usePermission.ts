@@ -127,6 +127,11 @@ export function usePermission(options: UsePermissionOptions | string = {}) {
 
   /**
    * 권한 초기화
+   *
+   * 새 플랫맵 시스템 우선 사용:
+   * 1. 플랫맵이 없으면 로드
+   * 2. menuCode로 권한 조회 (명시적 지정 또는 URL에서 추론)
+   * 3. 플랫맵에서 즉시 조회 (API 호출 없음)
    */
   async function initPermission(): Promise<void> {
     if (!authStore.isLoggedIn) {
@@ -137,48 +142,67 @@ export function usePermission(options: UsePermissionOptions | string = {}) {
     loading.value = true
 
     try {
-      // 메뉴 목록 조회 (캐시 활용)
-      await permissionStore.fetchUserMenus()
+      // 1. 플랫맵이 없으면 로드
+      if (!permissionStore.isPermissionFlatMapLoaded()) {
+        await permissionStore.fetchPermissionFlatMap()
+      }
 
-      // 현재 메뉴 찾기
-      if (menuId) {
-        // menuId로 찾기
+      // 2. 사이드바용 메뉴 목록도 함께 로드 (캐시 활용)
+      if (permissionStore.userMenus.length === 0) {
+        await permissionStore.fetchUserMenus()
+      }
+
+      // 3. 권한 조회 (플랫맵 기반)
+      let targetMenuCode: string | null = null
+
+      if (menuCode) {
+        // menuCode가 명시적으로 지정된 경우
+        targetMenuCode = menuCode
+      } else if (menuId) {
+        // menuId로 메뉴 찾아서 menuCode 추출
         const menu = findMenuById(menuId)
         if (menu) {
           currentMenu.value = menu
-          await loadMenuAuth(menu.menuId)
-        }
-      } else if (menuCode) {
-        // menuCode로 찾기
-        const menu = permissionStore.findMenuByCode(menuCode)
-        if (menu) {
-          currentMenu.value = menu
-          await loadMenuAuth(menu.menuId)
+          targetMenuCode = menu.menuCode || null
         }
       } else {
-        // URL로 찾기
+        // URL에서 메뉴 코드 추론
         const currentPath = route.path
+        targetMenuCode = permissionStore.inferMenuCodeFromUrl(currentPath)
+
+        // 사이드바 메뉴에서도 찾기 시도 (currentMenu 설정용)
         const menu = permissionStore.findMenuByUrl(currentPath)
         if (menu) {
           currentMenu.value = menu
-          await loadMenuAuth(menu.menuId)
-        } else {
-          // URL에서 메뉴를 찾지 못한 경우 기본 권한 적용
-          console.warn('현재 URL에 해당하는 메뉴를 찾을 수 없습니다:', currentPath)
-          // 전체 접근 권한이 있으면 모든 권한 허용
-          if (permissionStore.isFullAccess) {
-            currentAuth.value = permissionStore.getAllAuth()
+          // URL에서 추론한 코드보다 실제 메뉴 코드 우선
+          if (menu.menuCode) {
+            targetMenuCode = menu.menuCode
           }
         }
+      }
+
+      // 4. 권한 적용
+      if (targetMenuCode) {
+        currentAuth.value = permissionStore.getPermissionByMenuCode(targetMenuCode)
+        console.log('[Permission] 권한 로드:', targetMenuCode, currentAuth.value)
+      } else if (permissionStore.isFullAccess) {
+        // 전체 접근 권한이면 모든 권한 허용
+        currentAuth.value = permissionStore.getAllAuth()
+      } else {
+        // 기본 권한 (조회만)
+        currentAuth.value = permissionStore.getDefaultAuth()
       }
 
       initialized.value = true
     } catch (error) {
       console.error('권한 초기화 실패:', error)
-      // 실패 시 기본 권한 적용
+      // 실패 시 전체 접근 권한이면 모든 권한, 아니면 기본 권한
       if (permissionStore.isFullAccess) {
         currentAuth.value = permissionStore.getAllAuth()
+      } else {
+        currentAuth.value = permissionStore.getDefaultAuth()
       }
+      initialized.value = true
     } finally {
       loading.value = false
     }

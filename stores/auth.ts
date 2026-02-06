@@ -98,16 +98,7 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken: string
     refreshToken: string
   }) {
-    // 권한 캐시 초기화 (새 사용자 로그인 시 이전 권한 캐시 제거)
-    try {
-      const { usePermissionStore } = await import('./permission')
-      const permissionStore = usePermissionStore()
-      permissionStore.clearCache()
-      console.log('권한 캐시 초기화 완료 (로그인)')
-    } catch (err) {
-      console.warn('권한 캐시 초기화 실패:', err)
-    }
-
+    // 먼저 인증 데이터 설정
     user.value = data.userInfo
     accessToken.value = data.accessToken
     refreshToken.value = data.refreshToken
@@ -115,12 +106,41 @@ export const useAuthStore = defineStore('auth', () => {
     tokenExpiry.value = Date.now() + 3600 * 1000
     lastActivity.value = Date.now()
 
-    // localStorage에 저장
+    // localStorage에 저장 (권한 로드 전에 저장해야 API 호출 가능)
     safeStorage.setJSON('auth_user', data.userInfo)
     safeStorage.setItem('auth_access_token', data.accessToken)
     safeStorage.setItem('auth_refresh_token', data.refreshToken)
     safeStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
     safeStorage.setItem('auth_last_activity', lastActivity.value.toString())
+
+    // 권한 캐시 초기화 및 권한 플랫맵 로드 (새 사용자 로그인)
+    try {
+      const { usePermissionStore } = await import('./permission')
+      const permissionStore = usePermissionStore()
+      permissionStore.clearCache()
+
+      // 권한 플랫맵 즉시 로드 (최대 2회 시도)
+      let permissionLoaded = false
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          await permissionStore.fetchPermissionFlatMap()
+          permissionLoaded = true
+          console.log(`권한 플랫맵 로드 완료 (로그인, ${attempt}차 시도)`)
+          break
+        } catch (loadErr) {
+          console.warn(`권한 플랫맵 로드 실패 (${attempt}차 시도):`, loadErr)
+          if (attempt < 2) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+          }
+        }
+      }
+
+      if (!permissionLoaded) {
+        console.error('권한 플랫맵 로드 최종 실패 - usePermission에서 재시도됨')
+      }
+    } catch (err) {
+      console.warn('권한 스토어 초기화 실패:', err)
+    }
   }
 
   function clearAuthData() {
@@ -234,14 +254,34 @@ export const useAuthStore = defineStore('auth', () => {
         대상역할: user.value.role
       })
 
-      // ✅ 권한 캐시 초기화 - 새 사용자의 권한으로 다시 로드되도록
+      // ✅ 권한 캐시 초기화 및 새 사용자의 권한 플랫맵 로드 (재시도 로직 포함)
       try {
         const { usePermissionStore } = await import('./permission')
         const permissionStore = usePermissionStore()
         permissionStore.clearCache()
-        console.log('권한 캐시 초기화 완료 (대리 로그인)')
+
+        // 새 사용자의 권한 플랫맵 즉시 로드 (최대 2회 시도)
+        let permissionLoaded = false
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            await permissionStore.fetchPermissionFlatMap()
+            permissionLoaded = true
+            console.log(`권한 플랫맵 로드 완료 (대리 로그인, ${attempt}차 시도)`)
+            break
+          } catch (loadErr) {
+            console.warn(`권한 플랫맵 로드 실패 (${attempt}차 시도):`, loadErr)
+            if (attempt < 2) {
+              // 재시도 전 짧은 대기
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+          }
+        }
+
+        if (!permissionLoaded) {
+          console.error('권한 플랫맵 로드 최종 실패 - 페이지 새로고침이 필요할 수 있습니다')
+        }
       } catch (err) {
-        console.warn('권한 캐시 초기화 실패:', err)
+        console.error('권한 스토어 초기화 실패:', err)
       }
 
       return true
@@ -325,14 +365,34 @@ export const useAuthStore = defineStore('auth', () => {
 
       console.log('대리 로그인 종료, 원래 계정으로 복귀:', user.value.userName)
 
-      // ✅ 권한 캐시 초기화 - 원래 사용자의 권한으로 다시 로드되도록
+      // ✅ 권한 캐시 초기화 및 원래 사용자의 권한 플랫맵 로드 (재시도 로직 포함)
       try {
         const { usePermissionStore } = await import('./permission')
         const permissionStore = usePermissionStore()
         permissionStore.clearCache()
-        console.log('권한 캐시 초기화 완료 (대리 로그인 종료)')
+
+        // 원래 사용자의 권한 플랫맵 즉시 로드 (최대 2회 시도)
+        let permissionLoaded = false
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            await permissionStore.fetchPermissionFlatMap()
+            permissionLoaded = true
+            console.log(`권한 플랫맵 로드 완료 (대리 로그인 종료, ${attempt}차 시도)`)
+            break
+          } catch (loadErr) {
+            console.warn(`권한 플랫맵 로드 실패 (${attempt}차 시도):`, loadErr)
+            if (attempt < 2) {
+              // 재시도 전 짧은 대기
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+          }
+        }
+
+        if (!permissionLoaded) {
+          console.error('권한 플랫맵 로드 최종 실패 - 페이지 새로고침이 필요할 수 있습니다')
+        }
       } catch (err) {
-        console.warn('권한 캐시 초기화 실패:', err)
+        console.error('권한 스토어 초기화 실패:', err)
       }
 
       return true
@@ -414,8 +474,24 @@ export const useAuthStore = defineStore('auth', () => {
         console.log('인증 상태 복원 및 서버 검증 완료:', {
           사용자: user.value?.userName,
           역할: user.value?.role,
+          대리로그인: impersonation.value.isImpersonating,
           토큰만료: tokenExpiry.value ? new Date(tokenExpiry.value).toLocaleString() : null
         })
+
+        // ✅ 권한 플랫맵 사전 로드 (페이지 새로고침 시 권한 빠르게 적용)
+        try {
+          const { usePermissionStore } = await import('./permission')
+          const permissionStore = usePermissionStore()
+
+          // 권한이 아직 로드되지 않은 경우에만 로드
+          if (!permissionStore.isPermissionFlatMapLoaded()) {
+            await permissionStore.fetchPermissionFlatMap()
+            console.log('권한 플랫맵 사전 로드 완료 (checkAuth)')
+          }
+        } catch (permErr) {
+          // 권한 로드 실패해도 인증은 성공으로 처리 (usePermission에서 재시도)
+          console.warn('권한 플랫맵 사전 로드 실패 (usePermission에서 재시도됨):', permErr)
+        }
 
         return true
       } catch (verifyError) {
