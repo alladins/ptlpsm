@@ -35,6 +35,15 @@ export const MENU_ENDPOINTS = {
     `${baseUrl}/common/menus/users/${loginId}/menus/${menuId}/auth`,
 
   /**
+   * 사용자의 전체 권한 플랫맵 조회
+   * 로그인 시 1회 호출하여 클라이언트에서 캐시
+   * @param loginId - 사용자 로그인 ID
+   * @returns GET /common/menus/users/{loginId}/permissions/flatmap
+   */
+  permissionFlatMap: (loginId: string) =>
+    `${baseUrl}/common/menus/users/${loginId}/permissions/flatmap`,
+
+  /**
    * URL로 메뉴 조회
    * @param url - 페이지 URL
    * @returns GET /common/menus/by-url?url={url}

@@ -349,6 +349,10 @@ const loadMessages = async () => {
     messages.value = response.content
     totalElements.value = response.totalElements
     totalPages.value = response.totalPages
+    // 서버 응답의 현재 페이지로 동기화 (number는 0-indexed)
+    if (typeof response.number === 'number') {
+      currentPage.value = response.number
+    }
   } catch (err: any) {
     error.value = err.message || '데이터를 불러오는데 실패했습니다'
     console.error('메시지 목록 조회 오류:', err)

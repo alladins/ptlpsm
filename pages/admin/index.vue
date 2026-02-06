@@ -57,6 +57,40 @@
 
       <!-- 차트 영역 -->
       <div class="chart-section">
+        <!-- OEM 제조사별 월별 제조원가 -->
+        <div class="chart-card chart-main">
+          <h2>
+            <i class="fas fa-industry"></i>
+            OEM 제조사별 월별 제조원가
+          </h2>
+          <div v-if="oemChartData.length > 0" class="chart-content">
+            <div class="oem-chart">
+              <div
+                v-for="monthData in oemChartData"
+                :key="monthData.month"
+                class="oem-month-group"
+              >
+                <div class="oem-bars-container">
+                  <div
+                    v-for="item in monthData.data"
+                    :key="item.oemId"
+                    class="oem-bar"
+                    :style="{ height: getOemBarHeight(item.manufacturingCost) + '%' }"
+                    :title="`${item.oemName}: ${formatCurrency(item.manufacturingCost)}`"
+                  >
+                    <span class="oem-bar-value">{{ formatCompactNumber(item.manufacturingCost) }}</span>
+                  </div>
+                </div>
+                <div class="oem-label">{{ formatOemMonth(monthData.month) }}</div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="chart-placeholder">
+            <i class="fas fa-industry"></i>
+            <p>데이터가 없습니다</p>
+          </div>
+        </div>
+
         <!-- 기간별 출하 추이 -->
         <div class="chart-card chart-main">
           <h2>
@@ -214,7 +248,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from '#imports'
-import type { ShipmentStatisticsResponse } from '~/types/statistics'
+import { getOemMonthlyChart, getShipmentStatistics } from '~/services/statistics.service'
+import type { ShipmentStatisticsResponse, OemChartData } from '~/types/statistics'
 
 // 레이아웃 설정
 definePageMeta({
@@ -242,6 +277,9 @@ const statistics = ref<ShipmentStatisticsResponse>({
   regionBreakdown: [],
   recentOrders: []
 })
+
+// OEM 차트 데이터
+const oemChartData = ref<OemChartData[]>([])
 
 // 최근 활동 데이터
 const recentActivities = ref([
@@ -282,38 +320,38 @@ const recentActivities = ref([
   }
 ])
 
-// 목업 데이터 로드
-function loadMockData() {
-  statistics.value = {
-    summary: {
-      totalOrderCount: 156,
-      totalShipmentAmount: 2847500000,
-      completionRate: 78.2,
-      statusCount: {
-        pending: 12,
-        inProgress: 15,
-        pendingSignature: 7,
-        completed: 122,
-        cancelled: 0
-      }
-    },
-    periodTrend: [
-      { period: '2024-07', orderCount: 18, shipmentAmount: 320000000, completedCount: 15, completionRate: 83.3 },
-      { period: '2024-08', orderCount: 22, shipmentAmount: 450000000, completedCount: 18, completionRate: 81.8 },
-      { period: '2024-09', orderCount: 28, shipmentAmount: 520000000, completedCount: 24, completionRate: 85.7 },
-      { period: '2024-10', orderCount: 35, shipmentAmount: 680000000, completedCount: 30, completionRate: 85.7 },
-      { period: '2024-11', orderCount: 42, shipmentAmount: 720000000, completedCount: 35, completionRate: 83.3 },
-      { period: '2024-12', orderCount: 11, shipmentAmount: 157500000, completedCount: 0, completionRate: 0 }
-    ],
-    regionBreakdown: [
-      { region: '서울', orderCount: 35, shipmentAmount: 580000000, completionRate: 85.7 },
-      { region: '경기', orderCount: 42, shipmentAmount: 720000000, completionRate: 78.6 },
-      { region: '부산', orderCount: 28, shipmentAmount: 450000000, completionRate: 82.1 },
-      { region: '전북', orderCount: 22, shipmentAmount: 380000000, completionRate: 77.3 },
-      { region: '경남', orderCount: 18, shipmentAmount: 320000000, completionRate: 72.2 },
-      { region: '기타', orderCount: 11, shipmentAmount: 397500000, completionRate: 81.8 }
-    ],
-    recentOrders: []
+// OEM 차트 데이터 로드
+async function loadOemChartData() {
+  try {
+    const currentYear = new Date().getFullYear()
+    oemChartData.value = await getOemMonthlyChart(currentYear)
+  } catch (error) {
+    console.error('OEM 차트 데이터 로드 실패:', error)
+    // 실패 시 빈 배열 유지
+    oemChartData.value = []
+  }
+}
+
+// 대시보드 데이터 로드 (실제 API 호출)
+async function loadDashboardData() {
+  try {
+    // 최근 6개월 데이터 조회
+    const today = new Date()
+    const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1)
+
+    const startDate = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`
+    const endDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+    const data = await getShipmentStatistics({
+      startDate,
+      endDate,
+      periodUnit: 'monthly'
+    })
+
+    statistics.value = data
+  } catch (error) {
+    console.error('대시보드 데이터 로드 실패:', error)
+    // 실패 시 기본값 유지
   }
 }
 
@@ -378,6 +416,21 @@ function getRegionBarWidth(amount: number): number {
   return (amount / maxAmount) * 100
 }
 
+// OEM 차트 헬퍼 함수
+function getOemBarHeight(amount: number): number {
+  if (oemChartData.value.length === 0) return 0
+  const allAmounts = oemChartData.value.flatMap(m => m.data.map(d => d.manufacturingCost))
+  const maxAmount = Math.max(...allAmounts)
+  if (maxAmount === 0) return 0
+  return (amount / maxAmount) * 100
+}
+
+function formatOemMonth(month: string): string {
+  // YYYY-MM -> MM월
+  const parts = month.split('-')
+  return `${parseInt(parts[1])}월`
+}
+
 // 상태 관련
 const getTotalStatusCount = computed(() => {
   const { pending, inProgress, pendingSignature, completed, cancelled } = statistics.value.summary.statusCount
@@ -392,7 +445,8 @@ const goToTransport = () => router.push('/admin/transport/list')
 
 // Lifecycle
 onMounted(() => {
-  loadMockData()
+  loadDashboardData()
+  loadOemChartData()
 })
 </script>
 
@@ -736,6 +790,62 @@ onMounted(() => {
   font-weight: 600;
   color: #1f2937;
   text-align: right;
+}
+
+/* OEM 차트 */
+.oem-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 180px;
+  padding-top: 16px;
+}
+
+.oem-month-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  max-width: 80px;
+}
+
+.oem-bars-container {
+  height: 130px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+}
+
+.oem-bar {
+  width: 16px;
+  background: linear-gradient(180deg, #8b5cf6, #6d28d9);
+  border-radius: 2px 2px 0 0;
+  position: relative;
+  min-height: 4px;
+  transition: height 0.3s ease;
+}
+
+.oem-bar:hover {
+  opacity: 0.8;
+}
+
+.oem-bar-value {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.oem-label {
+  font-size: 0.6875rem;
+  color: #6b7280;
+  margin-top: 0.375rem;
+  font-weight: 500;
 }
 
 /* 하단 영역 */

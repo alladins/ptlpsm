@@ -358,13 +358,16 @@ async function loadTransactions() {
         endDate: formatDateForApi(transSearchForm.endDate),
         transDirection: transSearchForm.transDirection,
         orderDirection: transSearchForm.orderDirection,
-        page: transSearchForm.page,
+        page: transSearchForm.page + 1,  // Barobill API는 1-indexed
         size: transSearchForm.size
       }
     )
 
     if (response.success) {
-      Object.assign(transData, response.data)
+      // Barobill API 응답은 1-indexed이므로 0-indexed로 변환
+      const data = { ...response.data }
+      data.currentPage = (response.data.currentPage || 1) - 1
+      Object.assign(transData, data)
     } else {
       const errorMsg = response.errorCode
         ? BANK_ERROR_MESSAGES[response.errorCode] || response.message

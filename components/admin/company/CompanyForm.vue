@@ -54,6 +54,23 @@
                 min="0"
               >
             </FormField>
+
+            <FormField label="회사 유형">
+              <select
+                v-model="formData.companyType"
+                class="form-input"
+                :disabled="mode === 'view'"
+              >
+                <option :value="undefined">선택하세요</option>
+                <option
+                  v-for="option in companyTypeOptions"
+                  :key="option.code"
+                  :value="option.code"
+                >
+                  {{ option.codeName }}
+                </option>
+              </select>
+            </FormField>
           </div>
         </div>
 
@@ -315,12 +332,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import type { CompanyCreateRequest, CompanyInfoResponse } from '~/types/company'
+import { ref, watch, onMounted } from 'vue'
+import type { CompanyCreateRequest, CompanyInfoResponse, CompanyType } from '~/types/company'
 import { formatBusinessNumberInput, formatPhoneNumberInput } from '~/utils/format'
 import FormField from '~/components/admin/forms/FormField.vue'
 import UiSecureImage from '~/components/ui/SecureImage.vue'
 import { COMPANY_ENDPOINTS } from '~/services/api/endpoints/company.endpoints'
+import { codeService, type CodeDetail } from '~/services/code.service'
 
 // Daum Postcode API 타입 선언
 declare global {
@@ -364,7 +382,8 @@ const formData = ref<CompanyCreateRequest>({
   businessType: '',
   businessCategory: '',
   sealImage: undefined,
-  sealImageFileName: undefined
+  sealImageFileName: undefined,
+  companyType: undefined
 })
 
 // 에러 메시지
@@ -377,6 +396,23 @@ const saving = ref(false)
 const sealPreview = ref<string>('')
 const serverSealImageUrl = ref<string>('')
 const sealFileInput = ref<HTMLInputElement | null>(null)
+
+// 회사 유형 코드 목록
+const companyTypeOptions = ref<CodeDetail[]>([])
+
+// 회사 유형 코드 로드
+const loadCompanyTypes = async () => {
+  try {
+    const codes = await codeService.getCodeDetails('COMPANY_TYPE')
+    companyTypeOptions.value = codes.filter(c => c.useYn === 'Y')
+  } catch (error) {
+    console.error('회사 유형 코드 로드 실패:', error)
+  }
+}
+
+onMounted(() => {
+  loadCompanyTypes()
+})
 
 // initialData 변경 시 formData 업데이트
 watch(() => props.initialData, (newData) => {
@@ -398,7 +434,8 @@ watch(() => props.initialData, (newData) => {
       annualSales: newData.annualSales || 0,
       businessType: newData.businessType,
       businessCategory: newData.businessCategory,
-      sealImageFileName: newData.sealImageFileName || undefined
+      sealImageFileName: newData.sealImageFileName || undefined,
+      companyType: newData.companyType || undefined
     }
 
     // 기존 직인 이미지 URL 설정 (편집/조회 모드)

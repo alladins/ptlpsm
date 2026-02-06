@@ -924,7 +924,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { itemService, type Item, type ItemCreateRequest, type ItemUpdateRequest } from '~/services/item.service'
 // 리팩토링: 공통 composable import
 import { useDataTable } from '~/composables/useDataTable'
@@ -1001,9 +1000,6 @@ const showSpecModal = ref(false)
 const showSkuModal = ref(false)
 const editingItem = ref<Item | null>(null)
 const viewingItem = ref<Item | null>(null)
-
-// 라우터 (OEM 원가 페이지 이동용)
-const router = useRouter()
 
 // 모달 모드
 const specModalMode = ref<'create' | 'edit'>('create')
@@ -1691,10 +1687,8 @@ const isItemDeletable = (item: Item): boolean => {
  * @param skuId SKU ID
  */
 const goToOemCostPage = (skuId: string) => {
-  router.push({
-    path: '/admin/basic-info/oem-cost',
-    query: { skuId }
-  })
+  // SKU ID를 쿼리 파라미터로 전달하여 페이지 이동
+  navigateTo(`/admin/basic-info/oem-cost?skuId=${skuId}`)
 }
 
 // 초기 데이터 로드

@@ -39,6 +39,7 @@ export interface CompanyCreateRequest {
     businessCategory: string; // 업종 (필수)
     sealImage?: string;       // 회사 직인 이미지 (Base64)
     sealImageFileName?: string; // 직인 파일명
+    companyType?: CompanyType; // 회사 유형
 }
 
 export interface CompanyUpdateRequest extends Partial<CompanyCreateRequest> {}
@@ -47,6 +48,18 @@ export interface CompanyUpdateRequest extends Partial<CompanyCreateRequest> {}
  * 백엔드 응답 형식 (id 필드 사용)
  * GET /api/basic/company 응답
  */
+/** 회사 유형 */
+export type CompanyType = 'LEADPOWER' | 'MANUFACTURER' | 'BUILDER' | 'PARTNER' | 'OTHER'
+
+/** 회사 유형 라벨 */
+export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
+  LEADPOWER: '리드파워',
+  MANUFACTURER: '제조사(OEM)',
+  BUILDER: '건설사',
+  PARTNER: '협력사',
+  OTHER: '기타'
+}
+
 export interface CompanyInfoResponse {
   id: number                    // companyId가 아닌 id
   companyName: string
@@ -68,6 +81,7 @@ export interface CompanyInfoResponse {
   sealImagePath: string | null  // 직인 이미지 서버 경로 (존재 여부 판단용)
   sealImageUrl: string | null   // 직인 이미지 URL (하위 호환성)
   sealImageFileName: string | null // 직인 파일명
+  companyType: CompanyType | null  // 회사 유형 (MANUFACTURER: 제조사, BUILDER: 건설사 등)
   createdAt: string
   updatedAt: string
 }

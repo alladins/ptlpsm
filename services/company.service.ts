@@ -80,10 +80,16 @@ class CompanyService {
     /**
      * 회사 목록 조회
      * GET /api/basic/company
+     * @param companyType 회사 유형 필터 (MANUFACTURER: 제조사, BUILDER: 건설사 등)
      */
-    async getCompanies(): Promise<CompanyInfoResponse[]> {
+    async getCompanies(companyType?: string): Promise<CompanyInfoResponse[]> {
         try {
-            const response = await fetch(COMPANY_ENDPOINTS.list(), {
+            let url = COMPANY_ENDPOINTS.list()
+            if (companyType) {
+                url += `?companyType=${encodeURIComponent(companyType)}`
+            }
+
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: getAuthHeaders()
             })
@@ -100,6 +106,14 @@ class CompanyService {
             console.error('회사 목록 조회 오류:', error)
             throw error
         }
+    }
+
+    /**
+     * 제조사(OEM) 목록 조회
+     * GET /api/basic/company?companyType=MANUFACTURER
+     */
+    async getManufacturers(): Promise<CompanyInfoResponse[]> {
+        return this.getCompanies('MANUFACTURER')
     }
 
     /**
