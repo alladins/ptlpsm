@@ -11,6 +11,11 @@
       <div class="modal-body">
         <p class="info-text">동일 납품요구번호의 기존 계약이 있습니다.</p>
 
+        <div v-if="detectedContractType && detectedContractType !== 'ORIGINAL'" class="auto-detected-badge">
+          <i class="fas fa-magic"></i>
+          <span>PDF에서 자동 감지: <strong>{{ detectedContractType === 'AMENDMENT' ? '변경계약' : '추가계약' }}</strong></span>
+        </div>
+
         <div class="contract-info">
           <div class="info-row">
             <span class="label">기존 계약:</span>
@@ -56,6 +61,8 @@ interface Props {
   isOpen: boolean
   existingContractNo: string
   newContractNo: string
+  /** PDF에서 자동 감지된 계약 유형 (AMENDMENT, SEPARATE) */
+  detectedContractType?: string
 }
 
 const props = defineProps<Props>()
@@ -68,7 +75,14 @@ const selectedType = ref<'AMENDMENT' | 'ADDITIONAL' | null>(null)
 
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
-    selectedType.value = null  // 모달 열 때마다 선택 초기화
+    // PDF에서 자동 감지된 경우 해당 유형 자동 선택
+    if (props.detectedContractType === 'AMENDMENT') {
+      selectedType.value = 'AMENDMENT'
+    } else if (props.detectedContractType === 'SEPARATE') {
+      selectedType.value = 'ADDITIONAL'  // SEPARATE → ADDITIONAL로 매핑
+    } else {
+      selectedType.value = null  // 모달 열 때마다 선택 초기화
+    }
   }
 })
 
@@ -150,6 +164,27 @@ const handleConfirm = () => {
   font-size: 0.9375rem;
   color: #374151;
   text-align: center;
+}
+
+.auto-detected-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 0.875rem;
+}
+
+.auto-detected-badge i {
+  color: #f59e0b;
+}
+
+.auto-detected-badge strong {
+  color: #78350f;
 }
 
 .contract-info {

@@ -14,10 +14,10 @@
           검색
         </button>
         <button
+          v-if="showCreateButton"
           class="btn-action btn-primary"
           @click="goToRegister"
-          :disabled="!canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          :title="!canWrite ? '권한이 없습니다' : ''"
         >
           <i class="fas fa-plus"></i>
           등록
@@ -118,14 +118,16 @@
           <table class="data-table tree-table">
             <thead>
               <tr>
-                <th style="width: 50px;">No</th>
-                <th style="width: 160px;">납품요구번호</th>
-                <th style="width: 105px;">납품요구일자</th>
-                <th style="width: 260px;">수요기관</th>
-                <th style="width: 60px;">담당자</th>
+                <th style="width: 40px;">No</th>
+                <th style="width: 150px;">납품요구번호</th>
+                <th style="width: 60px;">상태</th>
+                <th style="width: 100px;">납품요구일자</th>
+                <th style="width: 120px;">수요기관</th>
+                <th style="width: 50px;">담당자</th>
                 <th style="min-width: 200px;">사업명</th>
-                <th style="width: 100px;">건설사</th>
-                <th style="width: 110px;">총계약금액</th>
+                <th style="width: 80px;">건설사</th>
+                <th style="width: 100px;">총계약금액</th>
+                <th style="width: 95px;">등록일자</th>
               </tr>
             </thead>
             <tbody>
@@ -134,10 +136,9 @@
                 <tr
                   class="table-row tree-parent-row"
                   :class="{ 'has-children': group.children.length > 0 }"
-                  @click="editItem(group.baseOrder.orderId)"
                 >
-                  <td>{{ getDisplayIndex(groupIndex) }}</td>
-                  <td class="delivery-request-cell">
+                  <td @click="editItem(group.baseOrder.orderId)">{{ getDisplayIndex(groupIndex) }}</td>
+                  <td class="delivery-request-cell" @click="editItem(group.baseOrder.orderId)">
                     <div class="tree-toggle-wrapper">
                       <!-- 확장/축소 버튼 (하위 계약이 있을 때만 표시) -->
                       <button
@@ -155,12 +156,21 @@
                       </span>
                     </div>
                   </td>
-                  <td>{{ group.baseOrder.deliveryRequestDate }}</td>
-                  <td class="text-left">{{ group.baseOrder.client }}</td>
-                  <td>{{ group.baseOrder.clientManagerName }}</td>
-                  <td class="project-name-cell text-left">{{ group.baseOrder.projectName }}</td>
-                  <td class="text-left">{{ group.baseOrder.builderCompanyName || '-' }}</td>
-                  <td class="text-right">{{ formatNumber(group.baseOrder.itemTotalAmount) }}</td>
+                  <td @click="editItem(group.baseOrder.orderId)">
+                    <span
+                      class="status-badge"
+                      :class="getStatusClass(group.baseOrder.status)"
+                    >
+                      {{ getStatusLabel(group.baseOrder.status) }}
+                    </span>
+                  </td>
+                  <td @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.deliveryRequestDate }}</td>
+                  <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.client }}</td>
+                  <td @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.clientManagerName }}</td>
+                  <td class="project-name-cell text-left" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.projectName }}</td>
+                  <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.builderCompanyName || '-' }}</td>
+                  <td class="text-right" @click="editItem(group.baseOrder.orderId)">{{ formatNumber(group.baseOrder.itemTotalAmount) }}</td>
+                  <td @click="editItem(group.baseOrder.orderId)">{{ formatDate(group.baseOrder.createdAt) }}</td>
                 </tr>
 
                 <!-- 변경/별도 계약 행들 (하위) -->
@@ -169,10 +179,9 @@
                     v-for="(child, childIndex) in group.children"
                     :key="child.orderId"
                     class="table-row tree-child-row"
-                    @click="editItem(child.orderId)"
                   >
-                    <td class="child-index">{{ groupIndex + 1 }}-{{ childIndex + 1 }}</td>
-                    <td class="delivery-request-cell">
+                    <td class="child-index" @click="editItem(child.orderId)">{{ groupIndex + 1 }}-{{ childIndex + 1 }}</td>
+                    <td class="delivery-request-cell" @click="editItem(child.orderId)">
                       <div class="tree-child-indicator">
                         <span class="tree-line"></span>
                         <span
@@ -184,12 +193,21 @@
                         <span class="delivery-request-no child">{{ child.deliveryRequestNo }}</span>
                       </div>
                     </td>
-                    <td>{{ child.deliveryRequestDate }}</td>
-                    <td class="text-left">{{ child.client }}</td>
-                    <td>{{ child.clientManagerName }}</td>
-                    <td class="project-name-cell text-left">{{ child.projectName }}</td>
-                    <td class="text-left">{{ child.builderCompanyName || '-' }}</td>
-                    <td class="text-right">{{ formatNumber(child.itemTotalAmount) }}</td>
+                    <td @click="editItem(child.orderId)">
+                      <span
+                        class="status-badge"
+                        :class="getStatusClass(child.status)"
+                      >
+                        {{ getStatusLabel(child.status) }}
+                      </span>
+                    </td>
+                    <td @click="editItem(child.orderId)">{{ child.deliveryRequestDate }}</td>
+                    <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">{{ child.client }}</td>
+                    <td @click="editItem(child.orderId)">{{ child.clientManagerName }}</td>
+                    <td class="project-name-cell text-left" @click="editItem(child.orderId)">{{ child.projectName }}</td>
+                    <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">{{ child.builderCompanyName || '-' }}</td>
+                    <td class="text-right" @click="editItem(child.orderId)">{{ formatNumber(child.itemTotalAmount) }}</td>
+                    <td @click="editItem(child.orderId)">{{ formatDate(child.createdAt) }}</td>
                   </tr>
                 </template>
               </template>
@@ -213,6 +231,7 @@
         />
       </div>
     </div>
+
   </div>
 </template>
 
@@ -226,8 +245,14 @@ import type { FundStatistics } from '~/types/fund'
 import { CONTRACT_TYPE_LABELS } from '~/types/order'
 // 리팩토링: 공통 모듈 import
 import { formatNumber } from '~/utils/format'
+
+// createdAt은 ISO timestamp이므로 날짜만 추출
+const formatDate = (dateStr?: string): string => {
+  if (!dateStr) return '-'
+  return dateStr.substring(0, 10)  // "2025-12-29T10:30:00" → "2025-12-29"
+}
 import { useDataTable } from '~/composables/useDataTable'
-import { usePermission } from '~/composables/usePermission'
+import { usePermission, usePermissionButtons } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -238,7 +263,8 @@ const router = useRouter()
 const route = useRoute()
 
 // 권한
-const { canWrite } = usePermission()
+const { canWrite, canEdit, canDelete } = usePermission()
+const { showCreateButton, showEditButton, showDeleteButton } = usePermissionButtons()
 
 // 자금 통계 데이터
 const fundStats = ref<FundStatistics | null>(null)
@@ -263,10 +289,20 @@ const getSixMonthsAgo = () => {
   return `${year}-${month}-${day}`
 }
 
-// 검색 폼 데이터 (납품요구일자 기본값: 최근 6개월)
+// 1개월 후 날짜 계산 (로컬 시간 기준)
+const getOneMonthLater = () => {
+  const date = new Date()
+  date.setMonth(date.getMonth() + 1)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 검색 폼 데이터 (납품요구일자 기본값: 과거 6개월 ~ 미래 1개월)
 const searchForm = ref({
   startDate: getSixMonthsAgo(),
-  endDate: getTodayDate(),
+  endDate: getOneMonthLater(),
   client: '',
   keyword: '',
   sort: 'createdAt,desc'
@@ -353,7 +389,7 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.value = {
     startDate: getSixMonthsAgo(),
-    endDate: getTodayDate(),
+    endDate: getOneMonthLater(),
     client: '',
     keyword: '',
     sort: 'createdAt,desc'
@@ -516,6 +552,46 @@ const getContractTypeLabel = (contractType?: ContractType): string => {
   return CONTRACT_TYPE_LABELS[contractType] || contractType
 }
 
+// ========== 주문 상태 헬퍼 함수 ==========
+
+/**
+ * 주문 상태에 따른 CSS 클래스 반환
+ */
+const getStatusClass = (status?: string): string => {
+  if (!status) return 'status-pending'
+  switch (status) {
+    case 'PENDING':
+      return 'status-pending'
+    case 'IN_PROGRESS':
+      return 'status-in-progress'
+    case 'PENDING_SIGNATURE':
+      return 'status-pending-signature'
+    case 'COMPLETED':
+      return 'status-completed'
+    default:
+      return 'status-pending'
+  }
+}
+
+/**
+ * 주문 상태 한글 표시 반환
+ */
+const getStatusLabel = (status?: string): string => {
+  if (!status) return '대기'
+  switch (status) {
+    case 'PENDING':
+      return '대기'
+    case 'IN_PROGRESS':
+      return '진행중'
+    case 'PENDING_SIGNATURE':
+      return '서명대기'
+    case 'COMPLETED':
+      return '완료'
+    default:
+      return '대기'
+  }
+}
+
 // 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
   // 자금 통계 로드
@@ -642,8 +718,13 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-/* 납품요구일자 셀 스타일 */
-.data-table td:nth-child(3) {
+/* 납품요구일자 셀 스타일 (4번째 컬럼) */
+.data-table td:nth-child(4) {
+  white-space: nowrap;
+}
+
+/* 등록일자 셀 스타일 (10번째 컬럼) */
+.data-table td:nth-child(10) {
   white-space: nowrap;
 }
 
@@ -741,6 +822,14 @@ onMounted(() => {
   white-space: nowrap;
 }
 
+/* 텍스트 말줄임 처리 (수요기관, 건설사 등) */
+.cell-ellipsis {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* 텍스트 정렬 */
 .data-table tbody td.text-left {
   text-align: left;
@@ -770,5 +859,36 @@ onMounted(() => {
 .contract-type-additional {
   background: #ffedd5;
   color: #c2410c;
+}
+
+/* ========== 주문 상태 배지 스타일 ========== */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-pending {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-in-progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-pending-signature {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.status-completed {
+  background: #d1fae5;
+  color: #059669;
 }
 </style>

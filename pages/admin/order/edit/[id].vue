@@ -61,6 +61,13 @@
               <input type="text" :value="orderData?.deliveryRequestDate || '-'" class="form-input-sm" readonly>
             </FormField>
           </div>
+          <div class="info-grid grid-5">
+            <FormField label="주문상태">
+              <span class="status-badge" :class="getOrderStatusClass(orderData?.status)">
+                {{ getOrderStatusLabel(orderData?.status) }}
+              </span>
+            </FormField>
+          </div>
           <div class="info-group-header">
             <i class="fas fa-file-contract"></i>
             <span>계약 상세</span>
@@ -236,8 +243,8 @@
           type="button"
           @click="handleSave"
           class="btn-primary"
-          :disabled="submitting || !canEdit"
-          :title="!canEdit ? '수정 권한이 없습니다' : ''"
+          :disabled="submitting || !canEdit || !hasBuilderChanged"
+          :title="!canEdit ? '수정 권한이 없습니다' : !hasBuilderChanged ? '변경된 내용이 없습니다' : ''"
         >
           {{ submitting ? '저장 중...' : '저장' }}
         </button>
@@ -489,6 +496,9 @@ const formData = ref({
   builderCompany: ''                        // 건설사명
 })
 
+// 초기 건설사 ID (변경 감지용)
+const initialBuilderCompanyId = ref<number | null>(null)
+
 // 기성/납품확인 관련 상태 (자금관리와 동일한 API 사용)
 const progressPayments = ref<ProgressPaymentRequest[]>([])
 
@@ -516,6 +526,11 @@ const baselineProgress = computed(() => {
   const total = progressPayments.value.length
   const confirmed = progressPayments.value.filter((p: ProgressPaymentRequest) => p.status === 'PAID').length
   return { total, confirmed }
+})
+
+// 건설사 변경 여부 (저장 버튼 활성화 조건)
+const hasBuilderChanged = computed(() => {
+  return formData.value.builderCompanyId !== initialBuilderCompanyId.value
 })
 
 // 수량 합계 (부동소수점 오류 방지를 위해 toFixed 사용)
@@ -548,6 +563,7 @@ const loadData = async () => {
     if (data.builderCompanyId) {
       formData.value.builderCompanyId = data.builderCompanyId
       formData.value.builderCompany = data.builderCompanyName || ''
+      initialBuilderCompanyId.value = data.builderCompanyId  // 초기값 저장
     }
     // 레거시 siteManagerId 호환
     if (data.siteManagerId && !data.builderCompanyId) {
@@ -789,6 +805,39 @@ const getPaymentStatusLabel = (status?: PaymentStatus): string => {
     REJECTED: '반려'
   }
   return labels[status] || status
+}
+
+// 주문 상태 헬퍼 함수
+const getOrderStatusClass = (status?: string): string => {
+  if (!status) return 'status-pending'
+  switch (status) {
+    case 'PENDING':
+      return 'status-pending'
+    case 'IN_PROGRESS':
+      return 'status-in-progress'
+    case 'PENDING_SIGNATURE':
+      return 'status-pending-signature'
+    case 'COMPLETED':
+      return 'status-completed'
+    default:
+      return 'status-pending'
+  }
+}
+
+const getOrderStatusLabel = (status?: string): string => {
+  if (!status) return '대기'
+  switch (status) {
+    case 'PENDING':
+      return '대기'
+    case 'IN_PROGRESS':
+      return '진행중'
+    case 'PENDING_SIGNATURE':
+      return '서명대기'
+    case 'COMPLETED':
+      return '완료'
+    default:
+      return '대기'
+  }
 }
 
 // PDF 보기 - 납품확인서
@@ -1176,5 +1225,21 @@ onMounted(async () => {
     gap: 1rem;
     align-items: flex-start;
   }
+}
+
+/* 주문 상태 배지 */
+.status-in-progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-pending-signature {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.status-completed {
+  background: #d1fae5;
+  color: #059669;
 }
 </style>

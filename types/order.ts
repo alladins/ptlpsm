@@ -19,6 +19,28 @@ export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
 }
 
 /**
+ * 주문 상태 상수
+ */
+export const ORDER_STATUS = {
+  PENDING: 'PENDING',                    // 대기 (출하 생성 전)
+  IN_PROGRESS: 'IN_PROGRESS',            // 진행중 (출하 생성됨)
+  PENDING_SIGNATURE: 'PENDING_SIGNATURE', // 서명대기 (모든 출하 인수증 완료)
+  COMPLETED: 'COMPLETED'                 // 완료 (납품완료계 완료)
+} as const
+
+export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS]
+
+/**
+ * 주문 상태 한글 표시명
+ */
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  [ORDER_STATUS.PENDING]: '대기',
+  [ORDER_STATUS.IN_PROGRESS]: '진행중',
+  [ORDER_STATUS.PENDING_SIGNATURE]: '서명대기',
+  [ORDER_STATUS.COMPLETED]: '완료'
+}
+
+/**
  * 서버 PDF 업로드 응답에 포함될 계약 유형 체크 결과
  */
 export interface ContractTypeCheckResult {
@@ -28,6 +50,8 @@ export interface ContractTypeCheckResult {
   existingContractNo?: string
   /** 신규 계약 납품요구번호 (예: R25TB01181972-01) */
   newContractNo: string
+  /** PDF에서 자동 감지된 계약 유형 (ORIGINAL, AMENDMENT, SEPARATE) */
+  detectedContractType?: string
 }
 
 export interface OrderResponse {
@@ -49,6 +73,8 @@ export interface OrderResponse {
   contractType?: ContractType
   /** 기준 주문 ID (변경/별도 계약인 경우) */
   baseOrderId?: number
+  /** 주문 상태 (PENDING/IN_PROGRESS/PENDING_SIGNATURE/COMPLETED) */
+  status?: OrderStatus
   createdBy: string
   createdAt: string
   updatedBy: string
@@ -85,6 +111,8 @@ export interface OrderDetailResponse extends OrderResponse {
   oemCompanyId?: number           // 제조사 ID
   oemCompanyName?: string         // 제조사명
   pdfFile?: string
+  /** 주문 상태 (PENDING/IN_PROGRESS/PENDING_SIGNATURE/COMPLETED) */
+  status?: OrderStatus
   items: OrderDetailItem[]
 }
 

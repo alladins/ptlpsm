@@ -97,5 +97,15 @@ export const ORDER_ENDPOINTS = {
   uploadPdf: () => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/orders/upload-pdf`
+  },
+
+  /**
+   * 변경계약/추가계약 생성
+   * @param orderId - 원 발주 ID
+   * @returns POST /admin/orders/{orderId}/amendment
+   */
+  createAmendment: (orderId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/orders/${orderId}/amendment`
   }
 } as const

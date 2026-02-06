@@ -278,7 +278,7 @@ export const orderService = {
   async uploadOrderPdf(file: File): Promise<OrderDetailResponse> {
     try {
       const url = ORDER_ENDPOINTS.uploadPdf()
-      
+
       const formData = new FormData()
       formData.append('file', file)
 
@@ -292,14 +292,45 @@ export const orderService = {
       }
 
       const result = await response.json()
-      
+
       if (result.success === false) {
         throw new Error(result.message || 'API 호출 실패')
       }
-      
+
       return result.data || result
     } catch (error) {
       console.error('PDF 업로드 실패:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 변경계약/추가계약 생성
+   */
+  async createAmendment(orderId: number, contractType: string, formData: FormData): Promise<OrderDetailResponse> {
+    try {
+      const url = ORDER_ENDPOINTS.createAmendment(orderId)
+      const queryParams = new URLSearchParams()
+      queryParams.append('contractType', contractType)
+
+      const response = await fetch(`${url}?${queryParams.toString()}`, {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      if (result.success === false) {
+        throw new Error(result.message || 'API 호출 실패')
+      }
+
+      return result.data || result
+    } catch (error) {
+      console.error('변경계약 생성 실패:', error)
       throw error
     }
   }

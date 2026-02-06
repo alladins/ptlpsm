@@ -258,8 +258,8 @@
           type="button"
           @click="register"
           class="btn-primary"
-          :disabled="submitting || isDuplicate || !canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : isDuplicate ? '이미 등록된 납품요구번호입니다' : ''"
+          :disabled="submitting || isDuplicate || !canWrite || !isPdfLoaded"
+          :title="!canWrite ? '등록 권한이 없습니다' : isDuplicate ? '이미 등록된 납품요구번호입니다' : !isPdfLoaded ? 'PDF를 먼저 업로드해주세요' : ''"
         >
           {{ submitting ? '등록 중...' : '등록' }}
         </button>
@@ -279,6 +279,7 @@
       :is-open="showContractTypeModal"
       :existing-contract-no="contractTypeCheckResult?.existingContractNo || ''"
       :new-contract-no="contractTypeCheckResult?.newContractNo || ''"
+      :detected-contract-type="contractTypeCheckResult?.detectedContractType"
       @confirm="handleContractTypeConfirm"
       @close="handleContractTypeCancel"
     />
@@ -315,6 +316,9 @@ const submitting = ref(false)
 // 중복 체크 상태
 const isDuplicate = ref(false)
 const duplicateMessage = ref('')
+
+// PDF 로딩 완료 상태 (PDF가 업로드되고 데이터 추출이 완료되었는지)
+const isPdfLoaded = ref(false)
 
 // 에러 팝업
 const errorPopup = ref({
@@ -447,7 +451,13 @@ const handleFileUpload = async (event: Event) => {
     const result = await response.json()
 
     if (result.success) {
-      const contractCheck = result.contractTypeCheck as ContractTypeCheckResult | undefined
+      // 백엔드 응답에서 계약 유형 체크 결과 구성
+      const contractCheck: ContractTypeCheckResult | undefined = result.isOriginalContract !== undefined ? {
+        isOriginalContract: result.isOriginalContract,
+        existingContractNo: result.extractedContractInfo?.deliveryRequestNumber?.replace(/-\d{2}$/, '-00'),
+        newContractNo: result.extractedContractInfo?.deliveryRequestNumber || '',
+        detectedContractType: result.detectedContractType
+      } : undefined
 
       // 계약 유형 체크: 본계약이 아니면 (접미사 01, 02, ...) 팝업으로 선택
       if (contractCheck && !contractCheck.isOriginalContract) {
@@ -480,6 +490,9 @@ const handleFileUpload = async (event: Event) => {
         if (contractCheck?.isOriginalContract) {
           contractForm.value.contractType = 'ORIGINAL'
         }
+
+        // PDF 로딩 완료 상태로 설정
+        isPdfLoaded.value = true
 
         uploadStatus.value = {
           success: true,
@@ -620,6 +633,9 @@ const handleContractTypeConfirm = async (type: ContractType) => {
     // 선택된 계약 유형 설정 (AMENDMENT 또는 ADDITIONAL)
     contractForm.value.contractType = type
 
+    // PDF 로딩 완료 상태로 설정
+    isPdfLoaded.value = true
+
     pendingExtractedData.value = null
     contractTypeCheckResult.value = null
 
@@ -641,6 +657,8 @@ const handleContractTypeCancel = () => {
   pendingExtractedData.value = null
   contractTypeCheckResult.value = null
   uploadStatus.value = null
+  // PDF 로딩 상태 초기화 (취소 시 다시 업로드 필요)
+  isPdfLoaded.value = false
 }
 
 // 등록
