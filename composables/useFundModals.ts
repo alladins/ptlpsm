@@ -130,6 +130,37 @@ export function useFundModals(options: UseFundModalsOptions) {
     showPdfModal.value = true
   }
 
+  // ============ 잔금 등록 모달 ============
+  const showBalanceRegisterModal = ref(false)
+  const balanceRegisterAmount = ref(0)
+
+  /** 잔금 등록 모달 열기 (잔금 요청 생성) */
+  const openBalanceRegisterModal = () => {
+    if (!fundDetail.value) return
+    balanceRegisterAmount.value = fundDetail.value.outstandingAmount || 0
+    showBalanceRegisterModal.value = true
+  }
+
+  const closeBalanceRegisterModal = () => {
+    showBalanceRegisterModal.value = false
+  }
+
+  /** 잔금 등록 완료 처리 (progress_payment_requests에 BALANCE 레코드 생성) */
+  const handleBalanceRegisterSubmitted = async (data: {
+    amount: number
+    requestDate?: string
+    remarks?: string
+  }) => {
+    try {
+      await fundService.createBalancePayment(fundId.value, data)
+      closeBalanceRegisterModal()
+      await refreshData()
+    } catch (error) {
+      console.error('잔금 등록 실패:', error)
+      alert('잔금 등록 중 오류가 발생했습니다.')
+    }
+  }
+
   // ============ 수금 확인 모달 ============
   const showCollectionConfirmModal = ref(false)
   const collectionPaymentType = ref<'advance' | 'progress' | 'balance'>('progress')
@@ -139,14 +170,14 @@ export function useFundModals(options: UseFundModalsOptions) {
   const collectionAdvanceDeductionAmount = ref(0)
   const collectionActualReceivableAmount = ref(0)
 
-  /** 잔금 입금확인 모달 열기 */
-  const openBalanceConfirmModal = () => {
+  /** 잔금 입금확인 모달 열기 (잔금 요청이 있는 경우에만) */
+  const openBalanceConfirmModal = (balanceRequest: { requestId: number; requestAmount: number }) => {
     if (!fundDetail.value) return
 
     collectionPaymentType.value = 'balance'
-    collectionPaymentId.value = fundDetail.value.fundId
-    collectionRequestAmount.value = fundDetail.value.outstandingAmount || 0
-    collectionApprovedAmount.value = fundDetail.value.outstandingAmount || 0
+    collectionPaymentId.value = balanceRequest.requestId
+    collectionRequestAmount.value = balanceRequest.requestAmount
+    collectionApprovedAmount.value = balanceRequest.requestAmount
     showCollectionConfirmModal.value = true
   }
 
@@ -207,9 +238,11 @@ export function useFundModals(options: UseFundModalsOptions) {
           remarks: data.remarks
         })
       } else if (collectionPaymentType.value === 'balance') {
-        await fundService.confirmBalance(fundId.value, {
+        // 잔금은 progress_payment_requests에 BALANCE 타입으로 저장되므로
+        // 기성금과 동일한 confirmPayment API 사용
+        await fundService.confirmPayment(fundId.value, collectionPaymentId.value, {
           paidAmount: data.paidAmount,
-          paidDate: data.paymentDate,
+          paymentDate: data.paymentDate,
           bankAccount: data.bankAccount,
           remarks: data.remarks
         })
@@ -242,11 +275,24 @@ export function useFundModals(options: UseFundModalsOptions) {
   const showOemPaymentModal = ref(false)
   const selectedOemPayment = ref<OemPayment | null>(null)
   const linkedProgressPayment = ref<ProgressPaymentRequest | null>(null)
+  const oemCompanies = ref<Array<{ companyId: number; companyName: string }>>([])
+
+  /** OEM 제조사 목록 조회 */
+  const fetchOemCompanies = async () => {
+    try {
+      oemCompanies.value = await fundService.getOemCompanies(fundId.value)
+    } catch (error) {
+      console.error('OEM 제조사 목록 조회 실패:', error)
+      oemCompanies.value = []
+    }
+  }
 
   /** OEM 지급 등록 모달 열기 */
-  const openOemPaymentModal = (linkedPayment?: ProgressPaymentRequest) => {
+  const openOemPaymentModal = async (linkedPayment?: ProgressPaymentRequest) => {
     selectedOemPayment.value = null
     linkedProgressPayment.value = linkedPayment || null
+    // OEM 제조사 목록 조회
+    await fetchOemCompanies()
     showOemPaymentModal.value = true
   }
 
@@ -283,6 +329,7 @@ export function useFundModals(options: UseFundModalsOptions) {
   const handleOemPaymentSubmitted = async (data: {
     amount: number
     paymentDate: string
+    oemCompanyId?: number
     oemCompanyName?: string
     bankAccount?: string
     remarks?: string
@@ -302,7 +349,7 @@ export function useFundModals(options: UseFundModalsOptions) {
           paymentAmount: data.amount,
           paymentDate: data.paymentDate,
           oemCompanyName: data.oemCompanyName,
-          oemCompanyId: fundDetail.value?.oemCompanyId || undefined,
+          oemCompanyId: data.oemCompanyId || undefined,
           bankAccount: data.bankAccount,
           remarks: data.remarks
         })
@@ -345,6 +392,13 @@ export function useFundModals(options: UseFundModalsOptions) {
     viewConfirmationPdf,
     viewPhotoSheetPdf,
 
+    // 잔금 등록 모달
+    showBalanceRegisterModal,
+    balanceRegisterAmount,
+    openBalanceRegisterModal,
+    closeBalanceRegisterModal,
+    handleBalanceRegisterSubmitted,
+
     // 수금 확인 모달
     showCollectionConfirmModal,
     collectionPaymentType,
@@ -368,6 +422,7 @@ export function useFundModals(options: UseFundModalsOptions) {
     showOemPaymentModal,
     selectedOemPayment,
     linkedProgressPayment,
+    oemCompanies,
     openOemPaymentModal,
     openOemCompleteModal,
     confirmDeleteOemPayment,

@@ -36,7 +36,9 @@ import type {
   // OEM 지급 관련
   OemPayment,
   OemPaymentCreateRequest,
-  OemPaymentCompleteRequest
+  OemPaymentCompleteRequest,
+  // 자금 계산 요약
+  FundSummary
 } from '~/types/fund'
 
 export const fundService = {
@@ -154,6 +156,32 @@ export const fundService = {
       return result.data || result
     } catch (error) {
       console.error('주문별 자금 조회 실패:', error)
+      return null
+    }
+  },
+
+  /**
+   * 자금 계산 요약 조회
+   * @description 총 계약금액, OEM 원가+배송비, 수금 금액 누계, 예상 원가금액 등 계산 필드 포함
+   */
+  async getFundSummary(fundId: number): Promise<FundSummary | null> {
+    try {
+      const url = FUND_ENDPOINTS.summary(fundId)
+      console.log('자금 계산 요약 API 호출:', url)
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      return result.data || result
+    } catch (error) {
+      console.error('자금 계산 요약 조회 실패:', error)
       return null
     }
   },
@@ -526,9 +554,43 @@ export const fundService = {
   // ============ 잔금 (Balance) ============
 
   /**
-   * 잔금 입금확인
-   * - 잔금은 별도 신청/승인 프로세스 없음
-   * - 납품완료 후 입금확인만 처리
+   * 잔금 등록 (progress_payment_requests에 BALANCE 레코드 생성)
+   * - 납품완료 상태에서만 가능
+   * - 승인 불필요, 바로 입금확인 가능
+   * @returns 생성된 잔금 요청 정보 (requestId 포함)
+   */
+  async createBalancePayment(fundId: number, data: { amount: number; requestDate?: string; remarks?: string }): Promise<ProgressPaymentRequest> {
+    try {
+      const url = FUND_ENDPOINTS.createBalance(fundId)
+      console.log('잔금 등록 API 호출:', url, data)
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          fundId: fundId,
+          requestAmount: data.amount,
+          requestDate: data.requestDate || new Date().toISOString().split('T')[0],
+          remarks: data.remarks
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      return result.data || result
+    } catch (error) {
+      console.error('잔금 등록 실패:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 잔금 입금확인 (Deprecated)
+   * @deprecated 대신 createBalancePayment → confirmPayment 흐름 사용 권장
    */
   async confirmBalance(fundId: number, data: { paidAmount: number; paidDate: string; bankAccount?: string; remarks?: string }): Promise<void> {
     try {
@@ -599,6 +661,34 @@ export const fundService = {
   },
 
   // ============ OEM 지급 (OEM Payments) ============
+
+  /**
+   * OEM 제조사 목록 조회 (해당 자금에 연결된 출하 기준)
+   */
+  async getOemCompanies(fundId: number): Promise<Array<{ companyId: number; companyName: string }>> {
+    try {
+      const url = FUND_ENDPOINTS.oemCompanies(fundId)
+      console.log('OEM 제조사 목록 API 호출:', url)
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return []
+        }
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      return Array.isArray(result) ? result : []
+    } catch (error) {
+      console.error('OEM 제조사 목록 조회 실패:', error)
+      return []
+    }
+  },
 
   /**
    * OEM 지급 목록 조회
@@ -738,6 +828,37 @@ export const fundService = {
     } catch (error) {
       console.error('OEM 지급 삭제 실패:', error)
       throw error
+    }
+  },
+
+  /**
+   * 선급금 버튼 활성화 가능 여부 확인
+   * GET /admin/funds/by-order/{orderId}/advance-payment-eligible
+   */
+  async checkAdvancePaymentEligible(orderId: number): Promise<{ eligible: boolean; reason: string; hasPdfFile: boolean; signedReceiptCount: number }> {
+    try {
+      const url = FUND_ENDPOINTS.advancePaymentEligible(orderId)
+      console.log('선급금 버튼 활성화 조건 확인 API 호출:', url)
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      return result.data || result
+    } catch (error) {
+      console.error('선급금 버튼 활성화 조건 확인 실패:', error)
+      return {
+        eligible: false,
+        reason: 'API 호출 실패',
+        hasPdfFile: false,
+        signedReceiptCount: 0
+      }
     }
   }
 }

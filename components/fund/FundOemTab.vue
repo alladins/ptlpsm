@@ -41,17 +41,27 @@
       </div>
     </div>
     <div class="table-container">
-      <table class="data-table">
+      <table class="data-table oem-table">
+        <colgroup>
+          <col class="col-seq" />
+          <col class="col-company" />
+          <col class="col-amount" />
+          <col class="col-date" />
+          <col class="col-amount" />
+          <col class="col-date" />
+          <col class="col-status" />
+          <col class="col-action" />
+        </colgroup>
         <thead>
           <tr>
-            <th>차수</th>
+            <th class="text-center">차수</th>
             <th>OEM 업체</th>
-            <th>지급예정금액</th>
-            <th>예정일</th>
-            <th>실제지급금액</th>
-            <th>지급일</th>
-            <th>상태</th>
-            <th>액션</th>
+            <th class="text-right">지급예정금액</th>
+            <th class="text-center">예정일</th>
+            <th class="text-right">실제지급금액</th>
+            <th class="text-center">지급일</th>
+            <th class="text-center">상태</th>
+            <th class="text-center">액션</th>
           </tr>
         </thead>
         <tbody>
@@ -59,25 +69,24 @@
             <td colspan="8" class="no-data">OEM 지급 이력이 없습니다.</td>
           </tr>
           <tr v-else v-for="oem in oemPayments" :key="oem.oemPaymentId">
-            <td>{{ oem.paymentSeq }}차</td>
-            <td>{{ oem.oemCompanyName || '-' }}</td>
-            <td class="text-right">{{ formatCurrency(oem.scheduledAmount) }}</td>
-            <td>{{ oem.scheduledDate || '-' }}</td>
-            <td class="text-right">{{ oem.paidAmount ? formatCurrency(oem.paidAmount) : '-' }}</td>
-            <td>{{ oem.paidDate || '-' }}</td>
-            <td>
+            <td class="text-center">{{ oem.paymentSeq }}차</td>
+            <td class="cell-company">{{ oem.oemCompanyName || '-' }}</td>
+            <td class="text-right cell-amount">{{ formatCurrency(oem.scheduledAmount) }}</td>
+            <td class="text-center cell-date">{{ oem.scheduledDate || '-' }}</td>
+            <td class="text-right cell-amount">{{ oem.paidAmount ? formatCurrency(oem.paidAmount) : '-' }}</td>
+            <td class="text-center cell-date">{{ oem.paidDate || '-' }}</td>
+            <td class="text-center">
               <span class="status-badge" :class="getOemPaymentStatusClass(oem.status)">
                 {{ getOemPaymentStatusLabel(oem.status) }}
               </span>
             </td>
-            <td>
+            <td class="text-center">
               <div v-if="oem.status === 'PENDING'" class="oem-action-buttons">
                 <button
                   class="btn-oem-complete"
                   @click="emit('openOemCompleteModal', oem)"
                   title="지급 완료 처리"
                 >
-                  <i class="fas fa-check"></i>
                   지급완료
                 </button>
                 <button
@@ -85,12 +94,10 @@
                   @click="emit('confirmDeleteOem', oem)"
                   title="삭제"
                 >
-                  <i class="fas fa-trash-alt"></i>
                   삭제
                 </button>
               </div>
               <span v-else-if="oem.status === 'PAID'" class="oem-completed">
-                <i class="fas fa-check-circle"></i>
                 완료
               </span>
             </td>
@@ -225,20 +232,36 @@ const oemExpectedAmount = computed(() => Math.floor((props.progressPaymentTotal 
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+  table-layout: fixed;
 }
+
+/* OEM 테이블 컬럼 너비 정의 */
+.oem-table .col-seq { width: 60px; }
+.oem-table .col-company { width: auto; min-width: 120px; }
+.oem-table .col-amount { width: 130px; }
+.oem-table .col-date { width: 110px; }
+.oem-table .col-status { width: 90px; }
+.oem-table .col-action { width: 160px; }
 
 /* OEM 테이블 헤더 */
 .data-table thead th {
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 0.75rem;
   font-size: 0.8125rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.01em;
   border-bottom: 2px solid #e2e8f0;
   text-align: left;
   white-space: nowrap;
+}
+
+.data-table thead th.text-center {
+  text-align: center;
+}
+
+.data-table thead th.text-right {
+  text-align: right;
 }
 
 /* OEM 테이블 행 스타일 */
@@ -255,20 +278,42 @@ const oemExpectedAmount = computed(() => Math.floor((props.progressPaymentTotal 
 }
 
 .data-table tbody td {
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 0.75rem;
   font-size: 0.875rem;
   color: #334155;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-table tbody td.text-center {
+  text-align: center;
 }
 
 /* 금액 컬럼 강조 */
 .data-table tbody td.text-right {
   text-align: right;
+}
+
+.data-table tbody td.cell-amount {
   font-weight: 600;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
   font-variant-numeric: tabular-nums;
   color: #1e293b;
+}
+
+/* 회사명 컬럼 */
+.data-table tbody td.cell-company {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+/* 날짜 컬럼 */
+.data-table tbody td.cell-date {
+  font-variant-numeric: tabular-nums;
+  color: #64748b;
 }
 
 /* 빈 데이터 표시 */
@@ -305,55 +350,60 @@ const oemExpectedAmount = computed(() => Math.floor((props.progressPaymentTotal 
 
 /* OEM 액션 버튼 */
 .oem-action-buttons {
-  display: flex;
-  gap: 0.375rem;
+  display: inline-flex;
+  justify-content: center;
+  gap: 0.25rem;
 }
 
 .btn-oem-complete {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.625rem;
-  background: #10b981;
+  justify-content: center;
+  padding: 0.375rem 0.5rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.6875rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .btn-oem-complete:hover {
-  background: #059669;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
 }
 
 .btn-oem-delete {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.625rem;
-  background: #ef4444;
+  justify-content: center;
+  padding: 0.375rem 0.5rem;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.6875rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .btn-oem-delete:hover {
-  background: #dc2626;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-1px);
 }
 
 .oem-completed {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
   color: #059669;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* 버튼 스타일 */

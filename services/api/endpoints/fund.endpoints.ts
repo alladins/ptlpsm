@@ -108,6 +108,26 @@ export const FUND_ENDPOINTS = {
     return `${baseUrl}/admin/funds/by-order/${orderId}`
   },
 
+  /**
+   * 선급금 버튼 활성화 가능 여부 확인
+   * @param orderId - 주문 ID
+   * @returns GET /admin/funds/by-order/{orderId}/advance-payment-eligible
+   */
+  advancePaymentEligible: (orderId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/funds/by-order/${orderId}/advance-payment-eligible`
+  },
+
+  /**
+   * 자금 계산 요약 조회
+   * @param fundId - 자금 ID
+   * @returns GET /admin/funds/{fundId}/summary
+   */
+  summary: (fundId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/funds/${fundId}/summary`
+  },
+
   // ============ 선급금 (Advances) ============
 
   /**
@@ -177,11 +197,23 @@ export const FUND_ENDPOINTS = {
   // ============ 잔금 (Balance) ============
 
   /**
-   * 잔금 입금확인
-   * - 잔금은 별도 신청/승인 프로세스 없음
-   * - 납품완료 후 입금확인만 처리
+   * 잔금 등록 (progress_payment_requests에 BALANCE 레코드 생성)
+   * - 납품완료 상태에서만 가능
+   * - 승인 불필요, 바로 입금확인 가능
+   * @param fundId - 자금 ID
+   * @returns POST /admin/funds/{fundId}/balance
+   */
+  createBalance: (fundId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/funds/${fundId}/balance`
+  },
+
+  /**
+   * 잔금 입금확인 (Deprecated - 2단계 프로세스 사용 권장)
+   * - 잔금 등록(POST /{fundId}/balance) → 수금확인(POST /{fundId}/payments/{requestId}/confirm) 흐름 사용 권장
    * @param fundId - 자금 ID
    * @returns POST /admin/funds/{fundId}/balance/confirm
+   * @deprecated 대신 createBalance → confirmPayment 흐름 사용
    */
   confirmBalance: (fundId: number) => {
     const baseUrl = getApiBaseUrl()
@@ -202,6 +234,16 @@ export const FUND_ENDPOINTS = {
   },
 
   // ============ OEM 지급 (OEM Payments) ============
+
+  /**
+   * OEM 제조사 목록 조회 (해당 자금에 연결된 출하 기준)
+   * @param fundId - 자금 ID
+   * @returns GET /admin/funds/{fundId}/oem-companies
+   */
+  oemCompanies: (fundId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/funds/${fundId}/oem-companies`
+  },
 
   /**
    * OEM 지급 목록 조회
@@ -254,5 +296,17 @@ export const FUND_ENDPOINTS = {
   confirmOemPayment: (fundId: number, oemPaymentId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/funds/${fundId}/oem-payments/${oemPaymentId}/confirm`
+  },
+
+  // ============ 납품확인/완료계 버튼 상태 ============
+
+  /**
+   * 납품확인/완료계 버튼 상태 조회
+   * @param orderId - 발주 ID
+   * @returns GET /admin/funds/by-order/{orderId}/delivery-button-state
+   */
+  deliveryButtonState: (orderId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/funds/by-order/${orderId}/delivery-button-state`
   }
 } as const

@@ -58,6 +58,14 @@
       <!-- 검색 조건 섹션 -->
       <div class="search-section-compact">
         <div class="search-row-single">
+          <!-- 조회기간 -->
+          <div class="search-item">
+            <label>조회기간:</label>
+            <input type="date" v-model="searchForm.startDate" class="date-input">
+            <span class="separator">~</span>
+            <input type="date" v-model="searchForm.endDate" class="date-input">
+          </div>
+
           <!-- 납품요구번호 -->
           <div class="search-item">
             <label>납품요구번호:</label>
@@ -146,11 +154,12 @@
                 <th style="width: 160px;">납품요구번호</th>
                 <th>사업명</th>
                 <th style="width: 130px;">선급금</th>
-                <th style="width: 130px;">기성금 누계</th>4r
+                <th style="width: 130px;">기성금 누계</th>
                 <th style="width: 130px;">잔금</th>
                 <th style="width: 140px;">수금률</th>
+                <th style="width: 100px;">납품율</th>
                 <th style="width: 140px;">수금구성</th>
-                <th style="width: 70px;">상태</th>
+                <th style="width: 80px;">자금상태</th>
               </tr>
             </thead>
             <tbody>
@@ -176,6 +185,18 @@
                       ></div>
                     </div>
                     <span class="progress-text">{{ getCollectionRate(item).toFixed(1) }}%</span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div class="progress-cell">
+                    <div class="progress-bar-mini">
+                      <div
+                        class="progress-fill"
+                        :style="{ width: getDeliveryRate(item) + '%' }"
+                        :class="getProgressClass(getDeliveryRate(item))"
+                      ></div>
+                    </div>
+                    <span class="progress-text">{{ getDeliveryRate(item).toFixed(1) }}%</span>
                   </div>
                 </td>
                 <td class="text-center">
@@ -216,13 +237,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from '#imports'
 import { useFundStore } from '~/stores/fund'
 import { fundService } from '~/services/fund.service'
 import { formatCurrency } from '~/utils/format'
-import type { FundListItem, FundStatus, FundStatistics } from '~/types/fund'
-import { FUND_STATUS_LABELS } from '~/types/fund'
+import type { FundListItem, FundStatus, FundStatistics, OrderStatus } from '~/types/fund'
+import { FUND_STATUS_LABELS, ORDER_STATUS_LABELS } from '~/types/fund'
+import { usePermissionButtons } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -232,8 +254,32 @@ definePageMeta({
 const router = useRouter()
 const fundStore = useFundStore()
 
-// 검색 조건
+// 권한
+const { showEditButton } = usePermissionButtons()
+
+// 오늘 날짜 (로컬 시간 기준)
+const getTodayDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 1년 전 날짜 계산 (로컬 시간 기준)
+const getOneYearAgo = () => {
+  const date = new Date()
+  date.setFullYear(date.getFullYear() - 1)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 검색 조건 (기본값: 과거 1년 ~ 오늘)
 const searchForm = ref({
+  startDate: getOneYearAgo(),
+  endDate: getTodayDate(),
   deliveryRequestNo: '',
   projectName: '',
   status: '' as FundStatus | ''
@@ -270,9 +316,19 @@ const endIndex = computed(() => {
   return Math.min(end, totalElements.value)
 })
 
+// 상태 필터 변경 시 자동 검색
+watch(
+  () => searchForm.value.status,
+  () => {
+    handleSearch()
+  }
+)
+
 // Methods
 const handleSearch = async () => {
   await fundStore.fetchList({
+    startDate: searchForm.value.startDate || undefined,
+    endDate: searchForm.value.endDate || undefined,
     deliveryRequestNo: searchForm.value.deliveryRequestNo || undefined,
     projectName: searchForm.value.projectName || undefined,
     status: searchForm.value.status || undefined,
@@ -283,6 +339,8 @@ const handleSearch = async () => {
 
 const handleReset = () => {
   searchForm.value = {
+    startDate: getOneYearAgo(),
+    endDate: getTodayDate(),
     deliveryRequestNo: '',
     projectName: '',
     status: ''
@@ -293,6 +351,8 @@ const handleReset = () => {
 const handlePageChange = async (page: number) => {
   // page는 Pagination 컴포넌트에서 이미 0-based로 전달됨
   await fundStore.fetchList({
+    startDate: searchForm.value.startDate || undefined,
+    endDate: searchForm.value.endDate || undefined,
     deliveryRequestNo: searchForm.value.deliveryRequestNo || undefined,
     projectName: searchForm.value.projectName || undefined,
     status: searchForm.value.status || undefined,
@@ -314,6 +374,13 @@ const goToDetail = (fundId: number) => {
  */
 const getCollectionRate = (item: FundListItem): number => {
   return item.collectionRate || 0
+}
+
+/**
+ * 납품율 - 서버에서 계산된 값 사용
+ */
+const getDeliveryRate = (item: FundListItem): number => {
+  return item.deliveryCompletionRate || 0
 }
 
 /**
@@ -349,6 +416,33 @@ const getStatusClass = (status?: FundStatus): string => {
 const getStatusLabel = (status?: FundStatus): string => {
   if (!status) return '-'
   return FUND_STATUS_LABELS[status] || status
+}
+
+/**
+ * 주문(납품) 상태 라벨
+ */
+const getOrderStatusLabel = (status?: string): string => {
+  if (!status) return '-'
+  return ORDER_STATUS_LABELS[status as OrderStatus] || status
+}
+
+/**
+ * 주문(납품) 상태 배지 클래스
+ */
+const getOrderStatusClass = (status?: string): string => {
+  if (!status) return ''
+  switch (status) {
+    case 'PENDING':
+      return 'status-pending'
+    case 'IN_PROGRESS':
+      return 'status-in-progress'
+    case 'PENDING_SIGNATURE':
+      return 'status-warning'
+    case 'COMPLETED':
+      return 'status-completed'
+    default:
+      return ''
+  }
 }
 
 /**
@@ -491,6 +585,7 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+.date-input,
 .text-input,
 .select-input {
   padding: 0.5rem 0.75rem;
@@ -498,6 +593,16 @@ onMounted(async () => {
   border-radius: 6px;
   font-size: 0.875rem;
   min-width: 150px;
+}
+
+.date-input {
+  width: 140px;
+  min-width: 140px;
+}
+
+.separator {
+  color: #9ca3af;
+  margin: 0 0.25rem;
 }
 
 .text-input:focus,
@@ -657,6 +762,16 @@ onMounted(async () => {
 .status-cancelled {
   background: #fee2e2;
   color: #dc2626;
+}
+
+.status-pending {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-warning {
+  background: #fef3c7;
+  color: #b45309;
 }
 
 /* 로딩/빈 상태 */

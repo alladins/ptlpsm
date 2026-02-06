@@ -31,6 +31,33 @@
                 <span class="ccm-modal-subtitle">{{ isCompleteMode ? '지급 완료 처리' : '새로운 지급 예정 등록' }}</span>
               </div>
             </div>
+            <!-- OEM 제조사 선택 (헤더에 배치, 등록 모드에서만) -->
+            <div v-if="!isCompleteMode && oemCompanies.length > 0" class="oem-company-header-select">
+              <select
+                v-model="formData.oemCompanyId"
+                class="oem-company-select-compact"
+                :disabled="isSubmitting"
+                @change="handleOemCompanyChange"
+              >
+                <option :value="null">OEM 제조사 선택</option>
+                <option
+                  v-for="company in oemCompanies"
+                  :key="company.companyId"
+                  :value="company.companyId"
+                >
+                  {{ company.companyName }}
+                </option>
+              </select>
+            </div>
+            <!-- OEM 제조사가 없는 경우 헤더에 경고 표시 -->
+            <div v-else-if="!isCompleteMode && oemCompanies.length === 0" class="oem-company-header-warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>OEM 없음</span>
+            </div>
             <button class="ccm-close-button" @click="handleClose" :disabled="isSubmitting">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
@@ -40,8 +67,8 @@
 
           <!-- Modal Body -->
           <div class="ccm-modal-body">
-            <!-- 선급금 모드: 선급금이 있으면 기성금 선택 없이 지급예정 버튼 표시 -->
-            <div v-if="!isCompleteMode && hasAdvancePayment && !linkedPayment" class="ccm-form-group">
+            <!-- 선급금 모드: 선급금이 있고 OEM 선급금 미지급 상태면 표시 -->
+            <div v-if="!isCompleteMode && hasAdvancePayment && !linkedPayment && advanceOemNotFullyPaid" class="ccm-form-group">
               <label class="ccm-form-label">
                 <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
@@ -129,8 +156,8 @@
               </div>
             </div>
 
-            <!-- 기성금 다중 선택 (등록 모드에서만, linkedPayment가 없고 선급금 모드가 아닐 때) -->
-            <div v-if="!isCompleteMode && !linkedPayment && !hasAdvancePayment && progressPayments.length > 0" class="ccm-form-group">
+            <!-- 기성금 다중 선택 (등록 모드에서만, linkedPayment가 없고 기성금/잔금이 있을 때) -->
+            <div v-if="!isCompleteMode && !linkedPayment && progressPayments.length > 0" class="ccm-form-group">
               <label class="ccm-form-label">
                 <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
@@ -158,7 +185,7 @@
                     />
                   </div>
                   <div class="oem-payment-info">
-                    <span class="oem-payment-seq">{{ payment.paymentSeq }}차 기성금</span>
+                    <span class="oem-payment-seq">{{ getPaymentLabel(payment) }}</span>
                     <span class="oem-payment-amount">{{ formatCurrency(payment.requestAmount || payment.amount) }}</span>
                   </div>
                 </div>
@@ -184,11 +211,11 @@
             <div v-if="!isCompleteMode && linkedPayment" class="ccm-linked-card">
               <div class="ccm-card-header">
                 <i class="fas fa-link"></i>
-                <span>연결된 기성금</span>
+                <span>{{ linkedPayment.paymentType === 'BALANCE' ? '연결된 잔금' : '연결된 기성금' }}</span>
               </div>
               <div class="ccm-card-content">
                 <div class="ccm-info-item">
-                  <span class="ccm-label">{{ linkedPayment.paymentSeq }}차 기성금</span>
+                  <span class="ccm-label">{{ getPaymentLabel(linkedPayment) }}</span>
                   <span class="ccm-value">{{ formatCurrency(linkedPayment.requestAmount || linkedPayment.amount) }}</span>
                 </div>
                 <div class="ccm-info-item">
@@ -321,27 +348,7 @@
                 <span v-if="errors.paymentDate" class="ccm-error-message">{{ errors.paymentDate }}</span>
               </div>
 
-              <!-- OEM 업체명 (등록 모드에서만) -->
-              <div v-if="!isCompleteMode" class="ccm-form-group">
-                <label class="ccm-form-label">
-                  <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16"/>
-                    <path d="M3 21h18"/>
-                    <path d="M9 7h1M9 11h1M9 15h1M14 7h1M14 11h1M14 15h1"/>
-                  </svg>
-                  OEM 업체명
-                  <span class="ccm-optional-tag">선택</span>
-                </label>
-                <div class="ccm-input-wrapper">
-                  <input
-                    type="text"
-                    v-model="formData.oemCompanyName"
-                    class="ccm-form-input ccm-focus-orange"
-                    placeholder="예: ABC 제조"
-                    :disabled="isSubmitting"
-                  />
-                </div>
-              </div>
+              <!-- OEM 제조사 선택은 헤더로 이동됨 -->
 
               <!-- 계좌정보 -->
               <div class="ccm-form-group">
@@ -419,6 +426,12 @@
 import { ref, reactive, computed, watch } from 'vue'
 import type { OemPayment, ProgressPaymentRequest } from '~/types/fund'
 
+// OEM 제조사 타입
+interface OemCompany {
+  companyId: number
+  companyName: string
+}
+
 // Props
 interface Props {
   isOpen: boolean
@@ -439,6 +452,8 @@ interface Props {
   advancePaymentRate?: number
   /** 기존 OEM 지급 총액 */
   oemTotalPaid?: number
+  /** OEM 제조사 목록 (출하 기준) */
+  oemCompanies?: OemCompany[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -449,7 +464,8 @@ const props = withDefaults(defineProps<Props>(), {
   hasAdvancePayment: false,
   oemExpectedTotal: 0,
   advancePaymentRate: 0,
-  oemTotalPaid: 0
+  oemTotalPaid: 0,
+  oemCompanies: () => []
 })
 
 // Emits
@@ -462,6 +478,7 @@ const emit = defineEmits<{
 interface SubmitData {
   amount: number
   paymentDate: string
+  oemCompanyId?: number
   oemCompanyName?: string
   bankAccount?: string
   remarks?: string
@@ -484,6 +501,7 @@ const displayRemainingAmount = ref(0)  // 지급예정 버튼 옆 표시 금액 
 const formData = reactive({
   paymentDate: new Date().toISOString().split('T')[0],
   amount: 0,
+  oemCompanyId: null as number | null,
   oemCompanyName: '',
   bankAccount: '',
   remarks: ''
@@ -514,13 +532,26 @@ const suggestedOemAmount = computed(() => {
   return Math.floor((baseAmountForPercent.value * props.oemPaymentRate) / 100)
 })
 
+// OEM 제조사 목록 (props에서 가져옴)
+const oemCompanies = computed(() => props.oemCompanies || [])
+
 const isFormValid = computed(() => {
-  return formData.paymentDate && formData.amount > 0
+  // 기본 검증: 날짜와 금액
+  if (!formData.paymentDate || formData.amount <= 0) return false
+  // OEM 제조사가 있으면 반드시 선택해야 함
+  if (!isCompleteMode.value && oemCompanies.value.length > 0 && !formData.oemCompanyId) return false
+  return true
 })
 
 // OEM 선급금 지급 예정액 (OEM예정총액 × 선급금비율)
 const advanceOemPaymentAmount = computed(() => {
   return Math.floor((props.oemExpectedTotal || 0) * (props.advancePaymentRate || 0) / 100)
+})
+
+// OEM 선급금 미완납 여부 (선급금 지급 예정액보다 적게 지급된 경우)
+const advanceOemNotFullyPaid = computed(() => {
+  if (!props.hasAdvancePayment) return false
+  return (props.oemTotalPaid || 0) < advanceOemPaymentAmount.value
 })
 
 // OEM 지급 잔여 한도 (선급금 모드: 선급금 지급 예정액 - 기존 지급총액)
@@ -537,6 +568,14 @@ const remainingOemLimit = computed(() => {
 const formatCurrency = (value: number | undefined): string => {
   if (!value) return '0원'
   return new Intl.NumberFormat('ko-KR').format(value) + '원'
+}
+
+// 결제 유형별 라벨 (잔금 vs 기성금 구분)
+const getPaymentLabel = (payment: ProgressPaymentRequest): string => {
+  if (payment.paymentType === 'BALANCE') {
+    return '잔금'
+  }
+  return `${payment.paymentSeq}차 기성금`
 }
 
 // 축약형 금액 포맷 (비율 버튼용)
@@ -622,6 +661,16 @@ const togglePaymentSelection = (paymentId: number) => {
   }
 }
 
+// OEM 제조사 선택 시 회사명도 함께 저장
+const handleOemCompanyChange = () => {
+  if (formData.oemCompanyId) {
+    const selected = oemCompanies.value.find(c => c.companyId === formData.oemCompanyId)
+    formData.oemCompanyName = selected?.companyName || ''
+  } else {
+    formData.oemCompanyName = ''
+  }
+}
+
 // 선급금 모드: 지급예정 버튼 클릭 시 잔여 한도 금액 입력 및 표시 금액 0으로 변경
 const applyRemainingAmount = () => {
   const amount = Math.floor(remainingOemLimit.value)
@@ -673,6 +722,7 @@ const handleSubmit = async () => {
     const submitData: SubmitData = {
       amount: formData.amount,
       paymentDate: formData.paymentDate,
+      oemCompanyId: formData.oemCompanyId || undefined,
       oemCompanyName: formData.oemCompanyName || undefined,
       bankAccount: formData.bankAccount || undefined,
       remarks: formData.remarks || undefined,
@@ -704,6 +754,7 @@ const handleClose = () => {
 const resetForm = () => {
   formData.paymentDate = new Date().toISOString().split('T')[0]
   formData.amount = 0
+  formData.oemCompanyId = null
   formData.oemCompanyName = ''
   formData.bankAccount = ''
   formData.remarks = ''
@@ -737,6 +788,12 @@ watch(() => props.isOpen, (newVal) => {
     if (props.linkedPayment && !props.existingPayment) {
       formData.amount = suggestedOemAmount.value
       displayAmount.value = formatNumberInput(suggestedOemAmount.value.toString())
+    }
+
+    // OEM 제조사가 1개뿐이면 자동 선택
+    if (!props.existingPayment && oemCompanies.value.length === 1) {
+      formData.oemCompanyId = oemCompanies.value[0].companyId
+      formData.oemCompanyName = oemCompanies.value[0].companyName
     }
   }
 })
@@ -1032,6 +1089,106 @@ watch(() => props.isOpen, (newVal) => {
   font-weight: 500;
   color: #6b7280;
   margin-top: 0.125rem;
+}
+
+/* ===== Select 스타일 ===== */
+.ccm-form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.25rem 1.25rem;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.ccm-form-select:focus {
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+/* ===== 경고 박스 ===== */
+.ccm-warning-box {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ccm-warning-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #d97706;
+}
+
+/* ===== 헤더 OEM 제조사 선택 (컴팩트) ===== */
+.oem-company-header-select {
+  margin-left: auto;
+  margin-right: 0.75rem;
+}
+
+.oem-company-select-compact {
+  appearance: none;
+  min-width: 140px;
+  max-width: 180px;
+  padding: 0.375rem 2rem 0.375rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #374151;
+  background: #ffffff;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1rem 1rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oem-company-select-compact:hover:not(:disabled) {
+  border-color: #fdba74;
+  background-color: #fffbf7;
+}
+
+.oem-company-select-compact:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.15);
+}
+
+.oem-company-select-compact:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 헤더 OEM 없음 경고 */
+.oem-company-header-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-left: auto;
+  margin-right: 0.75rem;
+  padding: 0.375rem 0.625rem;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #92400e;
+}
+
+.oem-company-header-warning svg {
+  width: 14px;
+  height: 14px;
+  color: #d97706;
 }
 
 /* ===== 트랜지션 ===== */

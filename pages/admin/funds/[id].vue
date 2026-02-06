@@ -85,7 +85,7 @@
             <div class="summary-content">
               <div class="summary-label">기성금 누계</div>
               <div class="summary-value">{{ formatCurrency(fundDetail.progressPaymentTotal) }}</div>
-              <div class="summary-sub">{{ progressPayments.length || 0 }}회</div>
+              <div class="summary-sub">{{ progressOnlyPayments.length || 0 }}회</div>
             </div>
           </div>
           <!-- 선급금 차감 현황 카드 -->
@@ -208,10 +208,16 @@
           :is-delivery-completed="fundDetail?.isDeliveryCompleted || fundDetail?.deliveryDoneStatus === 'COMPLETED'"
           :can-complete-final-delivery="canCompleteFinalDelivery"
           :delivery-completed-at="fundDetail?.deliveryCompletedAt"
+          :has-balance-request="hasBalanceRequest"
+          :balance-request-amount="balanceRequestAmount"
+          :balance-request-status="balanceRequest?.status"
           :balance-paid-date="fundDetail?.balancePaidDate"
           :balance-paid-amount="fundDetail?.balancePaidAmount"
+          :balance-advance-deduction="balanceRequest?.advanceDeductionAmount"
+          :balance-net-amount="balanceRequest?.netPaymentAmount"
           @open-final-delivery-modal="openFinalDeliveryModal"
-          @open-balance-confirm-modal="openBalanceConfirmModal"
+          @open-balance-register-modal="openBalanceRegisterModal"
+          @open-balance-confirm-modal="handleOpenBalanceConfirmModal"
         />
 
         <!-- OEM 지급 탭 -->
@@ -290,6 +296,11 @@
       :existing-payment="selectedOemPayment"
       :linked-payment="linkedProgressPayment"
       :progress-payments="paidProgressPayments"
+      :has-advance-payment="hasAdvancePayment"
+      :oem-expected-total="fundDetail?.oemExpectedTotal || 0"
+      :advance-payment-rate="getAdvancePaymentRate()"
+      :oem-total-paid="fundDetail?.oemTotalPaid || 0"
+      :oem-companies="oemCompanies"
       @close="closeOemPaymentModal"
       @submitted="handleOemPaymentSubmitted"
     />
@@ -301,6 +312,14 @@
       :shipments="fundShipments"
       @close="closeBgradeModal"
       @updated="handleBgradeUpdated"
+    />
+
+    <!-- 잔금 등록 모달 -->
+    <BalanceRegisterModal
+      :is-open="showBalanceRegisterModal"
+      :initial-amount="balanceRegisterAmount"
+      @close="closeBalanceRegisterModal"
+      @submitted="handleBalanceRegisterSubmitted"
     />
   </div>
 </template>
@@ -318,6 +337,7 @@ import CollectionConfirmModal from '~/components/fund/CollectionConfirmModal.vue
 import OemPaymentModal from '~/components/fund/OemPaymentModal.vue'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import BgradeItemsModal from '~/components/delivery-done/BgradeItemsModal.vue'
+import BalanceRegisterModal from '~/components/fund/BalanceRegisterModal.vue'
 import FundAdvanceTab from '~/components/fund/FundAdvanceTab.vue'
 import FundProgressTab from '~/components/fund/FundProgressTab.vue'
 import FundOemTab from '~/components/fund/FundOemTab.vue'
@@ -330,6 +350,7 @@ import { shipmentService, type ShipmentListItem } from '~/services/shipment.serv
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
 import { useFundCalculations } from '~/composables/useFundCalculations'
 import { useFundModals } from '~/composables/useFundModals'
+import { useDeliveryButtons } from '~/composables/useDeliveryButtons'
 
 definePageMeta({
   layout: 'admin',
@@ -344,6 +365,14 @@ const fundStore = useFundStore()
 // 상태 포맷팅 함수 (자금 상태만 사용, 나머지는 탭 컴포넌트에서 처리)
 const { getStatusClass, getStatusLabel } = useFundStatusFormatters()
 
+// 납품확인/완료계 버튼 상태 (API 기반 조건 검증)
+const {
+  fetchButtonState: fetchDeliveryButtonState,
+  isConfirmationButtonEnabled,
+  isCompletionButtonEnabled,
+  buttonState: deliveryButtonState
+} = useDeliveryButtons()
+
 // State
 const activeTab = ref('advance')
 const progressPayments = ref<ProgressPaymentRequest[]>([])
@@ -351,10 +380,19 @@ const oemPayments = ref<OemPayment[]>([])
 
 // 기성청구 Validation용 상태
 const completedDeliveryCount = ref(0)  // 서명 완료된 출하 수
+const availableShipments = ref<any[]>([])  // 청구 가능한 출하 목록
 
 // 출하 목록 상태 (B급 조정 가능 여부 판단용)
 const shipments = ref<ShipmentListItem[]>([])
 const shipmentsLoading = ref(false)
+
+// 선급금 버튼 활성화 조건 상태
+const advanceEligibility = ref({
+  eligible: false,
+  reason: '',
+  hasPdfFile: false,
+  signedReceiptCount: 0
+})
 
 // 탭 정의
 const tabs = [
@@ -386,6 +424,23 @@ const oemPaidTotal = computed(() => {
 const paidProgressPayments = computed(() => {
   return progressPayments.value.filter(p => p.status === 'PAID')
 })
+
+// 잔금 요청 정보 (progress_payment_requests에서 paymentType === 'BALANCE'인 레코드)
+const balanceRequest = computed(() => {
+  // 기성금 목록에서 BALANCE 타입 찾기 (백엔드에서 paymentType 필드로 구분)
+  return progressPayments.value.find((p: any) => p.paymentType === 'BALANCE') || null
+})
+
+// 잔금 요청 존재 여부
+const hasBalanceRequest = computed(() => !!balanceRequest.value)
+
+// 잔금 요청 금액
+const balanceRequestAmount = computed(() => balanceRequest.value?.requestAmount || balanceRequest.value?.amount || null)
+
+// 기성금만 필터링 (BALANCE 타입 제외) - 회수 카운트용
+const progressOnlyPayments = computed(() =>
+  progressPayments.value.filter((p: any) => p.paymentType !== 'BALANCE')
+)
 
 // 자금 ID (composable 전달용)
 const fundId = computed(() => Number(route.params.id))
@@ -430,6 +485,12 @@ const {
   downloadAllAdvancePdfs,
   viewConfirmationPdf,
   viewPhotoSheetPdf,
+  // 잔금 등록 모달
+  showBalanceRegisterModal,
+  balanceRegisterAmount,
+  openBalanceRegisterModal,
+  closeBalanceRegisterModal,
+  handleBalanceRegisterSubmitted,
   // 수금 확인 모달
   showCollectionConfirmModal,
   collectionPaymentType,
@@ -455,7 +516,8 @@ const {
   openOemCompleteModal,
   confirmDeleteOemPayment,
   closeOemPaymentModal,
-  handleOemPaymentSubmitted
+  handleOemPaymentSubmitted,
+  oemCompanies
 } = useFundModals({
   fundId,
   fundDetail,
@@ -486,20 +548,49 @@ const expectedAdvanceAmount = computed(() => {
 
 // 선급금 문서 목록은 FundAdvanceTab 컴포넌트로 이동
 
-/** 선급금 신청 가능 여부 (서명 완료된 출하가 0개일 때) */
-const canRequestAdvance = computed(() => completedDeliveryCount.value === 0)
+/** 선급금 신청 가능 여부 (API 기반) */
+const canRequestAdvance = computed(() => advanceEligibility.value.eligible)
 
 /** 기성금 청구 가능 여부 (서명완료 출하 1건 이상 & 납품완료 아님) */
-const canRequestProgress = computed(() =>
-  completedDeliveryCount.value > 0 &&
-  !fundDetail.value?.isDeliveryCompleted &&
-  fundDetail.value?.deliveryDoneStatus !== 'COMPLETED'
-)
+const canRequestProgress = computed(() => {
+  // 기본 조건: 서명완료 출하가 있어야 함
+  if (completedDeliveryCount.value === 0) {
+    return false
+  }
 
-/** 납품완료 처리 가능 여부 (delivery_done 상태가 PENDING_SIGNATURE) */
-const canCompleteFinalDelivery = computed(() =>
-  fundDetail.value?.deliveryDoneStatus === 'PENDING_SIGNATURE'
-)
+  // 납품완료된 발주는 기성금 청구 불가
+  if (fundDetail.value?.isDeliveryCompleted || fundDetail.value?.deliveryDoneStatus === 'COMPLETED') {
+    return false
+  }
+
+  // 청구 가능한 출하가 있어야 함
+  if (availableShipments.value.length === 0) {
+    return false
+  }
+
+  // 마지막 출하인 경우 기성금이 아닌 잔금으로 처리해야 함
+  const hasLastShipment = shipments.value.some(s => s.isFinalShipment)
+  if (hasLastShipment) {
+    return false
+  }
+
+  return true
+})
+
+/** 납품완료 처리 가능 여부 (API 기반 조건 검증 + 상태 체크) */
+const canCompleteFinalDelivery = computed(() => {
+  // API 기반 조건 (납품확인서 서명/PDF 완료 여부)
+  if (isCompletionButtonEnabled()) {
+    return true
+  }
+  // 폴백: 상태 기반 조건 (delivery_done 상태가 PENDING_SIGNATURE)
+  return fundDetail.value?.deliveryDoneStatus === 'PENDING_SIGNATURE'
+})
+
+/** 납품확인서 생성 가능 여부 (모든 출하 인수증 완료 시 활성화) */
+const canCreateConfirmation = computed(() => {
+  return isConfirmationButtonEnabled()
+})
 
 /** B급 조정 가능 여부 (인수증 서명 완료된 출하가 있는 상태) */
 const canAdjustBgrade = computed(() => {
@@ -543,8 +634,8 @@ const getAdvanceButtonTooltip = () => {
   if (hasAdvancePayment.value) {
     return '이미 선급금을 신청하였습니다.'
   }
-  if (completedDeliveryCount.value > 0) {
-    return '이미 서명이 완료된 출하가 있어 선급금 신청이 불가능합니다.'
+  if (!advanceEligibility.value.eligible) {
+    return advanceEligibility.value.reason
   }
   return ''
 }
@@ -556,6 +647,13 @@ const getProgressButtonTooltip = () => {
   }
   if (completedDeliveryCount.value === 0) {
     return '서명 완료된 출하가 없습니다.'
+  }
+  if (availableShipments.value.length === 0) {
+    return '청구 가능한 출하가 없습니다.'
+  }
+  const hasLastShipment = shipments.value.some(s => s.isFinalShipment)
+  if (hasLastShipment) {
+    return '마지막 출하는 잔금으로 처리해야 합니다.'
   }
   return ''
 }
@@ -591,11 +689,30 @@ const loadValidationData = async () => {
   if (!fundDetail.value?.orderId) return
 
   try {
-    // 서명 완료된 출하 수 조회 (기성금 이력에서 카운트)
-    // availableShipments는 이미 서명 완료된 출하 목록이므로 해당 수를 사용
+    // 선급금 버튼 활성화 조건 확인
+    const eligibilityResult = await fundService.checkAdvancePaymentEligible(fundDetail.value.orderId)
+    advanceEligibility.value = eligibilityResult
+
+    // 청구 가능한 출하 목록 조회 (인수증 서명 완료, 기성청구 미포함)
     const baselineData = await baselineService.getAvailableShipments(fundDetail.value.orderId)
+    availableShipments.value = baselineData || []
     completedDeliveryCount.value = baselineData?.length || 0
-    // 참고: deliveryDoneStatus, oemCompanyId는 fundDetail에서 직접 사용
+
+    // 출하 목록 조회 (마지막 출하 여부 확인용)
+    // 기존 loadShipments 함수는 OEM 탭에서만 호출되므로 여기서도 필요
+    const shipmentResponse = await shipmentService.getShipments({
+      orderId: fundDetail.value.orderId,
+      page: 0,
+      size: 100,
+      sort: 'shipmentDate,desc'
+    })
+    shipments.value = shipmentResponse.content || []
+
+    console.log('Validation 데이터 로드 완료:', {
+      availableShipments: availableShipments.value.length,
+      totalShipments: shipments.value.length,
+      hasLastShipment: shipments.value.some(s => s.isFinalShipment)
+    })
   } catch (error) {
     console.error('Validation 데이터 로드 실패:', error)
   }
@@ -627,6 +744,19 @@ const goBack = () => {
   router.push('/admin/funds')
 }
 
+/** 잔금 입금확인 모달 열기 핸들러 */
+const handleOpenBalanceConfirmModal = () => {
+  if (!balanceRequest.value) {
+    alert('잔금 등록이 먼저 필요합니다.')
+    return
+  }
+  // 잔금 요청 정보를 전달하여 모달 열기
+  openBalanceConfirmModal({
+    requestId: balanceRequest.value.requestId || balanceRequest.value.paymentId,
+    requestAmount: balanceRequest.value.requestAmount || balanceRequest.value.amount || 0
+  })
+}
+
 // 비율/금액 계산 함수들은 useFundCalculations에서 import
 
 /**
@@ -638,6 +768,13 @@ const getRemainingBalance = (): number => {
   return fundDetail.value.balanceAmount || fundDetail.value.outstandingAmount || 0
 }
 
+
+// 납품확인/완료계 버튼 상태 조회 (orderId가 변경될 때)
+watch(() => fundDetail.value?.orderId, async (orderId) => {
+  if (orderId) {
+    await fetchDeliveryButtonState(orderId)
+  }
+}, { immediate: true })
 
 // OEM 탭 클릭 시 출하 목록 조회
 watch(activeTab, async (newTab) => {

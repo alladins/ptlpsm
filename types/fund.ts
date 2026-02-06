@@ -21,6 +21,21 @@ export const FUND_STATUS_LABELS: Record<FundStatus, string> = {
 }
 
 /**
+ * 주문(납품) 상태
+ */
+export type OrderStatus = 'PENDING' | 'IN_PROGRESS' | 'PENDING_SIGNATURE' | 'COMPLETED'
+
+/**
+ * 주문(납품) 상태 라벨
+ */
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  PENDING: '대기',
+  IN_PROGRESS: '진행중',
+  PENDING_SIGNATURE: '서명대기',
+  COMPLETED: '납품완료'
+}
+
+/**
  * 기성금 요청 상태
  */
 export type PaymentStatus = 'REQUESTED' | 'APPROVED' | 'PAID' | 'REJECTED'
@@ -102,8 +117,14 @@ export interface FundListItem {
   /** 잔금 (별칭) */
   balancePayment?: number
   status: FundStatus
+  /** 주문(납품) 상태 */
+  orderStatus?: OrderStatus
   /** 수금률 (%) */
   collectionRate?: number
+  /** 납품 완료율 (%) */
+  deliveryCompletionRate?: number
+  /** 출하 횟수 */
+  shipmentCount?: number
   createdAt?: string
 }
 
@@ -795,4 +816,66 @@ export interface OemPaymentCompleteRequest {
   bankAccount?: string
   /** 비고 */
   remarks?: string
+}
+
+// ============ 자금 계산 요약 (Fund Summary) ============
+
+/**
+ * 자금 계산 요약
+ * @description 자금 관리의 주요 계산 필드를 포함한 요약 정보
+ */
+export interface FundSummary {
+  /** 자금 ID */
+  fundId: number
+  /** 발주 ID */
+  orderId: number
+  /** 납품요구번호 */
+  deliveryRequestNo: string
+  /** 사업명 */
+  projectName: string
+  /** 수요기관 */
+  client?: string
+  /** 자금 상태 */
+  status: FundStatus
+
+  // ===== 계산 필드 (Calculated Fields) =====
+
+  /** 총 계약금액 (품대계 X, 수수료 제외 품목 총합계금액) */
+  totalContractAmount: number
+
+  /** OEM 원가 + 배송비 누계 */
+  oemCostWithShipping: number
+
+  /** 수금 금액 누계 (선급금 + 기성금 + 잔금 입금 확인 금액) */
+  totalReceivedAmount: number
+
+  /** 예상 원가금액 (계약금액의 64%) */
+  expectedCostAmount: number
+
+  // ===== 기본 필드 (Original Fields) =====
+
+  /** 선급금 금액 */
+  advancePaymentAmount: number
+  /** 기성금 누계 */
+  progressPaymentTotal: number
+  /** 잔금 입금액 */
+  balancePaidAmount?: number
+  /** OEM 지급 누계 */
+  oemTotalPaid: number
+  /** OEM 예정 총액 */
+  oemExpectedTotal?: number
+}
+
+/**
+ * 납품확인/완료계 버튼 상태 응답
+ */
+export interface DeliveryButtonState {
+  /** 납품확인서 버튼 활성화 여부 */
+  confirmationButtonEnabled: boolean
+  /** 납품완료계 버튼 활성화 여부 */
+  completionButtonEnabled: boolean
+  /** 잔금 신청 버튼 활성화 여부 */
+  balanceButtonEnabled: boolean
+  /** 비활성화 사유 */
+  reason: string
 }

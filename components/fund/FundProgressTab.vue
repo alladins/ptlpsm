@@ -29,10 +29,10 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-if="progressPayments.length === 0">
+          <tr v-if="filteredProgressPayments.length === 0">
             <td :colspan="hasAdvancePayment ? 10 : 8" class="no-data">기성금 이력이 없습니다.</td>
           </tr>
-          <tr v-else v-for="payment in progressPayments" :key="payment.requestId || payment.paymentId">
+          <tr v-else v-for="payment in filteredProgressPayments" :key="payment.requestId || payment.paymentId">
             <td>{{ payment.paymentSeq }}차</td>
             <td>{{ payment.requestDate }}</td>
             <td class="text-right">{{ formatCurrency(payment.requestAmount) }}</td>
@@ -108,6 +108,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { ProgressPaymentRequest } from '~/types/fund'
 import { formatCurrency } from '~/utils/format'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
@@ -123,9 +124,14 @@ interface Props {
   progressButtonTooltip?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   progressButtonTooltip: ''
 })
+
+// 기성금만 필터링 (BALANCE 타입 제외)
+const filteredProgressPayments = computed(() =>
+  props.progressPayments.filter(p => p.paymentType !== 'BALANCE')
+)
 
 const emit = defineEmits<{
   /** 기성금 청구 모달 열기 */
