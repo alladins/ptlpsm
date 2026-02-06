@@ -101,11 +101,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { deliveryService } from '~/services/delivery.service'
 import { useDataTable } from '~/composables/useDataTable'
 import { useCommonStatus } from '~/composables/useCommonStatus'
+import { usePermission } from '~/composables/usePermission'
 import type { OrderTreeNode } from '~/types/delivery'
 
 definePageMeta({
@@ -138,10 +139,20 @@ const getSixMonthsAgo = () => {
   return `${year}-${month}-${day}`
 }
 
-// 검색 폼 (기본값: 최근 6개월)
+// 1개월 후 날짜 계산 (로컬 시간 기준)
+const getOneMonthLater = () => {
+  const date = new Date()
+  date.setMonth(date.getMonth() + 1)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 검색 폼 (기본값: 과거 6개월 ~ 미래 1개월)
 const searchForm = ref({
   startDate: getSixMonthsAgo(),
-  endDate: getTodayDate(),
+  endDate: getOneMonthLater(),
   deliveryRequestNo: '', // NEW field
   status: ''
 })
@@ -178,6 +189,14 @@ const {
   initialSort: 'delivery_request_date,desc'
 })
 
+// 상태 필터 변경 시 자동 검색
+watch(
+  () => searchForm.value.status,
+  () => {
+    search()
+  }
+)
+
 // 검색
 const handleSearch = () => {
   search()
@@ -187,7 +206,7 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.value = {
     startDate: getSixMonthsAgo(),
-    endDate: getTodayDate(),
+    endDate: getOneMonthLater(),
     deliveryRequestNo: '',
     status: ''
   }

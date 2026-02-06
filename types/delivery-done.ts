@@ -169,8 +169,9 @@ export interface DeliveryDoneListItem {
   siteSupervisorPhone: string | null   // 시공사 현장소장 전화번호
   supervisorName: string | null        // 현장감리원 이름
   supervisorPhone: string | null       // 현장감리원 전화번호
-  hasManagerSignature: boolean         // ✅ 시공사 현장소장 서명 여부
-  hasInspectorSignature: boolean       // ✅ 현장감리원 서명 여부
+  hasManagerSignature: boolean              // ✅ Stage 1 시공사 현장소장 서명 여부
+  hasInspectorSignature: boolean            // ✅ Stage 1 현장감리원 서명 여부
+  hasCompletionInspectorSignature: boolean  // ✅ Stage 2 감리원 최종 서명 여부 (납품완료계)
   createdAt: string
   updatedAt: string
 }

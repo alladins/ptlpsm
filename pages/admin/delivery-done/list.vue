@@ -236,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from '#imports'
 import {
   getDeliveryDoneList,
@@ -294,10 +294,20 @@ const getSixMonthsAgo = () => {
   return `${year}-${month}-${day}`
 }
 
-// 검색 폼 (기본값: 최근 6개월)
+// 1개월 후 날짜 계산 (로컬 시간 기준)
+const getOneMonthLater = () => {
+  const date = new Date()
+  date.setMonth(date.getMonth() + 1)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 검색 폼 (기본값: 과거 6개월 ~ 미래 1개월)
 const searchForm = ref<DeliveryDoneSearchParams>({
   startDate: getSixMonthsAgo(),
-  endDate: getTodayDate(),
+  endDate: getOneMonthLater(),
   deliveryRequestNo: '',
   contractNo: '',
   client: '',
@@ -356,6 +366,15 @@ async function loadData() {
   }
 }
 
+// 상태 필터 변경 시 자동 검색
+watch(
+  () => searchForm.value.status,
+  () => {
+    currentPage.value = 0
+    loadData()
+  }
+)
+
 // 검색
 function handleSearch() {
   currentPage.value = 0
@@ -366,7 +385,7 @@ function handleSearch() {
 function handleReset() {
   searchForm.value = {
     startDate: getSixMonthsAgo(),
-    endDate: getTodayDate(),
+    endDate: getOneMonthLater(),
     deliveryRequestNo: '',
     contractNo: '',
     client: '',
@@ -447,9 +466,11 @@ function canSendConfirmationMessage(item: DeliveryDoneListItem): boolean {
 }
 
 function canSendCompletionMessage(item: DeliveryDoneListItem): boolean {
-  // 납품완료계: 서명 완료 AND 아직 최종 완료 아님 (중복 발송 방지)
+  // 납품완료계: Stage 1 서명 완료 AND Stage 2 서명 미완료 AND 최종 완료 아님
+  // hasCompletionInspectorSignature 체크로 중복 발송 방지
   return item.hasManagerSignature &&
          item.hasInspectorSignature &&
+         !item.hasCompletionInspectorSignature &&
          item.status !== 'COMPLETED' &&
          item.status !== 'SUBMITTED'
 }
