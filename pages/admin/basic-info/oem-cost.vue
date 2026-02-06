@@ -6,12 +6,44 @@
       description="OEM 제조사별 SKU 원가를 관리합니다"
     >
       <template #actions>
+        <button v-if="isSkuFiltered" class="btn-back" @click="clearSkuFilter">
+          <i class="fas fa-arrow-left"></i>
+          전체 목록 보기
+        </button>
         <button class="btn-refresh" @click="handleRefresh">
           <i class="fas fa-sync-alt"></i>
           새로고침
         </button>
       </template>
     </PageHeader>
+
+    <!-- SKU 필터 배너 (품목관리에서 진입 시) -->
+    <div v-if="isSkuFiltered && skuDetailInfo" class="sku-context-banner">
+      <div class="sku-banner-content">
+        <div class="sku-banner-icon">
+          <i class="fas fa-barcode"></i>
+        </div>
+        <div class="sku-banner-info">
+          <div class="sku-banner-label">선택된 SKU</div>
+          <div class="sku-banner-title">
+            <span class="sku-code">{{ searchForm.skuId }}</span>
+            <span v-if="skuDetailInfo.skuName" class="sku-name">{{ skuDetailInfo.skuName }}</span>
+          </div>
+          <div v-if="skuDetailInfo.unitPrice" class="sku-banner-price">
+            납품단가: <strong>{{ formatCurrency(skuDetailInfo.unitPrice) }}</strong>
+          </div>
+        </div>
+        <div class="sku-banner-stats">
+          <div class="sku-stat">
+            <span class="sku-stat-value">{{ costList.length }}</span>
+            <span class="sku-stat-label">등록된 OEM 원가</span>
+          </div>
+        </div>
+      </div>
+      <button class="sku-banner-close" @click="clearSkuFilter" title="필터 해제">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
 
     <!-- 통계 카드 -->
     <div class="stats-cards">
@@ -65,8 +97,8 @@
             <option :value="undefined">전체</option>
             <option
               v-for="company in oemCompanies"
-              :key="company.companyId"
-              :value="company.companyId"
+              :key="company.id"
+              :value="company.id"
             >
               {{ company.companyName }}
             </option>
@@ -77,9 +109,9 @@
           <label>SKU:</label>
           <input
             type="text"
-            v-model="searchForm.keyword"
+            v-model="searchForm.skuId"
             class="keyword-input"
-            placeholder="SKU코드 또는 SKU명"
+            placeholder="SKU코드"
             @keyup.enter="handleSearch"
           />
         </div>
@@ -149,7 +181,7 @@
               <th style="width: 80px" class="text-center">마진율</th>
               <th style="width: 100px">적용기간</th>
               <th style="width: 80px" class="text-center">상태</th>
-              <th style="width: 120px" class="text-center">액션</th>
+              <th style="width: 180px" class="text-center">액션</th>
             </tr>
           </thead>
           <tbody>
@@ -211,14 +243,25 @@
                     title="수정"
                   >
                     <i class="fas fa-edit"></i>
+                    <span>수정</span>
                   </button>
                   <button
-                    v-else
+                    v-if="item.costPrice"
+                    class="btn-add-oem"
+                    @click="openAddOemModal(item)"
+                    title="다른 OEM 추가"
+                  >
+                    <i class="fas fa-plus-circle"></i>
+                    <span>OEM추가</span>
+                  </button>
+                  <button
+                    v-if="!item.costPrice"
                     class="btn-add-item"
                     @click="openAddModal(item)"
                     title="등록"
                   >
                     <i class="fas fa-plus"></i>
+                    <span>등록</span>
                   </button>
                   <button
                     v-if="item.id"
@@ -227,6 +270,7 @@
                     title="이력"
                   >
                     <i class="fas fa-history"></i>
+                    <span>이력</span>
                   </button>
                 </td>
               </tr>
@@ -250,6 +294,7 @@
       :is-open="showCostModal"
       :sku-info="selectedSkuInfo"
       :edit-data="selectedCostData"
+      :existing-oem-company-ids="existingOemCompanyIds"
       @close="closeCostModal"
       @saved="handleCostSaved"
     />
@@ -269,7 +314,18 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import PageHeader from '~/components/ui/PageHeader.vue'
+
+// 페이지 메타 설정 - admin 레이아웃 적용
+definePageMeta({
+  layout: 'admin',
+  pageTitle: '제조사 원가 관리'
+})
+
+useHead({
+  title: '제조사 원가 관리 - PTLPSM'
+})
 import Pagination from '~/components/ui/Pagination.vue'
 import OemCostModal from '~/components/admin/oem-cost/OemCostModal.vue'
 import OemCostHistoryModal from '~/components/admin/oem-cost/OemCostHistoryModal.vue'
@@ -285,12 +341,12 @@ import type {
   OemCostStatistics,
   OemCostStatus
 } from '~/types/oem-cost'
-import type { Company } from '~/types/company'
+import type { CompanyInfoResponse } from '~/types/company'
 
 // 상태
 const isLoading = ref(false)
 const costList = ref<OemCostListItem[]>([])
-const oemCompanies = ref<Company[]>([])
+const oemCompanies = ref<CompanyInfoResponse[]>([])
 const currentPage = ref(1)
 const pageSize = ref(20)
 const totalElements = ref(0)
@@ -308,9 +364,30 @@ const statistics = reactive<OemCostStatistics>({
 // 검색 폼
 const searchForm = reactive({
   oemCompanyId: undefined as number | undefined,
+  skuId: '',
   keyword: '',
   status: '' as OemCostStatus | ''
 })
+
+// SKU 필터 여부 및 상세 정보
+const isSkuFiltered = computed(() => !!searchForm.skuId)
+const skuDetailInfo = computed(() => {
+  if (!searchForm.skuId || costList.value.length === 0) return null
+  const firstItem = costList.value[0]
+  return {
+    skuId: firstItem.skuId,
+    skuName: firstItem.skuName || firstItem.itemName,
+    unitPrice: firstItem.unitPrice
+  }
+})
+
+// SKU 필터 해제
+const clearSkuFilter = () => {
+  searchForm.skuId = ''
+  // URL에서 skuId 제거
+  navigateTo('/admin/basic-info/oem-cost', { replace: true })
+  loadData()
+}
 
 // 모달 상태
 const showCostModal = ref(false)
@@ -362,11 +439,10 @@ const loadStatistics = async () => {
   }
 }
 
-// OEM 회사 목록 로드
+// OEM 회사 목록 로드 (제조사 타입만 조회)
 const loadOemCompanies = async () => {
   try {
-    const response = await companyService.getCompanies({ size: 1000 })
-    oemCompanies.value = response.content || response
+    oemCompanies.value = await companyService.getManufacturers()
   } catch (error) {
     console.error('OEM 회사 목록 조회 실패:', error)
   }
@@ -381,6 +457,7 @@ const handleSearch = () => {
 // 초기화
 const handleReset = () => {
   searchForm.oemCompanyId = undefined
+  searchForm.skuId = ''
   searchForm.keyword = ''
   searchForm.status = ''
   currentPage.value = 1
@@ -419,6 +496,7 @@ const openAddModal = (item: OemCostListItem) => {
     unitPrice: item.unitPrice
   }
   selectedCostData.value = null
+  existingOemCompanyIds.value = []  // 신규 등록 시 제외 목록 초기화
   showCostModal.value = true
 }
 
@@ -431,7 +509,32 @@ const openEditModal = (item: OemCostListItem) => {
     unitPrice: item.unitPrice
   }
   selectedCostData.value = item as OemCost
+  existingOemCompanyIds.value = []  // 수정 모드에서는 제외 목록 필요 없음
   showCostModal.value = true
+}
+
+// 다른 OEM 원가 추가 모달 열기 (기존 SKU에 새 OEM 추가)
+const openAddOemModal = (item: OemCostListItem) => {
+  selectedSkuInfo.value = {
+    skuId: item.skuId,
+    skuName: item.skuName,
+    itemName: item.itemName,
+    unitPrice: item.unitPrice
+  }
+  selectedCostData.value = null  // 신규 등록
+  // 해당 SKU에 이미 등록된 제조사 ID 목록 추출
+  updateExistingOemCompanyIds(item.skuId)
+  showCostModal.value = true
+}
+
+// 해당 SKU에 이미 등록된 제조사 ID 목록
+const existingOemCompanyIds = ref<number[]>([])
+
+// SKU별 이미 등록된 제조사 ID 목록 업데이트
+const updateExistingOemCompanyIds = (skuId: string) => {
+  existingOemCompanyIds.value = costList.value
+    .filter(item => item.skuId === skuId && item.oemCompanyId)
+    .map(item => item.oemCompanyId)
 }
 
 // 모달 닫기
@@ -496,8 +599,15 @@ const getMarginRateClass = (rate: number | null | undefined): string => {
   return getMarginClass(rate)
 }
 
+// 라우트
+const route = useRoute()
+
 // 초기화
 onMounted(() => {
+  // URL 쿼리 파라미터에서 skuId 읽기
+  if (route.query.skuId) {
+    searchForm.skuId = route.query.skuId as string
+  }
   loadOemCompanies()
   loadData()
   loadStatistics()
@@ -515,6 +625,153 @@ onMounted(() => {
   padding: 1.5rem;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+/* 뒤로가기 버튼 */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #4b5563;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+/* SKU 컨텍스트 배너 */
+.sku-context-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  border: 1px solid #c4b5fd;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
+}
+
+.sku-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.sku-banner-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  border-radius: 12px;
+  color: white;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.sku-banner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sku-banner-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #7c3aed;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sku-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sku-code {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1f2937;
+  background: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #c4b5fd;
+}
+
+.sku-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.sku-banner-price {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.sku-banner-price strong {
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+.sku-banner-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-left: 1.5rem;
+  border-left: 2px solid #c4b5fd;
+  margin-left: 1rem;
+}
+
+.sku-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.sku-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #7c3aed;
+  line-height: 1;
+}
+
+.sku-stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.sku-banner-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sku-banner-close:hover {
+  background: white;
+  color: #1f2937;
 }
 
 /* 통계 카드 */
@@ -779,23 +1036,28 @@ onMounted(() => {
 /* 액션 버튼 */
 .action-buttons {
   display: flex;
-  gap: 0.375rem;
+  gap: 0.25rem;
   justify-content: center;
+  flex-wrap: nowrap;
 }
 
 .btn-edit,
 .btn-view,
-.btn-add-item {
+.btn-add-item,
+.btn-add-oem {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  height: 26px;
   border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .btn-edit {
@@ -806,6 +1068,16 @@ onMounted(() => {
 .btn-edit:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.btn-add-oem {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+}
+
+.btn-add-oem:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
 }
 
 .btn-view {

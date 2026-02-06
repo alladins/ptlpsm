@@ -69,9 +69,9 @@
               >
                 <option :value="null">제조사를 선택하세요</option>
                 <option
-                  v-for="company in oemCompanies"
-                  :key="company.companyId"
-                  :value="company.companyId"
+                  v-for="company in availableOemCompanies"
+                  :key="company.id"
+                  :value="company.id"
                 >
                   {{ company.companyName }}
                 </option>
@@ -80,10 +80,50 @@
 
             <!-- 원가 입력 -->
             <div class="ccm-form-group">
-              <label class="ccm-form-label required">
-                <i class="fas fa-won-sign"></i>
-                원가
-              </label>
+              <div class="ccm-form-label-row">
+                <label class="ccm-form-label required">
+                  <i class="fas fa-won-sign"></i>
+                  원가
+                </label>
+                <div class="cost-percent-buttons">
+                  <button
+                    type="button"
+                    class="percent-btn"
+                    @click="applyPercentage(60)"
+                    :disabled="isSubmitting || !skuInfo?.unitPrice"
+                  >60%</button>
+                  <button
+                    type="button"
+                    class="percent-btn"
+                    @click="applyPercentage(61)"
+                    :disabled="isSubmitting || !skuInfo?.unitPrice"
+                  >61%</button>
+                  <button
+                    type="button"
+                    class="percent-btn"
+                    @click="applyPercentage(64)"
+                    :disabled="isSubmitting || !skuInfo?.unitPrice"
+                  >64%</button>
+                  <div class="custom-percent-input">
+                    <input
+                      type="number"
+                      v-model.number="customPercent"
+                      class="percent-input"
+                      placeholder="%"
+                      min="0"
+                      max="100"
+                      :disabled="isSubmitting || !skuInfo?.unitPrice"
+                      @keyup.enter="applyPercentage(customPercent)"
+                    />
+                    <button
+                      type="button"
+                      class="percent-apply-btn"
+                      @click="applyPercentage(customPercent)"
+                      :disabled="isSubmitting || !skuInfo?.unitPrice || !customPercent"
+                    >적용</button>
+                  </div>
+                </div>
+              </div>
               <div class="cost-input-wrapper">
                 <div class="cost-input-container">
                   <span class="cost-prefix">₩</span>
@@ -209,7 +249,7 @@ import { oemCostService } from '~/services/oem-cost.service'
 import { companyService } from '~/services/company.service'
 import { calculateMarginRate, getMarginRateClass } from '~/types/oem-cost'
 import type { OemCost, OemCostCreateRequest, OemCostUpdateRequest } from '~/types/oem-cost'
-import type { Company } from '~/types/company'
+import type { CompanyInfoResponse } from '~/types/company'
 
 interface SkuInfo {
   skuId: string
@@ -222,6 +262,7 @@ interface Props {
   isOpen: boolean
   skuInfo: SkuInfo | null
   editData?: OemCost | null  // 수정 모드에서 기존 데이터
+  existingOemCompanyIds?: number[]  // 이미 등록된 제조사 ID 목록 (제외할 목록)
 }
 
 const props = defineProps<Props>()
@@ -234,8 +275,20 @@ const emit = defineEmits<{
 // 상태
 const isSubmitting = ref(false)
 const isSuccess = ref(false)
-const oemCompanies = ref<Company[]>([])
+const oemCompanies = ref<CompanyInfoResponse[]>([])
 const savedData = ref<OemCost | null>(null)
+
+// 이미 등록된 제조사를 제외한 선택 가능한 목록
+const availableOemCompanies = computed(() => {
+  if (!props.existingOemCompanyIds || props.existingOemCompanyIds.length === 0) {
+    return oemCompanies.value
+  }
+  // 수정 모드에서는 현재 선택된 제조사는 표시
+  const currentOemId = props.editData?.oemCompanyId
+  return oemCompanies.value.filter(company =>
+    !props.existingOemCompanyIds!.includes(company.id) || company.id === currentOemId
+  )
+})
 
 // 폼 데이터
 const form = ref({
@@ -250,6 +303,9 @@ const form = ref({
 
 // 포맷된 원가 (천단위 콤마)
 const formattedCostPrice = ref('')
+
+// 커스텀 퍼센트 입력
+const customPercent = ref<number | null>(null)
 
 // 계산된 값
 const isEditMode = computed(() => !!props.editData)
@@ -275,14 +331,10 @@ const isFormValid = computed(() => {
   )
 })
 
-// OEM 회사 목록 로드
+// OEM 회사 목록 로드 (제조사 타입만 조회)
 const loadOemCompanies = async () => {
   try {
-    const response = await companyService.getCompanies({
-      size: 1000
-    })
-    // OEM 타입 필터링 (companyType이 있는 경우)
-    oemCompanies.value = response.content || response
+    oemCompanies.value = await companyService.getManufacturers()
   } catch (error) {
     console.error('OEM 회사 목록 조회 실패:', error)
   }
@@ -299,6 +351,15 @@ const handleCostInput = (event: Event) => {
   formattedCostPrice.value = numValue.toLocaleString('ko-KR')
 }
 
+// 퍼센트 적용 핸들러
+const applyPercentage = (percent: number | null) => {
+  if (!percent || !props.skuInfo?.unitPrice) return
+  // 납품단가 * 퍼센트% 계산 (반올림)
+  const calculatedCost = Math.round(props.skuInfo.unitPrice * (percent / 100))
+  form.value.costPrice = calculatedCost
+  formattedCostPrice.value = calculatedCost.toLocaleString('ko-KR')
+}
+
 // 폼 초기화
 const resetForm = () => {
   form.value = {
@@ -311,6 +372,7 @@ const resetForm = () => {
     changeReason: ''
   }
   formattedCostPrice.value = ''
+  customPercent.value = null
 }
 
 // 수정 모드 데이터 로드
@@ -346,6 +408,7 @@ const handleSubmit = async () => {
         remarks: form.value.remarks || undefined,
         changeReason: form.value.changeReason || undefined
       }
+      console.log('[OemCostModal] 수정 요청 데이터:', updateData)
       savedData.value = await oemCostService.update(props.editData.id, updateData)
     } else {
       // 등록
@@ -358,6 +421,7 @@ const handleSubmit = async () => {
         contractNo: form.value.contractNo || undefined,
         remarks: form.value.remarks || undefined
       }
+      console.log('[OemCostModal] 등록 요청 데이터:', createData)
       savedData.value = await oemCostService.create(createData)
     }
 
@@ -385,7 +449,7 @@ const handleClose = () => {
 
 // 성공 메시지
 const getSuccessMessage = () => {
-  const oemName = oemCompanies.value.find(c => c.companyId === form.value.oemCompanyId)?.companyName || 'OEM'
+  const oemName = oemCompanies.value.find(c => c.id === form.value.oemCompanyId)?.companyName || 'OEM'
   return `${props.skuInfo?.skuId} - ${oemName} 원가가 ${isEditMode.value ? '수정' : '등록'}되었습니다.`
 }
 
@@ -879,5 +943,100 @@ onMounted(() => {
 .success-fade-enter-from,
 .success-fade-leave-to {
   opacity: 0;
+}
+
+/* 원가 라벨 행 */
+.ccm-form-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* 퍼센트 버튼 그룹 */
+.cost-percent-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.percent-btn {
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #7c3aed;
+  background: #f3e8ff;
+  border: 1px solid #c4b5fd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.percent-btn:hover:not(:disabled) {
+  background: #7c3aed;
+  color: white;
+  border-color: #7c3aed;
+}
+
+.percent-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 커스텀 퍼센트 입력 */
+.custom-percent-input {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.25rem;
+}
+
+.percent-input {
+  width: 50px;
+  padding: 0.25rem 0.375rem;
+  font-size: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.percent-input:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+}
+
+.percent-input::-webkit-outer-spin-button,
+.percent-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.percent-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.percent-apply-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  background: #7c3aed;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.percent-apply-btn:hover:not(:disabled) {
+  background: #6d28d9;
+}
+
+.percent-apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

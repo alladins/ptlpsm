@@ -96,6 +96,7 @@ class OemCostService {
    * 원가 등록
    */
   async create(data: OemCostCreateRequest): Promise<OemCost> {
+    console.log('[OemCostService] create 요청:', JSON.stringify(data, null, 2))
     const response = await fetch(OEM_COST_ENDPOINTS.create(), {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -104,7 +105,16 @@ class OemCostService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `원가 등록 실패: ${response.status}`)
+      console.error('[OemCostService] create 실패:', response.status, errorData)
+      // Validation 에러의 경우 details에 필드별 에러가 담김
+      let errorMessage = errorData.message || errorData.error || `원가 등록 실패: ${response.status}`
+      if (errorData.details) {
+        const detailMessages = Object.entries(errorData.details)
+          .map(([field, msg]) => `${field}: ${msg}`)
+          .join(', ')
+        errorMessage = `${errorMessage} (${detailMessages})`
+      }
+      throw new Error(errorMessage)
     }
 
     return response.json()
