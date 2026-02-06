@@ -29,6 +29,8 @@ export interface Sales {
   updatedBy?: string
   updatedAt?: string
   remark?: string
+  linkedDeliveryRequestNo?: string // 연결된 분할납품요구번호
+  contractLinkedAt?: string // 계약 연결일시
 }
 
 export interface SalesSearchRequest {
@@ -657,13 +659,13 @@ export const salesService = {
   async getDeletedSalesList(params: SalesSearchRequest = {}): Promise<SalesListResponse> {
     try {
       const queryParams = new URLSearchParams()
-      
+
       // 검색 파라미터 추가
       if (params.keyword) queryParams.append('keyword', params.keyword)
       if (params.customerNm) queryParams.append('customerNm', params.customerNm)
       if (params.salesTitle) queryParams.append('salesTitle', params.salesTitle)
       if (params.salesStatus) queryParams.append('salesStatus', params.salesStatus)
-      
+
       // 페이징 파라미터
       const page = params.page !== undefined ? params.page : 0
       const size = params.size !== undefined ? params.size : 10
@@ -686,6 +688,54 @@ export const salesService = {
       return await response.json()
     } catch (error) {
       console.error('삭제된 영업관리 목록 조회 오류:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 계약 연결 (분할납품요구번호로 연결)
+   */
+  async linkToContract(salesId: number, deliveryRequestNo: string): Promise<Sales> {
+    try {
+      const url = SALES_ENDPOINTS.linkContract(salesId)
+      const queryParams = new URLSearchParams()
+      queryParams.append('deliveryRequestNo', deliveryRequestNo)
+
+      const response = await fetch(`${url}?${queryParams.toString()}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        throw new Error(`계약 연결 실패: ${response.status} ${response.statusText}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('계약 연결 오류:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 계약 연결 해제
+   */
+  async unlinkFromContract(salesId: number): Promise<Sales> {
+    try {
+      const url = SALES_ENDPOINTS.unlinkContract(salesId)
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        throw new Error(`계약 연결 해제 실패: ${response.status} ${response.statusText}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('계약 연결 해제 오류:', error)
       throw error
     }
   }

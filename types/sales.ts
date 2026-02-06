@@ -43,3 +43,43 @@ export interface SalesItemRequest {
   quantity: number;          // 수량 (필수, 1 이상)
   sortOrder?: number;        // 정렬순서 (선택)
 }
+
+// 영업 예측 인터페이스
+export interface SalesForecast {
+  id?: number;
+  salesId: number;
+  itemList?: string;
+  demandOrganization?: string;
+  businessName?: string;
+  businessContent?: string;
+  approximateQuantity?: string;
+  forecastAmount?: number;
+  probability?: string;
+  expectedContractDate?: string;
+  remark?: string;
+  useYn?: string;
+  createdBy?: string;
+  createdAt?: string;
+  updatedBy?: string;
+  updatedAt?: string;
+}
+
+export interface SalesForecastRequest {
+  salesId: number;
+  itemList?: string;
+  demandOrganization?: string;
+  businessName?: string;
+  businessContent?: string;
+  approximateQuantity?: string;
+  forecastAmount?: number;
+  probability?: string;
+  expectedContractDate?: string;
+  remark?: string;
+  useYn?: string;
+}
+
+// 계약 연결 요청 인터페이스
+export interface ContractLinkRequest {
+  salesId: number;
+  deliveryRequestNo: string;
+}

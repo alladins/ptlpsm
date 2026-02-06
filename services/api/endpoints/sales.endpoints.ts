@@ -166,5 +166,96 @@ export const SALES_ENDPOINTS = {
   deleted: () => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/sales/deleted`
+  },
+
+  /**
+   * 계약 연결
+   * @param salesId - 영업 ID
+   * @returns POST /admin/sales/{salesId}/link-contract
+   */
+  linkContract: (salesId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/sales/${salesId}/link-contract`
+  },
+
+  /**
+   * 계약 연결 해제
+   * @param salesId - 영업 ID
+   * @returns DELETE /admin/sales/{salesId}/link-contract
+   */
+  unlinkContract: (salesId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/sales/${salesId}/link-contract`
+  },
+
+  // 영업 예측 엔드포인트
+  forecast: {
+    /**
+     * 예측 전체 목록 조회
+     * @returns GET /admin/sales/forecast
+     */
+    list: () => {
+      const baseUrl = getApiBaseUrl()
+      return `${baseUrl}/admin/sales/forecast`
+    },
+
+    /**
+     * 예측 상세 조회
+     * @param id - 예측 ID
+     * @returns GET /admin/sales/forecast/{id}
+     */
+    detail: (id: number) => {
+      const baseUrl = getApiBaseUrl()
+      return `${baseUrl}/admin/sales/forecast/${id}`
+    },
+
+    /**
+     * 수주 ID로 예측 조회
+     * @param salesId - 수주 ID
+     * @returns GET /admin/sales/forecast/sales/{salesId}
+     */
+    bySalesId: (salesId: number) => {
+      const baseUrl = getApiBaseUrl()
+      return `${baseUrl}/admin/sales/forecast/sales/${salesId}`
+    },
+
+    /**
+     * 확률별 예측 조회
+     * @param probability - 확률 (높음/중간/낮음)
+     * @returns GET /admin/sales/forecast/probability/{probability}
+     */
+    byProbability: (probability: string) => {
+      const baseUrl = getApiBaseUrl()
+      return `${baseUrl}/admin/sales/forecast/probability/${probability}`
+    },
+
+    /**
+     * 예측 등록
+     * @returns POST /admin/sales/forecast
+     */
+    create: () => {
+      const baseUrl = getApiBaseUrl()
+      return `${baseUrl}/admin/sales/forecast`
+    },
+
+    /**
+     * 예측 수정
+     * @param id - 예측 ID
+     * @returns PUT /admin/sales/forecast/{id}
+     */
+    update: (id: number) => {
+      const baseUrl = getApiBaseUrl()
+      return `${baseUrl}/admin/sales/forecast/${id}`
+    },
+
+    /**
+     * 예측 삭제
+     * @param id - 예측 ID
+     * @returns DELETE /admin/sales/forecast/{id}
+     */
+    delete: (id: number) => {
+      const baseUrl = getApiBaseUrl()
+      return `${baseUrl}/admin/sales/forecast/${id}`
+    }
   }
 } as const
