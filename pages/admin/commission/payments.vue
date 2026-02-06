@@ -332,8 +332,8 @@ const showCreateModal = ref(false)
 const showCompleteModal = ref(false)
 const selectedPayment = ref<CommissionPayment | null>(null)
 
-// 목업 데이터 사용 여부 (UI 테스트용)
-const useMockData = ref(true)
+// 목업 데이터 사용 여부 (UI 테스트용) - 실제 API 연동으로 변경
+const useMockData = ref(false)
 
 // 목업 데이터 정의 - 대리점(영업직원)별 커미션 지급 이력 (15% 지분)
 // 대리점 = 영업직원 (커미션 지급 대상)

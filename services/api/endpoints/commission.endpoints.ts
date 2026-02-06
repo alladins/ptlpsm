@@ -159,5 +159,35 @@ export const COMMISSION_ENDPOINTS = {
   cancelPayment: (paymentId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/commission/payments/${paymentId}/cancel`
+  },
+
+  // ============ 중간정산 (Periodic Settlement) ============
+
+  /**
+   * 중간정산 생성
+   * @returns POST /admin/commission/periodic-settlements
+   */
+  createPeriodicSettlement: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/periodic-settlements`
+  },
+
+  /**
+   * 정산 이력 목록 조회
+   * @returns GET /admin/commission/periodic-settlements?params
+   */
+  periodicSettlements: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/periodic-settlements`
+  },
+
+  /**
+   * 정산 상세 조회
+   * @param settlementId - 정산 ID
+   * @returns GET /admin/commission/periodic-settlements/{settlementId}
+   */
+  periodicSettlementDetail: (settlementId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/periodic-settlements/${settlementId}`
   }
 } as const

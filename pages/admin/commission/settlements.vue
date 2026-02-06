@@ -327,8 +327,8 @@ const selectedIds = ref<number[]>([])
 const showDetailModal = ref(false)
 const selectedSettlement = ref<CommissionSettlement | null>(null)
 
-// 목업 데이터 사용 여부 (UI 테스트용)
-const useMockData = ref(true)
+// 목업 데이터 사용 여부 (UI 테스트용) - 실제 API 연동으로 변경
+const useMockData = ref(false)
 
 // 목업 데이터 정의 - 대리점(영업직원)별 커미션 정산 목록 (15% 지분)
 const mockSettlements: CommissionSettlement[] = [

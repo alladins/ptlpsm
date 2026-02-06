@@ -261,6 +261,8 @@ import type {
   AnnualDistributionSummary,
   ShareTier
 } from '~/types/commission'
+import { usePermissionButtons } from '~/composables/usePermission'
+import { getAnnualCommissionSummary } from '~/services/commission.service'
 
 // Chart.js dynamic import
 let Chart: any = null
@@ -269,6 +271,9 @@ definePageMeta({
   layout: 'admin',
   pageTitle: '수익 배분 대시보드'
 })
+
+// 권한
+const { showEditButton } = usePermissionButtons()
 
 // State
 const loading = ref(true)
@@ -280,8 +285,11 @@ let monthlyChart: any = null
 let shareChart: any = null
 let stakeholderChart: any = null
 
-// 목업 데이터 사용 여부 (UI 테스트용)
-const useMockData = ref(true)
+// 목업 데이터 사용 여부 (UI 테스트용) - 실제 API 연동으로 변경
+const useMockData = ref(false)
+
+// API에서 가져온 데이터
+const apiData = ref<AnnualDistributionSummary | null>(null)
 
 // 지분자 색상
 const stakeholderColors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b']
@@ -391,12 +399,29 @@ const currentYear = new Date().getFullYear()
 const minYear = currentYear - 4
 const maxYear = currentYear + 1
 
+// 기본 빈 구간 정의
+const emptyTier: ShareTier = {
+  tierId: 0,
+  year: new Date().getFullYear(),
+  tierName: '-',
+  minAmount: 0,
+  maxAmount: null,
+  rates: []
+}
+
 const summary = computed<AnnualDistributionSummary>(() => {
   if (useMockData.value) {
     return mockDistributionSummary
   }
-  // 실제 데이터 사용 시 store에서 가져옴
-  return mockDistributionSummary // TODO: 실제 API 연동
+  // API 데이터가 있으면 사용, 없으면 빈 구조 반환
+  return apiData.value || {
+    year: selectedYear.value,
+    totalSalesAmount: 0,
+    currentTier: emptyTier,
+    totalDistributions: [],
+    totalUnpaidAmount: 0,
+    monthlyData: []
+  }
 })
 
 const monthlyData = computed(() => summary.value.monthlyData || [])
@@ -469,14 +494,80 @@ const getMonthPaymentStatusText = (item: MonthlyDistribution) => {
 const loadDashboard = async () => {
   loading.value = true
   try {
-    // TODO: 실제 API 호출
-    await new Promise(resolve => setTimeout(resolve, 300))
+    if (!useMockData.value) {
+      // 실제 API 호출
+      const response = await getAnnualCommissionSummary(selectedYear.value)
+      if (response) {
+        // 백엔드 응답을 프론트엔드 형식으로 변환
+        apiData.value = transformApiResponse(response)
+      }
+    }
   } catch (error) {
     console.error('대시보드 조회 실패:', error)
+    // API 실패 시 mock 데이터로 폴백하지 않고 빈 상태 유지
+    apiData.value = null
   } finally {
     loading.value = false
     await nextTick()
     renderCharts()
+  }
+}
+
+// 백엔드 응답을 프론트엔드 형식으로 변환
+const transformApiResponse = (response: any): AnnualDistributionSummary => {
+  // 백엔드 필드명과 프론트엔드 필드명 매핑
+  const totalDistributions: StakeholderDistribution[] = [
+    {
+      stakeholder: 'MANUFACTURER' as Stakeholder,
+      name: '제조사(OEM)',
+      rate: 0,
+      amount: response.totalOemAmount || 0,
+      paidAmount: 0,
+      unpaidAmount: response.totalOemAmount || 0
+    },
+    {
+      stakeholder: 'HEADQUARTERS' as Stakeholder,
+      name: '본사(대표)',
+      rate: 0,
+      amount: response.totalCeoAmount || 0,
+      paidAmount: 0,
+      unpaidAmount: response.totalCeoAmount || 0
+    },
+    {
+      stakeholder: 'AGENT' as Stakeholder,
+      name: '에코암스',
+      rate: 0,
+      amount: response.totalEcoarmsAmount || 0,
+      paidAmount: 0,
+      unpaidAmount: response.totalEcoarmsAmount || 0
+    },
+    {
+      stakeholder: 'PARTNER' as Stakeholder,
+      name: '영업담당자',
+      rate: 0,
+      amount: response.totalSalesRepAmount || 0,
+      paidAmount: 0,
+      unpaidAmount: response.totalSalesRepAmount || 0
+    }
+  ]
+
+  // 총 미지급 금액 계산
+  const totalUnpaidAmount = totalDistributions.reduce((sum, d) => sum + d.unpaidAmount, 0)
+
+  return {
+    year: response.year || selectedYear.value,
+    totalSalesAmount: response.totalSalesAmount || 0,
+    currentTier: response.appliedTier ? {
+      tierId: 0,
+      year: response.year || selectedYear.value,
+      tierName: response.appliedTier,
+      minAmount: 0,
+      maxAmount: null,
+      rates: []
+    } : emptyTier,
+    totalDistributions,
+    totalUnpaidAmount,
+    monthlyData: [] // 월별 데이터는 별도 API 필요 (추후 구현)
   }
 }
 

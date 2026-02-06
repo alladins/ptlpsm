@@ -139,6 +139,32 @@ export interface CommissionTier {
 }
 
 /**
+ * 커미션 비율 구간 (매출액 기반 - 본사/대리점/협력사)
+ */
+export interface CommissionRateTier {
+  /** 구간 ID */
+  id: number
+  /** 매출 하한 (원) */
+  minAmount: number
+  /** 매출 상한 (원, null이면 무제한) */
+  maxAmount: number | null
+  /** 본사 비율 (%) */
+  hqRate: number
+  /** 대리점 비율 (%) */
+  dealerRate: number
+  /** 협력사 비율 (%) */
+  partnerRate: number
+  /** 구간명 (예: '100억 미만', '100억~150억') */
+  tierName: string
+  /** 비고 */
+  remarks?: string
+  /** 생성일 */
+  createdAt?: string
+  /** 수정일 */
+  updatedAt?: string
+}
+
+/**
  * 연도별 커미션율 설정
  */
 export interface CommissionRateConfig {
@@ -500,4 +526,104 @@ export interface CommissionDashboardStats {
   totalUnpaidAmount: number
   /** 지급률 (%) */
   paymentRate: number
+}
+
+// ============ 중간정산 (Mid-term Settlement) ============
+
+/**
+ * 정산 유형
+ */
+export type PeriodicSettlementType =
+  | 'MID'     // 중간정산
+  | 'FINAL'   // 최종정산
+
+/**
+ * 정산 유형 라벨
+ */
+export const PERIODIC_SETTLEMENT_TYPE_LABELS: Record<PeriodicSettlementType, string> = {
+  MID: '중간정산',
+  FINAL: '최종정산'
+}
+
+/**
+ * 정산 상태
+ */
+export type PeriodicSettlementStatus =
+  | 'PENDING'     // 정산 대기
+  | 'COMPLETED'   // 정산 완료
+
+/**
+ * 정산 상태 라벨
+ */
+export const PERIODIC_SETTLEMENT_STATUS_LABELS: Record<PeriodicSettlementStatus, string> = {
+  PENDING: '정산 대기',
+  COMPLETED: '정산 완료'
+}
+
+/**
+ * 중간정산 정보
+ */
+export interface PeriodicSettlement extends BaseEntity {
+  /** 정산 ID (PK) */
+  settlementId: number
+  /** 정산일 */
+  settlementDate: string
+  /** 정산 유형 (MID/FINAL) */
+  settlementType: PeriodicSettlementType
+  /** 연도 */
+  year: number
+  /** 총 매출액 */
+  totalSalesAmount: number
+  /** 총 커미션 금액 */
+  totalCommissionAmount: number
+  /** 상태 */
+  status: PeriodicSettlementStatus
+  /** 비고 */
+  remarks?: string
+}
+
+/**
+ * 중간정산 생성 요청
+ */
+export interface CreatePeriodicSettlementRequest {
+  /** 정산 유형 */
+  settlementType: PeriodicSettlementType
+  /** 연도 */
+  year: number
+  /** 정산일 */
+  settlementDate: string
+  /** 비고 */
+  remarks?: string
+}
+
+/**
+ * 정산 이력 조회 파라미터
+ */
+export interface PeriodicSettlementSearchParams {
+  /** 연도 */
+  year?: number
+  /** 정산 유형 */
+  settlementType?: PeriodicSettlementType | ''
+  /** 상태 */
+  status?: PeriodicSettlementStatus | ''
+  /** 페이지 번호 */
+  page?: number
+  /** 페이지 크기 */
+  size?: number
+  /** 정렬 */
+  sort?: string
+}
+
+/**
+ * 정산 이력 목록 응답
+ */
+export interface PeriodicSettlementListResponse {
+  content: PeriodicSettlement[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+  first: boolean
+  last: boolean
+  empty: boolean
 }

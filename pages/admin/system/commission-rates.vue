@@ -235,8 +235,8 @@ const editForm = ref({
   isUnlimited: false
 })
 
-// 목업 데이터 사용 여부 (UI 테스트용)
-const useMockData = ref(true)
+// 목업 데이터 사용 여부 (UI 테스트용) - 실제 API 연동으로 변경
+const useMockData = ref(false)
 
 // 목업 데이터 정의 - 연간 매출 구간별 커미션율
 const mockTiers: Omit<CommissionTier, 'tierId' | 'year' | 'createdAt' | 'updatedAt'>[] = [

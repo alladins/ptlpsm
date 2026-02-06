@@ -25,7 +25,11 @@ import type {
   CommissionPaymentSearchParams,
   CommissionPaymentCreateRequest,
   CommissionPaymentCompleteRequest,
-  FundCommissionDetail
+  FundCommissionDetail,
+  PeriodicSettlement,
+  PeriodicSettlementListResponse,
+  PeriodicSettlementSearchParams,
+  CreatePeriodicSettlementRequest
 } from '~/types/commission'
 
 // ============ 커미션율 설정 ============
@@ -439,6 +443,103 @@ export async function cancelCommissionPayment(paymentId: number): Promise<boolea
     return data.success === true
   } catch (error) {
     console.error(`[Commission Service] 지급 취소 실패 (${paymentId}):`, error)
+    throw error
+  }
+}
+
+// ============ 중간정산 (Periodic Settlement) ============
+
+/**
+ * 중간정산 생성
+ * @param request - 중간정산 생성 요청
+ */
+export async function createPeriodicSettlement(
+  request: CreatePeriodicSettlementRequest
+): Promise<PeriodicSettlement> {
+  try {
+    const response = await fetch(COMMISSION_ENDPOINTS.createPeriodicSettlement(), {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(request)
+    })
+
+    if (!response.ok) {
+      throw new Error(`API 호출 실패: ${response.status}`)
+    }
+
+    const data = await response.json()
+    if (data.success && data.data) {
+      return data.data
+    }
+    return data
+  } catch (error) {
+    console.error('[Commission Service] 중간정산 생성 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * 정산 이력 목록 조회
+ * @param params - 검색 파라미터
+ */
+export async function getPeriodicSettlements(
+  params: PeriodicSettlementSearchParams
+): Promise<PeriodicSettlementListResponse> {
+  try {
+    const queryParams = new URLSearchParams()
+    if (params.year) queryParams.append('year', params.year.toString())
+    if (params.settlementType) queryParams.append('settlementType', params.settlementType)
+    if (params.status) queryParams.append('status', params.status)
+    if (params.page !== undefined) queryParams.append('page', params.page.toString())
+    if (params.size !== undefined) queryParams.append('size', params.size.toString())
+    if (params.sort) queryParams.append('sort', params.sort)
+
+    const url = `${COMMISSION_ENDPOINTS.periodicSettlements()}?${queryParams.toString()}`
+    const response = await fetch(url, {
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`API 호출 실패: ${response.status}`)
+    }
+
+    const data = await response.json()
+    if (data.success && data.data) {
+      return data.data
+    }
+    return data
+  } catch (error) {
+    console.error('[Commission Service] 정산 이력 조회 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * 정산 상세 조회
+ * @param settlementId - 정산 ID
+ */
+export async function getPeriodicSettlementDetail(
+  settlementId: number
+): Promise<PeriodicSettlement | null> {
+  try {
+    const response = await fetch(COMMISSION_ENDPOINTS.periodicSettlementDetail(settlementId), {
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null
+      }
+      throw new Error(`API 호출 실패: ${response.status}`)
+    }
+
+    const data = await response.json()
+    if (data.success && data.data) {
+      return data.data
+    }
+    return data
+  } catch (error) {
+    console.error(`[Commission Service] 정산 상세 조회 실패 (${settlementId}):`, error)
     throw error
   }
 }
