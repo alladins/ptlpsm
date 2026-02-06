@@ -9,7 +9,11 @@ import { STATISTICS_ENDPOINTS } from './api/endpoints'
 import { getAuthHeaders } from './api'
 import type {
   ShipmentStatisticsRequest,
-  ShipmentStatisticsResponse
+  ShipmentStatisticsResponse,
+  OemStatisticsResponse,
+  OemChartData,
+  BaselineStatisticsRequest,
+  BaselineStatisticsResponse
 } from '~/types/statistics'
 
 /**
@@ -83,6 +87,124 @@ export async function getShipmentStatistics(
     return transformedData
   } catch (error) {
     console.error('❌ 출하현황 통계 조회 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * OEM 제조사별 통계 조회
+ * @param year - 조회 연도
+ * @returns OEM 제조사별 통계 데이터
+ */
+export async function getOemStatistics(
+  year: number
+): Promise<OemStatisticsResponse> {
+  try {
+    const url = STATISTICS_ENDPOINTS.oem(year)
+
+    console.log('📊 OEM 통계 조회:', url)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch OEM statistics: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    // ApiResponse 형태인 경우 data 추출
+    const data = result.data ?? result
+
+    console.log('📊 OEM 통계 데이터:', data)
+
+    return data
+  } catch (error) {
+    console.error('❌ OEM 통계 조회 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * OEM 제조사별 월별 차트 데이터 조회
+ * @param year - 조회 연도
+ * @returns OEM 제조사별 월별 차트 데이터
+ */
+export async function getOemMonthlyChart(
+  year: number
+): Promise<OemChartData[]> {
+  try {
+    const url = STATISTICS_ENDPOINTS.oemChart(year)
+
+    console.log('📊 OEM 차트 데이터 조회:', url)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch OEM chart data: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    // ApiResponse 형태인 경우 data 추출
+    const data = result.data ?? result
+
+    console.log('📊 OEM 차트 데이터:', data)
+
+    return data
+  } catch (error) {
+    console.error('❌ OEM 차트 데이터 조회 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * 기성통계 조회
+ * @param params - 검색 조건
+ * @returns 기성통계 데이터
+ */
+export async function getBaselineStatistics(
+  params: BaselineStatisticsRequest
+): Promise<BaselineStatisticsResponse> {
+  try {
+    const queryParams = new URLSearchParams()
+
+    if (params.year) {
+      queryParams.append('year', params.year.toString())
+    }
+
+    if (params.status) {
+      queryParams.append('status', params.status)
+    }
+
+    const url = `${STATISTICS_ENDPOINTS.baseline()}?${queryParams.toString()}`
+
+    console.log('📊 기성통계 조회:', url)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch baseline statistics: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    // ApiResponse 형태인 경우 data 추출
+    const data = result.data ?? result
+
+    console.log('📊 기성통계 데이터:', data)
+
+    return data
+  } catch (error) {
+    console.error('❌ 기성통계 조회 실패:', error)
     throw error
   }
 }

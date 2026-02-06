@@ -2,10 +2,44 @@
   <div class="statistics-region">
     <PageHeader
       title="지역별 통계"
-      description="지역별 영업 현황을 통계로 확인합니다."
+      description="지역별 출하/매출 현황을 통계로 확인합니다."
     />
 
     <div class="content-section">
+      <!-- 검색 영역 -->
+      <div class="search-section">
+        <div class="search-form">
+          <div class="form-group">
+            <label>조회 시작일</label>
+            <input
+              v-model="searchParams.startDate"
+              type="date"
+              class="form-control"
+            />
+          </div>
+          <div class="form-group">
+            <label>조회 종료일</label>
+            <input
+              v-model="searchParams.endDate"
+              type="date"
+              class="form-control"
+            />
+          </div>
+          <div class="form-group">
+            <label>조회 단위</label>
+            <select v-model="searchParams.periodUnit" class="form-control">
+              <option value="daily">일별</option>
+              <option value="weekly">주별</option>
+              <option value="monthly">월별</option>
+            </select>
+          </div>
+          <button class="btn-action btn-primary" @click="loadStatistics">
+            <i class="fas fa-search"></i> 조회
+          </button>
+        </div>
+      </div>
+
+      <!-- 요약 카드 -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon">
@@ -13,30 +47,27 @@
           </div>
           <div class="stat-content">
             <h3>활성 지역수</h3>
-            <p class="stat-number">16</p>
-            <p class="stat-change positive">+2</p>
+            <p class="stat-number">{{ activeRegionCount }}</p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-building"></i>
+            <i class="fas fa-truck"></i>
           </div>
           <div class="stat-content">
-            <h3>총 고객사</h3>
-            <p class="stat-number">89</p>
-            <p class="stat-change positive">+5</p>
+            <h3>총 출하 건수</h3>
+            <p class="stat-number">{{ totalShipmentCount.toLocaleString() }}</p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-chart-pie"></i>
+            <i class="fas fa-won-sign"></i>
           </div>
           <div class="stat-content">
-            <h3>평균 영업금액</h3>
-            <p class="stat-number">₩138,715,494</p>
-            <p class="stat-change positive">+12.3%</p>
+            <h3>총 매출액</h3>
+            <p class="stat-number">{{ formatCurrency(totalSalesAmount) }}</p>
           </div>
         </div>
 
@@ -45,9 +76,9 @@
             <i class="fas fa-trophy"></i>
           </div>
           <div class="stat-content">
-            <h3>최고 영업지역</h3>
-            <p class="stat-number">서울</p>
-            <p class="stat-change">₩2.1B</p>
+            <h3>최고 매출 지역</h3>
+            <p class="stat-number">{{ topRegion.name || '-' }}</p>
+            <p class="stat-change">{{ formatCurrency(topRegion.amount) }}</p>
           </div>
         </div>
       </div>
@@ -74,32 +105,34 @@
 
       <div class="table-section">
         <h2>지역별 상세 현황</h2>
-        <div class="table-container">
+        <div v-if="loading" class="loading-message">
+          <i class="fas fa-spinner fa-spin"></i> 데이터를 불러오는 중...
+        </div>
+        <div v-else-if="regionData.length === 0" class="empty-message">
+          조회된 데이터가 없습니다.
+        </div>
+        <div v-else class="table-container">
           <table class="data-table">
             <thead>
               <tr>
                 <th>지역</th>
-                <th>고객수</th>
-                <th>영업건수</th>
-                <th>총 영업금액</th>
+                <th>출하 건수</th>
+                <th>총 매출액</th>
                 <th>평균 금액</th>
-                <th>성공률</th>
-                <th>담당자</th>
+                <th>납품완료율</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in regionData" :key="item.id">
+              <tr v-for="item in regionData" :key="item.region">
                 <td>{{ item.region }}</td>
-                <td>{{ item.customerCount }}</td>
-                <td>{{ item.salesCount }}</td>
-                <td>{{ item.totalAmount.toLocaleString() }}원</td>
-                <td>{{ item.averageAmount.toLocaleString() }}원</td>
+                <td>{{ item.orderCount.toLocaleString() }}건</td>
+                <td>{{ formatCurrency(item.shipmentAmount) }}</td>
+                <td>{{ formatCurrency(item.averageAmount) }}</td>
                 <td>
-                  <span class="success-rate" :class="getSuccessRateClass(item.successRate)">
-                    {{ item.successRate }}%
+                  <span class="success-rate" :class="getSuccessRateClass(item.completionRate)">
+                    {{ item.completionRate }}%
                   </span>
                 </td>
-                <td>{{ item.manager }}</td>
               </tr>
             </tbody>
           </table>
@@ -110,70 +143,91 @@
 </template>
 
 <script setup lang="ts">
+import { getShipmentStatistics } from '~/services/statistics.service'
+import type { RegionBreakdownItem, ShipmentStatisticsRequest } from '~/types/statistics'
+
 definePageMeta({
   layout: 'admin',
   pageTitle: '지역별통계'
 })
 
-// 임시 데이터
-const regionData = ref([
-  {
-    id: 1,
-    region: '서울',
-    customerCount: 25,
-    salesCount: 156,
-    totalAmount: 2100000000,
-    averageAmount: 13461538,
-    successRate: 85,
-    manager: '김영업'
-  },
-  {
-    id: 2,
-    region: '부산',
-    customerCount: 18,
-    salesCount: 98,
-    totalAmount: 1450000000,
-    averageAmount: 14795918,
-    successRate: 78,
-    manager: '이영업'
-  },
-  {
-    id: 3,
-    region: '대구',
-    customerCount: 12,
-    salesCount: 67,
-    totalAmount: 890000000,
-    averageAmount: 13283582,
-    successRate: 82,
-    manager: '박영업'
-  },
-  {
-    id: 4,
-    region: '인천',
-    customerCount: 15,
-    salesCount: 89,
-    totalAmount: 1120000000,
-    averageAmount: 12584270,
-    successRate: 75,
-    manager: '최영업'
-  },
-  {
-    id: 5,
-    region: '광주',
-    customerCount: 8,
-    salesCount: 45,
-    totalAmount: 580000000,
-    averageAmount: 12888889,
-    successRate: 80,
-    manager: '정영업'
-  }
-])
+// 상태 관리
+const loading = ref(false)
+const regionData = ref<(RegionBreakdownItem & { averageAmount: number })[]>([])
 
-const getSuccessRateClass = (rate: number) => {
+// 검색 파라미터
+const searchParams = ref<ShipmentStatisticsRequest>({
+  startDate: getDefaultStartDate(),
+  endDate: getDefaultEndDate(),
+  periodUnit: 'monthly'
+})
+
+// 요약 통계
+const activeRegionCount = computed(() => regionData.value.length)
+const totalShipmentCount = computed(() =>
+  regionData.value.reduce((sum, item) => sum + item.orderCount, 0)
+)
+const totalSalesAmount = computed(() =>
+  regionData.value.reduce((sum, item) => sum + item.shipmentAmount, 0)
+)
+const topRegion = computed(() => {
+  if (regionData.value.length === 0) {
+    return { name: '', amount: 0 }
+  }
+  const top = regionData.value.reduce((max, item) =>
+    item.shipmentAmount > max.shipmentAmount ? item : max
+  , regionData.value[0])
+  return { name: top.region, amount: top.shipmentAmount }
+})
+
+// 기본 날짜 설정 (최근 1년)
+function getDefaultStartDate(): string {
+  const date = new Date()
+  date.setFullYear(date.getFullYear() - 1)
+  return date.toISOString().split('T')[0]
+}
+
+function getDefaultEndDate(): string {
+  return new Date().toISOString().split('T')[0]
+}
+
+// 통계 데이터 로드
+async function loadStatistics() {
+  loading.value = true
+  try {
+    const response = await getShipmentStatistics(searchParams.value)
+
+    // 지역별 데이터에 평균 금액 계산 추가
+    regionData.value = response.regionBreakdown.map(item => ({
+      ...item,
+      averageAmount: item.orderCount > 0 ? Math.round(item.shipmentAmount / item.orderCount) : 0
+    }))
+
+    console.log('📊 지역별 통계 로드 완료:', regionData.value)
+  } catch (error) {
+    console.error('❌ 지역별 통계 조회 실패:', error)
+    alert('지역별 통계를 불러오는데 실패했습니다.')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 금액 포맷팅
+function formatCurrency(amount: number): string {
+  return `₩${amount.toLocaleString()}`
+}
+
+// 완료율 클래스 결정
+function getSuccessRateClass(rate: number): string {
   if (rate >= 80) return 'high'
   if (rate >= 70) return 'medium'
   return 'low'
 }
+
+// 초기 로드
+onMounted(() => {
+  loadStatistics()
+})
 </script>
 
 <style scoped>
@@ -191,6 +245,79 @@ const getSuccessRateClass = (rate: number) => {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+
+/* 검색 영역 */
+.search-section {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.search-form {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-control {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.btn-action {
+  padding: 0.5rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-action:hover {
+  background: #2563eb;
+}
+
+.btn-primary {
+  background: #3b82f6;
+}
+
+/* 로딩 및 빈 데이터 메시지 */
+.loading-message,
+.empty-message {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.loading-message i {
+  margin-right: 0.5rem;
 }
 
 .stats-grid {

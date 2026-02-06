@@ -79,10 +79,30 @@ export interface PeriodTrendItem {
 export interface RegionBreakdownItem {
   /** 지역명 */
   region: string
-  /** 납품요구 건수 */
+  /** 납품요구 건수 (실제로는 출하 건수) */
   orderCount: number
   /** 출하 금액 */
   shipmentAmount: number
+  /** 납품완료율 (%) */
+  completionRate: number
+}
+
+/** 지역별 통계 (확장) */
+export interface RegionalStatistics {
+  /** 지역 코드 */
+  regionCode: string
+  /** 지역명 */
+  regionName: string
+  /** 총 출하 건수 */
+  totalShipments: number
+  /** 총 매출액 */
+  totalSales: number
+  /** 총 주문 건수 */
+  totalOrders: number
+  /** 완료된 주문 건수 */
+  completedOrders: number
+  /** 평균 주문 금액 */
+  averageOrderValue: number
   /** 납품완료율 (%) */
   completionRate: number
 }
@@ -170,4 +190,112 @@ export const SHIPMENT_STATUS_COLORS: Record<ShipmentStatus, string> = {
   PENDING_SIGNATURE: 'pending-signature',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled'
+}
+
+// ============================================
+// OEM 제조사별 통계 타입
+// ============================================
+
+/** OEM 월별 통계 */
+export interface OemMonthlyStatistics {
+  oemId: number
+  oemName: string
+  month: string              // YYYY-MM
+  manufacturingCost: number  // 제조원가
+  paidAmount: number         // 지급액
+  remainingBalance?: number  // 잔금 (기존 호환)
+  unpaidAmount?: number      // 미지급액 (새 API)
+  paymentRate?: number       // 지급률 (%)
+}
+
+/** OEM 통계 요약 */
+export interface OemStatisticsSummary {
+  totalManufacturingCost: number
+  totalPaidAmount: number
+  totalRemainingBalance: number  // 미지급액 (잔금)
+  totalUnpaidAmount?: number     // 미지급액 (새 API용)
+  oemCount: number
+  paymentRate?: number           // 지급률 (%)
+}
+
+/** OEM 통계 응답 */
+export interface OemStatisticsResponse {
+  summary: OemStatisticsSummary
+  monthlyData: OemMonthlyStatistics[]
+  oemSummary?: OemAnnualSummary[]  // OEM별 연간 합계
+}
+
+/** OEM별 연간 합계 */
+export interface OemAnnualSummary {
+  oemId: number
+  oemName: string
+  shipmentCount: number           // 출하 건수
+  totalManufacturingCost: number  // 총 제조원가
+  totalPaidAmount: number         // 총 지급액
+  totalUnpaidAmount: number       // 총 미지급액
+  paymentRate: number             // 지급률 (%)
+}
+
+/** OEM 차트 데이터 (대시보드용) */
+export interface OemChartData {
+  month: string
+  data: {
+    oemId: number
+    oemName: string
+    manufacturingCost: number
+  }[]
+}
+
+// ============================================
+// 기성통계 타입
+// ============================================
+
+/** 기성통계 검색 요청 */
+export interface BaselineStatisticsRequest {
+  /** 조회 연도 (YYYY) */
+  year?: number
+  /** 상태 필터 (선택) */
+  status?: string
+}
+
+/** 기성통계 항목 */
+export interface BaselineStatisticsItem {
+  /** 차수 */
+  sequence: number
+  /** 발주 ID */
+  orderId: number
+  /** 납품요구번호 */
+  deliveryRequestNo: string
+  /** 수요기관 */
+  client: string
+  /** 사업명 */
+  projectName: string
+  /** 기성금액 */
+  amount: number
+  /** 상태 */
+  status: string
+  /** 승인일자 */
+  approvedDate: string | null
+  /** 생성일자 */
+  createdAt: string
+}
+
+/** 기성통계 요약 */
+export interface BaselineStatisticsSummary {
+  /** 총 건수 */
+  totalCount: number
+  /** 총 기성금액 */
+  totalAmount: number
+  /** 평균 기성금액 */
+  averageAmount: number
+  /** 최대 차수 */
+  maxSequence: number
+}
+
+/** 기성통계 응답 */
+export interface BaselineStatisticsResponse {
+  /** 요약 정보 */
+  summary: BaselineStatisticsSummary
+  /** 기성 목록 */
+  items: BaselineStatisticsItem[]
 }
