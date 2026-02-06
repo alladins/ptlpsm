@@ -209,8 +209,13 @@ function getRoleLabel(role: string | undefined | null): string {
 
 // 필터링된 사용자 목록
 const filteredUsers = computed(() => {
-  // 자기 자신 제외
-  return users.value.filter(user => user.userid !== authStore.user?.userid)
+  return users.value.filter(user => {
+    // 자기 자신 제외
+    if (user.userid === authStore.user?.userid) return false
+    // 역할 필터 적용 (selectedRole이 비어있으면 전체 표시)
+    if (selectedRole.value && user.role !== selectedRole.value) return false
+    return true
+  })
 })
 
 // 모달 열릴 때 사용자 목록 로드

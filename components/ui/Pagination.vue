@@ -65,11 +65,37 @@ const emit = defineEmits<Emits>()
 
 /**
  * 표시할 페이지 번호 배열
+ * 항상 고정된 개수(displayCount * 2 + 1)를 표시하도록 함
  */
 const visiblePages = computed(() => {
   const pages: number[] = []
-  const start = Math.max(0, props.currentPage - props.displayCount)
-  const end = Math.min(props.totalPages - 1, props.currentPage + props.displayCount)
+  const totalDisplay = props.displayCount * 2 + 1  // 표시할 총 페이지 수 (예: 2*2+1=5)
+
+  // 전체 페이지가 표시할 개수보다 적으면 전체 표시
+  if (props.totalPages <= totalDisplay) {
+    for (let i = 0; i < props.totalPages; i++) {
+      pages.push(i)
+    }
+    return pages
+  }
+
+  // 시작점 계산: 현재 페이지를 중앙에 두되, 범위를 벗어나지 않도록 조정
+  let start = props.currentPage - props.displayCount
+  let end = props.currentPage + props.displayCount
+
+  // 시작이 0보다 작으면 오른쪽으로 밀기
+  if (start < 0) {
+    end += Math.abs(start)
+    start = 0
+  }
+
+  // 끝이 totalPages를 넘으면 왼쪽으로 밀기
+  if (end > props.totalPages - 1) {
+    start -= (end - (props.totalPages - 1))
+    end = props.totalPages - 1
+    // start가 음수가 되지 않도록
+    if (start < 0) start = 0
+  }
 
   for (let i = start; i <= end; i++) {
     pages.push(i)

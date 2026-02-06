@@ -12,12 +12,12 @@
         <!-- 검색 영역 -->
         <div class="search-section">
           <div class="search-input-group">
-            <label>납품요구번호</label>
+            <label>출하NO</label>
             <input
               type="text"
-              v-model="searchParams.deliveryRequestNo"
+              v-model="searchParams.shipmentNo"
               class="form-input"
-              placeholder="납품요구번호를 입력하세요"
+              placeholder="출하NO를 입력하세요"
             >
             <button class="btn-primary" @click="search">
               <i class="fas fa-search"></i>
@@ -116,6 +116,13 @@ const props = defineProps<{
 // 로그인 사용자 정보
 const authStore = useAuthStore()
 const userCompanyId = computed(() => authStore.user?.companyId)
+const userRole = computed(() => authStore.user?.role)
+
+// 관리자 역할 (OEM 필터 적용 안함)
+const isAdminRole = computed(() => {
+  const adminRoles = ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER', 'SALES']
+  return adminRoles.includes(userRole.value || '')
+})
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -127,7 +134,7 @@ const { getStatusLabel } = useCommonStatus()
 
 // 상태 관리
 const searchParams = ref({
-  deliveryRequestNo: '',
+  shipmentNo: '',
 })
 const currentPage = ref(1)
 const totalPages = ref(1)
@@ -145,26 +152,31 @@ const changePage = async (page: number) => {
   await loadShipments()
 }
 
-// 출하 목록 로드 (PENDING 상태 + OEM 회사 필터링)
+// 출하 목록 로드 (운송 등록 가능한 출하만 필터링)
 const loadShipments = async () => {
   try {
     const response = await shipmentService.getShipments({
-      deliveryRequestNo: searchParams.value.deliveryRequestNo,
+      shipmentNo: searchParams.value.shipmentNo,
       page: currentPage.value - 1,
       size: 10,
       sort: 'createdAt,desc'
     })
 
     // 필터링 조건:
-    // 1. PENDING 상태만
-    // 2. OEM 제조사 == 로그인 사용자의 회사 (userCompanyId가 있을 때만)
+    // 1. 상태: PENDING 또는 IN_PROGRESS (운송 등록 가능한 상태)
+    // 2. OEM 회사 필터: OEM_MANAGER만 자신의 OEM 회사 출하만 표시
+    //    - SYSTEM_ADMIN, LEADPOWER_MANAGER, SALES: 모든 출하 표시
     const filteredShipments = response.content.filter(shipment => {
-      // PENDING 상태 필터
-      if (shipment.status !== 'PENDING') return false
+      // 상태 필터: PENDING 또는 IN_PROGRESS만 허용
+      const allowedStatuses = ['PENDING', 'IN_PROGRESS']
+      if (!allowedStatuses.includes(shipment.status)) return false
 
-      // OEM 회사 필터 (userCompanyId가 있을 때만 필터링, 관리자는 모두 표시)
-      if (userCompanyId.value && shipment.oemCompanyId !== userCompanyId.value) {
-        return false
+      // OEM 회사 필터 (관리자 역할은 필터링 제외)
+      // OEM_MANAGER만 자신의 OEM 회사 출하만 표시
+      if (!isAdminRole.value && userCompanyId.value) {
+        if (shipment.oemCompanyId !== userCompanyId.value) {
+          return false
+        }
       }
 
       return true
@@ -173,7 +185,7 @@ const loadShipments = async () => {
     shipments.value = filteredShipments
     totalPages.value = response.totalPages
 
-    console.log(`[출하 선택 팝업] 전체: ${response.content.length}개, 필터링 후: ${filteredShipments.length}개 (PENDING + OEM 회사 필터)`)
+    console.log(`[출하 선택 팝업] 전체: ${response.content.length}개, 필터링 후: ${filteredShipments.length}개 (역할: ${userRole.value}, 관리자: ${isAdminRole.value})`)
   } catch (error) {
     console.error('출하 목록 로드 오류:', error)
     shipments.value = []
