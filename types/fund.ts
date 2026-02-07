@@ -867,6 +867,20 @@ export interface FundSummary {
 }
 
 /**
+ * OEM 원가 재계산 미리보기
+ */
+export interface OemCostRecalcPreview {
+  fundId: number
+  deliveryDoneId: number | null
+  hasDeliveryDone: boolean
+  currentOemExpectedTotal: number
+  newOemExpectedTotal: number
+  normalItemTotal?: number
+  bgradeItemTotal?: number
+  difference: number
+}
+
+/**
  * 납품확인/완료계 버튼 상태 응답
  */
 export interface DeliveryButtonState {

@@ -13,7 +13,9 @@ import type {
   OemCostSearchParams,
   OemCostStatistics,
   OemCostPageResponse,
-  SkuWithoutOemCost
+  SkuWithoutOemCost,
+  AffectedOrder,
+  RecalcResult
 } from '~/types/oem-cost'
 
 class OemCostService {
@@ -142,7 +144,7 @@ class OemCostService {
    * 원가 삭제 (soft delete)
    */
   async delete(id: number, reason?: string): Promise<void> {
-    const queryParams = reason ? `?reason=${encodeURIComponent(reason)}` : ''
+    const queryParams = reason ? `?changeReason=${encodeURIComponent(reason)}` : ''
     const response = await fetch(`${OEM_COST_ENDPOINTS.delete(id)}${queryParams}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
@@ -212,6 +214,44 @@ class OemCostService {
 
     if (!response.ok) {
       throw new Error(`미설정 SKU 조회 실패: ${response.status}`)
+    }
+
+    return response.json()
+  }
+  /**
+   * 영향받는 주문 목록 조회 (원가 변경 시 재계산 대상)
+   */
+  async getAffectedOrders(skuId: string, oemCompanyId: number, startDate?: string, endDate?: string): Promise<AffectedOrder[]> {
+    const params = new URLSearchParams({ skuId, oemCompanyId: oemCompanyId.toString() })
+    if (startDate) params.append('startDate', startDate)
+    if (endDate) params.append('endDate', endDate)
+
+    const url = `${OEM_COST_ENDPOINTS.affectedOrders()}?${params.toString()}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`영향 주문 조회 실패: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  /**
+   * 선택 재계산 실행
+   */
+  async recalculateSelected(deliveryDoneIds: number[]): Promise<RecalcResult[]> {
+    const url = OEM_COST_ENDPOINTS.recalculate()
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(deliveryDoneIds)
+    })
+
+    if (!response.ok) {
+      throw new Error(`재계산 실패: ${response.status}`)
     }
 
     return response.json()

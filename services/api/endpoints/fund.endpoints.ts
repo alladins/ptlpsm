@@ -308,5 +308,27 @@ export const FUND_ENDPOINTS = {
   deliveryButtonState: (orderId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/funds/by-order/${orderId}/delivery-button-state`
+  },
+
+  // ============ OEM 원가 재계산 ============
+
+  /**
+   * OEM 원가 재계산 미리보기 (DB 변경 없음)
+   * @param fundId - 자금 ID
+   * @returns GET /admin/funds/{fundId}/recalculate-oem-cost/preview
+   */
+  previewOemCostRecalculation: (fundId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/funds/${fundId}/recalculate-oem-cost/preview`
+  },
+
+  /**
+   * OEM 원가 재계산 실행
+   * @param fundId - 자금 ID
+   * @returns POST /admin/funds/{fundId}/recalculate-oem-cost
+   */
+  recalculateOemCost: (fundId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/funds/${fundId}/recalculate-oem-cost`
   }
 } as const

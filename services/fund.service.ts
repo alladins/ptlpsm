@@ -831,6 +831,42 @@ export const fundService = {
     }
   },
 
+  // ============ OEM 원가 재계산 ============
+
+  /**
+   * OEM 원가 재계산 미리보기 (DB 변경 없음)
+   */
+  async previewOemCostRecalculation(fundId: number): Promise<import('~/types/fund').OemCostRecalcPreview> {
+    const url = FUND_ENDPOINTS.previewOemCostRecalculation(fundId)
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`재계산 미리보기 실패: ${response.status}`)
+    }
+
+    return response.json()
+  },
+
+  /**
+   * OEM 원가 재계산 실행
+   */
+  async recalculateOemCost(fundId: number): Promise<any> {
+    const url = FUND_ENDPOINTS.recalculateOemCost(fundId)
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`재계산 실패: ${response.status}`)
+    }
+
+    return response.json()
+  },
+
   /**
    * 선급금 버튼 활성화 가능 여부 확인
    * GET /admin/funds/by-order/{orderId}/advance-payment-eligible

@@ -4,6 +4,15 @@
       <h4>OEM 지급 현황</h4>
       <div class="tab-actions">
         <button
+          class="btn-recalc"
+          :disabled="!needsRecalculation || isRecalculating"
+          :title="recalcDisabledReason || '현재 원가 기준으로 OEM 예정총액을 재계산합니다'"
+          @click="emit('recalculateOemCost')"
+        >
+          <i class="fas" :class="isRecalculating ? 'fa-spinner fa-spin' : 'fa-calculator'"></i>
+          {{ isRecalculating ? '재계산 중...' : '원가 재계산' }}
+        </button>
+        <button
           class="btn-warning"
           :disabled="!canAdjustBgrade"
           :title="bgradeButtonTitle"
@@ -18,6 +27,32 @@
         </button>
       </div>
     </div>
+
+    <!-- 재계산 경고 배너 -->
+    <div v-if="needsRecalculation" class="recalc-banner">
+      <div class="recalc-banner-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="recalc-banner-content">
+        <div class="recalc-banner-title">OEM 원가가 변경되어 재계산이 필요합니다</div>
+        <div class="recalc-banner-detail">
+          현재: <strong>{{ formatCurrency(recalcPreview!.currentOemExpectedTotal) }}</strong>
+          → 재계산 시: <strong>{{ formatCurrency(recalcPreview!.newOemExpectedTotal) }}</strong>
+          <span class="recalc-diff" :class="recalcPreview!.difference > 0 ? 'diff-up' : 'diff-down'">
+            ({{ recalcPreview!.difference > 0 ? '+' : '' }}{{ formatCurrency(recalcPreview!.difference) }})
+          </span>
+        </div>
+      </div>
+      <button
+        class="recalc-banner-btn"
+        :disabled="isRecalculating"
+        @click="emit('recalculateOemCost')"
+      >
+        <i class="fas" :class="isRecalculating ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+        {{ isRecalculating ? '처리 중...' : '원가 재계산' }}
+      </button>
+    </div>
+
     <!-- OEM 지급 요약 -->
     <div class="oem-summary-card">
       <div class="summary-item">
@@ -110,7 +145,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { OemPayment } from '~/types/fund'
+import type { OemPayment, OemCostRecalcPreview } from '~/types/fund'
 import { formatCurrency } from '~/utils/format'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
 
@@ -125,10 +160,19 @@ interface Props {
   canAdjustBgrade: boolean
   /** B급 조정 버튼 툴팁 */
   bgradeButtonTitle?: string
+  /** DB의 OEM 예정총액 */
+  oemExpectedTotal?: number
+  /** 재계산 미리보기 결과 */
+  recalcPreview?: OemCostRecalcPreview | null
+  /** 재계산 중 로딩 상태 */
+  isRecalculating?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  bgradeButtonTitle: ''
+  bgradeButtonTitle: '',
+  oemExpectedTotal: 0,
+  recalcPreview: null,
+  isRecalculating: false
 })
 
 const emit = defineEmits<{
@@ -140,7 +184,21 @@ const emit = defineEmits<{
   confirmDeleteOem: [oem: OemPayment]
   /** B급 조정 모달 열기 */
   openBgradeModal: []
+  /** OEM 원가 재계산 */
+  recalculateOemCost: []
 }>()
+
+// 재계산 필요 여부
+const needsRecalculation = computed(() => {
+  return props.recalcPreview && props.recalcPreview.difference !== 0
+})
+
+// 재계산 버튼 비활성화 사유
+const recalcDisabledReason = computed(() => {
+  if (!props.recalcPreview) return '납품완료 정보가 없습니다'
+  if (props.recalcPreview.difference === 0) return '현재 원가와 동일합니다'
+  return ''
+})
 
 // 상태 포맷팅 함수
 const { getOemPaymentStatusClass, getOemPaymentStatusLabel } = useFundStatusFormatters()
@@ -404,6 +462,115 @@ const oemExpectedAmount = computed(() => Math.floor((props.progressPaymentTotal 
   color: #059669;
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+/* 재계산 경고 배너 */
+.recalc-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 0.875rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.recalc-banner-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f59e0b;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.875rem;
+}
+
+.recalc-banner-content {
+  flex: 1;
+}
+
+.recalc-banner-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.25rem;
+}
+
+.recalc-banner-detail {
+  font-size: 0.8125rem;
+  color: #a16207;
+}
+
+.recalc-banner-detail strong {
+  color: #78350f;
+}
+
+.recalc-diff {
+  font-weight: 600;
+}
+
+.recalc-diff.diff-up {
+  color: #dc2626;
+}
+
+.recalc-diff.diff-down {
+  color: #059669;
+}
+
+.recalc-banner-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.recalc-banner-btn:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.recalc-banner-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 재계산 버튼 */
+.btn-recalc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-recalc:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.btn-recalc:disabled {
+  background: #c4b5fd;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* 버튼 스타일 */

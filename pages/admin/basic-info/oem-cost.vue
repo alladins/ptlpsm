@@ -309,6 +309,19 @@
       :unit-price="historyTarget.unitPrice"
       @close="closeHistoryModal"
     />
+
+    <!-- 재계산 모달 -->
+    <OemCostRecalcModal
+      :is-open="showRecalcModal"
+      :sku-id="recalcContext.skuId"
+      :oem-company-id="recalcContext.oemCompanyId"
+      :sku-name="recalcContext.skuName"
+      :oem-company-name="recalcContext.oemCompanyName"
+      :cost-change="recalcContext.costChange"
+      @close="showRecalcModal = false"
+      @recalculated="loadData(); loadStatistics()"
+    />
+
   </div>
 </template>
 
@@ -329,6 +342,7 @@ useHead({
 import Pagination from '~/components/ui/Pagination.vue'
 import OemCostModal from '~/components/admin/oem-cost/OemCostModal.vue'
 import OemCostHistoryModal from '~/components/admin/oem-cost/OemCostHistoryModal.vue'
+import OemCostRecalcModal from '~/components/admin/oem-cost/OemCostRecalcModal.vue'
 import { oemCostService } from '~/services/oem-cost.service'
 import { companyService } from '~/services/company.service'
 import {
@@ -406,6 +420,16 @@ const historyTarget = reactive({
   oemCompanyName: '',
   currentCost: null as OemCost | null,
   unitPrice: 0
+})
+
+// 재계산 모달 상태
+const showRecalcModal = ref(false)
+const recalcContext = reactive({
+  skuId: '',
+  oemCompanyId: 0,
+  skuName: '',
+  oemCompanyName: '',
+  costChange: { oldCost: 0, newCost: 0 }
 })
 
 // 데이터 로드
@@ -545,10 +569,21 @@ const closeCostModal = () => {
 }
 
 // 저장 완료
-const handleCostSaved = () => {
+const handleCostSaved = (data: OemCost, context?: { skuId: string, oemCompanyId: number, oldCost: number, newCost: number }) => {
   closeCostModal()
   loadData()
   loadStatistics()
+
+  // 원가 변경 시 재계산 모달 표시
+  if (context && context.oldCost !== context.newCost) {
+    const oemName = oemCompanies.value.find(c => c.id === context.oemCompanyId)?.companyName || 'OEM'
+    recalcContext.skuId = context.skuId
+    recalcContext.oemCompanyId = context.oemCompanyId
+    recalcContext.skuName = data.skuName || data.skuId || context.skuId
+    recalcContext.oemCompanyName = oemName
+    recalcContext.costChange = { oldCost: context.oldCost, newCost: context.newCost }
+    showRecalcModal.value = true
+  }
 }
 
 // 이력 모달 열기

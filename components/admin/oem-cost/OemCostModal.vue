@@ -269,7 +269,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'saved', data: OemCost): void
+  (e: 'saved', data: OemCost, context: { skuId: string, oemCompanyId: number, oldCost: number, newCost: number }): void
 }>()
 
 // 상태
@@ -428,7 +428,14 @@ const handleSubmit = async () => {
     // 성공 애니메이션
     isSuccess.value = true
     setTimeout(() => {
-      emit('saved', savedData.value!)
+      const oldCost = isEditMode.value ? (props.editData?.costPrice || 0) : 0
+      const context = {
+        skuId: props.skuInfo!.skuId,
+        oemCompanyId: savedData.value!.oemCompanyId,
+        oldCost,
+        newCost: savedData.value!.costPrice
+      }
+      emit('saved', savedData.value!, context)
       handleClose()
     }, 1500)
 

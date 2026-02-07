@@ -226,12 +226,16 @@
           :oem-payments="oemPayments"
           :progress-payment-total="fundDetail?.progressPaymentTotal || 0"
           :oem-paid-total="oemPaidTotal"
+          :oem-expected-total="fundDetail?.oemExpectedTotal || 0"
+          :recalc-preview="recalcPreview"
+          :is-recalculating="isRecalculating"
           :can-adjust-bgrade="canAdjustBgrade"
           :bgrade-button-title="bgradeButtonTitle"
           @open-oem-modal="openOemPaymentModal()"
           @open-oem-complete-modal="openOemCompleteModal"
           @confirm-delete-oem="confirmDeleteOemPayment"
           @open-bgrade-modal="openBgradeModal"
+          @recalculate-oem-cost="handleRecalculateOemCost"
         />
 
       </div>
@@ -345,7 +349,7 @@ import FundBalanceTab from '~/components/fund/FundBalanceTab.vue'
 import { baselineService } from '~/services/baseline.service'
 import { fundService } from '~/services/fund.service'
 import { advancePaymentService } from '~/services/advance-payment.service'
-import type { AdvancePdfType, AdvancePayment, OemPayment } from '~/types/fund'
+import type { AdvancePdfType, AdvancePayment, OemPayment, OemCostRecalcPreview } from '~/types/fund'
 import { shipmentService, type ShipmentListItem } from '~/services/shipment.service'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
 import { useFundCalculations } from '~/composables/useFundCalculations'
@@ -385,6 +389,10 @@ const availableShipments = ref<any[]>([])  // 청구 가능한 출하 목록
 // 출하 목록 상태 (B급 조정 가능 여부 판단용)
 const shipments = ref<ShipmentListItem[]>([])
 const shipmentsLoading = ref(false)
+
+// OEM 원가 재계산 상태
+const recalcPreview = ref<OemCostRecalcPreview | null>(null)
+const isRecalculating = ref(false)
 
 // 선급금 버튼 활성화 조건 상태
 const advanceEligibility = ref({
@@ -776,12 +784,45 @@ watch(() => fundDetail.value?.orderId, async (orderId) => {
   }
 }, { immediate: true })
 
-// OEM 탭 클릭 시 출하 목록 조회
+// OEM 탭 클릭 시 출하 목록 조회 + 재계산 미리보기
 watch(activeTab, async (newTab) => {
-  if (newTab === 'oem' && shipments.value.length === 0) {
-    await loadShipments()
+  if (newTab === 'oem') {
+    if (shipments.value.length === 0) {
+      await loadShipments()
+    }
+    // 미리보기 API 호출하여 재계산 필요 여부 확인
+    try {
+      recalcPreview.value = await fundService.previewOemCostRecalculation(fundId.value)
+    } catch (e) {
+      recalcPreview.value = null
+    }
   }
 })
+
+// OEM 원가 재계산 실행
+const handleRecalculateOemCost = async () => {
+  if (!recalcPreview.value || recalcPreview.value.difference === 0) return
+
+  const confirmed = confirm(
+    `OEM 예정총액을 현재 원가 기준으로 재계산합니다.\n\n` +
+    `현재: ${formatCurrency(recalcPreview.value.currentOemExpectedTotal)}\n` +
+    `재계산: ${formatCurrency(recalcPreview.value.newOemExpectedTotal)}\n\n` +
+    `진행하시겠습니까?`
+  )
+  if (!confirmed) return
+
+  try {
+    isRecalculating.value = true
+    await fundService.recalculateOemCost(fundId.value)
+    await loadData()
+    recalcPreview.value = null
+    alert('재계산이 완료되었습니다.')
+  } catch (e) {
+    alert(e instanceof Error ? e.message : '재계산에 실패했습니다.')
+  } finally {
+    isRecalculating.value = false
+  }
+}
 
 // 초기 로드
 onMounted(() => {

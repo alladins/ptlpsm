@@ -87,5 +87,17 @@ export const OEM_COST_ENDPOINTS = {
   skusWithoutCost: () => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/oem-costs/skus-without-cost`
+  },
+
+  // 영향받는 주문 목록 조회 (원가 변경 시 재계산 대상)
+  affectedOrders: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/oem-costs/affected-orders`
+  },
+
+  // 선택 재계산 실행
+  recalculate: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/oem-costs/recalculate`
   }
 }

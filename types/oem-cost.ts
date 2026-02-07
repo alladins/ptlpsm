@@ -175,6 +175,30 @@ export const getMarginRateClass = (marginRate: number | null): string => {
 }
 
 /**
+ * 영향받는 주문 정보 (원가 변경 시 재계산 대상)
+ */
+export interface AffectedOrder {
+  deliveryDoneId: number
+  deliveryRequestNo: string | null
+  projectName: string | null
+  client: string | null
+  fundId: number | null
+  currentOemExpectedTotal: number
+  shipmentDate: string | null
+}
+
+/**
+ * 선택 재계산 결과
+ */
+export interface RecalcResult {
+  deliveryDoneId: number
+  oldAmount: number
+  newAmount: number
+  success: boolean
+  error?: string
+}
+
+/**
  * OEM 원가 상태 계산
  */
 export const calculateOemCostStatus = (item: OemCost): OemCostStatus => {
