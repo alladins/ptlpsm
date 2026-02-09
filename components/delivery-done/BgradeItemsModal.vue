@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="modal-overlay" @click="closeModal">
+    <div v-if="isOpen" class="modal-overlay">
       <div class="modal" @click.stop>
         <!-- 헤더 -->
         <div class="modal-header">
@@ -91,13 +91,13 @@
                   <!-- 품목 헤더 -->
                   <div
                     class="accordion-header"
-                    :class="{ 'no-cost': !item.costPrice }"
-                    @click="item.costPrice ? toggleAccordion(item) : null"
+                    :class="{ 'no-cost': !item.costPrice || item.shipmentQuantity <= 0 }"
+                    @click="(item.costPrice && item.shipmentQuantity > 0) ? toggleAccordion(item) : null"
                   >
                     <i class="fas" :class="expandedSkuId === item.skuId ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
                     <span class="item-name">{{ item.skuName }}</span>
                     <span class="item-spec">{{ item.specification }}</span>
-                    <span class="item-qty">{{ item.shipmentQuantity }}{{ item.unit }}</span>
+                    <span class="item-qty" :class="{ 'qty-zero': item.shipmentQuantity <= 0 }">{{ item.shipmentQuantity }}{{ item.unit }}</span>
                     <span v-if="item.costPrice" class="item-price" title="OEM 원가">@{{ formatCurrency(item.costPrice) }}</span>
                     <span v-else class="item-price cost-warning" title="OEM 원가 미설정">원가 미설정</span>
                   </div>
@@ -190,7 +190,7 @@
               <div class="summary-list">
                 <div v-for="item in bgradeItems" :key="item.id" class="summary-item">
                   <div class="item-info">
-                    <span class="item-name">{{ item.itemName }}</span>
+                    <span class="item-name">{{ item.itemName }},{{ item.skuName }}</span>
                     <span class="item-detail">
                       {{ item.quantity }}{{ item.unit }} × @{{ formatCurrency(item.adjustedUnitPrice) }}
                     </span>
@@ -795,6 +795,11 @@ watch(selectedShipmentId, async (newId) => {
   font-size: 0.8125rem;
   color: #64748b;
   font-feature-settings: 'tnum';
+}
+
+.item-qty.qty-zero {
+  color: #dc2626;
+  font-weight: 600;
 }
 
 .item-price {

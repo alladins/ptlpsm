@@ -54,6 +54,8 @@ export interface BgradeItemResponse {
   skuId: string
   /** 품목명 */
   itemName: string
+  /** SKU명 */
+  skuName: string
   /** 규격 */
   specification: string
   /** B급 수량 */

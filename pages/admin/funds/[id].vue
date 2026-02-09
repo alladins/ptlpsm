@@ -227,6 +227,7 @@
           :progress-payment-total="fundDetail?.progressPaymentTotal || 0"
           :oem-paid-total="oemPaidTotal"
           :oem-expected-total="fundDetail?.oemExpectedTotal || 0"
+          :oem-total-scheduled="oemTotalScheduled"
           :recalc-preview="recalcPreview"
           :is-recalculating="isRecalculating"
           :can-adjust-bgrade="canAdjustBgrade"
@@ -304,6 +305,7 @@
       :oem-expected-total="fundDetail?.oemExpectedTotal || 0"
       :advance-payment-rate="getAdvancePaymentRate()"
       :oem-total-paid="fundDetail?.oemTotalPaid || 0"
+      :oem-total-scheduled="oemTotalScheduled"
       :oem-companies="oemCompanies"
       @close="closeOemPaymentModal"
       @submitted="handleOemPaymentSubmitted"
@@ -421,11 +423,16 @@ const hasAdvancePayment = computed(() => fundStore.hasAdvancePayment)
 /** 선급금 상세 정보 (첫 번째 선급금 이력) */
 const advanceDetail = computed<AdvancePayment | null>(() => fundStore.advances[0] || null)
 
-// OEM 지급 완료 총액 계산
+// OEM 지급 완료 총액 계산 (PAID만)
 const oemPaidTotal = computed(() => {
   return oemPayments.value
     .filter(p => p.status === 'PAID' && p.paidAmount)
     .reduce((sum, p) => sum + (p.paidAmount || 0), 0)
+})
+
+// OEM 전체 지급 합계 (PENDING + PAID 모두 포함, 예정총액 초과 방지용)
+const oemTotalScheduled = computed(() => {
+  return oemPayments.value.reduce((sum, p) => sum + (p.scheduledAmount || 0), 0)
 })
 
 // 수금 완료된 기성금 목록 (OEM 지급 대상)

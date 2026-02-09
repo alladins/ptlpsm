@@ -450,8 +450,10 @@ interface Props {
   oemExpectedTotal?: number
   /** 선급금 비율 (%) */
   advancePaymentRate?: number
-  /** 기존 OEM 지급 총액 */
+  /** 기존 OEM 지급 총액 (PAID만) */
   oemTotalPaid?: number
+  /** 기존 OEM 지급 합계 (PENDING + PAID 모두 포함, 예정총액 초과 방지용) */
+  oemTotalScheduled?: number
   /** OEM 제조사 목록 (출하 기준) */
   oemCompanies?: OemCompany[]
 }
@@ -465,6 +467,7 @@ const props = withDefaults(defineProps<Props>(), {
   oemExpectedTotal: 0,
   advancePaymentRate: 0,
   oemTotalPaid: 0,
+  oemTotalScheduled: undefined,
   oemCompanies: () => []
 })
 
@@ -548,20 +551,22 @@ const advanceOemPaymentAmount = computed(() => {
   return Math.floor((props.oemExpectedTotal || 0) * (props.advancePaymentRate || 0) / 100)
 })
 
-// OEM 선급금 미완납 여부 (선급금 지급 예정액보다 적게 지급된 경우)
+// OEM 선급금 미완납 여부 (선급금 지급 예정액보다 적게 등록된 경우, PENDING+PAID 포함)
 const advanceOemNotFullyPaid = computed(() => {
   if (!props.hasAdvancePayment) return false
-  return (props.oemTotalPaid || 0) < advanceOemPaymentAmount.value
+  const totalScheduled = props.oemTotalScheduled ?? (props.oemTotalPaid || 0)
+  return totalScheduled < advanceOemPaymentAmount.value
 })
 
-// OEM 지급 잔여 한도 (선급금 모드: 선급금 지급 예정액 - 기존 지급총액)
+// OEM 지급 잔여 한도 (PENDING + PAID 모두 포함하여 계산)
 const remainingOemLimit = computed(() => {
+  const totalScheduled = props.oemTotalScheduled ?? (props.oemTotalPaid || 0)
   if (props.hasAdvancePayment) {
     // 선급금 모드: 선급금 지급 예정액이 상한
-    return Math.max(0, Math.floor(advanceOemPaymentAmount.value - (props.oemTotalPaid || 0)))
+    return Math.max(0, Math.floor(advanceOemPaymentAmount.value - totalScheduled))
   }
   // 일반 모드: 전체 OEM 예정총액이 상한
-  return Math.max(0, Math.floor((props.oemExpectedTotal || 0) - (props.oemTotalPaid || 0)))
+  return Math.max(0, Math.floor((props.oemExpectedTotal || 0) - totalScheduled))
 })
 
 // Methods
@@ -694,11 +699,13 @@ const validateForm = (): boolean => {
     return false
   }
 
-  // 금액 초과 검증 (OEM예정총액 기준)
+  // 금액 초과 검증 (PENDING + PAID 모두 포함)
+  const totalScheduled = props.oemTotalScheduled ?? (props.oemTotalPaid || 0)
   if (props.oemExpectedTotal && props.oemExpectedTotal > 0) {
-    const newTotal = (props.oemTotalPaid || 0) + formData.amount
+    const newTotal = totalScheduled + formData.amount
     if (newTotal > props.oemExpectedTotal) {
-      alert(`OEM 지급 총액(${formatCurrency(newTotal)})이 OEM 예정 총액(${formatCurrency(props.oemExpectedTotal)})을 초과합니다.\n금액을 조정해주세요.`)
+      const remaining = Math.max(0, props.oemExpectedTotal - totalScheduled)
+      alert(`OEM 지급 합계(${formatCurrency(newTotal)})가 OEM 예정 총액(${formatCurrency(props.oemExpectedTotal)})을 초과합니다.\n잔여 등록 가능 금액: ${formatCurrency(remaining)}`)
       return false
     }
   }
@@ -763,12 +770,13 @@ const resetForm = () => {
   errors.amount = undefined
   errors.paymentDate = undefined
   selectedPaymentIds.value = []
-  // 선급금 모드용 표시 금액 초기화 (선급금 예정액 기준)
+  // 선급금 모드용 표시 금액 초기화 (PENDING + PAID 포함)
+  const totalScheduled = props.oemTotalScheduled ?? (props.oemTotalPaid || 0)
   if (props.hasAdvancePayment) {
     const advanceAmount = Math.floor((props.oemExpectedTotal || 0) * (props.advancePaymentRate || 0) / 100)
-    displayRemainingAmount.value = Math.max(0, advanceAmount - (props.oemTotalPaid || 0))
+    displayRemainingAmount.value = Math.max(0, advanceAmount - totalScheduled)
   } else {
-    displayRemainingAmount.value = Math.floor((props.oemExpectedTotal || 0) - (props.oemTotalPaid || 0))
+    displayRemainingAmount.value = Math.floor((props.oemExpectedTotal || 0) - totalScheduled)
   }
 }
 

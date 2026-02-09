@@ -21,7 +21,12 @@
           <i class="fas fa-tags"></i>
           B급 조정
         </button>
-        <button class="btn-primary" @click="emit('openOemModal')">
+        <button
+          class="btn-primary"
+          :disabled="isOemRegistrationDisabled"
+          :title="isOemRegistrationDisabled ? 'OEM 예정총액에 도달하여 추가 등록 불가' : ''"
+          @click="emit('openOemModal')"
+        >
           <i class="fas fa-plus"></i>
           지급 등록
         </button>
@@ -162,6 +167,8 @@ interface Props {
   bgradeButtonTitle?: string
   /** DB의 OEM 예정총액 */
   oemExpectedTotal?: number
+  /** OEM 지급 합계 (PENDING + PAID) */
+  oemTotalScheduled?: number
   /** 재계산 미리보기 결과 */
   recalcPreview?: OemCostRecalcPreview | null
   /** 재계산 중 로딩 상태 */
@@ -171,6 +178,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   bgradeButtonTitle: '',
   oemExpectedTotal: 0,
+  oemTotalScheduled: 0,
   recalcPreview: null,
   isRecalculating: false
 })
@@ -205,6 +213,17 @@ const { getOemPaymentStatusClass, getOemPaymentStatusLabel } = useFundStatusForm
 
 // OEM 지급 예정 금액 (기성금의 70%)
 const oemExpectedAmount = computed(() => Math.floor((props.progressPaymentTotal || 0) * 0.7))
+
+// OEM 잔여 등록 가능 금액 (PENDING + PAID 합계 기준)
+const oemRemainingLimit = computed(() => {
+  const total = props.oemTotalScheduled ?? props.oemPaidTotal
+  return Math.max(0, (props.oemExpectedTotal || 0) - total)
+})
+
+// 지급 등록 불가 여부 (예정총액에 도달 시)
+const isOemRegistrationDisabled = computed(() => {
+  return (props.oemExpectedTotal || 0) > 0 && oemRemainingLimit.value <= 0
+})
 </script>
 
 <style scoped>
