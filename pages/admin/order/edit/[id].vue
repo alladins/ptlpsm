@@ -449,6 +449,7 @@ import FormField from '~/components/admin/forms/FormField.vue'
 import CollectionConfirmModal from '~/components/fund/CollectionConfirmModal.vue'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { usePermission } from '~/composables/usePermission'
+import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
 
 definePageMeta({
   layout: 'admin',
@@ -460,7 +461,10 @@ const route = useRoute()
 const orderId = computed(() => Number(route.params.id))
 
 // 권한
-const { canEdit, canDelete, isFullAccess } = usePermission()
+const { canEdit, isFullAccess } = usePermission()
+
+// 자금 관련 상태 포맷터 (useFundStatusFormatters composable 사용)
+const { getPaymentStatusClass, getPaymentStatusLabel, getSignatureStatusClass, getSignatureStatusLabel, isSignatureCompleted } = useFundStatusFormatters()
 
 // 상태
 const loading = ref(true)
@@ -709,103 +713,7 @@ const loadFundSummary = async () => {
   }
 }
 
-// 기성 유형 클래스
-const getBaselineTypeClass = (type?: BaselineType): string => {
-  if (!type) return ''
-  switch (type) {
-    case 'PROGRESS':
-      return 'type-progress'
-    case 'FINAL':
-      return 'type-final'
-    default:
-      return ''
-  }
-}
-
-// 기성 유형 라벨
-const getBaselineTypeLabel = (type?: BaselineType): string => {
-  if (!type) return '-'
-  const labels: Record<BaselineType, string> = {
-    PROGRESS: '기성',
-    FINAL: '납품완료'
-  }
-  return labels[type] || type
-}
-
-// 기성 상태 클래스
-const getBaselineStatusClass = (status?: BaselineStatus): string => {
-  if (!status) return ''
-  switch (status) {
-    case 'DRAFT':
-      return 'status-draft'
-    case 'PENDING_SIGNATURE':
-      return 'status-pending'
-    case 'CONFIRMED':
-      return 'status-confirmed'
-    case 'CANCELLED':
-      return 'status-cancelled'
-    default:
-      return ''
-  }
-}
-
-// 기성 상태 라벨
-const getBaselineStatusLabel = (status?: BaselineStatus): string => {
-  if (!status) return '-'
-  const labels: Record<BaselineStatus, string> = {
-    DRAFT: '작성중',
-    PENDING_SIGNATURE: '서명대기',
-    CONFIRMED: '확정',
-    CANCELLED: '취소'
-  }
-  return labels[status] || status
-}
-
-// 서명 상태 클래스
-const getSignatureStatusClass = (status?: SignatureStatus): string => {
-  if (!status) return 'signature-pending'
-  return SIGNATURE_STATUS_CLASSES[status] || 'signature-pending'
-}
-
-// 서명 상태 라벨
-const getSignatureStatusLabel = (status?: SignatureStatus): string => {
-  if (!status) return '서명대기'
-  return SIGNATURE_STATUS_LABELS[status] || '서명대기'
-}
-
-// 서명 완료 여부
-const isSignatureCompleted = (status?: SignatureStatus): boolean => {
-  return status === 'SIGNATURE_COMPLETED'
-}
-
-// 결제 상태 클래스 (자금관리와 동일)
-const getPaymentStatusClass = (status?: PaymentStatus): string => {
-  if (!status) return ''
-  switch (status) {
-    case 'REQUESTED':
-      return 'status-requested'
-    case 'APPROVED':
-      return 'status-approved'
-    case 'PAID':
-      return 'status-paid'
-    case 'REJECTED':
-      return 'status-rejected'
-    default:
-      return ''
-  }
-}
-
-// 결제 상태 라벨 (자금관리와 동일)
-const getPaymentStatusLabel = (status?: PaymentStatus): string => {
-  if (!status) return '-'
-  const labels: Record<PaymentStatus, string> = {
-    REQUESTED: '요청',
-    APPROVED: '승인',
-    PAID: '지급완료',
-    REJECTED: '반려'
-  }
-  return labels[status] || status
-}
+// 자금 관련 헬퍼 함수는 useFundStatusFormatters composable에서 가져옴
 
 // 주문 상태 헬퍼 함수
 const getOrderStatusClass = (status?: string): string => {

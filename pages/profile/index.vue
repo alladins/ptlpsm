@@ -531,6 +531,7 @@ definePageMeta({
 // API 서비스
 import { userService } from '~/services/user.service'
 import { formatPhoneNumberInput, normalizeEmail } from '~/utils/format'
+import { isValidEmail, isValidPhone } from '~/utils/validators'
 
 // 반응형 데이터
 const currentUser = ref<any>({
@@ -563,10 +564,7 @@ const profileForm = ref({
   department: '',
   position: '',
   employeeNumber: '',
-  companyName: '',
-  address: '',
-  addressDetail: '',
-  zipCode: ''
+  companyName: ''
 })
 
 // 비밀번호 변경 폼
@@ -600,17 +598,7 @@ const passwordValidationErrors = ref<{
   confirmPassword: ''
 })
 
-// 이메일 유효성 검사 함수
-const isValidEmail = (email: string) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
-}
-
-// 전화번호 유효성 검사 함수
-const isValidPhone = (phone: string) => {
-  const phoneRegex = /^\d{3}-\d{4}-\d{4}$/
-  return phoneRegex.test(phone)
-}
+// 유효성 검사 함수는 ~/utils/validators에서 import 사용
 
 // 전화번호 입력 처리 함수 (공통 함수 사용 - 길이 제한 포함)
 const handlePhoneInput = (event: Event) => {
@@ -735,10 +723,7 @@ const openEditModal = () => {
     department: currentUser.value.department || '',
     position: currentUser.value.position || '',
     employeeNumber: currentUser.value.employeeNumber || '',
-    companyName: currentUser.value.companyName || '',
-    address: currentUser.value.address || '',
-    addressDetail: currentUser.value.addressDetail || '',
-    zipCode: currentUser.value.zipCode || ''
+    companyName: currentUser.value.companyName || ''
   }
   // 유효성 검사 오류 초기화
   validationErrors.value = {
