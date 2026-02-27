@@ -153,6 +153,32 @@ export interface OemCostPageResponse {
 }
 
 /**
+ * 트리 구조 - SKU 부모 행
+ */
+export interface OemCostTreeItem {
+  skuId: string
+  skuName: string
+  itemClassificationNumber?: string
+  itemName?: string
+  unitPrice?: number
+  oemCount: number
+  oemCosts: OemCostListItem[]
+}
+
+/**
+ * 트리 페이지 응답
+ */
+export interface OemCostTreePageResponse {
+  content: OemCostTreeItem[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+  first: boolean
+  last: boolean
+}
+
+/**
  * 마진율 계산 유틸리티
  */
 export const calculateMarginRate = (unitPrice?: number, costPrice?: number): number | null => {

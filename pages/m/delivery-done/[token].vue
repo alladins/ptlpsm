@@ -111,13 +111,21 @@
               <th class="text-center">품목</th>
               <th class="text-center">규격</th>
               <th class="text-right">수량</th>
+              <th class="text-center">비고</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index) in deliveryDoneInfo?.items" :key="item.itemId">
+            <tr v-for="(item, index) in deliveryDoneInfo?.items" :key="item.itemId"
+                :class="{ 'row-merge-source': (item?.orderedQuantity ?? 0) === 0 }">
               <td class="text-center">{{ item.itemName ?? '-' }}</td>
               <td class="text-center spec-cell">{{ extractSpecification(item.specification) }}</td>
               <td class="text-right">{{ formatQuantity(item.orderedQuantity) }} {{ item.unit ?? '' }}</td>
+              <td class="text-center remark-cell">
+                <span v-if="getMergeLabel(item?.remarks)" class="merge-badge" :style="{ backgroundColor: getMergeLabel(item?.remarks)?.color }">
+                  {{ getMergeLabel(item?.remarks)?.label }}
+                </span>
+                <span v-else>-</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -239,6 +247,23 @@ const currentView = computed(() => {
     return 'main'
   }
 })
+
+// 합지 배지 라벨 추출
+const getMergeLabel = (remarks: string | null | undefined): { label: string; color: string } | null => {
+  if (!remarks) return null
+
+  // 합지 결과 품목 (타겟)
+  if (remarks.includes('에서 병합됨') || remarks.includes('추가 병합')) {
+    return { label: '합지 결과', color: '#3b82f6' }
+  }
+
+  // 합지 소스 품목
+  if (remarks.includes('병합:') || remarks.includes('에서 이전')) {
+    return { label: '합지 소스', color: '#8b5cf6' }
+  }
+
+  return null
+}
 
 // 규격 문자열에서 마지막 부분만 추출 (쉼표로 분리)
 function extractSpecification(specification: string | null | undefined): string {
@@ -373,6 +398,9 @@ async function handleSignatureSave(blob: Blob) {
     // 서명 컴포넌트를 저장됨 상태로 변경 (지우기 버튼 비활성화, 녹색 메시지 표시)
     signatureRef.value?.markAsSaved()
 
+    // "서명 완료" 버튼 활성화
+    hasSignature.value = true
+
     // 서버 메시지 표시
     alert(result.message)
   } catch (err) {
@@ -439,7 +467,15 @@ async function handleSubmit() {
 
 // 페이지 닫기
 function closePage() {
-  window.close()
+  // window.close()는 window.open()으로 열린 창에서만 동작
+  // 모바일 SMS 링크에서 열린 경우 동작하지 않으므로 카운트다운만 표시
+  try {
+    window.close()
+  } catch {
+    // 닫기 실패 시 무시 - 완료 화면이 계속 표시됨
+  }
+  // 닫기 실패 시 카운트다운을 0으로 설정하여 "닫기" 버튼만 유지
+  autoCloseCountdown.value = 0
 }
 </script>
 

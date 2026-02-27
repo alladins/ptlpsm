@@ -340,12 +340,22 @@ export async function getDeliveryDoneByToken(
     })
 
     if (!response.ok) {
-      if (response.status === 410) {
-        throw new Error('토큰이 만료되었습니다.')
-      } else if (response.status === 404) {
-        throw new Error('유효하지 않은 토큰입니다.')
+      // 백엔드 응답 본문에서 한국어 에러 메시지 추출
+      let errorMessage = '서명 정보를 불러올 수 없습니다.'
+      try {
+        const errorBody = await response.json()
+        if (errorBody.message) {
+          errorMessage = errorBody.message
+        }
+      } catch {
+        // JSON 파싱 실패 시 상태 코드별 기본 메시지
+        if (response.status === 410) {
+          errorMessage = '서명 링크가 만료되었습니다. 관리자에게 새 링크를 요청해주세요.'
+        } else if (response.status === 404) {
+          errorMessage = '유효하지 않은 서명 링크입니다. 관리자에게 문의해주세요.'
+        }
       }
-      throw new Error(`Failed to fetch delivery done by token: ${response.statusText}`)
+      throw new Error(errorMessage)
     }
 
     return await response.json()
@@ -377,7 +387,16 @@ export async function submitSignature(
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to submit signature: ${response.statusText}`)
+      let errorMessage = '서명 제출에 실패했습니다.'
+      try {
+        const errorBody = await response.json()
+        if (errorBody.message) {
+          errorMessage = errorBody.message
+        }
+      } catch {
+        // JSON 파싱 실패 시 기본 메시지 유지
+      }
+      throw new Error(errorMessage)
     }
 
     return await response.json()

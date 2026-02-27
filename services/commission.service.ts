@@ -100,15 +100,8 @@ export async function getCommissionSettlements(
   params: CommissionSettlementSearchParams
 ): Promise<CommissionSettlementListResponse> {
   try {
-    const queryParams = new URLSearchParams()
-    if (params.year) queryParams.append('year', params.year.toString())
-    if (params.status) queryParams.append('status', params.status)
-    if (params.search) queryParams.append('search', params.search)
-    if (params.page !== undefined) queryParams.append('page', params.page.toString())
-    if (params.size !== undefined) queryParams.append('size', params.size.toString())
-    if (params.sort) queryParams.append('sort', params.sort)
-
-    const url = `${COMMISSION_ENDPOINTS.settlements()}?${queryParams.toString()}`
+    const year = params.year || new Date().getFullYear()
+    const url = `${COMMISSION_ENDPOINTS.settlementsByYear(year)}`
     const response = await fetch(url, {
       headers: getAuthHeaders()
     })

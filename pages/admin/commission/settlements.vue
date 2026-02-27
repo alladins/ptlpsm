@@ -306,7 +306,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { useCommissionStore } from '~/stores/commission'
-import { formatCurrency } from '~/utils/format'
+import { useCommissionFilter } from '~/composables/admin/useCommissionFilter'
+import { formatCurrency, formatDate } from '~/utils/format'
 import type { CommissionSettlement, CommissionSettlementStatus } from '~/types/commission'
 import { COMMISSION_SETTLEMENT_STATUS_LABELS } from '~/types/commission'
 
@@ -318,174 +319,32 @@ definePageMeta({
 const router = useRouter()
 const commissionStore = useCommissionStore()
 
-// State
-const loading = ref(true)
-const selectedYear = ref(new Date().getFullYear())
+// 페이지 고유 상태
 const selectedStatus = ref<CommissionSettlementStatus | ''>('')
 const searchKeyword = ref('')
 const selectedIds = ref<number[]>([])
 const showDetailModal = ref(false)
 const selectedSettlement = ref<CommissionSettlement | null>(null)
 
-// 목업 데이터 사용 여부 (UI 테스트용) - 실제 API 연동으로 변경
-const useMockData = ref(false)
-
-// 목업 데이터 정의 - 대리점(영업직원)별 커미션 정산 목록 (15% 지분)
-const mockSettlements: CommissionSettlement[] = [
-  {
-    settlementId: 1,
-    fundId: 101,
-    deliveryRequestNo: 'DR-2026-0001',
-    projectName: '서울시청 사무용품 납품',
-    client: '서울특별시청',
-    contractTotalAmount: 450_000_000,
-    salesAmount: 450_000_000,
-    appliedRate: 15.0,
-    commissionAmount: 67_500_000, // 4.5억 × 15%
-    status: 'PAID',
-    confirmedAt: '2026-02-15',
-    paidAt: '2026-02-28',
-    paymentId: 1,
-    remarks: '대리점: 김영업 (서울/경기)'
-  },
-  {
-    settlementId: 2,
-    fundId: 102,
-    deliveryRequestNo: 'DR-2026-0015',
-    projectName: '경기도교육청 IT장비 납품',
-    client: '경기도교육청',
-    contractTotalAmount: 680_000_000,
-    salesAmount: 680_000_000,
-    appliedRate: 15.0,
-    commissionAmount: 102_000_000, // 6.8억 × 15%
-    status: 'PAID',
-    confirmedAt: '2026-03-20',
-    paidAt: '2026-03-31',
-    paymentId: 2,
-    remarks: '대리점: 김영업 (서울/경기)'
-  },
-  {
-    settlementId: 3,
-    fundId: 103,
-    deliveryRequestNo: 'DR-2026-0028',
-    projectName: '부산광역시 소방장비 납품',
-    client: '부산광역시 소방본부',
-    contractTotalAmount: 320_000_000,
-    salesAmount: 320_000_000,
-    appliedRate: 15.0,
-    commissionAmount: 48_000_000, // 3.2억 × 15%
-    status: 'CONFIRMED',
-    confirmedAt: '2026-06-10',
-    remarks: '대리점: 이판매 (부산/경남) - 지급 대기'
-  },
-  {
-    settlementId: 4,
-    fundId: 104,
-    deliveryRequestNo: 'DR-2026-0042',
-    projectName: '인천시 환경장비 납품',
-    client: '인천광역시 환경공단',
-    contractTotalAmount: 280_000_000,
-    salesAmount: 280_000_000,
-    appliedRate: 15.0,
-    commissionAmount: 42_000_000, // 2.8억 × 15%
-    status: 'CONFIRMED',
-    confirmedAt: '2026-07-05',
-    remarks: '대리점: 김영업 (서울/경기)'
-  },
-  {
-    settlementId: 5,
-    fundId: 105,
-    deliveryRequestNo: 'DR-2026-0056',
-    projectName: '대전시 의료장비 납품',
-    client: '대전광역시 보건환경연구원',
-    contractTotalAmount: 420_000_000,
-    salesAmount: 420_000_000,
-    appliedRate: 15.0,
-    commissionAmount: 63_000_000, // 4.2억 × 15%
-    status: 'CALCULATED',
-    remarks: '대리점: 박세일 (대전/충청) - 정산 검토 중'
-  },
-  {
-    settlementId: 6,
-    fundId: 106,
-    deliveryRequestNo: 'DR-2026-0071',
-    projectName: '광주시 교육기자재 납품',
-    client: '광주광역시교육청',
-    contractTotalAmount: 180_000_000,
-    salesAmount: 180_000_000,
-    appliedRate: 15.0,
-    commissionAmount: 27_000_000, // 1.8억 × 15%
-    status: 'CALCULATED',
-    remarks: '대리점: 최거래 (광주/전라)'
-  },
-  {
-    settlementId: 7,
-    fundId: 107,
-    deliveryRequestNo: 'DR-2026-0085',
-    projectName: '세종시 사무가구 납품',
-    client: '세종특별자치시청',
-    contractTotalAmount: 150_000_000,
-    salesAmount: 150_000_000,
-    appliedRate: 15.0,
-    commissionAmount: 22_500_000, // 1.5억 × 15%
-    status: 'PENDING',
-    remarks: '대리점: 박세일 (대전/충청) - 납품 완료, 정산 대기'
-  },
-  {
-    settlementId: 8,
-    fundId: 108,
-    deliveryRequestNo: 'DR-2026-0099',
-    projectName: '울산시 산업장비 납품',
-    client: '울산광역시청',
-    contractTotalAmount: 370_000_000,
-    salesAmount: 370_000_000,
-    appliedRate: 15.0,
-    commissionAmount: 55_500_000, // 3.7억 × 15%
-    status: 'PENDING',
-    remarks: '대리점: 정딜러 (대구/경북) - 수금 진행 중'
+// 공통 필터 (연도, 로딩, 데이터 로드)
+const { selectedYear, loading, availableYears, loadData: loadSettlementsData } = useCommissionFilter({
+  loadFunction: async () => {
+    selectedIds.value = []
+    await commissionStore.fetchSettlements({
+      year: selectedYear.value,
+      status: selectedStatus.value || undefined,
+      search: searchKeyword.value || undefined,
+      page: 0,
+      size: 20
+    })
   }
-]
-
-// 목업 페이지네이션
-const mockPagination = {
-  page: 0,
-  size: 20,
-  total: mockSettlements.length,
-  totalPages: 1
-}
-
-// Computed
-const availableYears = computed(() => {
-  const currentYear = new Date().getFullYear()
-  return Array.from({ length: 5 }, (_, i) => currentYear + 1 - i)
 })
 
 const settlements = computed(() => {
-  if (useMockData.value) {
-    // 상태 필터 적용
-    let filtered = [...mockSettlements]
-    if (selectedStatus.value) {
-      filtered = filtered.filter(s => s.status === selectedStatus.value)
-    }
-    // 검색어 필터 적용
-    if (searchKeyword.value) {
-      const keyword = searchKeyword.value.toLowerCase()
-      filtered = filtered.filter(s =>
-        s.deliveryRequestNo.toLowerCase().includes(keyword) ||
-        s.projectName.toLowerCase().includes(keyword)
-      )
-    }
-    return filtered
-  }
   return commissionStore.settlements
 })
+
 const pagination = computed(() => {
-  if (useMockData.value) {
-    return {
-      ...mockPagination,
-      total: settlements.value.length
-    }
-  }
   return commissionStore.settlementPagination
 })
 
@@ -508,27 +367,7 @@ const isAllSelected = computed(() => {
 })
 
 // Methods
-const loadSettlements = async () => {
-  loading.value = true
-  selectedIds.value = []
-  try {
-    // 목업 데이터 모드가 아닐 때만 실제 API 호출
-    if (!useMockData.value) {
-      await commissionStore.fetchSettlements({
-        year: selectedYear.value,
-        status: selectedStatus.value || undefined,
-        search: searchKeyword.value || undefined,
-        page: 0,
-        size: 20
-      })
-    }
-    // 목업 모드에서는 computed가 자동으로 필터링 처리함
-  } catch (error) {
-    console.error('정산 목록 조회 실패:', error)
-  } finally {
-    loading.value = false
-  }
-}
+const loadSettlements = () => loadSettlementsData()
 
 const changePage = async (page: number) => {
   loading.value = true
@@ -567,15 +406,6 @@ const getStatusClass = (status: CommissionSettlementStatus): string => {
 
 const getStatusLabel = (status: CommissionSettlementStatus): string => {
   return COMMISSION_SETTLEMENT_STATUS_LABELS[status] || status
-}
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  })
 }
 
 const goToFundDetail = (fundId: number) => {
@@ -736,19 +566,8 @@ onMounted(() => {
   background: #2563eb;
 }
 
-/* 로딩 컨테이너 */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  color: #6b7280;
-}
-
+/* 로딩 컨테이너 - 색상 커스터마이징 */
 .loading-container i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
   color: #3b82f6;
 }
 
@@ -1005,106 +824,21 @@ onMounted(() => {
   margin: 0;
 }
 
-/* 페이지네이션 */
+/* 페이지네이션 - 커스터마이징 */
 .pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
   padding-top: 1.25rem;
   margin-top: 1.25rem;
   border-top: 1px solid #e5e7eb;
 }
 
-.page-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid #d1d5db;
-  background: white;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
 .page-btn:hover:not(:disabled) {
   background: #3b82f6;
   border-color: #3b82f6;
-  color: white;
 }
 
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-info {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-/* 모달 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
+/* 모달 - admin-modals.css 사용 (중복 제거됨) */
 .modal-content {
-  background: white;
-  border-radius: 16px;
-  width: 100%;
   max-width: 600px;
-  max-height: 90vh;
-  overflow: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.modal-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #f3f4f6;
-  border-radius: 8px;
-  cursor: pointer;
-  color: #6b7280;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: #e5e7eb;
-  color: #1f2937;
-}
-
-.modal-body {
-  padding: 1.5rem;
 }
 
 .detail-grid {
@@ -1154,44 +888,10 @@ onMounted(() => {
   color: #8b5cf6;
 }
 
-.modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.btn-secondary {
-  padding: 0.625rem 1.25rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
+/* 모달 푸터 및 버튼 - admin-modals.css/admin-buttons.css 사용 (중복 제거됨) */
+/* 페이지 전용 색상 커스터마이징 */
 .btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
   background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
 }
 
 .btn-primary:hover {

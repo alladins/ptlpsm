@@ -272,35 +272,36 @@
       </div>
     </div>
 
-    <!-- 등록 모달 -->
-    <div v-if="showAddModal" class="modal-overlay">
+    <!-- 품목 등록/수정 통합 모달 -->
+    <div v-if="showAddModal || showEditModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
-          <h3>품목 등록</h3>
+          <h3>{{ showAddModal ? '품목 등록' : '품목 수정' }}</h3>
           <button class="modal-close" @click="closeModal">
             <i class="fas fa-times"></i>
           </button>
         </div>
 
         <div class="modal-body">
-          <form @submit.prevent="submitAdd" class="item-form">
+          <form @submit.prevent="handleFormSubmit" class="item-form">
             <div class="form-row">
               <div class="form-group">
                 <label>품목코드 *</label>
-                <input 
-                  v-model="formData.itemId" 
-                  type="text" 
+                <input
+                  v-model="formData.itemId"
+                  type="text"
                   required
                   placeholder="품목코드"
                   maxlength="50"
                   class="form-input"
+                  :disabled="showEditModal"
                 >
               </div>
               <div class="form-group">
                 <label>품목명 *</label>
-                <input 
-                  v-model="formData.itemNm" 
-                  type="text" 
+                <input
+                  v-model="formData.itemNm"
+                  type="text"
                   required
                   placeholder="품목명"
                   maxlength="200"
@@ -312,9 +313,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label>품목유형</label>
-                <input 
-                  v-model="formData.itemTypeCd" 
-                  type="text" 
+                <input
+                  v-model="formData.itemTypeCd"
+                  type="text"
                   placeholder="품목유형"
                   maxlength="100"
                   class="form-input"
@@ -322,9 +323,9 @@
               </div>
               <div class="form-group">
                 <label>단위</label>
-                <input 
-                  v-model="formData.unitCd" 
-                  type="text" 
+                <input
+                  v-model="formData.unitCd"
+                  type="text"
                   placeholder="단위"
                   maxlength="20"
                   class="form-input"
@@ -335,9 +336,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label>너비 (mm)</label>
-                <input 
-                  v-model="formData.width" 
-                  type="number" 
+                <input
+                  v-model="formData.width"
+                  type="number"
                   step="0.01"
                   placeholder="0.00"
                   class="form-input"
@@ -345,9 +346,9 @@
               </div>
               <div class="form-group">
                 <label>높이 (mm)</label>
-                <input 
-                  v-model="formData.height" 
-                  type="number" 
+                <input
+                  v-model="formData.height"
+                  type="number"
                   step="0.01"
                   placeholder="0.00"
                   class="form-input"
@@ -358,9 +359,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label>두께 (mm)</label>
-                <input 
-                  v-model="formData.thickness" 
-                  type="number" 
+                <input
+                  v-model="formData.thickness"
+                  type="number"
                   step="0.01"
                   placeholder="0.00"
                   class="form-input"
@@ -368,9 +369,9 @@
               </div>
               <div class="form-group">
                 <label>단가 (원)</label>
-                <input 
-                  v-model="formData.unitPrice" 
-                  type="number" 
+                <input
+                  v-model="formData.unitPrice"
+                  type="number"
                   step="0.01"
                   placeholder="0"
                   class="form-input"
@@ -391,8 +392,8 @@
             <div class="form-row">
               <div class="form-group full-width">
                 <label>설명</label>
-                <textarea 
-                  v-model="formData.description" 
+                <textarea
+                  v-model="formData.description"
                   placeholder="품목 설명"
                   rows="3"
                   class="form-textarea"
@@ -403,148 +404,7 @@
             <div class="form-actions">
               <button type="submit" class="btn-primary">
                 <i class="fas fa-save"></i>
-                <span>등록</span>
-              </button>
-              <button type="button" class="btn-secondary" @click="closeModal">
-                <i class="fas fa-times"></i>
-                <span>취소</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- 수정 모달 -->
-    <div v-if="showEditModal" class="modal-overlay">
-      <div class="modal" @click.stop>
-        <div class="modal-header">
-          <h3>품목 수정</h3>
-          <button class="modal-close" @click="closeModal">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <form @submit.prevent="submitEdit" class="item-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label>품목코드</label>
-                <input 
-                  v-model="formData.itemId" 
-                  type="text" 
-                  disabled
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>품목명 *</label>
-                <input 
-                  v-model="formData.itemNm" 
-                  type="text" 
-                  required
-                  placeholder="품목명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>품목유형</label>
-                <input 
-                  v-model="formData.itemTypeCd" 
-                  type="text" 
-                  placeholder="품목유형"
-                  maxlength="100"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>단위</label>
-                <input 
-                  v-model="formData.unitCd" 
-                  type="text" 
-                  placeholder="단위"
-                  maxlength="20"
-                  class="form-input"
-                >
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>너비 (mm)</label>
-                <input 
-                  v-model="formData.width" 
-                  type="number" 
-                  step="0.01"
-                  placeholder="0.00"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>높이 (mm)</label>
-                <input 
-                  v-model="formData.height" 
-                  type="number" 
-                  step="0.01"
-                  placeholder="0.00"
-                  class="form-input"
-                >
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>두께 (mm)</label>
-                <input 
-                  v-model="formData.thickness" 
-                  type="number" 
-                  step="0.01"
-                  placeholder="0.00"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>단가 (원)</label>
-                <input 
-                  v-model="formData.unitPrice" 
-                  type="number" 
-                  step="0.01"
-                  placeholder="0"
-                  class="form-input"
-                >
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>사용여부</label>
-                <select v-model="formData.useYn" class="form-select">
-                  <option value="Y">사용</option>
-                  <option value="N">미사용</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group full-width">
-                <label>설명</label>
-                <textarea 
-                  v-model="formData.description" 
-                  placeholder="품목 설명"
-                  rows="3"
-                  class="form-textarea"
-                ></textarea>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button type="submit" class="btn-primary">
-                <i class="fas fa-save"></i>
-                <span>수정</span>
+                <span>{{ showAddModal ? '등록' : '수정' }}</span>
               </button>
               <button type="button" class="btn-secondary" @click="closeModal">
                 <i class="fas fa-times"></i>
@@ -718,76 +578,6 @@
                </div>
              </div>
 
-             <!-- 주석처리된 필드들
-             <div class="form-row">
-               <div class="form-group">
-                 <label>너비</label>
-                 <input 
-                   v-model="specForm.width" 
-                   type="text" 
-                   placeholder="너비"
-                   maxlength="50"
-                   class="form-input"
-                 >
-               </div>
-               <div class="form-group">
-                 <label>높이</label>
-                 <input 
-                   v-model="specForm.height" 
-                   type="text" 
-                   placeholder="높이"
-                   maxlength="50"
-                   class="form-input"
-                 >
-               </div>
-             </div>
-
-             <div class="form-row">
-               <div class="form-group">
-                 <label>두께</label>
-                 <input 
-                   v-model="specForm.thickness" 
-                   type="text" 
-                   placeholder="두께"
-                   maxlength="50"
-                   class="form-input"
-                 >
-               </div>
-               <div class="form-group">
-                 <label>무게</label>
-                 <input 
-                   v-model="specForm.weight" 
-                   type="text" 
-                   placeholder="무게"
-                   maxlength="50"
-                   class="form-input"
-                 >
-               </div>
-             </div>
-
-             <div class="form-row">
-               <div class="form-group">
-                 <label>재질</label>
-                 <input 
-                   v-model="specForm.material" 
-                   type="text" 
-                   placeholder="재질"
-                   maxlength="100"
-                   class="form-input"
-                 >
-               </div>
-               <div class="form-group">
-                 <label>색상</label>
-                 <input 
-                   v-model="specForm.color" 
-                   type="text" 
-                   placeholder="색상"
-                   maxlength="50"
-                   class="form-input"
-                 >
-               </div>
-             </div>
-             -->
 
             <div class="form-actions">
               <button type="submit" class="btn-primary">
@@ -1077,24 +867,7 @@ const searchItems = () => {
   search()
 }
 
-// 검색 초기화 - 리팩토링: useDataTable의 reset 사용
-const resetSearch = () => {
-  searchForm.value = {
-    keyword: '',
-    useYn: ''
-  }
-  reset()
-}
 
-// 페이지 변경 - 리팩토링: useDataTable의 changePage 사용
-const handlePageChange = (page: number) => {
-  changePage(page)
-}
-
-// 페이지 크기 변경 - 리팩토링: useDataTable의 changePageSize 사용
-const handlePageSizeChange = () => {
-  changePageSize(pageSize.value)
-}
 
 // 등록 모달 열기
 const openAddModal = () => {
@@ -1305,10 +1078,19 @@ const validateSkuForm = async (): Promise<boolean> => {
   return true
 }
 
+// 통합 폼 제출 핸들러
+const handleFormSubmit = async () => {
+  if (showAddModal.value) {
+    await submitAdd()
+  } else {
+    await submitEdit()
+  }
+}
+
 // 등록
 const submitAdd = async () => {
   if (!(await validateForm())) return
-  
+
   try {
     await itemService.createItem(formData.value)
     closeModal()
@@ -1699,14 +1481,19 @@ onMounted(() => {
 
 <style scoped>
 /* ============================================
-   리팩토링: 공통 스타일은 admin-common.css 사용
-   - 래퍼 스타일 (.item-management, .item-management-container)
-   - 버튼 스타일 (.btn-primary, .btn-secondary, .btn-edit, .btn-delete)
-   - 폼 스타일 (.form-input, .form-select)
-   - 테이블 스타일 (.data-table)
+   공통 CSS Import
    ============================================ */
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-tables.css';
+@import '@/assets/css/admin-modals.css';
 
-/* 페이지 특화 스타일만 작성 */
+/* ============================================
+   페이지 특화 스타일만 작성
+   - 공통 CSS에 이미 정의된 스타일은 제거됨
+   - .form-input, .form-select, .btn-primary, .btn-secondary 등은 공통 CSS 사용
+   - .data-table, .modal-overlay, .modal 등은 공통 CSS 사용
+   ============================================ */
 
 /* 컴팩트 페이지 헤더 */
 .page-header-compact {
@@ -1917,21 +1704,7 @@ onMounted(() => {
 }
 
 /* 기존 form-row, form-group 등은 모달에서 사용 */
-.form-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 150px;
-  flex: 1;
-}
-
+/* .form-row, .form-group은 admin-common.css에서 제공 */
 .form-group.button-group {
   display: flex;
   flex-direction: row;
@@ -2016,158 +1789,19 @@ onMounted(() => {
   transform: translateY(0);
 }
 
-.form-group label {
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-}
+/* .form-input, .form-select, .form-textarea는 admin-common.css에서 제공 */
 
-.form-input,
-.form-select,
-.form-textarea {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  transition: border-color 0.2s;
-}
+/* .button-group은 admin-buttons.css에서 제공 */
+/* .btn-primary, .btn-secondary는 admin-buttons.css에서 제공 */
 
-.form-input:focus,
-.form-select:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
+/* .table-section, .table-header, .table-info, .page-size-select는 admin-tables.css에서 제공 */
+/* .table-container, .data-table은 admin-common.css에서 제공 */
 
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.button-group {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 1rem;
-}
-
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn-secondary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-/* 3단계: 테이블 섹션 - 현대적 디자인 */
+/* 페이지 특화 테이블 스타일 */
 .table-section {
-  background: transparent;
-  padding: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
-}
-
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
-
-.table-info {
-  font-size: 0.8125rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.table-info span {
-  color: #3b82f6;
-  font-weight: 600;
-}
-
-.page-size-select {
-  padding: 0.5rem 0.75rem;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.page-size-select:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-  outline: none;
-}
-
-.table-container {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  overflow: hidden;
-  flex: 1;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.875rem;
-}
-
-.data-table th {
-  padding: 0.875rem 1rem;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  font-weight: 700;
-  font-size: 0.8125rem;
-  color: #475569;
-  text-align: left;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  border-bottom: 2px solid #e2e8f0;
-  white-space: nowrap;
-}
-
-.data-table td {
-  padding: 0.875rem 1rem;
-  font-size: 0.875rem;
-  color: #334155;
-  border-bottom: 1px solid #f1f5f9;
-  vertical-align: middle;
 }
 
 /* Zebra stripe */
@@ -2214,67 +1848,7 @@ onMounted(() => {
   min-width: 180px;  /* 관리 버튼 */
 }
 
-/* 4단계: 액션 버튼 - 그라데이션 및 애니메이션 */
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-start;
-  flex-wrap: nowrap;
-}
-
-.btn-view,
-.btn-edit,
-.btn-delete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  padding: 0.5rem 0.875rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  min-width: fit-content;
-}
-
-/* 상세 버튼 (초록) */
-.btn-view {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
-}
-
-.btn-view:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
-}
-
-/* 수정 버튼 (주황) */
-.btn-edit {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
-}
-
-.btn-edit:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
-}
-
-/* 삭제 버튼 (빨강) */
-.btn-delete {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
-}
-
-.btn-delete:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
-}
+/* .action-buttons, .btn-view, .btn-edit, .btn-delete는 admin-buttons.css에서 제공 */
 
 /* 삭제 불가 버튼 */
 .btn-delete.disabled {
@@ -2289,7 +1863,9 @@ onMounted(() => {
   box-shadow: none;
 }
 
-/* 5단계: 배지 스타일 - Pill 형태, 그라데이션 */
+/* .status-badge는 admin-common.css에서 제공 */
+
+/* 페이지 특화 배지 스타일 */
 .count-badge {
   display: inline-flex;
   align-items: center;
@@ -2304,142 +1880,13 @@ onMounted(() => {
   border: 1px solid #c7d2fe;
 }
 
-/* 상태 배지 - 사용중 (초록) */
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  white-space: nowrap;
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  color: #059669;
-  border: 1px solid #a7f3d0;
-}
+/* .pagination은 admin-common.css에서 제공 */
 
-/* 상태 배지 - 미사용 (빨강) */
-.status-badge.inactive {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
+/* .modal-overlay, .modal, .modal-header, .modal-close, .modal-body는 admin-modals.css에서 제공 */
 
-/* 8단계: 페이지네이션 - 현대적 스타일 */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
-}
-
-.pagination-btn,
-.page-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.5rem;
-  height: 2.5rem;
-  padding: 0 0.75rem;
-  background: white;
-  color: #475569;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.pagination-btn:hover:not(:disabled),
-.page-number:hover:not(:disabled):not(.active) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-.page-number.active {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
-}
-
-.pagination-btn:disabled,
-.page-number:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.page-numbers {
-  display: flex;
-  gap: 0.25rem;
-}
-
-/* 모달 스타일 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
+/* 페이지 특화 모달 크기 */
 .modal.large-modal {
   max-width: 1200px;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.modal-body {
-  padding: 1.5rem;
 }
 
 .item-form,
@@ -2562,24 +2009,7 @@ onMounted(() => {
   padding: 1rem;
 }
 
-/* 데이터 없음 및 로딩 메시지 */
-.no-data-message,
-.loading-message {
-  text-align: center;
-  padding: 3rem;
-  color: #6b7280;
-}
-
-.no-data-message i,
-.loading-message i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.loading-message i {
-  animation: spin 1s linear infinite;
-}
+/* .no-data-message, .loading-message는 admin-common.css에서 제공 */
 
 /* 섹션 헤더 - 포인트 라인 */
 .section-header {

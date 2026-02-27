@@ -212,7 +212,7 @@
                 <th class="col-qty">수량</th>
                 <th class="col-amount">금액</th>
                 <th class="col-location">납품장소</th>
-                <th class="col-deadline">납품기한</th>
+                <th class="col-deadline">납품기한 <span style="color: #ef4444;">*</span></th>
                 <th class="col-terms">납품조건</th>
               </tr>
             </thead>
@@ -526,9 +526,21 @@ const parseFormattedNumber = (value: any): number => {
   return isNaN(num) ? 0 : num
 }
 
+// 규격에서 두께(mm) 숫자를 추출하여 정렬에 사용
+const extractSpecThickness = (specification: string): number => {
+  if (!specification) return 9999
+  // "NNN×NNN×NNNmm" 또는 "NNN*NNN*NNNmm" 패턴에서 마지막 숫자(두께) 추출
+  const dimMatch = specification.match(/(\d+)\s*[×x*]\s*(\d+)\s*[×x*]\s*(\d+)\s*mm/i)
+  if (dimMatch) return parseInt(dimMatch[3], 10)
+  // "NNNmm" 패턴에서 숫자 추출
+  const mmMatch = specification.match(/(\d+)\s*mm/i)
+  if (mmMatch) return parseInt(mmMatch[1], 10)
+  return 9999
+}
+
 // 추출된 품목 데이터로 items 배열 채우기
 const fillItemsWithExtractedData = (deliveryItems: any[]) => {
-  items.value = deliveryItems.map((item, index) => ({
+  const mappedItems = deliveryItems.map((item, index) => ({
     itemOrder: index + 1,
     skuId: '',
     itemId: '',
@@ -549,6 +561,16 @@ const fillItemsWithExtractedData = (deliveryItems: any[]) => {
     inspectionExemption: item.inspectionExemption || 'N',
     midTermCompetitionItem: item.midTermCompetitionItem || 'N'
   }))
+
+  // 규격(두께mm) 기준 오름차순 정렬
+  mappedItems.sort((a, b) => extractSpecThickness(a.specification) - extractSpecThickness(b.specification))
+
+  // 정렬 후 순번 재부여
+  mappedItems.forEach((item, index) => {
+    item.itemOrder = index + 1
+  })
+
+  items.value = mappedItems
 }
 
 // 납품요구번호 중복 체크
@@ -666,7 +688,15 @@ const register = async () => {
   if (submitting.value) return
 
   // OEM 제조사 선택은 선택사항 (출하 등록 시 선택)
-  // 필수 검사 제거됨
+
+  // 납품기한 필수 검증
+  if (items.value.length > 0) {
+    const missingDeadline = items.value.some(item => !item.deliveryDeadline || item.deliveryDeadline.trim() === '')
+    if (missingDeadline) {
+      alert('모든 품목의 납품기한을 입력해주세요.')
+      return
+    }
+  }
 
   submitting.value = true
   try {

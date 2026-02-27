@@ -201,20 +201,20 @@
 /* 닫기 버튼 */
 .btn-close-page {
   margin-top: 1.25rem;
-  padding: 0.875rem 2rem;
+  padding: 0.5rem 1.5rem;
   background: #6b7280;
   color: white;
   border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  gap: 0.375rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .btn-close-page:hover {
@@ -347,18 +347,23 @@
 
 /* 품목 컬럼 헤더 */
 .items-table th:nth-child(1) {
-  width: 28%;
+  width: 22%;
 }
 
 /* 규격 컬럼 헤더 */
 .items-table th:nth-child(2) {
-  width: 42%;
+  width: 32%;
 }
 
 /* 수량 컬럼 헤더 */
 .items-table th:nth-child(3) {
-  width: 30%;
+  width: 18%;
   text-align: right;
+}
+
+/* 비고 컬럼 헤더 */
+.items-table th:nth-child(4) {
+  width: 28%;
 }
 
 .items-table tbody tr {
@@ -381,7 +386,7 @@
 
 /* 품목 컬럼 데이터 */
 .items-table td:nth-child(1) {
-  width: 28%;
+  width: 22%;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -390,7 +395,7 @@
 
 /* 규격 컬럼 데이터 */
 .items-table td:nth-child(2) {
-  width: 42%;
+  width: 32%;
   color: #6b7280;
   font-size: 0.75rem;
   white-space: nowrap;
@@ -400,11 +405,44 @@
 
 /* 수량 컬럼 데이터 */
 .items-table td:nth-child(3) {
-  width: 30%;
+  width: 18%;
   font-weight: 600;
   color: #2563eb;
   white-space: nowrap;
   text-align: right;
+}
+
+/* 비고 컬럼 데이터 */
+.items-table td:nth-child(4) {
+  width: 28%;
+  font-size: 0.75rem;
+}
+
+/* 합지 소스 행 (수량 이전된 원 품목) */
+.items-table tr.row-merge-source {
+  background: #f5f3ff;
+  opacity: 0.75;
+}
+
+.items-table tr.row-merge-source td {
+  color: #6b7280;
+}
+
+/* 합지 배지 (모바일) */
+.items-table .merge-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+/* 비고 셀 */
+.remark-cell {
+  font-size: 0.75rem;
+  color: #6b7280;
 }
 
 .spec-cell {

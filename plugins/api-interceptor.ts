@@ -36,6 +36,9 @@ export default defineNuxtPlugin(() => {
           Authorization: `Bearer ${authStore.accessToken}`
         }
       }
+
+      // API 호출 시마다 사용자 활동 시간 갱신 (비활성 판단 방지)
+      authStore.updateLastActivity()
     }
 
     try {
@@ -71,8 +74,8 @@ export default defineNuxtPlugin(() => {
             localStorage.setItem('auth_refresh_token', newRefreshToken)
           }
 
-          // 토큰 만료 시간 갱신 (1시간 = 3600초)
-          const newExpiry = Date.now() + 3600 * 1000
+          // 토큰 만료 시간 갱신 (백엔드 설정과 동기화: 30분)
+          const newExpiry = Date.now() + 30 * 60 * 1000
           authStore.tokenExpiry = newExpiry
           localStorage.setItem('auth_token_expiry', newExpiry.toString())
 

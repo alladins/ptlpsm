@@ -40,7 +40,7 @@
                 <th>수요기관</th>
                 <th>출하일자</th>
                 <th>상태</th>
-                <th>발주서</th>
+                <th>재고</th>
                 <th>선택</th>
               </tr>
             </thead>
@@ -59,19 +59,22 @@
                   </span>
                 </td>
                 <td>
-                  <span v-if="shipment.purchaseOrderPdfPath" class="status-badge status-generated">
-                    <i class="fas fa-check-circle"></i> 생성됨
+                  <span v-if="inventoryStatusMap[shipment.shipmentId] === null" class="inventory-checking">
+                    <i class="fas fa-spinner fa-spin"></i>
                   </span>
-                  <span v-else class="status-badge status-not-generated">
-                    <i class="fas fa-times-circle"></i> 미생성
+                  <span v-else-if="inventoryStatusMap[shipment.shipmentId] === true" class="inventory-sufficient">
+                    <i class="fas fa-check-circle"></i> 충족
+                  </span>
+                  <span v-else class="inventory-insufficient">
+                    <i class="fas fa-times-circle"></i> 부족
                   </span>
                 </td>
                 <td>
                   <button
                     class="btn-success"
                     @click="selectShipment(shipment)"
-                    :disabled="!shipment.purchaseOrderPdfPath"
-                    :title="!shipment.purchaseOrderPdfPath ? '발주서 생성 후 선택 가능' : ''"
+                    :disabled="inventoryStatusMap[shipment.shipmentId] === false"
+                    :title="inventoryStatusMap[shipment.shipmentId] === false ? '재고 부족으로 운송 등록이 불가합니다' : ''"
                   >
                     선택
                   </button>
@@ -106,6 +109,7 @@
 import { ref, computed, onMounted } from 'vue'
 import type { ShipmentListItem } from '~/services/shipment.service'
 import { shipmentService } from '~/services/shipment.service'
+import { dispatchRequestService } from '~/services/dispatch-request.service'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import { useAuthStore } from '~/stores/auth'
 
@@ -140,6 +144,32 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const shipments = ref<ShipmentListItem[]>([])
 
+// 출하별 재고 상태 (shipmentId → canDispatch)
+// null = 확인 중, true = 충족, false = 부족
+const inventoryStatusMap = ref<Record<number, boolean | null>>({})
+
+// 출하 목록의 재고 상태 일괄 확인
+const checkInventoryForShipments = async (shipmentList: ShipmentListItem[]) => {
+  // 초기화: 모든 항목을 '확인 중' 상태로
+  for (const s of shipmentList) {
+    inventoryStatusMap.value[s.shipmentId] = null
+  }
+
+  // 각 출하별 재고 확인 (병렬 처리)
+  await Promise.allSettled(
+    shipmentList.map(async (s) => {
+      try {
+        const result = await dispatchRequestService.checkInventoryStatus(s.shipmentId)
+        inventoryStatusMap.value[s.shipmentId] = result.canDispatch
+      } catch (error) {
+        console.error(`재고 확인 실패 (shipmentId=${s.shipmentId}):`, error)
+        // 확인 실패 시 선택 허용 (블로킹하지 않음)
+        inventoryStatusMap.value[s.shipmentId] = true
+      }
+    })
+  )
+}
+
 // 검색
 const search = async () => {
   currentPage.value = 1
@@ -157,33 +187,28 @@ const loadShipments = async () => {
   try {
     const response = await shipmentService.getShipments({
       shipmentNo: searchParams.value.shipmentNo,
+      dispatchedOnly: true,
       page: currentPage.value - 1,
       size: 10,
       sort: 'createdAt,desc'
     })
 
-    // 필터링 조건:
-    // 1. 상태: PENDING 또는 IN_PROGRESS (운송 등록 가능한 상태)
-    // 2. OEM 회사 필터: OEM_MANAGER만 자신의 OEM 회사 출하만 표시
-    //    - SYSTEM_ADMIN, LEADPOWER_MANAGER, SALES: 모든 출하 표시
+    // OEM 회사 필터: OEM_MANAGER만 자신의 OEM 회사 출하만 표시
+    // 상태 필터는 백엔드 SQL에서 처리 (dispatchedOnly + NOT EXISTS transports)
     const filteredShipments = response.content.filter(shipment => {
-      // 상태 필터: PENDING 또는 IN_PROGRESS만 허용
-      const allowedStatuses = ['PENDING', 'IN_PROGRESS']
-      if (!allowedStatuses.includes(shipment.status)) return false
-
-      // OEM 회사 필터 (관리자 역할은 필터링 제외)
-      // OEM_MANAGER만 자신의 OEM 회사 출하만 표시
       if (!isAdminRole.value && userCompanyId.value) {
         if (shipment.oemCompanyId !== userCompanyId.value) {
           return false
         }
       }
-
       return true
     })
 
     shipments.value = filteredShipments
     totalPages.value = response.totalPages
+
+    // 재고 현황 확인
+    await checkInventoryForShipments(filteredShipments)
 
     console.log(`[출하 선택 팝업] 전체: ${response.content.length}개, 필터링 후: ${filteredShipments.length}개 (역할: ${userRole.value}, 관리자: ${isAdminRole.value})`)
   } catch (error) {
@@ -367,5 +392,21 @@ onMounted(() => {
   color: #6b7280;
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+/* 재고 상태 표시 */
+.inventory-checking {
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+.inventory-sufficient {
+  color: #16a34a;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.inventory-insufficient {
+  color: #dc2626;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 </style>

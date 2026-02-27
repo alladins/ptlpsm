@@ -122,6 +122,7 @@ import { useRoute, useRouter } from '#imports'
 import type { Menu, MenuAuth } from '~/types/menu'
 import { usePermissionStore } from '~/stores/permission'
 import { useAuthStore } from '~/stores/auth'
+import { getRoleName } from '~/types/user'
 import UserSwitchModal from '~/components/admin/common/UserSwitchModal.vue'
 
 // Props
@@ -226,13 +227,49 @@ const manualMenus = ref<MenuWithAuth[]>([
         children: []
       },
       {
+        menuId: 33,
+        menuCode: 'PURCHASE_ORDER',
+        menuName: '발주서관리',
+        menuUrl: '/admin/purchase-order/list',
+        menuIcon: 'fas fa-file-invoice',
+        menuLevel: 2,
+        sortOrder: 2,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 34,
+        menuCode: 'INVENTORY',
+        menuName: '재고현황',
+        menuUrl: '/admin/inventory/list',
+        menuIcon: 'fas fa-boxes',
+        menuLevel: 2,
+        sortOrder: 3,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
         menuId: 32,
         menuCode: 'TRANSPORT',
         menuName: '운송관리',
         menuUrl: '/admin/transport/list',
         menuIcon: 'fas fa-route',
         menuLevel: 2,
-        sortOrder: 2,
+        sortOrder: 4,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 36,
+        menuCode: 'OEM_DASHBOARD',
+        menuName: 'OEM 대시보드',
+        menuUrl: '/admin/oem/dashboard',
+        menuIcon: 'fas fa-tachometer-alt',
+        menuLevel: 2,
+        sortOrder: 5,
         visible: 'Y',
         useYn: 'Y',
         children: []
@@ -383,6 +420,42 @@ const manualMenus = ref<MenuWithAuth[]>([
         visible: 'Y',
         useYn: 'Y',
         children: []
+      },
+      {
+        menuId: 74,
+        menuCode: 'STAT_SALES',
+        menuName: '영업통계',
+        menuUrl: '/admin/statistics/sales',
+        menuIcon: 'fas fa-briefcase',
+        menuLevel: 2,
+        sortOrder: 4,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 75,
+        menuCode: 'STAT_OEM',
+        menuName: 'OEM 제조사별 통계',
+        menuUrl: '/admin/statistics/oem',
+        menuIcon: 'fas fa-industry',
+        menuLevel: 2,
+        sortOrder: 5,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 76,
+        menuCode: 'STAT_BASELINE',
+        menuName: '기성차수 통계',
+        menuUrl: '/admin/statistics/baseline',
+        menuIcon: 'fas fa-layer-group',
+        menuLevel: 2,
+        sortOrder: 6,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
       }
     ]
   },
@@ -517,6 +590,18 @@ const manualMenus = ref<MenuWithAuth[]>([
         visible: 'Y',
         useYn: 'Y',
         children: []
+      },
+      {
+        menuId: 88,
+        menuCode: 'WAREHOUSE_MANAGE',
+        menuName: '창고관리',
+        menuUrl: '/admin/basic-info/warehouse',
+        menuIcon: 'fas fa-warehouse',
+        menuLevel: 2,
+        sortOrder: 8,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
       }
     ]
   },
@@ -602,27 +687,16 @@ const router = useRouter()
  * - 단, LEADPOWER_MANAGER는 시스템관리(SYSTEM) 메뉴 제외
  */
 const menus = computed(() => {
-  // ✅ 디버깅 로그 추가
-  console.log('🔍 [메뉴 필터링] 권한 체크:', {
-    currentRole: authStore.user?.role,
-    isFullAccess: permissionStore.isFullAccess,
-    currentUserRole: permissionStore.currentUserRole,
-    rawMenusCount: rawMenus.value.length
-  })
-
   // 전체 접근 권한이 있으면 필터링 없이 모두 표시
   if (permissionStore.isFullAccess) {
     // 리드파워 담당자는 시스템관리 메뉴 제외
     if (permissionStore.currentUserRole === 'LEADPOWER_MANAGER') {
-      console.log('⚠️ [메뉴 필터링] LEADPOWER_MANAGER → 시스템관리 메뉴 제외')
       return rawMenus.value.filter(menu => menu.menuCode !== 'SYSTEM')
     }
-    console.log('⚠️ [메뉴 필터링] isFullAccess=true → 전체 메뉴 표시')
     return rawMenus.value
   }
 
   // 권한 기반 필터링
-  console.log('✅ [메뉴 필터링] 권한 기반 필터링 적용')
   return filterMenusByPermission(rawMenus.value)
 })
 
@@ -651,28 +725,21 @@ function filterMenusByPermission(menuList: MenuWithAuth[]): MenuWithAuth[] {
       // 1. 하위 메뉴가 있는 부모 메뉴인 경우
       if (menu.children && menu.children.length > 0) {
         // 필터링된 자식 메뉴가 하나라도 있으면 부모 표시
-        console.log(`📁 [메뉴 필터링] 부모 메뉴 표시 (자식 ${menu.children.length}개 있음): ${menu.menuName}`)
         return true
       }
 
       // 2. 원래 자식이 있었는데 필터링 후 비어있는 경우 → 숨김
       const originalMenu = findOriginalMenu(menu.menuId)
       if (originalMenu?.children && originalMenu.children.length > 0) {
-        console.log(`🔒 [메뉴 필터링] 부모 메뉴 숨김 (자식 메뉴 모두 권한 없음): ${menu.menuName}`)
         return false
       }
 
       // 3. 단일 메뉴(자식 없음)인 경우 → readAuth 확인
       if (!menu.auth) {
-        console.log(`🔒 [메뉴 필터링] auth 없음 - 메뉴 숨김: ${menu.menuName}`)
         return false
       }
 
-      const hasPermission = menu.auth.readAuth === 'Y'
-      if (!hasPermission) {
-        console.log(`🔒 [메뉴 필터링] readAuth=${menu.auth.readAuth} - 메뉴 숨김: ${menu.menuName}`)
-      }
-      return hasPermission
+      return menu.auth.readAuth === 'Y'
     })
 }
 
@@ -696,13 +763,6 @@ function findOriginalMenu(menuId: number): MenuWithAuth | null {
 // Methods
 const loadMenus = async () => {
   try {
-    console.log('📋 [loadMenus] 시작:', {
-      isLoggedIn: authStore.isLoggedIn,
-      userid: authStore.user?.userid,
-      loginId: authStore.user?.loginId,
-      role: authStore.user?.role
-    })
-
     // 1. 기본 메뉴 구조 설정
     rawMenus.value = manualMenus.value
 
@@ -717,19 +777,11 @@ const loadMenus = async () => {
     // 3. 사용자별 메뉴 권한 조회 (loginId로 체크 - userid는 백엔드 응답에 없을 수 있음)
     if (authStore.isLoggedIn && authStore.user?.loginId) {
       try {
-        console.log('📋 [loadMenus] 사용자 메뉴 권한 조회 시작...')
         const userMenusWithAuth = await permissionStore.fetchUserMenus()
-
-        console.log('📋 [loadMenus] 서버 응답:', {
-          menuCount: userMenusWithAuth?.length || 0,
-          hasAuth: userMenusWithAuth?.[0]?.auth ? 'Y' : 'N',
-          firstMenuAuth: userMenusWithAuth?.[0]?.auth
-        })
 
         if (userMenusWithAuth && userMenusWithAuth.length > 0) {
           // 서버에서 받은 메뉴 사용 (권한 정보 포함)
           rawMenus.value = mergeMenuPermissions(manualMenus.value, userMenusWithAuth)
-          console.log('✅ [loadMenus] 사용자 권한 메뉴 로드 완료:', userMenusWithAuth.length, '개')
         }
       } catch (error) {
         console.warn('❌ [loadMenus] 권한 정보 로딩 실패 (기본 메뉴 사용):', error)
@@ -811,89 +863,6 @@ function mergeMenuPermissions(
   return merge(manualMenuList)
 }
 
-/**
- * 메뉴 활성화/비활성화 토글
- */
-const toggleMenuVisibility = (menuCode: string) => {
-  const toggleMenu = (menuList: Menu[]): Menu[] => {
-    return menuList.map(menu => {
-      if (menu.menuCode === menuCode) {
-        return {
-          ...menu,
-          useYn: menu.useYn === 'Y' ? 'N' : 'Y'
-        }
-      }
-      if (menu.children && menu.children.length > 0) {
-        return {
-          ...menu,
-          children: toggleMenu(menu.children)
-        }
-      }
-      return menu
-    })
-  }
-
-  manualMenus.value = toggleMenu(manualMenus.value)
-  rawMenus.value = manualMenus.value
-}
-
-/**
- * 메뉴 추가 (개발용)
- */
-const addMenu = (parentMenuCode: string | null, newMenu: Omit<Menu, 'menuId'>) => {
-  const newMenuWithId: Menu = {
-    ...newMenu,
-    menuId: Date.now() // 임시 ID 생성
-  }
-
-  if (!parentMenuCode) {
-    // 최상위 메뉴 추가
-    manualMenus.value.push(newMenuWithId)
-  } else {
-    // 하위 메뉴 추가
-    const addToParent = (menuList: Menu[]): Menu[] => {
-      return menuList.map(menu => {
-        if (menu.menuCode === parentMenuCode) {
-          return {
-            ...menu,
-            children: [...(menu.children || []), newMenuWithId]
-          }
-        }
-        if (menu.children && menu.children.length > 0) {
-          return {
-            ...menu,
-            children: addToParent(menu.children)
-          }
-        }
-        return menu
-      })
-    }
-
-    manualMenus.value = addToParent(manualMenus.value)
-  }
-
-  rawMenus.value = manualMenus.value
-}
-
-/**
- * 메뉴 삭제 (개발용)
- */
-const removeMenu = (menuCode: string) => {
-  const removeFromMenus = (menuList: Menu[]): Menu[] => {
-    return menuList.filter(menu => {
-      if (menu.menuCode === menuCode) {
-        return false
-      }
-      if (menu.children && menu.children.length > 0) {
-        menu.children = removeFromMenus(menu.children)
-      }
-      return true
-    })
-  }
-
-  manualMenus.value = removeFromMenus(manualMenus.value)
-  rawMenus.value = manualMenus.value
-}
 
 const toggleSubmenu = (menu: Menu) => {
   if (!menu.children || menu.children.length === 0) {
@@ -969,7 +938,6 @@ const closeUserSwitchModal = () => {
 
 // 사용자 전환 완료 처리
 const handleUserSwitched = (userid: number) => {
-  console.log('사용자 전환 완료:', userid)
   closeUserSwitchModal()
 }
 
@@ -978,7 +946,7 @@ onMounted(() => {
   loadMenus()
 
   // 외부 클릭 시 사용자 메뉴 닫기
-  document.addEventListener('click', (event) => {
+  const handleOutsideClick = (event: MouseEvent) => {
     const userInfoElement = document.querySelector('.user-info')
     const userMenuElement = document.querySelector('.user-menu-dropdown')
 
@@ -988,6 +956,11 @@ onMounted(() => {
         closeUserMenu()
       }
     }
+  }
+  document.addEventListener('click', handleOutsideClick)
+
+  onUnmounted(() => {
+    document.removeEventListener('click', handleOutsideClick)
   })
 })
 
@@ -1019,11 +992,6 @@ watch(
       // ✅ 사용자가 변경되었으면 메뉴 권한 다시 로드 (대리 로그인 등)
       const userChanged = oldUser && oldUser.userid !== newUser.userid
       if (userChanged) {
-        console.log('사용자 변경 감지 - 메뉴 권한 재로드:', {
-          이전사용자: oldUser?.userName,
-          새사용자: newUser.userName,
-          새역할: newUser.role
-        })
         loadMenus()
       }
     }
@@ -1035,35 +1003,25 @@ watch(
 const expandMenuForCurrentPath = () => {
   const currentPath = route.path
 
-  console.log('🔍 [메뉴 자동 열기] 현재 경로:', currentPath)
-  console.log('🔍 [메뉴 자동 열기] 메뉴 개수:', menus.value.length)
-
   // 현재 경로와 매칭되는 메인 메뉴 찾기
   const matchingMenu = menus.value.find(menu => {
     if (menu.children && menu.children.length > 0) {
       // 자식 메뉴 중에 현재 경로와 일치하거나 시작하는 게 있는지 확인
       // 예: /admin/delivery/list 또는 /admin/order/edit/123 등
-      const matched = menu.children.some(submenu => {
+      return menu.children.some(submenu => {
         if (!submenu.menuUrl) return false
         // 정확히 일치하거나, 현재 경로가 메뉴 URL로 시작하는 경우
         return currentPath === submenu.menuUrl ||
                currentPath.startsWith(submenu.menuUrl + '/') ||
                currentPath.startsWith(submenu.menuUrl.replace('/list', '/'))
       })
-      if (matched) {
-        console.log('✅ [메뉴 자동 열기] 매칭된 메뉴:', menu.menuName, 'menuId:', menu.menuId)
-      }
-      return matched
     }
     return currentPath === menu.menuUrl
   })
 
   if (matchingMenu && matchingMenu.children && matchingMenu.children.length > 0) {
     // 현재 경로의 부모 메뉴 열기
-    console.log('✅ [메뉴 자동 열기] 메뉴 열기:', matchingMenu.menuName, 'menuId:', matchingMenu.menuId)
     expandedMenus.value = [matchingMenu.menuId]
-  } else {
-    console.log('⚠️ [메뉴 자동 열기] 매칭되는 메뉴 없음')
   }
 }
 

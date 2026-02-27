@@ -101,8 +101,55 @@
             <i class="fas fa-info-circle"></i>
             <div class="info-content">
               <strong>납품완료 처리 안내</strong>
-              <p>모든 미청구 출하가 납품완료 차수에 포함됩니다. 납품완료 처리 후에는 추가 기성 청구가 불가능합니다.</p>
+              <p>모든 미청구 출하가 납품완료 차수에 포함됩니다. 선택한 대상자에게 서명 URL이 발송되며, 양쪽 서명이 완료되면 납품완료가 자동 처리됩니다.</p>
             </div>
+          </div>
+
+          <!-- 서명 대상자 선택 -->
+          <div class="form-section">
+            <h4>서명 대상자 선택</h4>
+            <div class="recipient-grid">
+              <!-- 시공사 현장소장 -->
+              <div class="form-group">
+                <label>시공사 현장소장</label>
+                <select
+                  v-model="selectedSiteManagerId"
+                  class="form-select"
+                  :disabled="isLoadingUsers"
+                >
+                  <option value="">{{ isLoadingUsers ? '로딩 중...' : '선택하세요' }}</option>
+                  <option
+                    v-for="manager in siteManagerList"
+                    :key="manager.userid"
+                    :value="manager.userid"
+                  >
+                    {{ manager.userName }} ({{ manager.phone }})
+                    <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
+                  </option>
+                </select>
+              </div>
+
+              <!-- 현장감리원 -->
+              <div class="form-group">
+                <label>현장감리원</label>
+                <select
+                  v-model="selectedInspectorId"
+                  class="form-select"
+                  :disabled="isLoadingUsers"
+                >
+                  <option value="">{{ isLoadingUsers ? '로딩 중...' : '선택하세요' }}</option>
+                  <option
+                    v-for="inspector in inspectorList"
+                    :key="inspector.userid"
+                    :value="inspector.userid"
+                  >
+                    {{ inspector.userName }} ({{ inspector.phone }})
+                    <template v-if="inspector.companyName"> - {{ inspector.companyName }}</template>
+                  </option>
+                </select>
+              </div>
+            </div>
+            <p class="help-text">최소 1명 이상 선택해야 합니다.</p>
           </div>
 
           <!-- 비고 입력 -->
@@ -149,7 +196,10 @@
 import { ref, computed, watch } from 'vue'
 import { formatCurrency, formatNumber, formatDate, formatDateTime } from '~/utils/format'
 import { useBaselineStore } from '~/stores/baseline'
-import type { AvailableShipment, BaselineListItem } from '~/types/baseline'
+import { baselineService } from '~/services/baseline.service'
+import { userService } from '~/services/user.service'
+import type { AvailableShipment, BaselineListItem, BaselineSignatureRecipient } from '~/types/baseline'
+import type { UserByRole } from '~/types/user'
 
 // Props
 interface Props {
@@ -171,15 +221,33 @@ const baselineStore = useBaselineStore()
 
 // State
 const isLoading = ref(false)
+const isLoadingUsers = ref(false)
 const isSubmitting = ref(false)
 const confirmFinalDelivery = ref(false)
 const remarks = ref('')
+
+// 수신자 선택
+const selectedSiteManagerId = ref<number | ''>('')
+const selectedInspectorId = ref<number | ''>('')
+const siteManagerList = ref<UserByRole[]>([])
+const inspectorList = ref<UserByRole[]>([])
 
 // 청구 가능 출하 목록
 const availableShipments = ref<AvailableShipment[]>([])
 
 // 이전 기성 차수 목록
 const previousBaselines = ref<BaselineListItem[]>([])
+
+// 선택된 담당자 정보
+const selectedManagerInfo = computed(() => {
+  if (!selectedSiteManagerId.value) return null
+  return siteManagerList.value.find(m => m.userid === selectedSiteManagerId.value) || null
+})
+
+const selectedInspectorInfo = computed(() => {
+  if (!selectedInspectorId.value) return null
+  return inspectorList.value.find(i => i.userid === selectedInspectorId.value) || null
+})
 
 // 합계 계산
 const totalQuantity = computed(() => {
@@ -204,6 +272,11 @@ const grandTotalAmount = computed(() => {
 const isValid = computed(() => {
   // 청구할 출하가 있어야 함
   if (availableShipments.value.length === 0) {
+    return false
+  }
+
+  // 수신자 최소 1명 선택
+  if (!selectedSiteManagerId.value && !selectedInspectorId.value) {
     return false
   }
 
@@ -243,11 +316,25 @@ const loadData = async () => {
   }
 }
 
+const loadUsers = async () => {
+  isLoadingUsers.value = true
+  try {
+    const users = await userService.getUsersByRoles(['SITE_MANAGER', 'SITE_INSPECTOR'])
+    siteManagerList.value = users.filter(u => u.role === 'SITE_MANAGER')
+    inspectorList.value = users.filter(u => u.role === 'SITE_INSPECTOR')
+  } catch (error) {
+    console.error('사용자 목록 로드 실패:', error)
+    alert('사용자 목록을 불러오는데 실패했습니다.')
+  } finally {
+    isLoadingUsers.value = false
+  }
+}
+
 const submitFinalDelivery = async () => {
   if (!isValid.value || isSubmitting.value) return
 
   // 추가 확인
-  if (!confirm('납품완료 처리를 진행하시겠습니까?\n\n납품완료 처리 후에는 추가 기성 청구가 불가능합니다.')) {
+  if (!confirm('납품완료 처리를 진행하시겠습니까?\n\n선택한 대상자에게 서명 URL이 발송되며, 양쪽 서명 완료 시 납품완료가 자동 처리됩니다.')) {
     return
   }
 
@@ -257,15 +344,37 @@ const submitFinalDelivery = async () => {
     // 모든 출하 선택
     const allShipmentIds = availableShipments.value.map(s => s.shipmentId)
 
-    // 납품완료 차수 생성 (FINAL 타입)
-    await baselineStore.createBaselineV2({
+    // 수신자 배열 구성
+    const recipients: BaselineSignatureRecipient[] = []
+    if (selectedManagerInfo.value) {
+      recipients.push({
+        recipientType: 'SITE_MANAGER',
+        recipientUserId: selectedManagerInfo.value.userid,
+        recipientName: selectedManagerInfo.value.userName,
+        recipientPhone: selectedManagerInfo.value.phone.replace(/[^0-9]/g, '')
+      })
+    }
+    if (selectedInspectorInfo.value) {
+      recipients.push({
+        recipientType: 'SITE_INSPECTOR',
+        recipientUserId: selectedInspectorInfo.value.userid,
+        recipientName: selectedInspectorInfo.value.userName,
+        recipientPhone: selectedInspectorInfo.value.phone.replace(/[^0-9]/g, '')
+      })
+    }
+
+    // 통합 API 호출 (FINAL 차수 생성 + 서명 URL 발송)
+    await baselineService.createAndSendSignature({
       orderId: props.orderId,
       baselineType: 'FINAL',
       shipmentIds: allShipmentIds,
-      remarks: remarks.value || undefined
+      remarks: remarks.value || undefined,
+      recipients,
+      messageType: 'LMS'
     })
 
-    alert('납품완료 처리가 완료되었습니다.')
+    const names = recipients.map(r => r.recipientName).join(', ')
+    alert(`납품완료 차수가 생성되고 서명 URL이 ${names}님에게 발송되었습니다.`)
     emit('submitted')
     closeModal()
   } catch (error) {
@@ -281,6 +390,8 @@ const resetForm = () => {
   remarks.value = ''
   availableShipments.value = []
   previousBaselines.value = []
+  selectedSiteManagerId.value = ''
+  selectedInspectorId.value = ''
 }
 
 // Watch
@@ -288,6 +399,7 @@ watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     resetForm()
     loadData()
+    loadUsers()
   }
 })
 </script>
@@ -596,6 +708,65 @@ watch(() => props.isOpen, (isOpen) => {
   height: 1px;
   background: #d1fae5;
   margin: 0.5rem 0;
+}
+
+/* 서명 대상자 선택 */
+.form-section h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.recipient-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-select {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #1f2937;
+  background: white;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-select:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.help-text {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+@media (max-width: 640px) {
+  .recipient-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 정보 박스 */

@@ -183,6 +183,7 @@
           :advance-button-tooltip="getAdvanceButtonTooltip()"
           @open-modal="openAdvancePaymentModal"
           @open-collection-confirm="(payment) => openCollectionConfirmModal('advance', payment)"
+          @delete-advance="handleDeleteAdvance"
           @view-pdf="viewAdvancePdf"
           @download-pdf="downloadAdvancePdf"
           @download-all-pdfs="downloadAllAdvancePdfs"
@@ -220,7 +221,7 @@
           @open-balance-confirm-modal="handleOpenBalanceConfirmModal"
         />
 
-        <!-- OEM 지급 탭 -->
+        <!-- OEM 지급 탭 (읽기 전용 - 지급 관리는 발주서 관리에서) -->
         <FundOemTab
           v-if="activeTab === 'oem'"
           :oem-payments="oemPayments"
@@ -232,9 +233,6 @@
           :is-recalculating="isRecalculating"
           :can-adjust-bgrade="canAdjustBgrade"
           :bgrade-button-title="bgradeButtonTitle"
-          @open-oem-modal="openOemPaymentModal()"
-          @open-oem-complete-modal="openOemCompleteModal"
-          @confirm-delete-oem="confirmDeleteOemPayment"
           @open-bgrade-modal="openBgradeModal"
           @recalculate-oem-cost="handleRecalculateOemCost"
         />
@@ -247,6 +245,7 @@
       :is-open="showProgressPaymentModal"
       :order-id="fundDetail?.orderId || 0"
       :fund-id="Number(route.params.id)"
+      :max-selectable-count="maxProgressClaimCount"
       @close="closeProgressPaymentModal"
       @submitted="handleProgressPaymentSubmitted"
     />
@@ -294,23 +293,6 @@
       @confirmed="handleCollectionConfirmed"
     />
 
-    <!-- OEM 지급 모달 -->
-    <OemPaymentModal
-      :is-open="showOemPaymentModal"
-      :fund-id="Number(route.params.id)"
-      :existing-payment="selectedOemPayment"
-      :linked-payment="linkedProgressPayment"
-      :progress-payments="paidProgressPayments"
-      :has-advance-payment="hasAdvancePayment"
-      :oem-expected-total="fundDetail?.oemExpectedTotal || 0"
-      :advance-payment-rate="getAdvancePaymentRate()"
-      :oem-total-paid="fundDetail?.oemTotalPaid || 0"
-      :oem-total-scheduled="oemTotalScheduled"
-      :oem-companies="oemCompanies"
-      @close="closeOemPaymentModal"
-      @submitted="handleOemPaymentSubmitted"
-    />
-
     <!-- B급 조정 모달 -->
     <BgradeItemsModal
       :is-open="showBgradeModal"
@@ -340,7 +322,6 @@ import ProgressPaymentModal from '~/components/fund/ProgressPaymentModal.vue'
 import FinalDeliveryModal from '~/components/fund/FinalDeliveryModal.vue'
 import AdvancePaymentModal from '~/components/fund/AdvancePaymentModal.vue'
 import CollectionConfirmModal from '~/components/fund/CollectionConfirmModal.vue'
-import OemPaymentModal from '~/components/fund/OemPaymentModal.vue'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import BgradeItemsModal from '~/components/delivery-done/BgradeItemsModal.vue'
 import BalanceRegisterModal from '~/components/fund/BalanceRegisterModal.vue'
@@ -435,11 +416,6 @@ const oemTotalScheduled = computed(() => {
   return oemPayments.value.reduce((sum, p) => sum + (p.scheduledAmount || 0), 0)
 })
 
-// 수금 완료된 기성금 목록 (OEM 지급 대상)
-const paidProgressPayments = computed(() => {
-  return progressPayments.value.filter(p => p.status === 'PAID')
-})
-
 // 잔금 요청 정보 (progress_payment_requests에서 paymentType === 'BALANCE'인 레코드)
 const balanceRequest = computed(() => {
   // 기성금 목록에서 BALANCE 타입 찾기 (백엔드에서 paymentType 필드로 구분)
@@ -522,17 +498,7 @@ const {
   showBgradeModal,
   openBgradeModal,
   closeBgradeModal,
-  handleBgradeUpdated,
-  // OEM 지급 모달
-  showOemPaymentModal,
-  selectedOemPayment,
-  linkedProgressPayment,
-  openOemPaymentModal,
-  openOemCompleteModal,
-  confirmDeleteOemPayment,
-  closeOemPaymentModal,
-  handleOemPaymentSubmitted,
-  oemCompanies
+  handleBgradeUpdated
 } = useFundModals({
   fundId,
   fundDetail,
@@ -566,7 +532,25 @@ const expectedAdvanceAmount = computed(() => {
 /** 선급금 신청 가능 여부 (API 기반) */
 const canRequestAdvance = computed(() => advanceEligibility.value.eligible)
 
-/** 기성금 청구 가능 여부 (서명완료 출하 1건 이상 & 납품완료 아님) */
+/** 미청구 출하 총 건수 (인수 완료 여부 무관) */
+const totalUnclaimedCount = computed(() => {
+  return shipments.value.filter(s =>
+    !['CANCELLED', 'DELETED'].includes(s.status) && !s.isBilled
+  ).length
+})
+
+/** 기성청구 시 최대 선택 가능 출하 수 (최소 1건은 납품완료계용으로 남겨야 함) */
+const maxProgressClaimCount = computed(() => {
+  const available = availableShipments.value.length
+  const unclaimed = totalUnclaimedCount.value
+  // 미인수 미청구 출하가 있으면 전부 선택 가능 (미인수 건이 납품완료계용)
+  const unclaimedUndelivered = unclaimed - available
+  if (unclaimedUndelivered > 0) return available
+  // 모두 인수완료이면 최소 1건은 남겨야 함
+  return Math.max(0, available - 1)
+})
+
+/** 기성금 청구 가능 여부 */
 const canRequestProgress = computed(() => {
   // 기본 조건: 서명완료 출하가 있어야 함
   if (completedDeliveryCount.value === 0) {
@@ -583,9 +567,8 @@ const canRequestProgress = computed(() => {
     return false
   }
 
-  // 마지막 출하인 경우 기성금이 아닌 잔금으로 처리해야 함
-  const hasLastShipment = shipments.value.some(s => s.isFinalShipment)
-  if (hasLastShipment) {
+  // 기성으로 청구 가능한 수가 0이면 불가 (모두 납품완료계로 처리해야 함)
+  if (maxProgressClaimCount.value === 0) {
     return false
   }
 
@@ -602,10 +585,7 @@ const canCompleteFinalDelivery = computed(() => {
   return fundDetail.value?.deliveryDoneStatus === 'PENDING_SIGNATURE'
 })
 
-/** 납품확인서 생성 가능 여부 (모든 출하 인수증 완료 시 활성화) */
-const canCreateConfirmation = computed(() => {
-  return isConfirmationButtonEnabled()
-})
+/** 납품확인서 생성 가능 여부는 useDeliveryButtons에서 직접 사용 가능 */
 
 /** B급 조정 가능 여부 (인수증 서명 완료된 출하가 있는 상태) */
 const canAdjustBgrade = computed(() => {
@@ -666,9 +646,8 @@ const getProgressButtonTooltip = () => {
   if (availableShipments.value.length === 0) {
     return '청구 가능한 출하가 없습니다.'
   }
-  const hasLastShipment = shipments.value.some(s => s.isFinalShipment)
-  if (hasLastShipment) {
-    return '마지막 출하는 잔금으로 처리해야 합니다.'
+  if (maxProgressClaimCount.value === 0) {
+    return '남은 출하가 모두 인수완료 상태입니다. 납품완료계로 처리하세요.'
   }
   return ''
 }
@@ -726,7 +705,8 @@ const loadValidationData = async () => {
     console.log('Validation 데이터 로드 완료:', {
       availableShipments: availableShipments.value.length,
       totalShipments: shipments.value.length,
-      hasLastShipment: shipments.value.some(s => s.isFinalShipment)
+      totalUnclaimed: totalUnclaimedCount.value,
+      maxProgressClaim: maxProgressClaimCount.value
     })
   } catch (error) {
     console.error('Validation 데이터 로드 실패:', error)
@@ -757,6 +737,24 @@ const loadShipments = async () => {
 
 const goBack = () => {
   router.push('/admin/funds')
+}
+
+/** 선급금 삭제 핸들러 */
+const handleDeleteAdvance = async (payment: AdvancePayment) => {
+  const confirmed = confirm(
+    '선급금을 삭제하시겠습니까?\n\n' +
+    '- 관련 PDF 문서 5종이 함께 삭제됩니다.\n' +
+    '- 삭제 후 선급금을 다시 신청할 수 있습니다.'
+  )
+  if (!confirmed) return
+
+  try {
+    await fundService.deleteAdvance(fundId.value, payment.advanceId)
+    alert('선급금이 삭제되었습니다.')
+    await loadData()
+  } catch (e) {
+    alert(e instanceof Error ? e.message : '선급금 삭제에 실패했습니다.')
+  }
 }
 
 /** 잔금 입금확인 모달 열기 핸들러 */
@@ -841,27 +839,9 @@ onMounted(() => {
 @import '@/assets/css/admin-common.css';
 @import '@/assets/css/admin-buttons.css';
 @import '@/assets/css/admin-tables.css';
+@import '@/assets/css/admin-tabs.css';
 
-/* 로딩/에러 컨테이너 */
-.loading-container,
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  color: #6b7280;
-}
-
-.loading-container i,
-.error-container i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.error-container {
-  color: #dc2626;
-}
+/* 로딩/에러 컨테이너는 admin-common.css에서 관리 */
 
 /* 컨텐츠 섹션 */
 .content-section {
@@ -1072,49 +1052,6 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.tab-navigation {
-  display: flex;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
-}
-
-.tab-button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem 1.5rem;
-  background: transparent;
-  border: none;
-  color: #6b7280;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
-}
-
-.tab-button:hover {
-  color: #374151;
-  background: rgba(0, 0, 0, 0.02);
-}
-
-.tab-button.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
-  background: white;
-}
-
-.tab-content {
-  padding: 1.5rem;
-}
-
-.tab-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
 .tab-header h4 {
   margin: 0;
   font-size: 1rem;
@@ -1172,48 +1109,11 @@ onMounted(() => {
   color: #d97706 !important;
 }
 
-/* 테이블 */
-.table-container {
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.data-table th {
-  padding: 0.75rem 1rem;
-  text-align: center;
-  background: #f9fafb;
-  font-weight: 600;
-  color: #374151;
-  border-bottom: 2px solid #e5e7eb;
-  font-size: 0.875rem;
-}
-
-.data-table td {
-  padding: 0.75rem 1rem;
-  text-align: center;
-  border-bottom: 1px solid #f3f4f6;
-  font-size: 0.875rem;
-}
-
-.data-table td.text-right {
-  text-align: right;
-  font-weight: 500;
-}
-
+/* 테이블 스타일은 admin-tables.css에서 관리 */
 .data-table .col-amount {
   width: 180px;
   min-width: 100px;
   max-width: 140px;
-}
-
-.data-table .no-data {
-  text-align: center;
-  color: #9ca3af;
-  padding: 2rem;
 }
 
 /* 선급금 차감/실수금액 스타일 */
@@ -1235,50 +1135,7 @@ onMounted(() => {
   color: #16a34a;
 }
 
-/* 상태 배지 */
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.status-requested {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.status-approved {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.status-paid {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-rejected {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-/* 자금 상태 배지 */
-.status-active {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.status-completed {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-cancelled {
-  background: #fee2e2;
-  color: #dc2626;
-}
+/* 상태 배지는 admin-common.css에서 관리 */
 
 /* 이력 타임라인 */
 .history-timeline {
@@ -1401,16 +1258,6 @@ onMounted(() => {
 
   .summary-cards {
     grid-template-columns: 1fr;
-  }
-
-  .tab-navigation {
-    flex-wrap: wrap;
-  }
-
-  .tab-button {
-    flex: 1;
-    justify-content: center;
-    min-width: 100px;
   }
 
   .progress-legend {

@@ -9,6 +9,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   css: [
+    '@fortawesome/fontawesome-free/css/all.min.css',
     '@/assets/css/main.css',
     '@/assets/css/global.css',
     '@/assets/css/admin-common.css',

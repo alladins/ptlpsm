@@ -1,0 +1,82 @@
+/**
+ * 탭 네비게이션 공통 스타일
+ * funds/[id].vue, order/edit/[id].vue 등에서 공통 사용
+ */
+
+.tab-navigation {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-button:hover {
+  color: #374151;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.tab-button.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  background: white;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tab-content {
+  padding: 1.5rem;
+}
+
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.tab-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .tab-navigation {
+    flex-wrap: wrap;
+  }
+
+  .tab-button {
+    flex: 1;
+    justify-content: center;
+    min-width: 100px;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+  }
+}

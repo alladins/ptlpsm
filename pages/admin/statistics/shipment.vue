@@ -228,7 +228,84 @@
           </div>
         </div>
 
-        <!-- 최근 납품요구 목록 -->
+        <!-- 최근 출하 현황 + SKU별 발주수량 현황 (2컬럼) -->
+        <div class="tables-row">
+          <!-- 최근 출하 현황 (좌측) -->
+          <div class="table-section">
+            <h2>
+              <i class="fas fa-truck"></i>
+              최근 출하 현황
+            </h2>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>납품요구번호</th>
+                    <th>수요기관</th>
+                    <th>지역</th>
+                    <th>출하일자</th>
+                    <th>출하금액</th>
+                    <th>차량번호</th>
+                    <th>상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="statistics.recentShipments.length === 0">
+                    <td colspan="7" class="empty-cell">데이터가 없습니다</td>
+                  </tr>
+                  <tr v-for="shipment in statistics.recentShipments" :key="shipment.shipmentId">
+                    <td>{{ shipment.deliveryRequestNo }}</td>
+                    <td>{{ shipment.client }}</td>
+                    <td>{{ shipment.region || '-' }}</td>
+                    <td>{{ shipment.shipmentDate || '-' }}</td>
+                    <td class="text-right">{{ formatCurrency(shipment.amount) }}</td>
+                    <td>{{ shipment.vehicleNo || '-' }}</td>
+                    <td>
+                      <span :class="['status-badge', getStatusClass(shipment.status)]">
+                        {{ getStatusLabel(shipment.status) }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SKU별 발주수량 현황 (우측) -->
+          <div class="table-section">
+            <h2>
+              <i class="fas fa-boxes"></i>
+              SKU별 발주수량 현황
+            </h2>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>품목명</th>
+                    <th>SKU ID</th>
+                    <th>SKU 품명</th>
+                    <th>단위</th>
+                    <th>발주수량</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="statistics.skuOrderStats.length === 0">
+                    <td colspan="5" class="empty-cell">데이터가 없습니다</td>
+                  </tr>
+                  <tr v-for="sku in statistics.skuOrderStats" :key="sku.skuId">
+                    <td>{{ sku.itemName }}</td>
+                    <td>{{ sku.skuId }}</td>
+                    <td>{{ sku.skuName }}</td>
+                    <td>{{ sku.unit }}</td>
+                    <td class="text-right">{{ formatNumber(sku.totalOrderedQuantity) }} {{ sku.unit }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 최근 납품요구 현황 -->
         <div class="table-section">
           <h2>
             <i class="fas fa-list"></i>
@@ -275,47 +352,6 @@
             </table>
           </div>
         </div>
-
-        <!-- 최근 출하 목록 -->
-        <div class="table-section">
-          <h2>
-            <i class="fas fa-truck"></i>
-            최근 출하 현황
-          </h2>
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>납품요구번호</th>
-                  <th>수요기관</th>
-                  <th>지역</th>
-                  <th>출하일자</th>
-                  <th>출하금액</th>
-                  <th>차량번호</th>
-                  <th>상태</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="statistics.recentShipments.length === 0">
-                  <td colspan="7" class="empty-cell">데이터가 없습니다</td>
-                </tr>
-                <tr v-for="shipment in statistics.recentShipments" :key="shipment.shipmentId">
-                  <td>{{ shipment.deliveryRequestNo }}</td>
-                  <td>{{ shipment.client }}</td>
-                  <td>{{ shipment.region || '-' }}</td>
-                  <td>{{ shipment.shipmentDate || '-' }}</td>
-                  <td class="text-right">{{ formatCurrency(shipment.amount) }}</td>
-                  <td>{{ shipment.vehicleNo || '-' }}</td>
-                  <td>
-                    <span :class="['status-badge', getStatusClass(shipment.status)]">
-                      {{ getStatusLabel(shipment.status) }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
       </template>
     </div>
   </div>
@@ -331,6 +367,7 @@ import type {
   ShipmentStatus
 } from '~/types/statistics'
 import { SHIPMENT_STATUS_LABELS } from '~/types/statistics'
+import { formatCurrency, formatNumber } from '~/utils/format'
 
 definePageMeta({
   layout: 'admin',
@@ -368,7 +405,8 @@ const statistics = ref<ShipmentStatisticsResponse>({
   periodTrend: [],
   regionBreakdown: [],
   recentOrders: [],
-  recentShipments: []
+  recentShipments: [],
+  skuOrderStats: []
 })
 
 // 기본 날짜 (6개월 전 ~ 오늘)
@@ -412,53 +450,28 @@ async function loadStatistics() {
   }
 }
 
-// Mock 데이터 (백엔드 연동 전 테스트용)
+// API 실패 시 빈 데이터로 fallback
 function loadMockData() {
   statistics.value = {
     summary: {
-      totalOrderCount: 156,
-      totalShipmentCount: 180,
-      totalOrderAmount: 3500000000,
-      totalShipmentAmount: 2847500000,
-      completionRate: 78.2,
+      totalOrderCount: 0,
+      totalShipmentCount: 0,
+      totalOrderAmount: 0,
+      totalShipmentAmount: 0,
+      completionRate: 0,
       statusCount: {
-        pending: 12,
-        inProgress: 15,
-        pendingSignature: 7,
-        completed: 122,
+        pending: 0,
+        inProgress: 0,
+        pendingSignature: 0,
+        completed: 0,
         cancelled: 0
       }
     },
-    periodTrend: [
-      { period: '2024-07', orderCount: 18, shipmentAmount: 320000000, completedCount: 15, completionRate: 83.3 },
-      { period: '2024-08', orderCount: 22, shipmentAmount: 450000000, completedCount: 18, completionRate: 81.8 },
-      { period: '2024-09', orderCount: 28, shipmentAmount: 520000000, completedCount: 24, completionRate: 85.7 },
-      { period: '2024-10', orderCount: 35, shipmentAmount: 680000000, completedCount: 30, completionRate: 85.7 },
-      { period: '2024-11', orderCount: 42, shipmentAmount: 720000000, completedCount: 35, completionRate: 83.3 },
-      { period: '2024-12', orderCount: 11, shipmentAmount: 157500000, completedCount: 0, completionRate: 0 }
-    ],
-    regionBreakdown: [
-      { region: '서울', orderCount: 35, shipmentAmount: 580000000, completionRate: 85.7 },
-      { region: '경기', orderCount: 42, shipmentAmount: 720000000, completionRate: 78.6 },
-      { region: '부산', orderCount: 28, shipmentAmount: 450000000, completionRate: 82.1 },
-      { region: '전북', orderCount: 22, shipmentAmount: 380000000, completionRate: 77.3 },
-      { region: '경남', orderCount: 18, shipmentAmount: 320000000, completionRate: 72.2 },
-      { region: '기타', orderCount: 11, shipmentAmount: 397500000, completionRate: 81.8 }
-    ],
-    recentOrders: [
-      { orderId: 1, deliveryRequestNo: '35-24-3-41787-00', client: '한국농어촌공사', region: '전북', shipmentDate: '2024-12-01', amount: 25000000, status: 'COMPLETED' as ShipmentStatus, completionRate: 100 },
-      { orderId: 2, deliveryRequestNo: '35-24-3-41788-00', client: '한국도로공사', region: '경기', shipmentDate: '2024-11-28', amount: 45000000, status: 'IN_PROGRESS' as ShipmentStatus, completionRate: 60 },
-      { orderId: 3, deliveryRequestNo: '35-24-3-41789-00', client: '한국수자원공사', region: '부산', shipmentDate: '2024-11-25', amount: 32000000, status: 'PENDING_SIGNATURE' as ShipmentStatus, completionRate: 80 },
-      { orderId: 4, deliveryRequestNo: '35-24-3-41790-00', client: '한국철도공사', region: '서울', shipmentDate: '2024-11-22', amount: 18000000, status: 'PENDING' as ShipmentStatus, completionRate: 0 },
-      { orderId: 5, deliveryRequestNo: '35-24-3-41791-00', client: '한국전력공사', region: '경남', shipmentDate: '2024-11-20', amount: 55000000, status: 'COMPLETED' as ShipmentStatus, completionRate: 100 }
-    ],
-    recentShipments: [
-      { shipmentId: 1, orderId: 1, deliveryRequestNo: '35-24-3-41787-00', client: '한국농어촌공사', region: '전북', shipmentDate: '2024-12-01', amount: 12500000, status: 'COMPLETED' as ShipmentStatus, vehicleNo: '123-4567' },
-      { shipmentId: 2, orderId: 1, deliveryRequestNo: '35-24-3-41787-00', client: '한국농어촌공사', region: '전북', shipmentDate: '2024-12-02', amount: 12500000, status: 'COMPLETED' as ShipmentStatus, vehicleNo: '234-5678' },
-      { shipmentId: 3, orderId: 2, deliveryRequestNo: '35-24-3-41788-00', client: '한국도로공사', region: '경기', shipmentDate: '2024-11-28', amount: 22500000, status: 'IN_PROGRESS' as ShipmentStatus, vehicleNo: '345-6789' },
-      { shipmentId: 4, orderId: 3, deliveryRequestNo: '35-24-3-41789-00', client: '한국수자원공사', region: '부산', shipmentDate: '2024-11-25', amount: 16000000, status: 'PENDING_SIGNATURE' as ShipmentStatus, vehicleNo: '456-7890' },
-      { shipmentId: 5, orderId: 4, deliveryRequestNo: '35-24-3-41790-00', client: '한국철도공사', region: '서울', shipmentDate: '2024-11-22', amount: 18000000, status: 'PENDING' as ShipmentStatus, vehicleNo: null }
-    ]
+    periodTrend: [],
+    regionBreakdown: [],
+    recentOrders: [],
+    recentShipments: [],
+    skuOrderStats: []
   }
   error.value = null
 }
@@ -468,24 +481,7 @@ function handleSearch() {
   loadStatistics()
 }
 
-// 초기화
-function handleReset() {
-  searchParams.startDate = getDefaultStartDate()
-  searchParams.endDate = getDefaultEndDate()
-  searchParams.periodUnit = 'monthly'
-  searchParams.status = undefined
-  loadStatistics()
-}
-
 // 포맷 함수들
-function formatNumber(value: number): string {
-  return value.toLocaleString('ko-KR')
-}
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString('ko-KR') + '원'
-}
-
 function formatCompactNumber(value: number): string {
   if (value >= 100000000) {
     return (value / 100000000).toFixed(1) + '억'
@@ -1199,8 +1195,19 @@ onMounted(() => {
   min-width: 36px;
 }
 
+/* 2컬럼 테이블 행 */
+.tables-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
 /* 반응형 */
 @media (max-width: 1024px) {
+  .tables-row {
+    grid-template-columns: 1fr;
+  }
+
   .chart-section {
     grid-template-columns: 1fr;
   }

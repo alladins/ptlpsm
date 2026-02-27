@@ -158,7 +158,9 @@ class TransportService {
         body: JSON.stringify(requestData)
       })
       if (!response.ok) {
-        throw new Error(`운송장 등록 실패: ${response.status}`)
+        const errorData = await response.json().catch(() => null)
+        const errorMessage = errorData?.message || `운송장 등록 실패: ${response.status}`
+        throw new Error(errorMessage)
       }
       return await response.json()
     } catch (error) {

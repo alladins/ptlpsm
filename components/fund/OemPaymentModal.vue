@@ -425,6 +425,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import type { OemPayment, ProgressPaymentRequest } from '~/types/fund'
+import { formatCurrency } from '~/utils/format'
 
 // OEM 제조사 타입
 interface OemCompany {
@@ -569,12 +570,6 @@ const remainingOemLimit = computed(() => {
   return Math.max(0, Math.floor((props.oemExpectedTotal || 0) - totalScheduled))
 })
 
-// Methods
-const formatCurrency = (value: number | undefined): string => {
-  if (!value) return '0원'
-  return new Intl.NumberFormat('ko-KR').format(value) + '원'
-}
-
 // 결제 유형별 라벨 (잔금 vs 기성금 구분)
 const getPaymentLabel = (payment: ProgressPaymentRequest): string => {
   if (payment.paymentType === 'BALANCE') {
@@ -627,10 +622,7 @@ const handleAmountBlur = () => {
   }
 }
 
-const setSuggestedAmount = () => {
-  formData.amount = suggestedOemAmount.value
-  displayAmount.value = formatNumberInput(suggestedOemAmount.value.toString())
-}
+// setSuggestedAmount 함수 제거됨 (미사용)
 
 // 비율에 따른 금액 설정 (10%, 30%, 61%, 64%) - 기성금 선택 기준
 const setPercentAmount = (percent: number) => {

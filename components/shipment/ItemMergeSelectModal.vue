@@ -149,7 +149,7 @@ interface MergeResult {
 interface Emits {
   (e: 'close'): void
   (e: 'confirm', result: MergeResult): void
-  (e: 'skip'): void
+  (e: 'skip', quantity: number): void
 }
 
 const props = defineProps<Props>()
@@ -243,9 +243,9 @@ const handleClose = () => {
   emit('close')
 }
 
-// 병합 없이 추가
+// 병합 없이 추가 (입력된 수량 전달)
 const handleSkip = () => {
-  emit('skip')
+  emit('skip', mergeQuantity.value)
 }
 
 // 확인

@@ -362,13 +362,12 @@ const handleSubmit = async () => {
 
 // 페이지 닫기
 const closePage = () => {
-  // 모바일 브라우저에서 창 닫기 시도
-  if (window.opener) {
+  try {
     window.close()
-  } else {
-    // 창을 닫을 수 없는 경우 홈으로 이동
-    window.location.href = '/'
+  } catch {
+    // 닫기 실패 시 무시 - 완료 화면이 계속 표시됨
   }
+  autoCloseCountdown.value = 0
 }
 </script>
 

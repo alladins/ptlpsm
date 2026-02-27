@@ -66,14 +66,24 @@
         <span>{{ advanceDetail.remarks }}</span>
       </div>
 
-      <!-- 수금확인 버튼 (신청 또는 승인 상태일 때 표시) -->
-      <div v-if="advanceDetail?.status === 'REQUESTED' || advanceDetail?.status === 'APPROVED'" class="collection-confirm-section">
+      <!-- 액션 버튼 (상태에 따라 표시) -->
+      <div v-if="advanceDetail?.status === 'REQUESTED' || advanceDetail?.status === 'APPROVED' || advanceDetail?.status === 'REJECTED'" class="collection-confirm-section">
+        <!-- 수금확인 버튼 (신청 또는 승인 상태일 때) -->
         <button
+          v-if="advanceDetail?.status === 'REQUESTED' || advanceDetail?.status === 'APPROVED'"
           class="btn-collection-confirm-lg"
           @click="emit('openCollectionConfirm', advanceDetail)"
         >
           <i class="fas fa-check-circle"></i>
           입금 확인하기
+        </button>
+        <!-- 삭제 버튼 (입금확인 전 상태일 때) -->
+        <button
+          class="btn-delete-advance"
+          @click="emit('deleteAdvance', advanceDetail!)"
+        >
+          <i class="fas fa-trash-alt"></i>
+          선급금 삭제 (재신청 가능)
         </button>
       </div>
 
@@ -138,6 +148,8 @@ const emit = defineEmits<{
   openModal: []
   /** 수금 확인 모달 열기 */
   openCollectionConfirm: [payment: AdvancePayment]
+  /** 선급금 삭제 */
+  deleteAdvance: [payment: AdvancePayment]
   /** PDF 보기 */
   viewPdf: [type: AdvancePdfType]
   /** PDF 다운로드 */
@@ -257,6 +269,29 @@ const advanceDocuments: { type: AdvancePdfType; label: string; icon: string; ico
   background: linear-gradient(135deg, #059669, #047857);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-delete-advance {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  background: white;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete-advance:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
 }
 
 /* PDF 문서 섹션 */

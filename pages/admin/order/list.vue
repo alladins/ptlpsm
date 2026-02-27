@@ -120,11 +120,11 @@
               <tr>
                 <th style="width: 40px;">No</th>
                 <th style="width: 150px;">납품요구번호</th>
-                <th style="width: 60px;">상태</th>
                 <th style="width: 100px;">납품요구일자</th>
                 <th style="width: 120px;">수요기관</th>
                 <th style="width: 50px;">담당자</th>
                 <th style="min-width: 200px;">사업명</th>
+                <th style="width: 60px;">상태</th>
                 <th style="width: 80px;">건설사</th>
                 <th style="width: 100px;">총계약금액</th>
                 <th style="width: 95px;">등록일자</th>
@@ -156,6 +156,10 @@
                       </span>
                     </div>
                   </td>
+                  <td @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.deliveryRequestDate }}</td>
+                  <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.client }}</td>
+                  <td @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.clientManagerName }}</td>
+                  <td class="project-name-cell text-left" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.projectName }}</td>
                   <td @click="editItem(group.baseOrder.orderId)">
                     <span
                       class="status-badge"
@@ -164,10 +168,6 @@
                       {{ getStatusLabel(group.baseOrder.status) }}
                     </span>
                   </td>
-                  <td @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.deliveryRequestDate }}</td>
-                  <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.client }}</td>
-                  <td @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.clientManagerName }}</td>
-                  <td class="project-name-cell text-left" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.projectName }}</td>
                   <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.builderCompanyName || '-' }}</td>
                   <td class="text-right" @click="editItem(group.baseOrder.orderId)">{{ formatNumber(group.baseOrder.itemTotalAmount) }}</td>
                   <td @click="editItem(group.baseOrder.orderId)">{{ formatDate(group.baseOrder.createdAt) }}</td>
@@ -193,6 +193,10 @@
                         <span class="delivery-request-no child">{{ child.deliveryRequestNo }}</span>
                       </div>
                     </td>
+                    <td @click="editItem(child.orderId)">{{ child.deliveryRequestDate }}</td>
+                    <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">{{ child.client }}</td>
+                    <td @click="editItem(child.orderId)">{{ child.clientManagerName }}</td>
+                    <td class="project-name-cell text-left" @click="editItem(child.orderId)">{{ child.projectName }}</td>
                     <td @click="editItem(child.orderId)">
                       <span
                         class="status-badge"
@@ -201,10 +205,6 @@
                         {{ getStatusLabel(child.status) }}
                       </span>
                     </td>
-                    <td @click="editItem(child.orderId)">{{ child.deliveryRequestDate }}</td>
-                    <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">{{ child.client }}</td>
-                    <td @click="editItem(child.orderId)">{{ child.clientManagerName }}</td>
-                    <td class="project-name-cell text-left" @click="editItem(child.orderId)">{{ child.projectName }}</td>
                     <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">{{ child.builderCompanyName || '-' }}</td>
                     <td class="text-right" @click="editItem(child.orderId)">{{ formatNumber(child.itemTotalAmount) }}</td>
                     <td @click="editItem(child.orderId)">{{ formatDate(child.createdAt) }}</td>
@@ -718,8 +718,8 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-/* 납품요구일자 셀 스타일 (4번째 컬럼) */
-.data-table td:nth-child(4) {
+/* 납품요구일자 셀 스타일 (3번째 컬럼) */
+.data-table td:nth-child(3) {
   white-space: nowrap;
 }
 

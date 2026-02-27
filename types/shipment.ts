@@ -127,12 +127,7 @@ export interface ShipmentResponse {
   /** 배송비 (원가에 포함) */
   shippingCost: number | null
 
-  // 발주서 관련 (신규)
-  /** 발주서 PDF 경로 */
-  purchaseOrderPdfPath: string | null
-
-  // 상태 플래그 (신규)
-  /** 기성 포함 여부 (true면 수정 불가) */
+  /** 기성 포함 여부 */
   isBilled: boolean
   /** 납품완료계 상태 */
   deliveryDoneStatus: string | null

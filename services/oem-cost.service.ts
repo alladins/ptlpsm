@@ -13,6 +13,7 @@ import type {
   OemCostSearchParams,
   OemCostStatistics,
   OemCostPageResponse,
+  OemCostTreePageResponse,
   SkuWithoutOemCost,
   AffectedOrder,
   RecalcResult
@@ -41,6 +42,31 @@ class OemCostService {
 
     if (!response.ok) {
       throw new Error(`원가 목록 조회 실패: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  /**
+   * 트리 구조 목록 조회 (SKU 부모 → OEM 자식)
+   */
+  async getTreeList(params: OemCostSearchParams = {}): Promise<OemCostTreePageResponse> {
+    const queryParams = new URLSearchParams()
+
+    if (params.skuId) queryParams.append('skuId', params.skuId)
+    if (params.oemCompanyId) queryParams.append('oemCompanyId', params.oemCompanyId.toString())
+    if (params.keyword) queryParams.append('skuName', params.keyword)
+    if (params.page !== undefined) queryParams.append('page', params.page.toString())
+    if (params.size !== undefined) queryParams.append('size', params.size.toString())
+
+    const url = `${OEM_COST_ENDPOINTS.tree()}?${queryParams.toString()}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`트리 목록 조회 실패: ${response.status}`)
     }
 
     return response.json()

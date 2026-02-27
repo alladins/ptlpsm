@@ -84,14 +84,25 @@
             <tr>
               <th>품목</th>
               <th>규격</th>
-              <th>수량</th>
+              <th>수량(m²)</th>
+              <th>비고</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index) in deliveryData?.items" :key="index">
+            <tr
+              v-for="(item, index) in deliveryData?.items"
+              :key="index"
+              :class="{ 'row-merge-source': (item?.quantity ?? 0) === 0 }"
+            >
               <td>{{ item?.itemName ?? '-' }}</td>
               <td>{{ item?.specification ?? '-' }}</td>
-              <td>{{ formatQuantity(item?.quantity) }} {{ item?.unit ?? '' }}</td>
+              <td class="text-right">{{ formatQuantity(item?.quantity) }}</td>
+              <td class="remark-cell">
+                <span v-if="getMergeLabel(item?.remarks)" class="merge-badge" :style="{ backgroundColor: getMergeLabel(item?.remarks)?.color }">
+                  {{ getMergeLabel(item?.remarks)?.label }}
+                </span>
+                <span v-else>-</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -165,6 +176,23 @@ const autoCloseCountdown = ref(0) // 자동 닫기 카운트다운
 // 컴포넌트 ref
 const signatureRef = ref<any>(null)
 const photoUploaderRef = ref<any>(null)
+
+// 합지 배지 라벨 추출
+const getMergeLabel = (remarks: string | null | undefined): { label: string; color: string } | null => {
+  if (!remarks) return null
+
+  // 합지 결과 품목 (타겟)
+  if (remarks.includes('에서 병합됨') || remarks.includes('추가 병합')) {
+    return { label: '합지 결과', color: '#3b82f6' }
+  }
+
+  // 합지 소스 품목
+  if (remarks.includes('병합:') || remarks.includes('에서 이전')) {
+    return { label: '합지 소스', color: '#8b5cf6' }
+  }
+
+  return null
+}
 
 // 만료 시간 포맷팅
 const formatExpireTime = (dateString?: string) => {
@@ -324,13 +352,14 @@ const handleSubmit = async () => {
 
 // 페이지 닫기
 const closePage = () => {
-  // 모바일 브라우저에서 창 닫기 시도
-  if (window.opener) {
+  // window.close()는 window.open()으로 열린 창에서만 동작
+  // 모바일 SMS 링크에서 열린 경우 동작하지 않으므로 완료 화면만 유지
+  try {
     window.close()
-  } else {
-    // 창을 닫을 수 없는 경우 홈으로 이동
-    window.location.href = '/'
+  } catch {
+    // 닫기 실패 시 무시 - 완료 화면이 계속 표시됨
   }
+  autoCloseCountdown.value = 0
 }
 </script>
 

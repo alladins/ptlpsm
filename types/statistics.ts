@@ -149,6 +149,20 @@ export interface RecentShipmentItem {
   vehicleNo: string | null
 }
 
+/** SKU별 발주수량 통계 아이템 */
+export interface SkuOrderStatsItem {
+  /** 품목명 */
+  itemName: string
+  /** SKU ID */
+  skuId: string
+  /** SKU 품명 */
+  skuName: string
+  /** 단위 */
+  unit: string
+  /** 누적 발주수량 */
+  totalOrderedQuantity: number
+}
+
 /** 출하현황 통계 응답 */
 export interface ShipmentStatisticsResponse {
   /** 요약 정보 */
@@ -161,6 +175,8 @@ export interface ShipmentStatisticsResponse {
   recentOrders: RecentOrderItem[]
   /** 최근 출하 목록 */
   recentShipments: RecentShipmentItem[]
+  /** SKU별 발주수량 통계 */
+  skuOrderStats: SkuOrderStatsItem[]
 }
 
 // ============================================

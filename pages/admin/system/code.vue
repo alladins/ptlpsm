@@ -62,9 +62,9 @@
               </tr>
             </thead>
             <tbody>
-              <tr 
-                v-for="group in paginatedGroups" 
-                :key="group.groupCode" 
+              <tr
+                v-for="group in groupTable.items.value"
+                :key="group.groupCode"
                 class="table-row"
                 :class="{ 'selected': selectedGroupCode === group.groupCode }"
                 @click="selectGroup(group.groupCode)"
@@ -95,38 +95,13 @@
         <!-- 페이지네이션 -->
         <div class="pagination-section">
           <div class="pagination-info">
-            총 {{ filteredGroups.length }}개 중 {{ (currentGroupPage - 1) * groupPageSize + 1 }}-{{ Math.min(currentGroupPage * groupPageSize, filteredGroups.length) }}개 표시
+            총 {{ groupTable.totalElements.value }}개 중 {{ groupTable.startIndex.value }}-{{ groupTable.endIndex.value }}개 표시
           </div>
-          <div class="pagination-controls">
-            <button 
-              @click="currentGroupPage--" 
-              :disabled="currentGroupPage === 1"
-              class="pagination-button"
-            >
-              이전
-            </button>
-            
-            <!-- 페이지 번호들 -->
-            <div class="page-numbers">
-              <button 
-                v-for="pageNum in getGroupPageNumbers()" 
-                :key="pageNum"
-                @click="currentGroupPage = pageNum"
-                :class="['page-number', { active: pageNum === currentGroupPage }]"
-                :disabled="pageNum === currentGroupPage"
-              >
-                {{ pageNum }}
-              </button>
-            </div>
-            
-            <button 
-              @click="currentGroupPage++" 
-              :disabled="currentGroupPage === totalGroupPages"
-              class="pagination-button"
-            >
-              다음
-            </button>
-          </div>
+          <Pagination
+            :current-page="groupTable.currentPage.value"
+            :total-pages="groupTable.totalPages.value"
+            @change="groupTable.changePage"
+          />
         </div>
       </div>
 
@@ -201,7 +176,7 @@
                   </div>
                 </td>
               </tr>
-              <tr v-else-if="filteredDetails.length === 0" class="no-data-row">
+              <tr v-else-if="sortedDetails.length === 0" class="no-data-row">
                 <td colspan="6" class="no-data-message">
                   <div class="empty-state">
                     <i class="fas fa-inbox"></i>
@@ -209,7 +184,7 @@
                   </div>
                 </td>
               </tr>
-              <tr v-else v-for="detail in paginatedDetails" :key="`${detail.groupCode}-${detail.code}`" class="table-row">
+              <tr v-else v-for="detail in detailTable.items.value" :key="`${detail.groupCode}-${detail.code}`" class="table-row">
                 <td>{{ detail.groupCode }}</td>
                 <td>{{ detail.code }}</td>
                 <td>{{ detail.codeName }}</td>
@@ -237,38 +212,13 @@
         <!-- 페이지네이션 -->
         <div class="pagination-section">
           <div class="pagination-info">
-            총 {{ filteredDetails.length }}개 중 {{ (currentDetailPage - 1) * detailPageSize + 1 }}-{{ Math.min(currentDetailPage * detailPageSize, filteredDetails.length) }}개 표시
+            총 {{ detailTable.totalElements.value }}개 중 {{ detailTable.startIndex.value }}-{{ detailTable.endIndex.value }}개 표시
           </div>
-          <div class="pagination-controls">
-            <button 
-              @click="currentDetailPage--" 
-              :disabled="currentDetailPage === 1"
-              class="pagination-button"
-            >
-              이전
-            </button>
-            
-            <!-- 페이지 번호들 -->
-            <div class="page-numbers">
-              <button 
-                v-for="pageNum in getDetailPageNumbers()" 
-                :key="pageNum"
-                @click="currentDetailPage = pageNum"
-                :class="['page-number', { active: pageNum === currentDetailPage }]"
-                :disabled="pageNum === currentDetailPage"
-              >
-                {{ pageNum }}
-              </button>
-            </div>
-            
-            <button 
-              @click="currentDetailPage++" 
-              :disabled="currentDetailPage === totalDetailPages"
-              class="pagination-button"
-            >
-              다음
-            </button>
-          </div>
+          <Pagination
+            :current-page="detailTable.currentPage.value"
+            :total-pages="detailTable.totalPages.value"
+            @change="detailTable.changePage"
+          />
         </div>
       </div>
     </div>
@@ -286,10 +236,10 @@
           <form @submit.prevent="saveGroup" class="form">
             <div class="form-group">
               <label for="groupCode">코드 그룹 코드 *</label>
-              <input 
+              <input
                 id="groupCode"
-                v-model="groupForm.groupCode" 
-                type="text" 
+                v-model="groupForm.groupCode"
+                type="text"
                 required
                 :disabled="groupModalMode === 'edit'"
                 class="form-input"
@@ -297,19 +247,19 @@
             </div>
             <div class="form-group">
               <label for="groupName">코드 그룹명 *</label>
-              <input 
+              <input
                 id="groupName"
-                v-model="groupForm.groupName" 
-                type="text" 
+                v-model="groupForm.groupName"
+                type="text"
                 required
                 class="form-input"
               >
             </div>
             <div class="form-group">
               <label for="groupDescription">설명</label>
-              <textarea 
+              <textarea
                 id="groupDescription"
-                v-model="groupForm.description" 
+                v-model="groupForm.description"
                 rows="3"
                 class="form-textarea"
               ></textarea>
@@ -345,15 +295,15 @@
           <form @submit.prevent="saveDetail" class="form">
             <div class="form-group">
               <label for="detailGroupCode">코드 그룹 *</label>
-              <select 
-                id="detailGroupCode" 
-                v-model="detailForm.groupCode" 
-                required 
+              <select
+                id="detailGroupCode"
+                v-model="detailForm.groupCode"
+                required
                 class="form-select"
                 :disabled="detailModalMode === 'create'"
               >
                 <option value="">코드 그룹을 선택하세요</option>
-                <option v-for="group in codeGroups" :key="group.groupCode" :value="group.groupCode">
+                <option v-for="group in allCodeGroups" :key="group.groupCode" :value="group.groupCode">
                   {{ group.groupName }}
                 </option>
               </select>
@@ -363,10 +313,10 @@
             </div>
             <div class="form-group">
               <label for="detailCode">코드 *</label>
-              <input 
+              <input
                 id="detailCode"
-                v-model="detailForm.code" 
-                type="text" 
+                v-model="detailForm.code"
+                type="text"
                 required
                 :disabled="detailModalMode === 'edit'"
                 class="form-input"
@@ -374,29 +324,29 @@
             </div>
             <div class="form-group">
               <label for="detailCodeName">코드명 *</label>
-              <input 
+              <input
                 id="detailCodeName"
-                v-model="detailForm.codeName" 
-                type="text" 
+                v-model="detailForm.codeName"
+                type="text"
                 required
                 class="form-input"
               >
             </div>
             <div class="form-group">
               <label for="detailDescription">설명</label>
-              <textarea 
+              <textarea
                 id="detailDescription"
-                v-model="detailForm.description" 
+                v-model="detailForm.description"
                 rows="3"
                 class="form-textarea"
               ></textarea>
             </div>
             <div class="form-group">
               <label for="detailSortOrder">정렬 순서</label>
-              <input 
+              <input
                 id="detailSortOrder"
-                v-model.number="detailForm.sortOrder" 
-                type="number" 
+                v-model.number="detailForm.sortOrder"
+                type="number"
                 min="1"
                 class="form-input"
               >
@@ -426,38 +376,40 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from '#imports'
-import { codeService } from '~/services/code.service'
+import { codeService, type CodeGroup, type CodeDetail } from '~/services/code.service'
+import { useDataTable } from '~/composables/useDataTable'
+import { formatDate } from '~/utils/format'
 
 // 레이아웃 설정
 definePageMeta({
   layout: 'admin'
 })
 
-// Router
-const router = useRouter()
+// ===== 원본 데이터 (API에서 로드) =====
+const allCodeGroups = ref<CodeGroup[]>([])
+const allCodeDetails = ref<CodeDetail[]>([])
 
-// Reactive data
-// 코드 그룹 관련 데이터
-const codeGroups = ref<any[]>([])
+// ===== 검색/필터/정렬 상태 =====
+// 코드 그룹
 const groupSearchKeyword = ref('')
 const groupStatusFilter = ref('')
 const groupSortBy = ref('groupCode')
 const groupSortOrder = ref<'asc' | 'desc'>('asc')
-const currentGroupPage = ref(1)
-const groupPageSize = ref(10)
 const selectedGroupCode = ref<string>('')
 
-// 코드 상세 관련 데이터
-const codeDetails = ref<any[]>([])
+// 코드 상세
 const detailSearchKeyword = ref('')
 const detailStatusFilter = ref('')
-const detailSortBy = ref('sortOrder') // 기본 정렬을 정렬순서로 변경
+const detailSortBy = ref('sortOrder')
 const detailSortOrder = ref<'asc' | 'desc'>('asc')
-const currentDetailPage = ref(1)
-const detailPageSize = ref(10)
 
-// 모달 관련 데이터
+// ===== useDataTable: 그룹용 =====
+const groupTable = useDataTable<CodeGroup>({ initialPageSize: 10 })
+
+// ===== useDataTable: 상세용 =====
+const detailTable = useDataTable<CodeDetail>({ initialPageSize: 10 })
+
+// ===== 모달 관련 데이터 =====
 const showGroupModal = ref(false)
 const groupModalMode = ref<'create' | 'edit'>('create')
 const groupForm = ref({
@@ -479,13 +431,13 @@ const detailForm = ref({
   useYn: 'Y' as 'Y' | 'N'
 })
 
-// Computed properties
+// ===== 클라이언트 사이드 필터/정렬 (computed) =====
 const filteredGroups = computed(() => {
-  let filtered = codeGroups.value || []
+  let filtered = allCodeGroups.value || []
 
   if (groupSearchKeyword.value) {
     const keyword = groupSearchKeyword.value.toLowerCase()
-    filtered = filtered.filter(group => 
+    filtered = filtered.filter(group =>
       group.groupName.toLowerCase().includes(keyword) ||
       group.description?.toLowerCase().includes(keyword)
     )
@@ -499,34 +451,26 @@ const filteredGroups = computed(() => {
 })
 
 const sortedGroups = computed(() => {
-  const sorted = [...filteredGroups.value].sort((a, b) => {
+  const sorted = [...filteredGroups.value].sort((a: any, b: any) => {
     const aValue = a[groupSortBy.value]
     const bValue = b[groupSortBy.value]
-    
+
     if (groupSortOrder.value === 'asc') {
       return aValue > bValue ? 1 : -1
     } else {
       return aValue < bValue ? 1 : -1
     }
   })
-  
+
   return sorted
 })
 
-const paginatedGroups = computed(() => {
-  const start = (currentGroupPage.value - 1) * groupPageSize.value
-  const end = start + groupPageSize.value
-  return sortedGroups.value.slice(start, end)
-})
-
-const totalGroupPages = computed(() => Math.ceil(filteredGroups.value.length / groupPageSize.value))
-
 const filteredDetails = computed(() => {
-  let filtered = codeDetails.value || []
+  let filtered = allCodeDetails.value || []
 
   if (detailSearchKeyword.value) {
     const keyword = detailSearchKeyword.value.toLowerCase()
-    filtered = filtered.filter(detail => 
+    filtered = filtered.filter(detail =>
       detail.codeName.toLowerCase().includes(keyword) ||
       detail.description?.toLowerCase().includes(keyword)
     )
@@ -544,12 +488,12 @@ const filteredDetails = computed(() => {
 })
 
 const sortedDetails = computed(() => {
-  const sorted = [...filteredDetails.value].sort((a, b) => {
+  const sorted = [...filteredDetails.value].sort((a: any, b: any) => {
     // 기본적으로 정렬순서(sortOrder)로 정렬
     if (detailSortBy.value === 'sortOrder') {
       const aValue = a.sortOrder || 0
       const bValue = b.sortOrder || 0
-      
+
       if (detailSortOrder.value === 'asc') {
         return aValue - bValue
       } else {
@@ -559,7 +503,7 @@ const sortedDetails = computed(() => {
       // 다른 필드로 정렬할 때는 기존 로직 사용
       const aValue = a[detailSortBy.value]
       const bValue = b[detailSortBy.value]
-      
+
       if (detailSortOrder.value === 'asc') {
         return aValue > bValue ? 1 : -1
       } else {
@@ -567,83 +511,80 @@ const sortedDetails = computed(() => {
       }
     }
   })
-  
+
   return sorted
 })
 
-const paginatedDetails = computed(() => {
-  const start = (currentDetailPage.value - 1) * detailPageSize.value
-  const end = start + detailPageSize.value
-  return sortedDetails.value.slice(start, end)
-})
+// ===== 정렬/필터 변경 시 useDataTable에 데이터 반영 =====
+watch(sortedGroups, (data) => {
+  groupTable.setData(data)
+}, { immediate: true })
 
-const totalDetailPages = computed(() => Math.ceil(filteredDetails.value.length / detailPageSize.value))
+watch(sortedDetails, (data) => {
+  detailTable.setData(data)
+}, { immediate: true })
 
-// Methods
+// ===== API 호출 =====
 const loadData = async () => {
   try {
-    console.log('데이터 로딩 시작...')
-    // 코드 그룹만 먼저 로드
+    // 코드 그룹 로드
     const groups = await codeService.getCodeGroups()
-    console.log('로드된 코드 그룹:', groups)
-    codeGroups.value = groups || []
-    
+    allCodeGroups.value = groups || []
+
     // 코드 상세는 선택된 그룹이 있을 때만 로드
     if (selectedGroupCode.value) {
       await loadCodeDetails(selectedGroupCode.value)
     } else {
-      codeDetails.value = []
+      allCodeDetails.value = []
     }
-    
-    console.log('데이터 로딩 완료')
   } catch (error) {
     console.error('데이터 로드 실패:', error)
-    // 에러 발생 시에도 빈 배열로 초기화하여 UI 에러 방지
-    codeGroups.value = []
-    codeDetails.value = []
+    allCodeGroups.value = []
+    allCodeDetails.value = []
     alert('데이터를 불러오는데 실패했습니다.')
   }
 }
 
 const loadCodeDetails = async (groupCode: string) => {
   try {
-    console.log('코드 상세 로딩:', groupCode)
     const details = await codeService.getCodeDetails(groupCode)
-    console.log('로드된 코드 상세:', details)
-    codeDetails.value = details || []
+    allCodeDetails.value = details || []
   } catch (error) {
     console.error('코드 상세 로드 실패:', error)
-    codeDetails.value = []
+    allCodeDetails.value = []
   }
 }
 
+// ===== 검색 (첫 페이지로 리셋) =====
 const searchGroups = () => {
-  currentGroupPage.value = 1
+  groupTable.changePage(0)
 }
 
 const searchDetails = () => {
-  currentDetailPage.value = 1
+  detailTable.changePage(0)
 }
 
+// ===== 그룹 선택 =====
 const selectGroup = (groupCode: string) => {
   selectedGroupCode.value = groupCode
-  currentDetailPage.value = 1
+  detailTable.changePage(0)
   // 그룹 선택 시 해당 그룹의 코드 상세 로드
   loadCodeDetails(groupCode)
 }
 
 const getSelectedGroupName = () => {
-  const selectedGroup = codeGroups.value.find(group => group.groupCode === selectedGroupCode.value)
+  const selectedGroup = allCodeGroups.value.find(group => group.groupCode === selectedGroupCode.value)
   return selectedGroup ? selectedGroup.groupName : ''
 }
 
 const getNextSortOrder = (groupCode: string) => {
-  const existingCodes = codeDetails.value.filter(detail => detail.groupCode === groupCode)
-  return existingCodes.length > 0 
-    ? Math.max(...existingCodes.map(d => d.sortOrder || 0)) + 1 
+  const existingCodes = allCodeDetails.value.filter(detail => detail.groupCode === groupCode)
+  return existingCodes.length > 0
+    ? Math.max(...existingCodes.map(d => d.sortOrder || 0)) + 1
     : 1
 }
 
+// ===== 정렬 토글 =====
 const sortGroups = (field: string) => {
   if (groupSortBy.value === field) {
     groupSortOrder.value = groupSortOrder.value === 'asc' ? 'desc' : 'asc'
@@ -667,8 +608,7 @@ const getSortIcon = (field: string, sortBy: string, sortOrder: string) => {
   return sortOrder === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
 }
 
-
-
+// ===== 모달 =====
 const openGroupModal = (mode: 'create' | 'edit', group?: any) => {
   groupModalMode.value = mode
   if (mode === 'create') {
@@ -715,7 +655,7 @@ const saveGroup = async () => {
 
 const deleteGroup = async (groupCode: string) => {
   if (!confirm('정말로 이 코드 그룹을 삭제하시겠습니까?')) return
-  
+
   try {
     await codeService.deleteCodeGroup(groupCode)
     alert('코드 그룹이 삭제되었습니다.')
@@ -730,11 +670,11 @@ const openDetailModal = (mode: 'create' | 'edit', detail?: any) => {
   detailModalMode.value = mode
   if (mode === 'create') {
     detailForm.value = {
-      groupCode: selectedGroupCode.value, // 선택된 그룹 코드로 자동 설정
+      groupCode: selectedGroupCode.value,
       code: '',
       codeName: '',
       description: '',
-      sortOrder: getNextSortOrder(selectedGroupCode.value), // 자동 계산된 정렬순서
+      sortOrder: getNextSortOrder(selectedGroupCode.value),
       useYn: 'Y' as 'Y' | 'N'
     }
   } else if (detail) {
@@ -774,7 +714,7 @@ const saveDetail = async () => {
 
 const deleteDetail = async (groupCode: string, code: string) => {
   if (!confirm('정말로 이 코드를 삭제하시겠습니까?')) return
-  
+
   try {
     await codeService.deleteCodeDetail(groupCode, code)
     alert('코드가 삭제되었습니다.')
@@ -785,80 +725,7 @@ const deleteDetail = async (groupCode: string, code: string) => {
   }
 }
 
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('ko-KR')
-}
-
-const testApiConnection = async () => {
-  try {
-    const result = await codeService.testApiConnection()
-    if (result.success) {
-      alert(`✅ ${result.message}\nURL: ${result.url}`)
-    } else {
-      alert(`❌ ${result.message}\nURL: ${result.url}`)
-    }
-  } catch (error) {
-    alert(`❌ API 연결 테스트 실패: ${error instanceof Error ? error.message : 'Unknown error'}`)
-  }
-}
-
-const getGroupPageNumbers = () => {
-  const pages = []
-  const totalPagesNum = totalGroupPages.value
-  
-  if (totalPagesNum <= 5) {
-    // 전체 페이지가 5개 이하면 모든 페이지 번호 표시
-    for (let i = 1; i <= totalPagesNum; i++) {
-      pages.push(i)
-    }
-  } else {
-    // 전체 페이지가 5개 초과면 현재 페이지 기준으로 5개 표시
-    let start = Math.max(1, currentGroupPage.value - 1)
-    let end = Math.min(totalPagesNum, start + 4)
-    
-    // 끝에서 5개가 되도록 조정
-    if (end - start < 4) {
-      start = Math.max(1, end - 4)
-    }
-    
-    for (let i = start; i <= end; i++) {
-      pages.push(i)
-    }
-  }
-  
-  return pages
-}
-
-const getDetailPageNumbers = () => {
-  const pages = []
-  const totalPagesNum = totalDetailPages.value
-  
-  if (totalPagesNum <= 5) {
-    // 전체 페이지가 5개 이하면 모든 페이지 번호 표시
-    for (let i = 1; i <= totalPagesNum; i++) {
-      pages.push(i)
-    }
-  } else {
-    // 전체 페이지가 5개 초과면 현재 페이지 기준으로 5개 표시
-    let start = Math.max(1, currentDetailPage.value - 1)
-    let end = Math.min(totalPagesNum, start + 4)
-    
-    // 끝에서 5개가 되도록 조정
-    if (end - start < 4) {
-      start = Math.max(1, end - 4)
-    }
-    
-    for (let i = start; i <= end; i++) {
-      pages.push(i)
-    }
-  }
-  
-  return pages
-}
-
-// Watchers
-
-// Lifecycle
+// ===== 라이프사이클 =====
 onMounted(() => {
   loadData()
 })
@@ -866,15 +733,18 @@ onMounted(() => {
 
 <style scoped>
 /* ============================================
-   리팩토링: 공통 스타일은 admin-common.css 사용
-   - 래퍼 스타일 (.code-management)
-   - 버튼 스타일 (.btn-action, .btn-edit, .btn-delete)
-   - 검색 영역 스타일
-   - 테이블 스타일 (.data-table)
-   - 페이지네이션 스타일
+   공통 CSS Import
    ============================================ */
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-modals.css';
 
-/* 페이지 특화 스타일만 작성 */
+/* ============================================
+   페이지 특화 스타일만 작성
+   - 공통 CSS에 이미 정의된 스타일은 제거됨
+   - .form-input, .form-select, .btn-primary, .btn-secondary 등은 공통 CSS 사용
+   - .modal-overlay, .modal-header, .modal-body 등은 공통 CSS 사용
+   ============================================ */
 
 .code-management-container {
   display: flex;
@@ -980,59 +850,9 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.btn-primary {
-  padding: 6px 12px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: background-color 0.2s;
-  white-space: nowrap;
-}
+/* .btn-primary는 admin-buttons.css에서 제공 */
 
-.btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn-primary:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
-
-.btn-primary:disabled:hover {
-  background: #9ca3af;
-}
-
-.table-container {
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.data-table th,
-.data-table td {
-  padding: 8px 10px;
-  text-align: left;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.data-table th {
-  background: #f8fafc;
-  font-weight: 600;
-  color: #1f2937;
-  font-size: 13px;
-}
-
-
+/* .table-container, .data-table은 admin-common.css에서 제공 */
 
 .sortable {
   cursor: pointer;
@@ -1094,13 +914,9 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
+/* .status-badge는 admin-common.css에서 제공 */
 
+/* 페이지 특화 상태 배지 스타일 */
 .status-badge.active {
   background: #dcfce7;
   color: #166534;
@@ -1111,44 +927,7 @@ onMounted(() => {
   color: #dc2626;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-edit,
-.btn-delete {
-  padding: 5px 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.btn-edit {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-edit:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-}
-
-.btn-delete {
-  background: #ef4444;
-  color: white;
-}
-
-.btn-delete:hover {
-  background: #dc2626;
-  transform: translateY(-1px);
-}
+/* .action-buttons, .btn-edit, .btn-delete는 admin-buttons.css에서 제공 */
 
 .pagination-section {
   display: flex;
@@ -1163,155 +942,21 @@ onMounted(() => {
   font-size: 13px;
 }
 
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* Pagination 컴포넌트의 기본 margin/padding을 pagination-section 내부에서 제거 */
+.pagination-section :deep(.pagination) {
+  margin-top: 0;
+  padding: 0;
 }
 
-.pagination-button {
-  padding: 5px 10px;
-  border: 1px solid #d1d5db;
-  background: white;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-}
+/* .modal-overlay, .modal-content, .modal-header, .modal-close, .modal-body는 admin-modals.css에서 제공 */
 
-.pagination-button:hover:not(:disabled) {
-  background: #f9fafb;
-}
+/* .form-group, .form-input, .form-textarea, .form-select는 admin-common.css에서 제공 */
 
-.pagination-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-numbers {
-  display: flex;
-  gap: 2px;
-}
-
-.page-number {
-  padding: 5px 9px;
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-  min-width: 30px;
-  text-align: center;
-  font-size: 13px;
-}
-
-.page-number:hover:not(:disabled) {
-  background: #f9fafb;
-}
-
-.page-number.active {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-
-.page-number:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Modal styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: #6b7280;
-}
-
-.modal-body {
-  padding: 16px 20px;
-}
-
+/* 페이지 특화 폼 스타일 */
 .form {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.form-group label {
-  font-weight: 500;
-  color: #374151;
-  font-size: 13px;
-}
-
-.form-input,
-.form-textarea,
-.form-select {
-  padding: 7px 11px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 13px;
-}
-
-.form-input:focus,
-.form-textarea:focus,
-.form-select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
 }
 
 .form-help {
@@ -1355,26 +1000,26 @@ onMounted(() => {
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .code-groups-section,
   .code-details-section {
     flex: none;
   }
-  
+
   .search-filter-section {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .search-box {
     max-width: none;
   }
-  
+
   .filter-options {
     justify-content: space-between;
   }
-  
+
   .pagination-section {
     flex-direction: column;
     gap: 16px;

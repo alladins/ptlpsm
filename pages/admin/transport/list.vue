@@ -107,6 +107,7 @@
                   <th>No</th>
                   <th>출하NO</th>
                   <th>납품요구번호</th>
+                  <th>사업명</th>
                   <th>배송지</th>
                   <th>배송예정일</th>
                   <th>운송장번호</th>
@@ -122,6 +123,11 @@
                   <td>{{ startIndex + index }}</td>
                   <td>{{ item.shipmentNo || '-' }}</td>
                   <td>{{ item.deliveryRequestNo }}</td>
+                  <td>
+                    <span class="project-name-text" :title="item.projectName">
+                      {{ item.projectName || '-' }}
+                    </span>
+                  </td>
                   <td>
                     <span class="address-text" :title="item.addressDetail">
                       {{ item.deliveryAddress }}
@@ -506,6 +512,16 @@ onMounted(() => {
  * 공통 스타일은 admin-common.css, admin-search.css, admin-tables.css에서 관리됩니다.
  * address-text 스타일은 admin-tables.css로 이동됨
  */
+
+/* 사업명 truncate */
+.project-name-text {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
 
 /* 메시지 버튼 스타일 */
 .btn-message-sm {

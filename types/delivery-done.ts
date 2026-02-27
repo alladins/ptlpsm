@@ -36,6 +36,7 @@ export interface DeliveryDoneItem {
   orderedQuantity: number
   deliveredQuantity: number
   remainingQuantity: number
+  remarks?: string | null
   isComplete: boolean
   itemClassificationNumber: string | null
   itemIdentificationNumber: string | null

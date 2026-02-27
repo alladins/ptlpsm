@@ -16,14 +16,16 @@
 
           <div class="form-group">
             <label>잔금 등록액</label>
-            <div class="amount-display">{{ formatCurrency(amount) }}</div>
-            <input
-              v-model.number="amount"
-              type="number"
-              class="form-input"
-              placeholder="등록할 잔금 금액"
-              min="0"
-            />
+            <div class="input-with-unit">
+              <input
+                type="text"
+                v-model="formattedAmount"
+                @input="onAmountInput"
+                class="form-input"
+                placeholder="등록할 잔금 금액"
+              />
+              <span class="unit">원</span>
+            </div>
           </div>
 
           <div class="form-group">
@@ -63,7 +65,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { formatCurrency } from '~/utils/format'
+import { formatNumber } from '~/utils/format'
 
 interface Props {
   isOpen: boolean
@@ -78,6 +80,7 @@ const emit = defineEmits<{
 }>()
 
 const amount = ref(0)
+const formattedAmount = ref('')
 const requestDate = ref('')
 const remarks = ref('')
 const submitting = ref(false)
@@ -85,10 +88,21 @@ const submitting = ref(false)
 // 오늘 날짜를 기본값으로 설정
 const today = new Date().toISOString().split('T')[0]
 
+// 금액 입력 포맷팅
+const onAmountInput = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  // 숫자만 추출
+  const numericValue = input.value.replace(/[^\d]/g, '')
+  amount.value = parseInt(numericValue, 10) || 0
+  // 포맷팅된 값으로 표시
+  formattedAmount.value = amount.value > 0 ? formatNumber(amount.value) : ''
+}
+
 // 모달이 열릴 때 초기값 설정
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     amount.value = props.initialAmount
+    formattedAmount.value = props.initialAmount > 0 ? formatNumber(props.initialAmount) : ''
     requestDate.value = today
     remarks.value = ''
     submitting.value = false
@@ -236,11 +250,23 @@ textarea.form-input {
   min-height: 60px;
 }
 
-.amount-display {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1d4ed8;
-  margin-bottom: 0.5rem;
+.input-with-unit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-with-unit .form-input {
+  flex: 1;
+  text-align: right;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.input-with-unit .unit {
+  font-size: 0.875rem;
+  color: #6b7280;
+  white-space: nowrap;
 }
 
 .modal-footer {

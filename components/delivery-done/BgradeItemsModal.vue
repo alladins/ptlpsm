@@ -113,7 +113,7 @@
                             v-model.number="bgradeForm.quantity"
                             placeholder="0"
                             min="0"
-                            :max="item.shipmentQuantity"
+                            :max="getAvailableBgradeQuantity(item)"
                             step="2"
                           />
                           <span class="unit">{{ item.unit }}</span>
@@ -296,6 +296,14 @@ const canAddBgrade = computed(() => {
     bgradeForm.adjustedUnitPrice >= 0
   )
 })
+
+/** 해당 품목의 B급 등록 가능 수량 (출하수량 - 이미 등록된 B급 수량) */
+const getAvailableBgradeQuantity = (item: ShipmentItemWithOrder) => {
+  const registeredBgradeQty = bgradeItems.value
+    .filter(bg => bg.skuId === item.skuId && bg.shipmentId === selectedShipmentId.value)
+    .reduce((sum, bg) => sum + bg.quantity, 0)
+  return item.shipmentQuantity - registeredBgradeQty
+}
 
 /** 총 할인 금액 */
 const totalDiscount = computed(() => {

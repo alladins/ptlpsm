@@ -175,145 +175,186 @@
     </div>
 
     <!-- 지급 등록 모달 -->
-    <div v-if="showCreateModal" class="modal-overlay" @click.self="closeCreateModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>커미션 지급 등록</h3>
-          <button class="modal-close" @click="closeCreateModal">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>지급 예정 금액 <span class="required">*</span></label>
-            <div class="input-with-suffix">
-              <input
-                v-model.number="createForm.scheduledAmount"
-                type="number"
-                class="form-input"
-                placeholder="0"
-                min="0"
-              />
-              <span class="input-suffix">원</span>
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showCreateModal" class="ccm-modal-overlay" @click.self="closeCreateModal">
+          <div class="ccm-modal-container ccm-modal-medium">
+            <div class="ccm-modal-header">
+              <div class="ccm-header-content">
+                <div class="ccm-header-icon ccm-icon-purple">
+                  <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="ccm-header-text">
+                  <h3 class="ccm-modal-title">커미션 지급 등록</h3>
+                  <span class="ccm-modal-subtitle">지급 정보를 입력해주세요</span>
+                </div>
+              </div>
+              <button class="ccm-close-button" @click="closeCreateModal">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="ccm-modal-body">
+              <div class="ccm-form">
+                <div class="ccm-form-group">
+                  <label class="ccm-form-label required">지급 예정 금액</label>
+                  <div class="ccm-amount-wrapper">
+                    <input
+                      v-model.number="createForm.scheduledAmount"
+                      type="number"
+                      class="ccm-form-input ccm-amount-input"
+                      placeholder="0"
+                      min="0"
+                    />
+                    <span class="ccm-input-suffix">원</span>
+                  </div>
+                </div>
+                <div class="ccm-form-group">
+                  <label class="ccm-form-label required">지급 예정일</label>
+                  <input
+                    v-model="createForm.scheduledDate"
+                    type="date"
+                    class="ccm-form-input ccm-date-input"
+                  />
+                </div>
+                <div class="ccm-form-group">
+                  <label class="ccm-form-label">
+                    수취인
+                    <span class="ccm-optional-tag">선택</span>
+                  </label>
+                  <input
+                    v-model="createForm.recipientName"
+                    type="text"
+                    class="ccm-form-input"
+                    placeholder="수취인 이름"
+                  />
+                </div>
+                <div class="ccm-form-row">
+                  <div class="ccm-form-group">
+                    <label class="ccm-form-label">은행명</label>
+                    <input
+                      v-model="createForm.bankName"
+                      type="text"
+                      class="ccm-form-input"
+                      placeholder="은행명"
+                    />
+                  </div>
+                  <div class="ccm-form-group">
+                    <label class="ccm-form-label">계좌번호</label>
+                    <input
+                      v-model="createForm.bankAccount"
+                      type="text"
+                      class="ccm-form-input"
+                      placeholder="계좌번호"
+                    />
+                  </div>
+                </div>
+                <div class="ccm-form-group">
+                  <label class="ccm-form-label">
+                    비고
+                    <span class="ccm-optional-tag">선택</span>
+                  </label>
+                  <textarea
+                    v-model="createForm.remarks"
+                    class="ccm-form-input ccm-textarea"
+                    placeholder="비고 사항을 입력해주세요"
+                    rows="3"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="ccm-modal-footer">
+              <button class="ccm-btn-cancel" @click="closeCreateModal">취소</button>
+              <button class="ccm-btn-confirm ccm-purple" @click="submitCreate" :disabled="!isCreateFormValid">
+                <i class="fas fa-save"></i>
+                등록
+              </button>
             </div>
           </div>
-          <div class="form-group">
-            <label>지급 예정일 <span class="required">*</span></label>
-            <input
-              v-model="createForm.scheduledDate"
-              type="date"
-              class="form-input"
-            />
-          </div>
-          <div class="form-group">
-            <label>수취인</label>
-            <input
-              v-model="createForm.recipientName"
-              type="text"
-              class="form-input"
-              placeholder="수취인 이름"
-            />
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>은행명</label>
-              <input
-                v-model="createForm.bankName"
-                type="text"
-                class="form-input"
-                placeholder="은행명"
-              />
-            </div>
-            <div class="form-group">
-              <label>계좌번호</label>
-              <input
-                v-model="createForm.bankAccount"
-                type="text"
-                class="form-input"
-                placeholder="계좌번호"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>비고</label>
-            <textarea
-              v-model="createForm.remarks"
-              class="form-textarea"
-              placeholder="비고 사항"
-              rows="3"
-            ></textarea>
-          </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="closeCreateModal">취소</button>
-          <button class="btn-primary" @click="submitCreate" :disabled="!isCreateFormValid">
-            <i class="fas fa-save"></i>
-            등록
-          </button>
-        </div>
-      </div>
-    </div>
+      </Transition>
+    </Teleport>
 
     <!-- 지급 완료 모달 -->
-    <div v-if="showCompleteModal" class="modal-overlay" @click.self="closeCompleteModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>지급 완료 처리</h3>
-          <button class="modal-close" @click="closeCompleteModal">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="info-box">
-            <p>지급 예정 금액: <strong>{{ formatCurrency(selectedPayment?.scheduledAmount || 0) }}</strong></p>
-          </div>
-          <div class="form-group">
-            <label>실제 지급 금액 <span class="required">*</span></label>
-            <div class="input-with-suffix">
-              <input
-                v-model.number="completeForm.paidAmount"
-                type="number"
-                class="form-input"
-                placeholder="0"
-                min="0"
-              />
-              <span class="input-suffix">원</span>
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showCompleteModal" class="ccm-modal-overlay" @click.self="closeCompleteModal">
+          <div class="ccm-modal-container">
+            <div class="ccm-modal-header">
+              <div class="ccm-header-content">
+                <div class="ccm-header-icon ccm-icon-green">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="ccm-header-text">
+                  <h3 class="ccm-modal-title">지급 완료 처리</h3>
+                  <span class="ccm-modal-subtitle">실제 지급 정보를 입력해주세요</span>
+                </div>
+              </div>
+              <button class="ccm-close-button" @click="closeCompleteModal">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="ccm-modal-body">
+              <div class="ccm-amount-info-card">
+                <div class="ccm-amount-row">
+                  <span class="ccm-amount-label">지급 예정 금액</span>
+                  <span class="ccm-amount-value">{{ formatCurrency(selectedPayment?.scheduledAmount || 0) }}</span>
+                </div>
+              </div>
+              <div class="ccm-form">
+                <div class="ccm-form-group">
+                  <label class="ccm-form-label required">실제 지급 금액</label>
+                  <div class="ccm-amount-wrapper">
+                    <input
+                      v-model.number="completeForm.paidAmount"
+                      type="number"
+                      class="ccm-form-input ccm-amount-input"
+                      placeholder="0"
+                      min="0"
+                    />
+                    <span class="ccm-input-suffix">원</span>
+                  </div>
+                </div>
+                <div class="ccm-form-group">
+                  <label class="ccm-form-label required">실제 지급일</label>
+                  <input
+                    v-model="completeForm.paidDate"
+                    type="date"
+                    class="ccm-form-input ccm-date-input"
+                  />
+                </div>
+                <div class="ccm-form-group">
+                  <label class="ccm-form-label">
+                    비고
+                    <span class="ccm-optional-tag">선택</span>
+                  </label>
+                  <textarea
+                    v-model="completeForm.remarks"
+                    class="ccm-form-input ccm-textarea"
+                    placeholder="비고 사항을 입력해주세요"
+                    rows="3"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="ccm-modal-footer">
+              <button class="ccm-btn-cancel" @click="closeCompleteModal">취소</button>
+              <button class="ccm-btn-confirm ccm-green" @click="submitComplete" :disabled="!isCompleteFormValid">
+                <i class="fas fa-check"></i>
+                완료 처리
+              </button>
             </div>
           </div>
-          <div class="form-group">
-            <label>실제 지급일 <span class="required">*</span></label>
-            <input
-              v-model="completeForm.paidDate"
-              type="date"
-              class="form-input"
-            />
-          </div>
-          <div class="form-group">
-            <label>비고</label>
-            <textarea
-              v-model="completeForm.remarks"
-              class="form-textarea"
-              placeholder="비고 사항"
-              rows="3"
-            ></textarea>
-          </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="closeCompleteModal">취소</button>
-          <button class="btn-primary" @click="submitComplete" :disabled="!isCompleteFormValid">
-            <i class="fas fa-check"></i>
-            완료 처리
-          </button>
-        </div>
-      </div>
-    </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useCommissionStore } from '~/stores/commission'
-import { formatCurrency } from '~/utils/format'
+import { useCommissionFilter } from '~/composables/admin/useCommissionFilter'
+import { formatCurrency, formatDate } from '~/utils/format'
 import type { CommissionPayment, CommissionPaymentStatus, CommissionPaymentCreateRequest, CommissionPaymentCompleteRequest } from '~/types/commission'
 import { COMMISSION_PAYMENT_STATUS_LABELS } from '~/types/commission'
 
@@ -324,182 +365,22 @@ definePageMeta({
 
 const commissionStore = useCommissionStore()
 
-// State
-const loading = ref(true)
-const selectedYear = ref(new Date().getFullYear())
+// 페이지 고유 상태
 const selectedStatus = ref<CommissionPaymentStatus | ''>('')
 const showCreateModal = ref(false)
 const showCompleteModal = ref(false)
 const selectedPayment = ref<CommissionPayment | null>(null)
 
-// 목업 데이터 사용 여부 (UI 테스트용) - 실제 API 연동으로 변경
-const useMockData = ref(false)
-
-// 목업 데이터 정의 - 대리점(영업직원)별 커미션 지급 이력 (15% 지분)
-// 대리점 = 영업직원 (커미션 지급 대상)
-// 대리점별: 김영업(서울/경기), 이판매(부산/경남), 박세일(대전/충청), 최거래(광주/전라), 정딜러(대구/경북)
-const mockPayments: CommissionPayment[] = [
-  // 김영업 (서울/경기) - 국민은행
-  {
-    paymentId: 1,
-    year: 2026,
-    paymentSeq: 1,
-    scheduledAmount: 67_500_000, // 서울시청 4.5억 × 15%
-    paidAmount: 67_500_000,
-    scheduledDate: '2026-02-25',
-    paidDate: '2026-02-28',
-    status: 'COMPLETED',
-    settlementIds: [1],
-    settlementCount: 1,
-    recipientName: '김영업',
-    bankAccount: '110-123-456789',
-    bankName: '국민은행',
-    remarks: '서울시청 납품건 (서울/경기 담당)'
-  },
-  {
-    paymentId: 2,
-    year: 2026,
-    paymentSeq: 2,
-    scheduledAmount: 102_000_000, // 경기도교육청 6.8억 × 15%
-    paidAmount: 102_000_000,
-    scheduledDate: '2026-03-25',
-    paidDate: '2026-03-31',
-    status: 'COMPLETED',
-    settlementIds: [2],
-    settlementCount: 1,
-    recipientName: '김영업',
-    bankAccount: '110-123-456789',
-    bankName: '국민은행',
-    remarks: '경기도교육청 납품건 (서울/경기 담당)'
-  },
-  // 이판매 (부산/경남) - 신한은행
-  {
-    paymentId: 3,
-    year: 2026,
-    paymentSeq: 1,
-    scheduledAmount: 48_000_000, // 부산소방본부 3.2억 × 15%
-    paidAmount: 48_000_000,
-    scheduledDate: '2026-05-25',
-    paidDate: '2026-05-30',
-    status: 'COMPLETED',
-    settlementIds: [3],
-    settlementCount: 1,
-    recipientName: '이판매',
-    bankAccount: '110-987-654321',
-    bankName: '신한은행',
-    remarks: '부산소방본부 납품건 (부산/경남 담당)'
-  },
-  // 김영업 - 인천환경공단
-  {
-    paymentId: 4,
-    year: 2026,
-    paymentSeq: 3,
-    scheduledAmount: 42_000_000, // 인천환경공단 2.8억 × 15%
-    paidAmount: null,
-    scheduledDate: '2026-07-25',
-    paidDate: null,
-    status: 'PROCESSING',
-    settlementIds: [4],
-    settlementCount: 1,
-    recipientName: '김영업',
-    bankAccount: '110-123-456789',
-    bankName: '국민은행',
-    remarks: '인천환경공단 납품건 - 지급 처리 중'
-  },
-  // 박세일 (대전/충청) - 하나은행
-  {
-    paymentId: 5,
-    year: 2026,
-    paymentSeq: 1,
-    scheduledAmount: 63_000_000, // 대전보건연구원 4.2억 × 15%
-    paidAmount: null,
-    scheduledDate: '2026-08-31',
-    paidDate: null,
-    status: 'SCHEDULED',
-    settlementIds: [5],
-    settlementCount: 1,
-    recipientName: '박세일',
-    bankAccount: '123-456-789012',
-    bankName: '하나은행',
-    remarks: '대전보건연구원 납품건 (대전/충청 담당)'
-  },
-  // 최거래 (광주/전라) - 우리은행
-  {
-    paymentId: 6,
-    year: 2026,
-    paymentSeq: 1,
-    scheduledAmount: 27_000_000, // 광주교육청 1.8억 × 15%
-    paidAmount: null,
-    scheduledDate: '2026-09-30',
-    paidDate: null,
-    status: 'SCHEDULED',
-    settlementIds: [6],
-    settlementCount: 1,
-    recipientName: '최거래',
-    bankAccount: '789-012-345678',
-    bankName: '우리은행',
-    remarks: '광주교육청 납품건 (광주/전라 담당)'
-  },
-  // 박세일 - 세종시청
-  {
-    paymentId: 7,
-    year: 2026,
-    paymentSeq: 2,
-    scheduledAmount: 22_500_000, // 세종시청 1.5억 × 15%
-    paidAmount: null,
-    scheduledDate: '2026-10-31',
-    paidDate: null,
-    status: 'SCHEDULED',
-    settlementIds: [7],
-    settlementCount: 1,
-    recipientName: '박세일',
-    bankAccount: '123-456-789012',
-    bankName: '하나은행',
-    remarks: '세종시청 납품건 (대전/충청 담당)'
-  },
-  // 정딜러 (대구/경북) - 기업은행
-  {
-    paymentId: 8,
-    year: 2026,
-    paymentSeq: 1,
-    scheduledAmount: 55_500_000, // 울산시청 3.7억 × 15%
-    paidAmount: null,
-    scheduledDate: '2026-11-30',
-    paidDate: null,
-    status: 'SCHEDULED',
-    settlementIds: [8],
-    settlementCount: 1,
-    recipientName: '정딜러',
-    bankAccount: '456-789-012345',
-    bankName: '기업은행',
-    remarks: '울산시청 납품건 (대구/경북 담당)'
-  },
-  // 이판매 - 취소 건
-  {
-    paymentId: 9,
-    year: 2026,
-    paymentSeq: 0,
-    scheduledAmount: 36_000_000, // 2.4억 × 15%
-    paidAmount: null,
-    scheduledDate: '2026-04-30',
-    paidDate: null,
-    status: 'CANCELLED',
-    settlementIds: [],
-    settlementCount: 0,
-    recipientName: '이판매',
-    bankAccount: '110-987-654321',
-    bankName: '신한은행',
-    remarks: '납품 계약 취소로 지급 취소'
+// 공통 필터 (연도, 로딩, 데이터 로드)
+const { selectedYear, loading, availableYears, loadData: loadPaymentsData } = useCommissionFilter({
+  loadFunction: async () => {
+    await commissionStore.fetchPayments(selectedYear.value, {
+      status: selectedStatus.value || undefined,
+      page: 0,
+      size: 20
+    })
   }
-]
-
-// 목업 페이지네이션
-const mockPaymentPagination = {
-  page: 0,
-  size: 20,
-  total: mockPayments.length,
-  totalPages: 1
-}
+})
 
 const createForm = ref<CommissionPaymentCreateRequest>({
   year: new Date().getFullYear(),
@@ -518,32 +399,11 @@ const completeForm = ref<CommissionPaymentCompleteRequest>({
   remarks: ''
 })
 
-// Computed
-const availableYears = computed(() => {
-  const currentYear = new Date().getFullYear()
-  return Array.from({ length: 5 }, (_, i) => currentYear + 1 - i)
-})
-
 const payments = computed(() => {
-  if (useMockData.value) {
-    // 상태 필터 적용
-    let filtered = [...mockPayments]
-    if (selectedStatus.value) {
-      filtered = filtered.filter(p => p.status === selectedStatus.value)
-    }
-    // 지급 차수 순으로 정렬 (최신 먼저)
-    filtered.sort((a, b) => b.paymentSeq - a.paymentSeq)
-    return filtered
-  }
   return commissionStore.payments
 })
+
 const pagination = computed(() => {
-  if (useMockData.value) {
-    return {
-      ...mockPaymentPagination,
-      total: payments.value.length
-    }
-  }
   return commissionStore.paymentPagination
 })
 
@@ -566,24 +426,7 @@ const isCompleteFormValid = computed(() =>
 )
 
 // Methods
-const loadPayments = async () => {
-  loading.value = true
-  try {
-    // 목업 데이터 모드가 아닐 때만 실제 API 호출
-    if (!useMockData.value) {
-      await commissionStore.fetchPayments(selectedYear.value, {
-        status: selectedStatus.value || undefined,
-        page: 0,
-        size: 20
-      })
-    }
-    // 목업 모드에서는 computed가 자동으로 필터링 처리함
-  } catch (error) {
-    console.error('지급 목록 조회 실패:', error)
-  } finally {
-    loading.value = false
-  }
-}
+const loadPayments = () => loadPaymentsData()
 
 const changePage = async (page: number) => {
   loading.value = true
@@ -610,15 +453,6 @@ const getStatusClass = (status: CommissionPaymentStatus): string => {
 
 const getStatusLabel = (status: CommissionPaymentStatus): string => {
   return COMMISSION_PAYMENT_STATUS_LABELS[status] || status
-}
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  })
 }
 
 const openCreateModal = () => {
@@ -768,19 +602,8 @@ onMounted(() => {
   min-width: 140px;
 }
 
-/* 로딩 컨테이너 */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  color: #6b7280;
-}
-
+/* 로딩 컨테이너 - 색상 커스터마이징 */
 .loading-container i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
   color: #8b5cf6;
 }
 
@@ -1078,240 +901,39 @@ onMounted(() => {
   color: white;
 }
 
-/* 페이지네이션 */
+/* 페이지네이션 - 커스터마이징 */
 .pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
   padding-top: 1.5rem;
-}
-
-.page-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid #d1d5db;
-  background: white;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
 .page-btn:hover:not(:disabled) {
   background: #8b5cf6;
   border-color: #8b5cf6;
-  color: white;
 }
 
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* 모달 - 보라색 확인 버튼 변형 */
+.ccm-btn-confirm.ccm-purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
-.page-info {
-  font-size: 0.875rem;
-  color: #6b7280;
+.ccm-btn-confirm.ccm-purple:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
 }
 
-/* 모달 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.modal-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #f3f4f6;
-  border-radius: 8px;
-  cursor: pointer;
-  color: #6b7280;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: #e5e7eb;
-  color: #1f2937;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.info-box {
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-}
-
-.info-box p {
-  margin: 0;
-  font-size: 0.9375rem;
-  color: #374151;
-}
-
-.info-box strong {
-  color: #8b5cf6;
-}
-
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.required {
-  color: #ef4444;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus {
-  outline: none;
+/* 모달 폼 입력 보라색 포커스 */
+.ccm-form-input:focus {
   border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  box-shadow:
+    0 0 0 3px rgba(139, 92, 246, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.input-with-suffix {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.input-with-suffix .form-input {
-  flex: 1;
-  text-align: right;
-}
-
-.input-suffix {
-  font-size: 0.9375rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.form-row {
+/* 모달 내 2컬럼 그리드 */
+.ccm-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-}
-
-.form-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  resize: vertical;
-  font-family: inherit;
-}
-
-.form-textarea:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-.modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.btn-secondary {
-  padding: 0.625rem 1.25rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  background: #8b5cf6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #7c3aed;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 /* 반응형 */
@@ -1337,7 +959,7 @@ onMounted(() => {
     height: 1px;
   }
 
-  .form-row {
+  .ccm-form-row {
     grid-template-columns: 1fr;
   }
 }

@@ -184,6 +184,17 @@ export const FUND_ENDPOINTS = {
   },
 
   /**
+   * 선급금 삭제
+   * @param fundId - 자금 ID
+   * @param advanceId - 선급금 ID
+   * @returns DELETE /admin/funds/{fundId}/advances/{advanceId}
+   */
+  deleteAdvance: (fundId: number, advanceId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/funds/${fundId}/advances/${advanceId}`
+  },
+
+  /**
    * 선급금 문서 업로드
    * @param fundId - 자금 ID
    * @param advanceId - 선급금 ID

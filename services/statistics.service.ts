@@ -39,7 +39,8 @@ function transformServerResponse(serverData: any): ShipmentStatisticsResponse {
     periodTrend: serverData.periodTrend ?? [],
     regionBreakdown: serverData.regionStats ?? [],  // 서버는 regionStats, 프론트는 regionBreakdown
     recentOrders: serverData.recentOrders ?? [],
-    recentShipments: serverData.recentShipments ?? []
+    recentShipments: serverData.recentShipments ?? [],
+    skuOrderStats: serverData.skuOrderStats ?? []
   }
 }
 

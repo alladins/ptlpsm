@@ -41,6 +41,11 @@
 
           <!-- 청구 가능 출하 목록 -->
           <div v-else class="table-section">
+            <!-- 선택 제한 경고 -->
+            <div v-if="hasSelectionLimit" class="selection-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>마지막 출하는 납품완료계로 처리해야 합니다. 최대 <strong>{{ maxSelectableCount }}건</strong>까지 선택 가능합니다.</span>
+            </div>
             <div class="table-header">
               <h4>청구 가능 출하 목록</h4>
               <span class="hint">납품확인 완료된 출하를 선택하세요</span>
@@ -76,6 +81,7 @@
                       <input
                         type="checkbox"
                         :checked="isSelected(shipment.shipmentId)"
+                        :disabled="!isSelected(shipment.shipmentId) && isMaxSelected"
                         @change="toggleShipment(shipment.shipmentId)"
                       >
                     </td>
@@ -199,9 +205,13 @@ interface Props {
   isOpen: boolean
   orderId: number
   fundId: number
+  /** 기성청구 시 최대 선택 가능 출하 수 (-1이면 무제한) */
+  maxSelectableCount?: number
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  maxSelectableCount: -1
+})
 
 // Emits
 const emit = defineEmits<{
@@ -236,15 +246,28 @@ const previousBaseline = computed<BaselineListItem | null>(() => {
   return baselineStore.latestBaseline
 })
 
+// 선택 제한 관련
+const hasSelectionLimit = computed(() => {
+  return props.maxSelectableCount >= 0 && props.maxSelectableCount < availableShipments.value.length
+})
+
+const isMaxSelected = computed(() => {
+  return hasSelectionLimit.value && selectedShipmentIds.value.length >= props.maxSelectableCount
+})
+
 // 선택 관련
 const isAllSelected = computed(() => {
+  if (hasSelectionLimit.value) {
+    return selectedShipmentIds.value.length === props.maxSelectableCount
+  }
   return availableShipments.value.length > 0 &&
     selectedShipmentIds.value.length === availableShipments.value.length
 })
 
 const isIndeterminate = computed(() => {
+  const max = hasSelectionLimit.value ? props.maxSelectableCount : availableShipments.value.length
   return selectedShipmentIds.value.length > 0 &&
-    selectedShipmentIds.value.length < availableShipments.value.length
+    selectedShipmentIds.value.length < max
 })
 
 const isSelected = (shipmentId: number) => {
@@ -254,6 +277,8 @@ const isSelected = (shipmentId: number) => {
 const toggleShipment = (shipmentId: number) => {
   const index = selectedShipmentIds.value.indexOf(shipmentId)
   if (index === -1) {
+    // 최대 선택 수 초과 방지
+    if (isMaxSelected.value) return
     selectedShipmentIds.value.push(shipmentId)
   } else {
     selectedShipmentIds.value.splice(index, 1)
@@ -263,6 +288,11 @@ const toggleShipment = (shipmentId: number) => {
 const toggleSelectAll = () => {
   if (isAllSelected.value) {
     selectedShipmentIds.value = []
+  } else if (hasSelectionLimit.value) {
+    // 제한 있을 때: 최대 수만큼만 선택 (앞에서부터)
+    selectedShipmentIds.value = availableShipments.value
+      .slice(0, props.maxSelectableCount)
+      .map(s => s.shipmentId)
   } else {
     selectedShipmentIds.value = availableShipments.value.map(s => s.shipmentId)
   }
@@ -345,8 +375,14 @@ const loadData = async () => {
   // 청구 가능 출하 목록 로드
   await baselineStore.loadProgressPaymentDataV2(props.orderId)
 
-  // 기본적으로 모든 출하 선택
-  selectedShipmentIds.value = availableShipments.value.map(s => s.shipmentId)
+  // 기본 선택: 제한이 있으면 최대 수만큼만, 없으면 전부
+  if (hasSelectionLimit.value) {
+    selectedShipmentIds.value = availableShipments.value
+      .slice(0, props.maxSelectableCount)
+      .map(s => s.shipmentId)
+  } else {
+    selectedShipmentIds.value = availableShipments.value.map(s => s.shipmentId)
+  }
 }
 
 const submitClaim = async () => {
@@ -790,6 +826,26 @@ watch(() => props.isOpen, (isOpen) => {
   border-radius: 6px;
   color: #dc2626;
   font-size: 0.875rem;
+}
+
+/* 선택 제한 경고 */
+.selection-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  color: #92400e;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.selection-warning i {
+  color: #f59e0b;
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 /* 버튼 - admin-buttons.css에서 import됨 */

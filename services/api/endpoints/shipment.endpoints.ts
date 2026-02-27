@@ -56,6 +56,16 @@ export const SHIPMENT_ENDPOINTS = {
   },
 
   /**
+   * 형제 출하 배송지 정보 조회 (출고요청 프리필용)
+   * @param shipmentId - 출하 ID
+   * @returns GET /admin/shipments/{shipmentId}/sibling-delivery-info
+   */
+  siblingDeliveryInfo: (shipmentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/shipments/${shipmentId}/sibling-delivery-info`
+  },
+
+  /**
    * 출하 생성
    * @returns POST /admin/shipments
    */
@@ -82,65 +92,6 @@ export const SHIPMENT_ENDPOINTS = {
   delete: (shipmentId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/shipments/${shipmentId}`
-  },
-
-  // ========================================
-  // 추가변경 관련 API
-  // ========================================
-
-  /**
-   * 추가변경 실행
-   * @param shipmentId - 출하 ID
-   * @returns POST /admin/shipments/{shipmentId}/additional-change
-   */
-  additionalChange: (shipmentId: number) => {
-    const baseUrl = getApiBaseUrl()
-    return `${baseUrl}/admin/shipments/${shipmentId}/additional-change`
-  },
-
-  /**
-   * 수량 변경 이력 조회
-   * @param shipmentId - 출하 ID
-   * @returns GET /admin/shipments/{shipmentId}/quantity-history
-   */
-  getChangeHistory: (shipmentId: number) => {
-    const baseUrl = getApiBaseUrl()
-    return `${baseUrl}/admin/shipments/${shipmentId}/quantity-history`
-  },
-
-  /**
-   * 이전 인수증 목록 조회 (관리자용)
-   * @param shipmentId - 출하 ID
-   * @returns GET /admin/shipments/{shipmentId}/previous-receipts
-   */
-  getPreviousReceipts: (shipmentId: number) => {
-    const baseUrl = getApiBaseUrl()
-    return `${baseUrl}/admin/shipments/${shipmentId}/previous-receipts`
-  },
-
-  // ========================================
-  // 변경 이력 되돌리기 API
-  // ========================================
-
-  /**
-   * 개별 이력 되돌리기
-   * @param shipmentId - 출하 ID
-   * @param historyId - 이력 ID
-   * @returns POST /admin/shipments/{shipmentId}/quantity-history/{historyId}/revert
-   */
-  revertChangeHistory: (shipmentId: number, historyId: number) => {
-    const baseUrl = getApiBaseUrl()
-    return `${baseUrl}/admin/shipments/${shipmentId}/quantity-history/${historyId}/revert`
-  },
-
-  /**
-   * 그룹 전체 이력 되돌리기
-   * @param shipmentId - 출하 ID
-   * @returns POST /admin/shipments/{shipmentId}/quantity-history/revert-group
-   */
-  revertChangeHistoryGroup: (shipmentId: number) => {
-    const baseUrl = getApiBaseUrl()
-    return `${baseUrl}/admin/shipments/${shipmentId}/quantity-history/revert-group`
   },
 
   // ========================================

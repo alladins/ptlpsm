@@ -218,6 +218,18 @@ const totalQuantity = computed(() => {
   return items.value.reduce((sum, item) => sum + (item.quantity || 0), 0)
 })
 
+// 규격에서 두께(mm) 숫자를 추출하여 정렬에 사용
+const extractSpecThickness = (specification: string): number => {
+  if (!specification) return 9999
+  // "NNN×NNN×NNNmm" 또는 "NNN*NNN*NNNmm" 패턴에서 마지막 숫자(두께) 추출
+  const dimMatch = specification.match(/(\d+)\s*[×x*]\s*(\d+)\s*[×x*]\s*(\d+)\s*mm/i)
+  if (dimMatch) return parseInt(dimMatch[3], 10)
+  // "NNNmm" 패턴에서 숫자 추출
+  const mmMatch = specification.match(/(\d+)\s*mm/i)
+  if (mmMatch) return parseInt(mmMatch[1], 10)
+  return 9999
+}
+
 // 데이터 로드
 const fetchOrderDetail = async () => {
   const orderId = Number(route.params.id)
@@ -232,7 +244,10 @@ const fetchOrderDetail = async () => {
     loading.value = true
     const data = await orderService.getOrderDetail(orderId)
     orderData.value = data
-    items.value = data.items || []
+    // 규격(두께mm) 기준 오름차순 정렬
+    const sortedItems = [...(data.items || [])]
+    sortedItems.sort((a: any, b: any) => extractSpecThickness(a.specification) - extractSpecThickness(b.specification))
+    items.value = sortedItems
   } catch (error) {
     console.error('납품요구 상세 조회 실패:', error)
     orderData.value = null

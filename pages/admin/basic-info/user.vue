@@ -54,13 +54,13 @@
       <div class="table-section">
         <div class="table-header">
           <div class="table-info">
-            <span>총 {{ totalElements }}개 중 {{ startIndex + 1 }}-{{ endIndex }}개 표시</span>
+            <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
-            <select v-model="pageSize" @change="changePageSize" class="page-size-select">
-              <option value="10">10개씩</option>
-              <option value="20">20개씩</option>
-              <option value="50">50개씩</option>
+            <select :value="pageSize" @change="changePageSize(Number(($event.target as HTMLSelectElement).value))" class="page-size-select">
+              <option :value="10">10개씩</option>
+              <option :value="20">20개씩</option>
+              <option :value="50">50개씩</option>
             </select>
           </div>
         </div>
@@ -130,36 +130,12 @@
         </div>
 
         <!-- 페이지네이션 -->
-        <div class="pagination">
-          <button 
-            :disabled="currentPage === 0" 
-            @click="changePage(currentPage - 1)"
-            class="pagination-btn"
-          >
-            이전
-          </button>
-          
-          <!-- 페이지 번호들 -->
-          <div class="page-numbers">
-            <button 
-              v-for="pageNum in visiblePages" 
-              :key="pageNum"
-              @click="changePage(pageNum)"
-              :class="['page-number', { active: pageNum === currentPage }]"
-              :disabled="pageNum === currentPage"
-            >
-              {{ pageNum + 1 }}
-            </button>
-          </div>
-          
-          <button 
-            :disabled="currentPage >= totalPages - 1" 
-            @click="changePage(currentPage + 1)"
-            class="pagination-btn"
-          >
-            다음
-          </button>
-        </div>
+        <Pagination
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :disabled="loading"
+          @change="changePage"
+        />
       </div>
     </div>
 
@@ -426,12 +402,11 @@ import { codeService } from '~/services/code.service'
 import { companyService } from '~/services/company.service'
 import type { CompanyInfoResponse } from '~/types/company'
 import { formatPhoneNumberInput, normalizeEmail, formatPostalCodeInput } from '~/utils/format'
+import { useDataTable } from '~/composables/useDataTable'
 
 // 반응형 데이터
-const users = ref<any[]>([])
 const userRoles = ref<any[]>([])
 const companies = ref<CompanyInfoResponse[]>([])
-const loading = ref(false)
 const loadingCompanies = ref(false)
 
 // 검색 관련
@@ -439,17 +414,38 @@ const searchForm = ref({
   searchKeyword: '',
   role: '',
   enabled: '',
-  page: 0,
-  size: 10,
   sortBy: 'createdAt',
   sortDirection: 'desc'
 })
 
-// 페이징 관련
-const currentPage = ref(0)
-const pageSize = ref(10)
-const totalElements = ref(0)
-const totalPages = ref(0)
+// useDataTable composable 사용으로 페이지네이션 로직 통합
+const {
+  items: users,
+  loading,
+  currentPage,
+  totalPages,
+  totalElements,
+  pageSize,
+  startIndex,
+  endIndex,
+  changePage,
+  changePageSize,
+  search,
+  refresh
+} = useDataTable<any>({
+  fetchFunction: async (params) => {
+    return await userService.getUsers({
+      searchKeyword: searchForm.value.searchKeyword,
+      role: searchForm.value.role,
+      enabled: searchForm.value.enabled,
+      page: params.page || 0,
+      size: params.size || 10,
+      sortBy: searchForm.value.sortBy,
+      sortDirection: searchForm.value.sortDirection
+    })
+  },
+  initialPageSize: 10
+})
 
 // 모달 관련
 const showAddModal = ref(false)
@@ -509,20 +505,6 @@ const passwordValidationErrors = ref<{
   confirmPassword: ''
 })
 
-// 페이지네이션 계산
-const startIndex = computed(() => currentPage.value * pageSize.value)
-const endIndex = computed(() => Math.min(startIndex.value + pageSize.value, totalElements.value))
-const visiblePages = computed(() => {
-  const pages = []
-  const start = Math.max(0, currentPage.value - 2)
-  const end = Math.min(totalPages.value - 1, start + 4)
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-  return pages
-})
-
 // 권한 클래스 반환
 const getRoleClass = (role: string) => {
   switch (role) {
@@ -568,63 +550,9 @@ const handleZipCodeInput = (event: Event) => {
   userForm.value.zipCode = formatPostalCodeInput(input.value)
 }
 
-// 목록 조회
-const loadUsers = async () => {
-  loading.value = true
-  try {
-    const response = await userService.getUsers({
-      searchKeyword: searchForm.value.searchKeyword,
-      role: searchForm.value.role,
-      enabled: searchForm.value.enabled,
-      page: currentPage.value,
-      size: pageSize.value,
-      sortBy: searchForm.value.sortBy,
-      sortDirection: searchForm.value.sortDirection
-    })
-
-    users.value = response.content
-    totalElements.value = response.totalElements
-    totalPages.value = response.totalPages
-  } catch (error) {
-    console.error('사용자 목록 조회 실패:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
 // 검색
 const searchUsers = () => {
-  currentPage.value = 0
-  loadUsers()
-}
-
-// 검색 초기화
-const resetSearch = () => {
-  searchForm.value = {
-    searchKeyword: '',
-    role: '',
-    enabled: '',
-    page: 0,
-    size: 10,
-    sortBy: 'createdAt',
-    sortDirection: 'desc'
-  }
-  currentPage.value = 0
-  loadUsers()
-}
-
-// 페이지 변경
-const changePage = (page: number) => {
-  if (page >= 0 && page < totalPages.value) {
-    currentPage.value = page
-    loadUsers()
-  }
-}
-
-// 페이지 크기 변경
-const changePageSize = () => {
-  currentPage.value = 0
-  loadUsers()
+  search()
 }
 
 // 등록 모달 열기
@@ -816,7 +744,7 @@ const submitAdd = async () => {
     console.log('사용자 등록 성공:', result)
 
     closeModal()
-    loadUsers()
+    refresh()
     alert('사용자가 성공적으로 등록되었습니다.')
   } catch (error) {
     console.error('사용자 등록 실패:', error)
@@ -837,7 +765,7 @@ const submitEdit = async () => {
   try {
     await userService.updateUser(editingUser.value.userid, userForm.value)
     closeModal()
-    loadUsers()
+    refresh()
     alert('사용자가 성공적으로 수정되었습니다.')
   } catch (error) {
     console.error('사용자 수정 실패:', error)
@@ -851,7 +779,7 @@ const deleteUser = async (user: any) => {
 
   try {
     await userService.deleteUser(user.userid)
-    loadUsers()
+    refresh()
     alert('사용자가 성공적으로 삭제되었습니다.')
   } catch (error) {
     console.error('사용자 삭제 실패:', error)
@@ -873,15 +801,6 @@ const submitPasswordChange = async () => {
   }
 }
 
-// API 연결 테스트
-const testApiConnection = async () => {
-  try {
-    const response = await userService.testApiConnection()
-    alert('API 연결이 정상입니다.')
-  } catch (error) {
-    alert('API 연결에 실패했습니다.')
-  }
-}
 
 // 권한 목록 조회
 const loadUserRoles = async () => {
@@ -912,19 +831,17 @@ const loadCompanies = async () => {
 // 초기 로드
 onMounted(() => {
   loadUserRoles()
-  loadUsers()
+  refresh()
   loadCompanies()
 })
 </script>
 
 <style scoped>
-/* ============================================
-   리팩토링: 공통 스타일은 admin-common.css 사용
-   - 래퍼 스타일 (.user-management)
-   - 버튼 스타일 (.btn-primary, .btn-secondary, .btn-edit, .btn-delete)
-   - 테이블 스타일 (.data-table)
-   - 페이지네이션 스타일
-   ============================================ */
+/* 공통 CSS import */
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-tables.css';
+@import '@/assets/css/admin-modals.css';
 
 /* 페이지 특화 스타일만 작성 */
 
@@ -953,49 +870,12 @@ onMounted(() => {
   gap: 1rem;
 }
 
-.form-row {
-  display: flex;
-  align-items: end;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 150px;
-  flex: 1;
-}
-
 .form-group.button-group {
   display: flex;
   flex-direction: row;
   gap: 0.5rem;
   min-width: auto;
   flex: 0 0 auto;
-}
-
-.form-group label {
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-}
-
-.form-input,
-.form-select {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus,
-.form-select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .button-group {
@@ -1005,137 +885,7 @@ onMounted(() => {
   margin-top: 1rem;
 }
 
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn-secondary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-/* 테이블 섹션 */
-.table-section {
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.table-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-
-.table-info {
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.page-size-select {
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-}
-
-.table-container {
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.data-table th {
-  background: #f9fafb;
-  padding: 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: #374151;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.data-table td {
-  padding: 1rem;
-  border-bottom: 1px solid #f3f4f6;
-  vertical-align: middle;
-}
-
-.table-row:hover {
-  background: #f9fafb;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.btn-edit,
-.btn-delete {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  border: none;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-edit {
-  background: #f59e0b;
-  color: white;
-}
-
-.btn-edit:hover {
-  background: #d97706;
-}
-
-.btn-delete {
-  background: #ef4444;
-  color: white;
-}
-
-.btn-delete:hover {
-  background: #dc2626;
-}
-
-/* 배지 스타일 */
+/* 역할별 배지 색상 */
 .role-badge {
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
@@ -1144,7 +894,6 @@ onMounted(() => {
   text-align: center;
 }
 
-/* 역할별 배지 색상 */
 .role-admin { background: #dc2626; color: white; }           /* 빨강 - 시스템관리자 (SYSTEM_ADMIN) */
 .role-leadpower { background: #f59e0b; color: white; }       /* 주황 - 리드파워 담당자 (LEADPOWER_MANAGER) */
 .role-oem { background: #7c3aed; color: white; }             /* 보라 - OEM 담당자 (OEM_MANAGER) */
@@ -1154,140 +903,6 @@ onMounted(() => {
 .role-driver { background: #0891b2; color: white; }          /* 청록 - 운송기사 (DELIVERY_DRIVER) */
 .role-readonly { background: #6b7280; color: white; }        /* 회색 - 조회 전용 (READ_ONLY) */
 .role-default { background: #f3f4f6; color: #374151; }       /* 기본 */
-
-.status-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-align: center;
-}
-
-.status-badge.active {
-  background: #dcfce7;
-  color: #166534;
-}
-
-/* 페이지네이션 */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.pagination-btn {
-  padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background: #e5e7eb;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-numbers {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.page-number {
-  padding: 0.5rem 0.75rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-  min-width: 2.5rem;
-  text-align: center;
-}
-
-.page-number:hover:not(:disabled) {
-  background: #e5e7eb;
-}
-
-.page-number.active {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-
-.page-number:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* 모달 스타일 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
 
 .user-form {
   display: flex;
@@ -1299,38 +914,6 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-}
-
-.user-form .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.user-form label {
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-}
-
-.user-form .form-input {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  transition: border-color 0.2s;
-}
-
-.user-form .form-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.user-form .form-input:disabled {
-  background: #f9fafb;
-  color: #6b7280;
-  cursor: not-allowed;
 }
 
 .password-section {
@@ -1402,30 +985,6 @@ onMounted(() => {
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 1rem;
-}
-
-/* 데이터 없음 및 로딩 메시지 */
-.no-data-message,
-.loading-message {
-  text-align: center;
-  padding: 3rem;
-  color: #6b7280;
-}
-
-.no-data-message i,
-.loading-message i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.loading-message i {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 /* 반응형 */

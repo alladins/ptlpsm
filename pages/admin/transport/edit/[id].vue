@@ -13,15 +13,6 @@
           목록
         </button>
         <button
-          v-if="formData.shipmentId"
-          class="btn-action btn-info"
-          @click="handleDownloadPurchaseOrder"
-          title="발주서 PDF 다운로드"
-        >
-          <i class="fas fa-file-pdf"></i>
-          발주서
-        </button>
-        <button
           class="btn-print"
           @click="printTransport"
         >
@@ -150,14 +141,14 @@
           </div>
         </div>
 
-        <!-- 3. 기타 정보 (수정 페이지에서는 읽기 전용) -->
+        <!-- 3. 기타 정보 (배송 메모 + 상태 통합) -->
         <div class="info-group">
           <div class="info-group-header">
             <i class="fas fa-info-circle"></i>
             <span>기타 정보</span>
           </div>
-          <div class="info-grid grid-1">
-            <FormField label="배송 메모" full-width>
+          <div class="info-grid grid-2">
+            <FormField label="배송 메모">
               <input
                 type="text"
                 v-model="formData.deliveryMemo"
@@ -167,16 +158,6 @@
                 readonly
               >
             </FormField>
-          </div>
-        </div>
-
-        <!-- 4. 배송 상태 (수정 페이지 전용) -->
-        <div class="info-group">
-          <div class="info-group-header">
-            <i class="fas fa-clipboard-check"></i>
-            <span>배송 상태</span>
-          </div>
-          <div class="info-grid grid-1">
             <FormField label="상태">
               <input
                 type="text"
@@ -308,6 +289,7 @@
                 :teleport="true"
                 :disabled="!isSavableStatus"
                 :clearable="false"
+                :min-date="minDispatchDate"
               />
             </FormField>
             <FormField label="도착 예정 시각">
@@ -323,6 +305,7 @@
                 :teleport="true"
                 :disabled="!isSavableStatus"
                 :clearable="false"
+                :min-date="minExpectedArrivalDate"
               />
             </FormField>
             <FormField label="운송장번호" full-width>
@@ -352,7 +335,77 @@
       <!-- two-column-layout 종료 -->
     </div>
       </FormSection>
-    </div>    
+
+      <!-- 품목 리스트 (읽기전용) -->
+      <FormSection style="margin-top: -20px">
+        <div class="items-section-wrapper">
+          <div class="items-section-header">
+            <div class="header-left">
+              <i class="fas fa-box"></i>
+              <span>품목 정보</span>
+            </div>
+          </div>
+
+          <div class="items-table-wrapper">
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px">NO</th>
+                  <th style="width: 80px">품목명</th>
+                  <th style="width: 80px">SKU ID</th>
+                  <th style="width: 100px">SKU 품명</th>
+                  <th class="col-spec">규격</th>
+                  <th>단위</th>
+                  <th>출하수량(m²)</th>
+                  <th>비고</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="filteredItems.length === 0">
+                  <td colspan="8" class="empty-message">
+                    품목 정보가 없습니다.
+                  </td>
+                </tr>
+                <tr
+                  v-for="(item, index) in filteredItems"
+                  :key="item.skuId"
+                  :class="{ 'row-merge-source': (item.shipmentQuantity || 0) === 0 }"
+                >
+                  <td>{{ index + 1 }}</td>
+                  <td>{{ item.itemName || '-' }}</td>
+                  <td>{{ item.skuId }}</td>
+                  <td>{{ item.skuName }}</td>
+                  <td class="specification-cell" :title="item.specification">{{ truncateText(item.specification, 60) }}</td>
+                  <td>{{ item.unit }}</td>
+                  <td class="text-center">{{ formatQuantity(item.shipmentQuantity) }}</td>
+                  <td class="remark-cell">
+                    <span>{{ (item.shipmentQuantity || 0) > 0 ? formatQuantity(Math.round(item.shipmentQuantity / 2)) + ' 매' : '-' }}</span>
+                    <template v-if="getRemarksBadges(item.remarks).length > 0">
+                      <span
+                        v-for="(badge, idx) in getRemarksBadges(item.remarks)"
+                        :key="idx"
+                        class="merge-badge"
+                        :style="{ backgroundColor: badge.color }"
+                      >{{ badge.label }}</span>
+                    </template>
+                    <span v-if="getBgradeForSku(item.skuId)" class="bgrade-badge">
+                      B급 {{ getBgradeForSku(item.skuId)?.quantity }}{{ item.unit }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot v-if="filteredItems.length > 0">
+                <tr>
+                  <td colspan="6" class="text-right"><strong>합계</strong></td>
+                  <td class="text-center"><strong>{{ formatQuantity(totalShipmentQuantity) }}</strong></td>
+                  <td class="text-center"><strong>{{ totalShipmentQuantity > 0 ? formatQuantity(Math.round(totalShipmentQuantity / 2)) + ' 매' : '-' }}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </FormSection>
+    </div>
   </div>
 
 <!-- 운송장 PDF 미리보기 모달 -->
@@ -369,7 +422,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { transportService } from '~/services/transport.service'
-import { shipmentService } from '~/services/shipment.service'
+import { shipmentService, type ShipmentItemWithOrder } from '~/services/shipment.service'
 import { deliveryService } from '~/services/delivery.service'
 import { userService } from '~/services/user.service'
 import type { UserByRole } from '~/types/user'
@@ -381,7 +434,7 @@ import { getApiBaseUrl } from '~/services/api'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import { usePermission } from '~/composables/usePermission'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
-import { formatPhoneNumberInput, formatPhoneNumber } from '~/utils/format'
+import { formatPhoneNumberInput, formatPhoneNumber, formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { validatePhoneNumber } from '~/utils/validate'
 
 
@@ -414,6 +467,56 @@ const siteManagers = ref<UserByRole[]>([])  // SITE_MANAGER (현장소장/현장
 // 선택된 사용자 ID
 const selectedSupervisorId = ref<number | ''>('')  // 현장소장
 const selectedReceiverId = ref<number | 'direct'>('direct')    // 현장 인수자 ('direct' = 직접입력)
+
+// 품목 리스트 (읽기전용)
+const items = ref<ShipmentItemWithOrder[]>([])
+
+// 출하 상세 데이터 (B급 정보 접근용)
+const shipmentDetailData = ref<any>(null)
+
+// 품목 필터: 수량 있는 품목 + 합지 소스 품목(수량 0이지만 표시 필요)
+const filteredItems = computed(() => items.value.filter(item => {
+  if ((item.shipmentQuantity || 0) > 0) return true
+  // 합지 소스 품목은 수량이 0이어도 표시
+  if (item.remarks && (item.remarks.includes('이전') || item.remarks.includes('병합'))) return true
+  return false
+}))
+
+// B급 품목 헬퍼
+const getBgradeForSku = (skuId: string) => {
+  return shipmentDetailData.value?.bgradeItems?.find((bg: any) => bg.skuId === skuId) || null
+}
+
+// 비고(remarks)에서 합지 배지 정보 추출
+const getRemarksBadges = (remarks: string | null | undefined): { label: string; color: string }[] => {
+  if (!remarks) return []
+
+  // 합지 타겟 품목
+  if (remarks.includes('에서 이전') || remarks.includes('에서 병합됨') || remarks.includes('추가 병합')) {
+    const match = remarks.match(/([\d,\s]+)에서/)
+    const skuIds = match ? match[1].trim() : ''
+    return [{ label: skuIds ? `합지 ← ${skuIds}` : '합지', color: '#3b82f6' }]
+  }
+
+  // 합지 소스 품목
+  if ((remarks.includes('이전') || remarks.includes('병합됨')) &&
+      (remarks.includes('로 ') || remarks.includes('로\n'))) {
+    const match = remarks.match(/(\d+)로/)
+    const skuId = match ? match[1] : ''
+    return [{ label: skuId ? `합지소스 → ${skuId}` : '합지 소스', color: '#8b5cf6' }]
+  }
+
+  return []
+}
+
+// 품목 합계
+const totalShipmentQuantity = computed(() => filteredItems.value.reduce((sum, item) => sum + (item.shipmentQuantity || 0), 0))
+
+// 텍스트 truncate (규격 등 긴 텍스트 처리)
+const truncateText = (text: string, maxLength: number = 60): string => {
+  if (!text) return ''
+  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
+}
 
 // 운송장 정보 폼 (등록 페이지와 동일하게 formData 사용)
 const formData = ref({
@@ -505,6 +608,26 @@ const handleReceiverChange = () => {
   }
 }
 
+// 배차/출차 시각: 배송 예정일 - 5일 00:00 이후부터 선택 가능
+const minDispatchDate = computed(() => {
+  if (formData.value.deliveryDate) {
+    const deliveryDateObj = new Date(formData.value.deliveryDate)
+    const minDate = new Date(deliveryDateObj)
+    minDate.setDate(minDate.getDate() - 5)
+    minDate.setHours(0, 0, 0, 0)
+    return minDate
+  }
+  return new Date()
+})
+
+// 도착 예정 시각: 배차/출차 시각 이후로만 선택 가능
+const minExpectedArrivalDate = computed(() => {
+  if (formData.value.dispatchAt) {
+    return new Date(formData.value.dispatchAt)
+  }
+  return new Date()
+})
+
 // 배송 예정일 변경 시 배차/출차 시각, 도착 예정 시각의 날짜도 함께 변경
 const onDeliveryDateChange = () => {
   const newDate = formData.value.deliveryDate
@@ -553,6 +676,10 @@ onMounted(async () => {
     if (transportDetail.shipmentId) {
       try {
         shipmentDetail = await shipmentService.getShipmentDetail(transportDetail.shipmentId)
+        // 품목 리스트 매핑
+        items.value = shipmentDetail.items || []
+        // B급/합지 정보 접근을 위해 출하 상세 저장
+        shipmentDetailData.value = shipmentDetail
       } catch (error) {
         console.error('출하 정보 로드 실패:', error)
       }
@@ -652,6 +779,28 @@ const saveTransport = async () => {
     if (!formData.value.dispatchAt || !formData.value.expectedArrival) {
       alert('배차시각과 도착예정시각을 입력해주세요.')
       return
+    }
+
+    // 배차/출차 시각이 배송 예정일 - 5일 00:00 이전인지 체크
+    if (formData.value.deliveryDate) {
+      const dispatchTime = new Date(formData.value.dispatchAt)
+      const deliveryDateObj = new Date(formData.value.deliveryDate)
+      const minDispatchTime = new Date(deliveryDateObj)
+      minDispatchTime.setDate(minDispatchTime.getDate() - 5)
+      minDispatchTime.setHours(0, 0, 0, 0)
+
+      if (dispatchTime < minDispatchTime) {
+        const minDateStr = `${minDispatchTime.getFullYear()}-${String(minDispatchTime.getMonth() + 1).padStart(2, '0')}-${String(minDispatchTime.getDate()).padStart(2, '0')}`
+        alert(`배차/출차 시각은 ${minDateStr} 00:00 이후로 설정해주세요.\n(배송 예정일 5일 전부터 가능)`)
+        return
+      }
+
+      // 도착 예정 시각이 배차/출차 시각 이전인지 체크
+      const expectedTime = new Date(formData.value.expectedArrival)
+      if (expectedTime <= dispatchTime) {
+        alert('도착 예정 시각은 배차/출차 시각 이후로 설정해주세요.')
+        return
+      }
     }
 
     // 운송 정보만 전송 (다른 섹션은 읽기 전용이므로 제외)
@@ -755,21 +904,6 @@ const canSendMessage = computed(() => {
          formData.value.trackingNumber &&
          formData.value.driverPhone
 })
-
-// 발주서 PDF 다운로드
-const handleDownloadPurchaseOrder = async () => {
-  if (!formData.value.shipmentId) {
-    alert('출하 정보가 없습니다.')
-    return
-  }
-  try {
-    await shipmentService.downloadPurchaseOrderPdf(Number(formData.value.shipmentId))
-  } catch (error) {
-    console.error('발주서 PDF 다운로드 실패:', error)
-    const errorMessage = error instanceof Error ? error.message : '발주서 PDF 처리에 실패했습니다.'
-    alert(errorMessage)
-  }
-}
 
 // 기사에게 메시지 전송 (deliveryService 사용)
 const sendMessageToDriver = async () => {
@@ -908,6 +1042,119 @@ const sendMessageToDriver = async () => {
 
 .btn-message i {
   font-size: 0.875rem;
+}
+
+/* 품목 섹션 스타일 */
+.items-section-wrapper {
+  padding: 0;
+}
+
+.items-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.header-left i {
+  color: #6b7280;
+}
+
+.items-table-wrapper {
+  overflow-x: auto;
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.items-table th,
+.items-table td {
+  padding: 0.25rem 0.5rem;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.items-table th {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #d1d5db;
+}
+
+.items-table tfoot td {
+  border-top: 2px solid #d1d5db;
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.items-table .text-right {
+  text-align: right;
+}
+
+.items-table .empty-message {
+  text-align: center;
+  color: #9ca3af;
+  padding: 2rem 0.5rem;
+}
+
+.specification-cell {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 비고 셀 */
+.remark-cell {
+  max-width: 200px;
+  white-space: normal !important;
+}
+
+/* 합지 소스 행 (수량 이전된 원 품목) */
+.row-merge-source {
+  background: #f5f3ff;
+  opacity: 0.75;
+}
+
+.row-merge-source td {
+  color: #6b7280;
+}
+
+/* 합지 배지 */
+.merge-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  margin: 1px 2px;
+  white-space: nowrap;
+}
+
+/* B급 배지 */
+.bgrade-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background-color: #fef3c7;
+  color: #b45309;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 4px;
 }
 
 /* Responsive */

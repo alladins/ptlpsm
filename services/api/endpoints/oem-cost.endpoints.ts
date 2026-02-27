@@ -11,6 +11,12 @@ export const OEM_COST_ENDPOINTS = {
     return `${baseUrl}/admin/oem-costs`
   },
 
+  // 트리 구조 목록 조회 (SKU 부모 → OEM 자식)
+  tree: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/oem-costs/tree`
+  },
+
   // 상세 조회
   detail: (id: number) => {
     const baseUrl = getApiBaseUrl()

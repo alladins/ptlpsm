@@ -526,6 +526,34 @@ export const fundService = {
   },
 
   /**
+   * 선급금 삭제
+   * - 입금확인(PAID) 상태가 아닌 경우만 삭제 가능
+   * - 삭제 시 PDF 파일도 함께 삭제됨
+   */
+  async deleteAdvance(fundId: number, advanceId: number): Promise<{ message: string }> {
+    try {
+      const url = FUND_ENDPOINTS.deleteAdvance(fundId, advanceId)
+      console.log('선급금 삭제 API 호출:', url)
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      return result.data || result
+    } catch (error) {
+      console.error('선급금 삭제 실패:', error)
+      throw error
+    }
+  },
+
+  /**
    * 선급금 문서 업로드
    */
   async uploadAdvanceDocument(fundId: number, advanceId: number, formData: FormData): Promise<any> {

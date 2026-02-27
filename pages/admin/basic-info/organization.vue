@@ -28,14 +28,6 @@
                 </option>
               </select>
             </div>
-            <!--div class="form-group">
-              <label>삭제여부</label>
-              <select v-model="searchForm.dltYn" class="form-select">
-                <option value="">전체</option>
-                <option value="N">활성</option>
-                <option value="Y">삭제</option>
-              </select>
-            </div-->
 
             <div class="form-group button-group">
               <button class="btn-primary" @click="searchOrganizations">
@@ -55,13 +47,13 @@
       <div class="table-section">
         <div class="table-header">
           <div class="table-info">
-            <span>총 {{ totalElements }}개 중 {{ startIndex + 1 }}-{{ endIndex }}개 표시</span>
+            <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
-            <select v-model="pageSize" @change="changePageSize" class="page-size-select">
-              <option value="10">10개씩</option>
-              <option value="20">20개씩</option>
-              <option value="50">50개씩</option>
+            <select :value="pageSize" @change="changePageSize(Number(($event.target as HTMLSelectElement).value))" class="page-size-select">
+              <option :value="10">10개씩</option>
+              <option :value="20">20개씩</option>
+              <option :value="50">50개씩</option>
             </select>
           </div>
         </div>
@@ -121,68 +113,45 @@
         </div>
 
         <!-- 페이지네이션 -->
-        <div class="pagination">
-          <button 
-            :disabled="currentPage === 0" 
-            @click="changePage(currentPage - 1)"
-            class="pagination-btn"
-          >
-            이전
-          </button>
-          
-          <!-- 페이지 번호들 -->
-          <div class="page-numbers">
-            <button 
-              v-for="pageNum in visiblePages" 
-              :key="pageNum"
-              @click="changePage(pageNum)"
-              :class="['page-number', { active: pageNum === currentPage }]"
-              :disabled="pageNum === currentPage"
-            >
-              {{ pageNum + 1 }}
-            </button>
-          </div>
-          
-          <button 
-            :disabled="currentPage >= totalPages - 1" 
-            @click="changePage(currentPage + 1)"
-            class="pagination-btn"
-          >
-            다음
-          </button>
-        </div>
+        <Pagination
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :disabled="loading"
+          @change="changePage"
+        />
       </div>
     </div>
 
-    <!-- 등록 모달 -->
-    <div v-if="showAddModal" class="modal-overlay">
+    <!-- 수요기관 등록/수정 통합 모달 -->
+    <div v-if="showAddModal || showEditModal" class="modal-overlay">
       <div class="modal" @click.stop>
         <div class="modal-header">
-          <h3>수요기관 등록</h3>
+          <h3>{{ showAddModal ? '수요기관 등록' : '수요기관 수정' }}</h3>
           <button class="modal-close" @click="closeModal">
             <i class="fas fa-times"></i>
           </button>
         </div>
 
         <div class="modal-body">
-          <form @submit.prevent="submitAdd" class="organization-form">
+          <form @submit.prevent="handleFormSubmit" class="organization-form">
             <div class="form-row">
               <div class="form-group">
                 <label>수요기관코드 *</label>
-                <input 
-                  v-model="formData.dminsttCd" 
-                  type="text" 
+                <input
+                  v-model="formData.dminsttCd"
+                  type="text"
                   required
                   placeholder="수요기관코드"
                   maxlength="10"
                   class="form-input"
+                  :disabled="showEditModal"
                 >
               </div>
               <div class="form-group">
                 <label>수요기관명 *</label>
-                <input 
-                  v-model="formData.dminsttNm" 
-                  type="text" 
+                <input
+                  v-model="formData.dminsttNm"
+                  type="text"
                   required
                   placeholder="수요기관명"
                   maxlength="200"
@@ -237,58 +206,12 @@
               </div>
             </div>
 
-            <!--div class="form-row">
-              <div class="form-group">
-                <label>소관구분명</label>
-                <input
-                  v-model="formData.jrsdctnDivNm"
-                  type="text"
-                  placeholder="소관구분명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>기관유형코드대분류명</label>
-                <input 
-                  v-model="formData.insttTyCdLrgclsfcNm" 
-                  type="text" 
-                  placeholder="기관유형코드대분류명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-            </div-->
-
-            <!--div class="form-row">
-              <div class="form-group">
-                <label>기관유형코드중분류명</label>
-                <input 
-                  v-model="formData.insttTyCdMidclsfcNm" 
-                  type="text" 
-                  placeholder="기관유형코드중분류명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>기관유형코드소분류명</label>
-                <input 
-                  v-model="formData.insttTyCdSmlclsfcNm" 
-                  type="text" 
-                  placeholder="기관유형코드소분류명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-            </div-->
-
             <div class="form-row">
               <div class="form-group">
                 <label>업태명</label>
-                <input 
-                  v-model="formData.bizcndtnNm" 
-                  type="text" 
+                <input
+                  v-model="formData.bizcndtnNm"
+                  type="text"
                   placeholder="업태명"
                   maxlength="50"
                   class="form-input"
@@ -296,9 +219,9 @@
               </div>
               <div class="form-group">
                 <label>업종명</label>
-                <input 
-                  v-model="formData.indstrytyNm" 
-                  type="text" 
+                <input
+                  v-model="formData.indstrytyNm"
+                  type="text"
                   placeholder="업종명"
                   maxlength="50"
                   class="form-input"
@@ -309,9 +232,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label>담당자팩스번호</label>
-                <input 
-                  v-model="formData.ofclFaxNo" 
-                  type="text" 
+                <input
+                  v-model="formData.ofclFaxNo"
+                  type="text"
                   placeholder="담당자팩스번호"
                   maxlength="25"
                   class="form-input"
@@ -335,9 +258,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label>홈페이지주소</label>
-                <input 
-                  v-model="formData.hmpgAdrs" 
-                  type="text" 
+                <input
+                  v-model="formData.hmpgAdrs"
+                  type="text"
                   placeholder="홈페이지주소"
                   maxlength="255"
                   class="form-input"
@@ -346,13 +269,12 @@
               <div class="form-group">
                 <label>우편번호</label>
                 <div class="zip-input-group">
-                  <input 
-                    v-model="formData.zip" 
-                    type="text" 
+                  <input
+                    v-model="formData.zip"
+                    type="text"
                     placeholder="우편번호"
                     maxlength="6"
                     class="form-input zip-input"
-                    
                   >
                   <button type="button" class="btn-secondary zip-search-btn" @click="searchZipcode">
                     <i class="fas fa-search"></i>
@@ -365,9 +287,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label>주소</label>
-                <input 
-                  v-model="formData.adrs" 
-                  type="text" 
+                <input
+                  v-model="formData.adrs"
+                  type="text"
                   placeholder="주소"
                   maxlength="100"
                   class="form-input"
@@ -375,9 +297,9 @@
               </div>
               <div class="form-group">
                 <label>상세주소</label>
-                <input 
-                  v-model="formData.dtlAdrs" 
-                  type="text" 
+                <input
+                  v-model="formData.dtlAdrs"
+                  type="text"
                   placeholder="상세주소"
                   maxlength="100"
                   class="form-input"
@@ -388,9 +310,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label>전화번호</label>
-                <input 
-                  v-model="formData.telNo" 
-                  type="text" 
+                <input
+                  v-model="formData.telNo"
+                  type="text"
                   placeholder="전화번호"
                   maxlength="25"
                   class="form-input"
@@ -398,9 +320,9 @@
               </div>
               <div class="form-group">
                 <label>팩스번호</label>
-                <input 
-                  v-model="formData.faxNo" 
-                  type="text" 
+                <input
+                  v-model="formData.faxNo"
+                  type="text"
                   placeholder="팩스번호"
                   maxlength="25"
                   class="form-input"
@@ -408,331 +330,10 @@
               </div>
             </div>
 
-            <div class="form-row">
-              
-              <!--div class="form-group">
-                <label>최상위기관코드</label>
-                <input 
-                  v-model="formData.toplvlInsttCd" 
-                  type="text" 
-                  placeholder="최상위기관코드"
-                  maxlength="7"
-                  class="form-input"
-                >
-              </div-->
-            </div>
-
-            <!--div class="form-row">
-              <div class="form-group">
-                <label>최상위기관명</label>
-                <input 
-                  v-model="formData.toplvlInsttNm" 
-                  type="text" 
-                  placeholder="최상위기관명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-            </div-->
-
             <div class="form-actions">
               <button type="submit" class="btn-primary">
                 <i class="fas fa-save"></i>
-                <span>등록</span>
-              </button>
-              <button type="button" class="btn-secondary" @click="closeModal">
-                <i class="fas fa-times"></i>
-                <span>취소</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- 수정 모달 -->
-    <div v-if="showEditModal" class="modal-overlay">
-      <div class="modal" @click.stop>
-        <div class="modal-header">
-          <h3>수요기관 수정</h3>
-          <button class="modal-close" @click="closeModal">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <form @submit.prevent="submitEdit" class="organization-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label>수요기관코드</label>
-                <input 
-                  v-model="formData.dminsttCd" 
-                  type="text" 
-                  disabled
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>수요기관명 *</label>
-                <input 
-                  v-model="formData.dminsttNm" 
-                  type="text" 
-                  required
-                  placeholder="수요기관명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>나라장터등록번호</label>
-                <input
-                  v-model="formData.naraJangteoNo"
-                  type="text"
-                  placeholder="나라장터등록번호"
-                  maxlength="50"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>사업자등록번호</label>
-                <input
-                  v-model="formData.bizno"
-                  type="text"
-                  placeholder="사업자등록번호"
-                  maxlength="10"
-                  class="form-input"
-                >
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>법인등록번호</label>
-                <input
-                  v-model="formData.corprtRgstNo"
-                  type="text"
-                  placeholder="법인등록번호"
-                  maxlength="13"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>수요기관영문명</label>
-                <input
-                  v-model="formData.dminsttEngNm"
-                  type="text"
-                  placeholder="수요기관영문명"
-                  maxlength="400"
-                  class="form-input"
-                >
-              </div>
-            </div>
-
-            <!--div class="form-row">
-              <div class="form-group">
-                <label>소관구분명</label>
-                <input
-                  v-model="formData.jrsdctnDivNm"
-                  type="text"
-                  placeholder="소관구분명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>기관유형코드대분류명</label>
-                <input 
-                  v-model="formData.insttTyCdLrgclsfcNm" 
-                  type="text" 
-                  placeholder="기관유형코드대분류명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-            </div-->
-
-            <!--div class="form-row">
-              <div class="form-group">
-                <label>기관유형코드중분류명</label>
-                <input 
-                  v-model="formData.insttTyCdMidclsfcNm" 
-                  type="text" 
-                  placeholder="기관유형코드중분류명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>기관유형코드소분류명</label>
-                <input 
-                  v-model="formData.insttTyCdSmlclsfcNm" 
-                  type="text" 
-                  placeholder="기관유형코드소분류명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-            </div-->
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>업태명</label>
-                <input 
-                  v-model="formData.bizcndtnNm" 
-                  type="text" 
-                  placeholder="업태명"
-                  maxlength="50"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>업종명</label>
-                <input 
-                  v-model="formData.indstrytyNm" 
-                  type="text" 
-                  placeholder="업종명"
-                  maxlength="50"
-                  class="form-input"
-                >
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>담당자팩스번호</label>
-                <input 
-                  v-model="formData.ofclFaxNo" 
-                  type="text" 
-                  placeholder="담당자팩스번호"
-                  maxlength="25"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>지역</label>
-                <select v-model="selectedRegion" @change="onRegionChange" class="form-select">
-                  <option value="">지역을 선택하세요</option>
-                  <option v-for="region in regions" :key="region.code" :value="region">
-                    {{ region.codeName }}
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <!-- 지역코드와 지역명은 숨김 처리 (데이터는 유지) -->
-            <input v-model="formData.rgnCd" type="hidden">
-            <input v-model="formData.rgnNm" type="hidden">
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>홈페이지주소</label>
-                <input 
-                  v-model="formData.hmpgAdrs" 
-                  type="text" 
-                  placeholder="홈페이지주소"
-                  maxlength="255"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>우편번호</label>
-                <div class="zip-input-group">
-                  <input 
-                    v-model="formData.zip" 
-                    type="text" 
-                    placeholder="우편번호"
-                    maxlength="6"
-                    class="form-input zip-input"
-                    
-                  >
-                  <button type="button" class="btn-secondary zip-search-btn" @click="searchZipcode">
-                    <i class="fas fa-search"></i>
-                    <span>우편번호 찾기</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>주소</label>
-                <input 
-                  v-model="formData.adrs" 
-                  type="text" 
-                  placeholder="주소"
-                  maxlength="100"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>상세주소</label>
-                <input 
-                  v-model="formData.dtlAdrs" 
-                  type="text" 
-                  placeholder="상세주소"
-                  maxlength="100"
-                  class="form-input"
-                >
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>전화번호</label>
-                <input 
-                  v-model="formData.telNo" 
-                  type="text" 
-                  placeholder="전화번호"
-                  maxlength="25"
-                  class="form-input"
-                >
-              </div>
-              <div class="form-group">
-                <label>팩스번호</label>
-                <input 
-                  v-model="formData.faxNo" 
-                  type="text" 
-                  placeholder="팩스번호"
-                  maxlength="25"
-                  class="form-input"
-                >
-              </div>
-            </div>
-
-            <div class="form-row">
-              
-              <!--div class="form-group">
-                <label>최상위기관코드</label>
-                <input 
-                  v-model="formData.toplvlInsttCd" 
-                  type="text" 
-                  placeholder="최상위기관코드"
-                  maxlength="7"
-                  class="form-input"
-                >
-              </div-->
-            </div>
-
-            <!--div class="form-row">
-              <div class="form-group">
-                <label>최상위기관명</label>
-                <input 
-                  v-model="formData.toplvlInsttNm" 
-                  type="text" 
-                  placeholder="최상위기관명"
-                  maxlength="200"
-                  class="form-input"
-                >
-              </div>
-            </div-->
-
-            <div class="form-actions">
-              <button type="submit" class="btn-primary">
-                <i class="fas fa-save"></i>
-                <span>수정</span>
+                <span>{{ showAddModal ? '등록' : '수정' }}</span>
               </button>
               <button type="button" class="btn-secondary" @click="closeModal">
                 <i class="fas fa-times"></i>
@@ -747,9 +348,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { demandOrganizationService, type DemandOrganization } from '~/services/demand-organization.service'
 import { codeService } from '~/services/code.service'
+import { useDataTable } from '~/composables/useDataTable'
 
 definePageMeta({
   layout: 'admin',
@@ -768,8 +370,6 @@ const searchForm = ref({
   searchKeyword: '',
   rgnCd: '',
   dltYn: '',
-  page: 0,
-  size: 10,
   sortBy: 'createdAt',
   sortDirection: 'desc'
 })
@@ -780,13 +380,44 @@ const regions = ref<any[]>([])
 // 선택된 지역 (콤보박스용)
 const selectedRegion = ref<any>(null)
 
-// 수요기관 목록
-const organizations = ref<DemandOrganization[]>([])
-const totalElements = ref(0)
-const totalPages = ref(0)
-const currentPage = ref(0)
-const pageSize = ref(10)
-const loading = ref(false)
+// useDataTable composable 사용으로 페이지네이션 로직 통합
+const {
+  items: organizations,
+  loading,
+  currentPage,
+  totalPages,
+  totalElements,
+  pageSize,
+  startIndex,
+  endIndex,
+  changePage,
+  changePageSize,
+  search,
+  refresh
+} = useDataTable<DemandOrganization>({
+  fetchFunction: async (params) => {
+    // 검색 조건이 있으면 searchDemandOrganizations, 없으면 getDemandOrganizations 호출
+    if (searchForm.value.searchKeyword || searchForm.value.rgnCd || searchForm.value.dltYn) {
+      return await demandOrganizationService.searchDemandOrganizations({
+        searchKeyword: searchForm.value.searchKeyword,
+        rgnCd: searchForm.value.rgnCd,
+        dltYn: searchForm.value.dltYn,
+        page: params.page || 0,
+        size: params.size || 10,
+        sortBy: searchForm.value.sortBy,
+        sortDirection: searchForm.value.sortDirection
+      })
+    } else {
+      return await demandOrganizationService.getDemandOrganizations({
+        page: params.page || 0,
+        size: params.size || 10,
+        sortBy: searchForm.value.sortBy,
+        sortDirection: searchForm.value.sortDirection
+      })
+    }
+  },
+  initialPageSize: 10
+})
 
 // 모달 상태
 const showAddModal = ref(false)
@@ -826,119 +457,9 @@ const formData = ref<DemandOrganization>({
   chgDt: ''
 })
 
-// 페이지네이션 계산
-const startIndex = computed(() => currentPage.value * pageSize.value)
-const endIndex = computed(() => Math.min(startIndex.value + pageSize.value, totalElements.value))
-const visiblePages = computed(() => {
-  const pages = []
-  const start = Math.max(0, currentPage.value - 2)
-  const end = Math.min(totalPages.value - 1, start + 4)
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-  return pages
-})
-
-// 목록 조회
-const loadOrganizations = async () => {
-  loading.value = true
-  try {
-    const response = await demandOrganizationService.getDemandOrganizations({
-      page: currentPage.value,
-      size: pageSize.value,
-      sortBy: searchForm.value.sortBy,
-      sortDirection: searchForm.value.sortDirection
-    })
-    
-    console.log('loadOrganizations response:', response)
-    
-    if (response && response.content) {
-      organizations.value = response.content
-      totalElements.value = response.totalElements
-      totalPages.value = response.totalPages
-    } else {
-      console.error('Invalid response structure:', response)
-      organizations.value = []
-      totalElements.value = 0
-      totalPages.value = 0
-    }
-  } catch (error) {
-    console.error('수요기관 목록 조회 실패:', error)
-    organizations.value = []
-    totalElements.value = 0
-    totalPages.value = 0
-  } finally {
-    loading.value = false
-  }
-}
-
 // 검색
-const searchOrganizations = async () => {
-  loading.value = true
-  try {
-    const response = await demandOrganizationService.searchDemandOrganizations({
-      searchKeyword: searchForm.value.searchKeyword,
-      rgnCd: searchForm.value.rgnCd,
-      dltYn: searchForm.value.dltYn,
-      page: 0,
-      size: pageSize.value,
-      sortBy: searchForm.value.sortBy,
-      sortDirection: searchForm.value.sortDirection
-    })
-    
-    console.log('searchOrganizations response:', response)
-    
-    if (response && response.content) {
-      organizations.value = response.content
-      totalElements.value = response.totalElements
-      totalPages.value = response.totalPages
-      currentPage.value = 0
-    } else {
-      console.error('Invalid search response structure:', response)
-      organizations.value = []
-      totalElements.value = 0
-      totalPages.value = 0
-      currentPage.value = 0
-    }
-  } catch (error) {
-    console.error('수요기관 검색 실패:', error)
-    organizations.value = []
-    totalElements.value = 0
-    totalPages.value = 0
-    currentPage.value = 0
-  } finally {
-    loading.value = false
-  }
-}
-
-// 검색 초기화
-const resetSearch = () => {
-  searchForm.value = {
-    searchKeyword: '',
-    rgnCd: '',
-    dltYn: '',
-    page: 0,
-    size: 10,
-    sortBy: 'createdAt',
-    sortDirection: 'desc'
-  }
-  currentPage.value = 0
-  loadOrganizations()
-}
-
-// 페이지 변경
-const changePage = (page: number) => {
-  if (page >= 0 && page < totalPages.value) {
-    currentPage.value = page
-    loadOrganizations()
-  }
-}
-
-// 페이지 크기 변경
-const changePageSize = () => {
-  currentPage.value = 0
-  loadOrganizations()
+const searchOrganizations = () => {
+  search()
 }
 
 // 등록 모달 열기
@@ -1032,6 +553,15 @@ const validateForm = async (): Promise<boolean> => {
   return true
 }
 
+// 통합 폼 제출 핸들러
+const handleFormSubmit = async () => {
+  if (showAddModal.value) {
+    await submitAdd()
+  } else {
+    await submitEdit()
+  }
+}
+
 // 등록
 const submitAdd = async () => {
   if (!(await validateForm())) return
@@ -1039,7 +569,7 @@ const submitAdd = async () => {
   try {
     await demandOrganizationService.createDemandOrganization(formData.value)
     closeModal()
-    loadOrganizations()
+    refresh()
     alert('수요기관이 성공적으로 등록되었습니다.')
   } catch (error) {
     console.error('수요기관 등록 실패:', error)
@@ -1055,7 +585,7 @@ const submitEdit = async () => {
     // 백엔드에서는 dminsttCd를 기반으로 수요기관을 찾으므로 dminsttCd를 전달
     await demandOrganizationService.updateDemandOrganization(editingOrganization.value.dminsttCd!, formData.value)
     closeModal()
-    loadOrganizations()
+    refresh()
     alert('수요기관이 성공적으로 수정되었습니다.')
   } catch (error) {
     console.error('수요기관 수정 실패:', error)
@@ -1070,7 +600,7 @@ const deleteOrganization = async (organization: DemandOrganization) => {
   try {
     // 백엔드에서는 dminsttCd를 기반으로 수요기관을 찾으므로 dminsttCd를 전달
     await demandOrganizationService.deleteDemandOrganization(organization.dminsttCd!)
-    loadOrganizations()
+    refresh()
     alert('수요기관이 성공적으로 삭제되었습니다.')
   } catch (error) {
     console.error('수요기관 삭제 실패:', error)
@@ -1078,16 +608,6 @@ const deleteOrganization = async (organization: DemandOrganization) => {
   }
 }
 
-// 소관구분명 클래스 반환
-const getJrsdctnDivClass = (jrsdctnDivNm: string | undefined) => {
-  if (!jrsdctnDivNm) return 'role-default'
-  
-  if (jrsdctnDivNm.includes('국가기관')) return 'role-admin'
-  if (jrsdctnDivNm.includes('지방자치단체')) return 'role-sales'
-  if (jrsdctnDivNm.includes('공공기관')) return 'role-oem'
-  
-  return 'role-default'
-}
 
 // 지역 데이터 로드
 const loadRegions = async () => {
@@ -1123,19 +643,17 @@ const searchZipcode = () => {
 
 // 초기 로드
 onMounted(() => {
-  loadOrganizations()
+  refresh()
   loadRegions()
 })
 </script>
 
 <style scoped>
-/* ============================================
-   리팩토링: 공통 스타일은 admin-common.css 사용
-   - 래퍼 스타일 (.organization-management)
-   - 버튼 스타일 (.btn-primary, .btn-secondary, .btn-edit, .btn-delete)
-   - 테이블 스타일 (.data-table)
-   - 페이지네이션 스타일
-   ============================================ */
+/* 공통 CSS import */
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-tables.css';
+@import '@/assets/css/admin-modals.css';
 
 /* 페이지 특화 스타일만 작성 */
 
@@ -1164,21 +682,6 @@ onMounted(() => {
   gap: 1rem;
 }
 
-.form-row {
-  display: flex;
-  align-items: end;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 150px;
-  flex: 1;
-}
-
 .form-group.button-group {
   display: flex;
   flex-direction: row;
@@ -1187,313 +690,11 @@ onMounted(() => {
   flex: 0 0 auto;
 }
 
-.form-group label {
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-}
-
-.form-input,
-.form-select {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus,
-.form-select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
 .button-group {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 1rem;
-}
-
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn-secondary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-/* 테이블 섹션 */
-.table-section {
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.table-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-
-.table-info {
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.page-size-select {
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-}
-
-.table-container {
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.data-table th {
-  background: #f9fafb;
-  padding: 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: #374151;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.data-table td {
-  padding: 1rem;
-  border-bottom: 1px solid #f3f4f6;
-  vertical-align: middle;
-}
-
-.table-row:hover {
-  background: #f9fafb;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.btn-edit,
-.btn-delete {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  border: none;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-edit {
-  background: #f59e0b;
-  color: white;
-}
-
-.btn-edit:hover {
-  background: #d97706;
-}
-
-.btn-delete {
-  background: #ef4444;
-  color: white;
-}
-
-.btn-delete:hover {
-  background: #dc2626;
-}
-
-/* 배지 스타일 */
-.role-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-align: center;
-}
-
-.role-admin { background: #dc2626; color: white; }
-.role-sales { background: #2563eb; color: white; }
-.role-oem { background: #7c3aed; color: white; }
-.role-default { background: #f3f4f6; color: #374151; }
-
-.status-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-align: center;
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-badge.deleted {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-/* 페이지네이션 */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.pagination-btn {
-  padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background: #e5e7eb;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-numbers {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.page-number {
-  padding: 0.5rem 0.75rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-  min-width: 2.5rem;
-  text-align: center;
-}
-
-.page-number:hover:not(:disabled) {
-  background: #e5e7eb;
-}
-
-.page-number.active {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-
-.page-number:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* 모달 스타일 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.modal-body {
-  padding: 1.5rem;
 }
 
 .organization-form {
@@ -1506,38 +707,6 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-}
-
-.organization-form .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.organization-form label {
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-}
-
-.organization-form .form-input {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  transition: border-color 0.2s;
-}
-
-.organization-form .form-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.organization-form .form-input:disabled {
-  background: #f9fafb;
-  color: #6b7280;
-  cursor: not-allowed;
 }
 
 .form-help {

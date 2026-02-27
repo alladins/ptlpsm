@@ -53,6 +53,7 @@ export interface DeliveryApiResponse {
     unit: string
     shipmentQuantity: number  // quantity로 변환 필요
     unitPrice: number
+    remarks: string | null
   }>
 }
 
@@ -120,6 +121,7 @@ export interface DeliveryInfo {
     unit: string
     quantity: number
     unitPrice: number
+    remarks: string | null
   }>
 }
 
@@ -187,7 +189,8 @@ function transformDeliveryResponse(apiResponse: DeliveryApiResponse): DeliveryIn
       specification: item.itemSpec,  // itemSpec → specification
       unit: item.unit,
       quantity: item.shipmentQuantity,  // shipmentQuantity → quantity
-      unitPrice: item.unitPrice
+      unitPrice: item.unitPrice,
+      remarks: item.remarks ?? null
     }))
   }
 }

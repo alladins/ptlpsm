@@ -49,6 +49,16 @@ export const COMMISSION_ENDPOINTS = {
   },
 
   /**
+   * 연도별 커미션 정산 목록 조회
+   * @param year - 연도
+   * @returns GET /admin/commission/settlements/year/{year}
+   */
+  settlementsByYear: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/settlements/year/${year}`
+  },
+
+  /**
    * 자금별 커미션 정산 상세 조회
    * @param fundId - 자금 ID
    * @returns GET /admin/commission/settlements/fund/{fundId}

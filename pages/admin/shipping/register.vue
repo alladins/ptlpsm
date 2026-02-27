@@ -164,20 +164,20 @@
                 </div>
               </div>
 
-              <!-- 4. OEM 제조사 정보 (신규) -->
+              <!-- 4. OEM 제조사 / 건설사(시공사) -->
               <div class="info-group">
                 <div class="info-group-header">
                   <i class="fas fa-industry"></i>
-                  <span>OEM 제조사</span>
+                  <span>OEM 제조사 / 건설사(시공사)</span>
                 </div>
-                <div class="info-grid grid-1">
+                <div class="info-grid grid-2">
                   <FormField label="OEM 제조사" required :error="errors.oemCompanyId">
                     <select
                       v-model="formData.oemCompanyId"
                       class="form-select"
                       :disabled="loadingOemCompanies"
                     >
-                      <option :value="null">{{ loadingOemCompanies ? '로딩 중...' : '선택하세요' }}</option>
+                      <option :value="null">{{ loadingOemCompanies ? '로딩 중...' : 'OEM 제조사를 선택하세요' }}</option>
                       <option
                         v-for="company in oemCompanies"
                         :key="company.id"
@@ -187,17 +187,16 @@
                       </option>
                     </select>
                   </FormField>
+                  <FormField label="건설사">
+                    <input
+                      type="text"
+                      :value="formData.builderCompanyName || '(현장담당자 선택 시 자동 설정)'"
+                      class="form-input-md"
+                      readonly
+                    >
+                  </FormField>
                 </div>
-              </div>
-
-              <!-- 5. 현장담당자 및 건설사(시공사) 정보 -->
-              <div class="info-group">
-                <div class="info-group-header">
-                  <i class="fas fa-hard-hat"></i>
-                  <span>현장담당자 / 건설사</span>
-                  <span class="optional-badge">선택</span>
-                </div>
-                <div class="info-grid grid-1">
+                <div class="info-grid grid-1" style="margin-top: 0.5rem;">
                   <FormField label="현장담당자">
                     <select
                       v-model="formData.siteManagerId"
@@ -214,14 +213,6 @@
                         <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
                       </option>
                     </select>
-                  </FormField>
-                  <FormField label="건설사">
-                    <input
-                      type="text"
-                      :value="formData.builderCompanyName || '(현장담당자 선택 시 자동 설정)'"
-                      class="form-input-md"
-                      readonly
-                    >
                   </FormField>
                 </div>
               </div>
@@ -275,7 +266,7 @@
                     </td>
                   </tr>
                   <!-- 기존 발주 품목 -->
-                  <tr v-for="item in selectedOrderItems" :key="item.itemId">
+                  <tr v-for="item in selectedOrderItems" :key="item.itemId" :style="getMergeGroupStyle(item.skuId)">
                     <td>{{ item.itemId }}</td>
                     <td>{{ item.itemName }}</td>
                     <td>{{ item.skuId }}</td>
@@ -307,13 +298,32 @@
                     </td>
                     <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
                     <td class="text-right">{{ formatCurrency(item.shippingQuantity * item.unitPrice) }}</td>
-                    <td class="remark-cell" :title="item.remark || ''">{{ item.remark || '-' }}</td>
+                    <td class="remark-cell">
+                      <template v-if="getMergeBadges(item.skuId).length > 0">
+                        <span
+                          v-for="(badge, idx) in getMergeBadges(item.skuId)"
+                          :key="idx"
+                          class="merge-badge"
+                          :style="{ backgroundColor: badge.color }"
+                        >{{ badge.label }}</span>
+                      </template>
+                      <template v-else>
+                        {{ item.shippingQuantity > 0 ? `${formatQuantity(item.shippingQuantity)} m²` : '-' }}
+                      </template>
+                    </td>
                     <td class="text-center">
-                      <span class="text-muted">-</span>
+                      <button
+                        type="button"
+                        class="btn-remove"
+                        @click="removeOrderItem(item.skuId)"
+                        title="삭제"
+                      >
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
                     </td>
                   </tr>
                   <!-- 신규 추가 품목 -->
-                  <tr v-for="item in newItems" :key="'new-' + item.skuId" class="new-item-row">
+                  <tr v-for="item in newItems" :key="'new-' + item.skuId" class="new-item-row" :style="getMergeGroupStyle(item.skuId)">
                     <td class="text-center">
                       <span class="badge-new">신규</span>
                     </td>
@@ -339,7 +349,19 @@
                     </td>
                     <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
                     <td class="text-right">{{ formatCurrency(item.shippingQuantity * item.unitPrice) }}</td>
-                    <td class="remark-cell" :title="item.remark || ''">{{ item.remark || '-' }}</td>
+                    <td class="remark-cell">
+                      <template v-if="getMergeBadges(item.skuId).length > 0">
+                        <span
+                          v-for="(badge, idx) in getMergeBadges(item.skuId)"
+                          :key="idx"
+                          class="merge-badge"
+                          :style="{ backgroundColor: badge.color }"
+                        >{{ badge.label }}</span>
+                      </template>
+                      <template v-else>
+                        {{ item.shippingQuantity > 0 ? `${formatQuantity(item.shippingQuantity)} m²` : '-' }}
+                      </template>
+                    </td>
                     <td class="text-center">
                       <button
                         type="button"
@@ -403,22 +425,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from '#imports'
 import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
 import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
 import ItemMergeSelectModal from '~/components/shipment/ItemMergeSelectModal.vue'
 import type { OrderDetailResponse } from '~/types/order'
-import type { CompanyInfoResponse } from '~/types/company'
 import type { Item, ItemSku } from '~/services/item.service'
 import { shipmentService } from '~/services/shipment.service'
-import { companyService } from '~/services/company.service'
-import { userService } from '~/services/user.service'
-import type { UserByRole } from '~/types/user'
 import { formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { usePermission } from '~/composables/usePermission'
+import { useShippingFormData } from '~/composables/admin/useShippingFormData'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 
@@ -432,44 +451,12 @@ const router = useRouter()
 // 권한
 const { canWrite } = usePermission()
 
-// OEM 제조사 목록
-const oemCompanies = ref<CompanyInfoResponse[]>([])
-const loadingOemCompanies = ref(false)
-
-// 건설사(시공사) 목록
-const builderCompanies = ref<CompanyInfoResponse[]>([])
-const loadingBuilderCompanies = ref(false)
-
-// 현장담당자 목록
-const siteManagers = ref<UserByRole[]>([])
-const loadingSiteManagers = ref(false)
-
-// OEM, 건설사, 현장담당자 데이터 병렬 로드
-onMounted(async () => {
-  loadingOemCompanies.value = true
-  loadingBuilderCompanies.value = true
-  loadingSiteManagers.value = true
-
-  try {
-    // 병렬로 API 호출 (OEM 제조사는 MANUFACTURER 타입만 조회)
-    const [manufacturers, companies, users] = await Promise.all([
-      companyService.getManufacturers(),  // OEM 제조사만 (companyType=MANUFACTURER)
-      companyService.getCompanies(),       // 건설사용 전체 목록
-      userService.getUsersByRoles(['SITE_MANAGER'])
-    ])
-
-    // OEM 제조사는 제조사 유형만, 건설사는 전체 회사 목록
-    oemCompanies.value = manufacturers
-    builderCompanies.value = companies
-    siteManagers.value = users
-  } catch (error) {
-    console.error('초기 데이터 로드 실패:', error)
-  } finally {
-    loadingOemCompanies.value = false
-    loadingBuilderCompanies.value = false
-    loadingSiteManagers.value = false
-  }
-})
+// OEM 제조사 + 현장담당자 공통 데이터 (composable)
+const {
+  oemCompanies, loadingOemCompanies,
+  siteManagers, loadingSiteManagers,
+  setupBuilderAutoSet
+} = useShippingFormData()
 
 // 상태 관리 (등록 시에는 항상 '대기' 상태로 고정)
 
@@ -519,8 +506,26 @@ interface NewItem {
   mergeSourceSkuIds?: string[] // 병합 출처 SKU ID 목록
 }
 
+// 합지 그룹 추적
+interface MergeGroupInfo {
+  id: string                // 고유 ID
+  targetSkuId: string       // 합지 결과 품목 SKU ID
+  targetSkuName: string     // 합지 결과 SKU 품명
+  sources: { skuId: string; skuName: string; amount: number }[]
+  colorIndex: number        // 색상 인덱스 (0~4)
+}
+
+const MERGE_GROUP_COLORS = [
+  { border: '#3b82f6', bg: '#eff6ff' },   // 파랑
+  { border: '#10b981', bg: '#ecfdf5' },   // 초록
+  { border: '#f59e0b', bg: '#fffbeb' },   // 주황
+  { border: '#8b5cf6', bg: '#f5f3ff' },   // 보라
+  { border: '#ec4899', bg: '#fdf2f8' },   // 분홍
+]
+
 // 신규 추가 품목 목록
 const newItems = ref<NewItem[]>([])
+const mergeGroups = ref<MergeGroupInfo[]>([])
 
 // SKU 선택 팝업 표시 여부
 const showSkuSelector = ref(false)
@@ -622,12 +627,100 @@ const handleSkuSelected = (item: Item, sku: ItemSku) => {
   }
 }
 
-// 신규 품목 삭제
+// 기존 발주 품목 삭제 (합지 관계 체크)
+const removeOrderItem = (skuId: string) => {
+  const index = selectedOrderItems.value.findIndex(i => i.skuId === skuId)
+  if (index === -1) return
+
+  // 합지 그룹에 속해 있는지 확인
+  const relatedGroups = mergeGroups.value.filter(g =>
+    g.sources.some(s => s.skuId === skuId)
+  )
+
+  if (relatedGroups.length > 0) {
+    const groupNames = relatedGroups.map(g => g.targetSkuName).join(', ')
+    if (!confirm(`이 품목은 합지 그룹에 속해 있습니다 (→ ${groupNames}).\n삭제하면 관련 합지도 해제됩니다. 계속하시겠습니까?`)) {
+      return
+    }
+
+    // 관련 합지 그룹의 타겟 품목(신규) 삭제 + 다른 소스 품목 수량 복구
+    relatedGroups.forEach(group => {
+      // 타겟 신규 품목 삭제
+      const targetIdx = newItems.value.findIndex(ni => ni.skuId === group.targetSkuId)
+      if (targetIdx !== -1) {
+        const targetItem = newItems.value[targetIdx]
+        const mergeAmount = targetItem.quantity || 0
+
+        // 다른 소스 품목들의 수량 복구 (삭제 대상 제외)
+        group.sources.forEach(source => {
+          if (source.skuId === skuId) return // 삭제 대상은 스킵
+          const srcIdx = selectedOrderItems.value.findIndex(i => i.skuId === source.skuId)
+          if (srcIdx !== -1) {
+            const srcItem = selectedOrderItems.value[srcIdx]
+            selectedOrderItems.value[srcIdx] = {
+              ...srcItem,
+              quantity: srcItem.quantity + source.amount,
+              remainingQuantity: srcItem.remainingQuantity + source.amount,
+              remark: undefined
+            }
+          }
+        })
+
+        newItems.value.splice(targetIdx, 1)
+      }
+
+      // 합지 그룹 제거
+      const gIdx = mergeGroups.value.findIndex(g => g.id === group.id)
+      if (gIdx !== -1) mergeGroups.value.splice(gIdx, 1)
+    })
+  }
+
+  selectedOrderItems.value.splice(index, 1)
+}
+
+// 신규 품목 삭제 (합지 품목이면 원본 수량 복구)
 const removeNewItem = (skuId: string) => {
   const index = newItems.value.findIndex(item => item.skuId === skuId)
-  if (index !== -1) {
-    newItems.value.splice(index, 1)
+  if (index === -1) return
+
+  const item = newItems.value[index]
+
+  // 합지 품목인 경우 수량 복구
+  if (item.mergeSourceSkuIds && item.mergeSourceSkuIds.length > 0) {
+    if (!confirm(`이 품목은 합지 품목입니다. 삭제하면 원본 품목의 수량이 복구됩니다. 계속하시겠습니까?`)) {
+      return
+    }
+
+    // 합지 그룹에서 차감량 정보 조회
+    const group = mergeGroups.value.find(g => g.targetSkuId === skuId)
+
+    // 원본 품목 수량 복구
+    item.mergeSourceSkuIds.forEach(sourceSkuId => {
+      const srcIdx = selectedOrderItems.value.findIndex(i => i.skuId === sourceSkuId)
+      if (srcIdx !== -1) {
+        const srcItem = selectedOrderItems.value[srcIdx]
+        // 그룹에서 차감량 조회, 없으면 합지 품목의 quantity 사용
+        const deductionAmount = group
+          ? (group.sources.find(s => s.skuId === sourceSkuId)?.amount || 0)
+          : (item.quantity || 0)
+
+        selectedOrderItems.value[srcIdx] = {
+          ...srcItem,
+          quantity: srcItem.quantity + deductionAmount,
+          remainingQuantity: srcItem.remainingQuantity + deductionAmount,
+          remark: undefined  // 병합 비고 제거
+        }
+      }
+    })
+
+    // 합지 그룹 제거
+    if (group) {
+      const gIdx = mergeGroups.value.findIndex(g => g.id === group.id)
+      if (gIdx !== -1) mergeGroups.value.splice(gIdx, 1)
+    }
   }
+
+  newItems.value.splice(index, 1)
 }
 
 // 병합 결과 인터페이스
@@ -690,16 +783,27 @@ const handleMergeConfirm = (result: MergeResult) => {
     }
   })
 
+  // 3. 합지 그룹 등록
+  mergeGroups.value.push({
+    id: String(Date.now()),
+    targetSkuId: result.newItem.skuId,
+    targetSkuName: result.newItem.skuName,
+    sources: result.deductions.map(d => ({
+      skuId: d.skuId, skuName: d.skuName, amount: d.amount
+    })),
+    colorIndex: mergeGroups.value.length % MERGE_GROUP_COLORS.length
+  })
+
   showMergeModal.value = false
   pendingNewItem.value = null
 }
 
-// 병합 없이 추가
-const handleMergeSkip = () => {
+// 병합 없이 추가 (모달에서 입력한 수량 반영)
+const handleMergeSkip = (quantity?: number) => {
   if (pendingNewItem.value) {
     newItems.value.push({
       ...pendingNewItem.value,
-      shippingQuantity: 0,
+      shippingQuantity: quantity || 0,
       isNew: true
     })
   }
@@ -713,13 +817,47 @@ const handleMergeClose = () => {
   pendingNewItem.value = null
 }
 
+// 합지 그룹 헬퍼: SKU가 속한 합지 그룹들 조회
+const getMergeGroupsForSku = (skuId: string): MergeGroupInfo[] => {
+  return mergeGroups.value.filter(g =>
+    g.targetSkuId === skuId || g.sources.some(s => s.skuId === skuId)
+  )
+}
+
+// 합지 그룹 스타일 (왼쪽 컬러 바 + 배경색)
+const getMergeGroupStyle = (skuId: string) => {
+  const groups = getMergeGroupsForSku(skuId)
+  if (groups.length === 0) return {}
+  const color = MERGE_GROUP_COLORS[groups[0].colorIndex]
+  return { borderLeft: `4px solid ${color.border}`, backgroundColor: color.bg }
+}
+
+// 합지 배지 정보 (비고 컬럼용)
+const getMergeBadges = (skuId: string): { label: string; color: string }[] => {
+  const groups = getMergeGroupsForSku(skuId)
+  if (groups.length === 0) return []
+
+  const badges: { label: string; color: string }[] = []
+  groups.forEach(g => {
+    const color = MERGE_GROUP_COLORS[g.colorIndex].border
+    if (g.targetSkuId === skuId) {
+      // 타겟 품목: 소스들 표시
+      const sourceNames = g.sources.map(s => s.skuName).join(', ')
+      badges.push({ label: `← ${sourceNames}`, color })
+    } else {
+      // 소스 품목: 타겟 표시
+      badges.push({ label: `→ ${g.targetSkuName}`, color })
+    }
+  })
+  return badges
+}
+
 // useRegisterForm 사용
 const {
   formData,
   submitting,
   submit,
-  goBack,
-  reset
+  goBack
 } = useRegisterForm<any, any, any>({
   createFunction: async (data) => {
     // 기존 품목 중 출하수량이 있거나 병합 비고가 있는 것 (수량 0도 포함)
@@ -823,12 +961,12 @@ const {
 })
 
 // useFormValidation 사용
-const { errors, validateField, validateAll, rules } = useFormValidation({
-  deliveryRequestNo: '납품요구번호는 필수입니다.',
-  client: '수요기관명은 필수입니다.',
-  shippingDate: '출하일자는 필수입니다.',
-  status: '상태는 필수입니다.',
-  oemCompanyId: '제조사는 필수입니다.'
+const { errors, validateAll, rules } = useFormValidation({
+  deliveryRequestNo: '',
+  client: '',
+  shippingDate: '',
+  status: '',
+  oemCompanyId: ''
 })
 
 // 선택된 발주의 품목 목록
@@ -871,7 +1009,7 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
         // 백엔드에서 계산된 잔여수량 사용 (부동소수점 오차 없음)
         const remainingQuantity = statusItem?.remainingQuantity || 0
         const shippedQuantity = statusItem?.totalShippedQuantity || 0
-        // 추가변경 반영: shipmentStatus의 orderQuantity 우선 사용 (delivery_done 테이블 기준)
+        // shipmentStatus의 orderQuantity 우선 사용 (delivery_done 테이블 기준)
         const orderQuantity = statusItem?.orderQuantity || item.quantity
         const unitPrice = typeof item.unitPrice === 'string' ? parseFloat(item.unitPrice) : item.unitPrice
 
@@ -972,30 +1110,11 @@ const totalAmount = computed(() => {
   return existingTotal + newTotal
 })
 
-// 건설사 선택 변경 핸들러 (현재는 현장담당자 연동으로 대체됨)
-const onBuilderCompanyChange = () => {
-  const selectedCompany = builderCompanies.value.find(c => c.id === formData.builderCompanyId)
-  formData.builderCompanyName = selectedCompany?.companyName || ''
-}
-
-// 현장담당자 선택 시 건설사 자동 설정
-watch(() => formData.siteManagerId, (newManagerId) => {
-  if (newManagerId) {
-    const selectedManager = siteManagers.value.find(m => m.userid === newManagerId)
-    if (selectedManager?.companyId) {
-      formData.builderCompanyId = selectedManager.companyId
-      formData.builderCompanyName = selectedManager.companyName || ''
-    }
-  } else {
-    // 현장담당자 해제 시 건설사도 초기화
-    formData.builderCompanyId = null
-    formData.builderCompanyName = ''
-  }
-})
+// 현장담당자 선택 시 건설사 자동 설정 (composable)
+setupBuilderAutoSet(formData)
 
 // 제출 처리
 const handleSubmit = async () => {
-  // 유효성 검사
   const validationRules = {
     deliveryRequestNo: [rules.required('납품요구번호')],
     shippingDate: [
@@ -1022,11 +1141,15 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-forms.css';
+
 /*
  * Common styles managed by:
- * - admin-edit-register.css: content-section, two-column-layout, items-table, items-section-header, items-table-wrapper.with-header, items-table tfoot
- * - admin-forms.css: form-input-*, form-select-*, info-group, info-grid, info-grid :deep(.form-field), info-grid :deep(.form-label), info-grid :deep(.required-mark), search-group
- * - admin-common.css: text-right, empty-message
+ * - admin-common.css: text-right, empty-message, modal-overlay, status-badge
+ * - admin-buttons.css: btn-action, btn-primary, btn-secondary, btn-add-item
+ * - admin-forms.css: form-input-*, form-select, info-group, info-grid, search-group
  */
 
 /* Page-specific: Shipping register page wrapper */
@@ -1210,5 +1333,24 @@ const handleSubmit = async () => {
 
 .btn-add-item:hover {
   background: #059669;
+}
+
+/* 합지 배지 */
+.merge-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  margin: 1px 2px;
+  white-space: nowrap;
+}
+
+/* 비고 셀 (말줄임 방지, 배지 줄바꿈 허용) */
+.remark-cell {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

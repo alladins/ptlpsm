@@ -22,13 +22,11 @@
           B급 조정
         </button>
         <button
-          class="btn-primary"
-          :disabled="isOemRegistrationDisabled"
-          :title="isOemRegistrationDisabled ? 'OEM 예정총액에 도달하여 추가 등록 불가' : ''"
-          @click="emit('openOemModal')"
+          class="btn-link-po"
+          @click="goToPoPaymentTab"
         >
-          <i class="fas fa-plus"></i>
-          지급 등록
+          <i class="fas fa-external-link-alt"></i>
+          발주서 지급 관리
         </button>
       </div>
     </div>
@@ -58,7 +56,7 @@
       </button>
     </div>
 
-    <!-- OEM 지급 요약 -->
+    <!-- OEM 지급 요약 (읽기 전용) -->
     <div class="oem-summary-card">
       <div class="summary-item">
         <span class="label">기성금 누계</span>
@@ -66,7 +64,7 @@
       </div>
       <div class="summary-divider"></div>
       <div class="summary-item">
-        <span class="label">OEM 지급 예정 (70%)</span>
+        <span class="label">OEM 지급 예정 (예정원가)</span>
         <span class="value highlight">{{ formatCurrency(oemExpectedAmount) }}</span>
       </div>
       <div class="summary-divider"></div>
@@ -80,76 +78,75 @@
         <span class="value warning">{{ formatCurrency(oemExpectedAmount - oemPaidTotal) }}</span>
       </div>
     </div>
-    <div class="table-container">
-      <table class="data-table oem-table">
-        <colgroup>
-          <col class="col-seq" />
-          <col class="col-company" />
-          <col class="col-amount" />
-          <col class="col-date" />
-          <col class="col-amount" />
-          <col class="col-date" />
-          <col class="col-status" />
-          <col class="col-action" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th class="text-center">차수</th>
-            <th>OEM 업체</th>
-            <th class="text-right">지급예정금액</th>
-            <th class="text-center">예정일</th>
-            <th class="text-right">실제지급금액</th>
-            <th class="text-center">지급일</th>
-            <th class="text-center">상태</th>
-            <th class="text-center">액션</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="oemPayments.length === 0">
-            <td colspan="8" class="no-data">OEM 지급 이력이 없습니다.</td>
-          </tr>
-          <tr v-else v-for="oem in oemPayments" :key="oem.oemPaymentId">
-            <td class="text-center">{{ oem.paymentSeq }}차</td>
-            <td class="cell-company">{{ oem.oemCompanyName || '-' }}</td>
-            <td class="text-right cell-amount">{{ formatCurrency(oem.scheduledAmount) }}</td>
-            <td class="text-center cell-date">{{ oem.scheduledDate || '-' }}</td>
-            <td class="text-right cell-amount">{{ oem.paidAmount ? formatCurrency(oem.paidAmount) : '-' }}</td>
-            <td class="text-center cell-date">{{ oem.paidDate || '-' }}</td>
-            <td class="text-center">
-              <span class="status-badge" :class="getOemPaymentStatusClass(oem.status)">
-                {{ getOemPaymentStatusLabel(oem.status) }}
-              </span>
-            </td>
-            <td class="text-center">
-              <div v-if="oem.status === 'PENDING'" class="oem-action-buttons">
-                <button
-                  class="btn-oem-complete"
-                  @click="emit('openOemCompleteModal', oem)"
-                  title="지급 완료 처리"
-                >
-                  지급완료
-                </button>
-                <button
-                  class="btn-oem-delete"
-                  @click="emit('confirmDeleteOem', oem)"
-                  title="삭제"
-                >
-                  삭제
-                </button>
-              </div>
-              <span v-else-if="oem.status === 'PAID'" class="oem-completed">
-                완료
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+
+    <!-- 안내 메시지 -->
+    <div class="info-banner">
+      <i class="fas fa-info-circle"></i>
+      <div class="info-content">
+        <p>OEM 지급 등록/완료/삭제는 <strong>발주서 관리 > OEM 지급 현황</strong> 탭에서 관리합니다.</p>
+        <button class="btn-go-po" @click="goToPoPaymentTab">
+          발주서 지급 현황 바로가기 <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- OEM 지급 이력 (읽기 전용) -->
+    <div v-if="oemPayments.length > 0" class="readonly-section">
+      <h5 class="readonly-title">
+        <i class="fas fa-history"></i>
+        자금관리 기준 OEM 지급 이력
+      </h5>
+      <div class="table-container">
+        <table class="data-table oem-table">
+          <colgroup>
+            <col class="col-seq" />
+            <col class="col-company" />
+            <col class="col-amount" />
+            <col class="col-date" />
+            <col class="col-amount" />
+            <col class="col-date" />
+            <col class="col-status" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="text-center">차수</th>
+              <th>OEM 업체</th>
+              <th class="text-right">지급예정금액</th>
+              <th class="text-center">예정일</th>
+              <th class="text-right">실제지급금액</th>
+              <th class="text-center">지급일</th>
+              <th class="text-center">상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="oem in oemPayments" :key="oem.oemPaymentId">
+              <td class="text-center">{{ oem.paymentSeq }}차</td>
+              <td class="cell-company">{{ oem.oemCompanyName || '-' }}</td>
+              <td class="text-right cell-amount">{{ formatCurrency(oem.scheduledAmount) }}</td>
+              <td class="text-center cell-date">{{ oem.scheduledDate || '-' }}</td>
+              <td class="text-right cell-amount">{{ oem.paidAmount ? formatCurrency(oem.paidAmount) : '-' }}</td>
+              <td class="text-center cell-date">{{ oem.paidDate || '-' }}</td>
+              <td class="text-center">
+                <span class="status-badge" :class="getOemPaymentStatusClass(oem.status)">
+                  {{ getOemPaymentStatusLabel(oem.status) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * OEM 지급 탭 (읽기 전용)
+ * - 원가 재계산, B급 조정 기능은 유지
+ * - 지급 등록/완료/삭제 기능은 발주서 관리 > OEM 지급 현황으로 이관
+ */
 import { computed } from 'vue'
+import { useRouter } from '#imports'
 import type { OemPayment, OemCostRecalcPreview } from '~/types/fund'
 import { formatCurrency } from '~/utils/format'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
@@ -184,17 +181,13 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  /** OEM 지급 등록 모달 열기 */
-  openOemModal: []
-  /** OEM 지급 완료 모달 열기 */
-  openOemCompleteModal: [oem: OemPayment]
-  /** OEM 지급 삭제 확인 */
-  confirmDeleteOem: [oem: OemPayment]
   /** B급 조정 모달 열기 */
   openBgradeModal: []
   /** OEM 원가 재계산 */
   recalculateOemCost: []
 }>()
+
+const router = useRouter()
 
 // 재계산 필요 여부
 const needsRecalculation = computed(() => {
@@ -214,16 +207,10 @@ const { getOemPaymentStatusClass, getOemPaymentStatusLabel } = useFundStatusForm
 // OEM 지급 예정 금액 (기성금의 70%)
 const oemExpectedAmount = computed(() => Math.floor((props.progressPaymentTotal || 0) * 0.7))
 
-// OEM 잔여 등록 가능 금액 (PENDING + PAID 합계 기준)
-const oemRemainingLimit = computed(() => {
-  const total = props.oemTotalScheduled ?? props.oemPaidTotal
-  return Math.max(0, (props.oemExpectedTotal || 0) - total)
-})
-
-// 지급 등록 불가 여부 (예정총액에 도달 시)
-const isOemRegistrationDisabled = computed(() => {
-  return (props.oemExpectedTotal || 0) > 0 && oemRemainingLimit.value <= 0
-})
+// 발주서 지급 현황 탭으로 이동
+function goToPoPaymentTab() {
+  router.push('/admin/purchase-order/list?tab=oem-payment')
+}
 </script>
 
 <style scoped>
@@ -297,6 +284,89 @@ const isOemRegistrationDisabled = computed(() => {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* 안내 배너 */
+.info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.info-banner > i {
+  color: #3b82f6;
+  font-size: 1.125rem;
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+
+.info-content p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: #1e40af;
+}
+
+.btn-go-po {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-go-po:hover {
+  background: #2563eb;
+}
+
+/* 발주서 지급 관리 링크 버튼 */
+.btn-link-po {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-link-po:hover {
+  background: #059669;
+}
+
+/* 읽기 전용 섹션 */
+.readonly-section {
+  margin-top: 1rem;
+}
+
+.readonly-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 0.75rem 0;
+}
+
+.readonly-title i {
+  color: #9ca3af;
+}
+
 /* 테이블 컨테이너 */
 .table-container {
   border-radius: 12px;
@@ -318,7 +388,6 @@ const isOemRegistrationDisabled = computed(() => {
 .oem-table .col-amount { width: 130px; }
 .oem-table .col-date { width: 110px; }
 .oem-table .col-status { width: 90px; }
-.oem-table .col-action { width: 160px; }
 
 /* OEM 테이블 헤더 */
 .data-table thead th {
@@ -333,26 +402,16 @@ const isOemRegistrationDisabled = computed(() => {
   white-space: nowrap;
 }
 
-.data-table thead th.text-center {
-  text-align: center;
-}
-
-.data-table thead th.text-right {
-  text-align: right;
-}
+.data-table thead th.text-center { text-align: center; }
+.data-table thead th.text-right { text-align: right; }
 
 /* OEM 테이블 행 스타일 */
 .data-table tbody tr {
   transition: all 0.15s ease;
 }
 
-.data-table tbody tr:nth-child(even) {
-  background: #f8fafc;
-}
-
-.data-table tbody tr:hover {
-  background: #f0f9ff;
-}
+.data-table tbody tr:nth-child(even) { background: #f8fafc; }
+.data-table tbody tr:hover { background: #f0f9ff; }
 
 .data-table tbody td {
   padding: 0.75rem 0.75rem;
@@ -365,14 +424,8 @@ const isOemRegistrationDisabled = computed(() => {
   white-space: nowrap;
 }
 
-.data-table tbody td.text-center {
-  text-align: center;
-}
-
-/* 금액 컬럼 강조 */
-.data-table tbody td.text-right {
-  text-align: right;
-}
+.data-table tbody td.text-center { text-align: center; }
+.data-table tbody td.text-right { text-align: right; }
 
 .data-table tbody td.cell-amount {
   font-weight: 600;
@@ -381,28 +434,17 @@ const isOemRegistrationDisabled = computed(() => {
   color: #1e293b;
 }
 
-/* 회사명 컬럼 */
 .data-table tbody td.cell-company {
   font-weight: 500;
   color: #1f2937;
 }
 
-/* 날짜 컬럼 */
 .data-table tbody td.cell-date {
   font-variant-numeric: tabular-nums;
   color: #64748b;
 }
 
-/* 빈 데이터 표시 */
-.data-table .no-data {
-  padding: 3rem 1rem;
-  text-align: center;
-  color: #94a3b8;
-  font-size: 0.9375rem;
-  background: #f8fafc;
-}
-
-/* OEM 상태 배지 개선 */
+/* OEM 상태 배지 */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -423,64 +465,6 @@ const isOemRegistrationDisabled = computed(() => {
   background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   color: #047857;
   border: 1px solid #6ee7b7;
-}
-
-/* OEM 액션 버튼 */
-.oem-action-buttons {
-  display: inline-flex;
-  justify-content: center;
-  gap: 0.25rem;
-}
-
-.btn-oem-complete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.375rem 0.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-oem-complete:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  transform: translateY(-1px);
-}
-
-.btn-oem-delete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.375rem 0.5rem;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-oem-delete:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  transform: translateY(-1px);
-}
-
-.oem-completed {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #059669;
-  font-size: 0.75rem;
-  font-weight: 600;
 }
 
 /* 재계산 경고 배너 */
@@ -508,9 +492,7 @@ const isOemRegistrationDisabled = computed(() => {
   font-size: 0.875rem;
 }
 
-.recalc-banner-content {
-  flex: 1;
-}
+.recalc-banner-content { flex: 1; }
 
 .recalc-banner-title {
   font-size: 0.875rem;
@@ -524,21 +506,10 @@ const isOemRegistrationDisabled = computed(() => {
   color: #a16207;
 }
 
-.recalc-banner-detail strong {
-  color: #78350f;
-}
-
-.recalc-diff {
-  font-weight: 600;
-}
-
-.recalc-diff.diff-up {
-  color: #dc2626;
-}
-
-.recalc-diff.diff-down {
-  color: #059669;
-}
+.recalc-banner-detail strong { color: #78350f; }
+.recalc-diff { font-weight: 600; }
+.recalc-diff.diff-up { color: #dc2626; }
+.recalc-diff.diff-down { color: #059669; }
 
 .recalc-banner-btn {
   flex-shrink: 0;
@@ -557,14 +528,8 @@ const isOemRegistrationDisabled = computed(() => {
   white-space: nowrap;
 }
 
-.recalc-banner-btn:hover:not(:disabled) {
-  background: #d97706;
-}
-
-.recalc-banner-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.recalc-banner-btn:hover:not(:disabled) { background: #d97706; }
+.recalc-banner-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* 재계산 버튼 */
 .btn-recalc {
@@ -582,36 +547,10 @@ const isOemRegistrationDisabled = computed(() => {
   transition: all 0.2s;
 }
 
-.btn-recalc:hover:not(:disabled) {
-  background: #7c3aed;
-}
+.btn-recalc:hover:not(:disabled) { background: #7c3aed; }
+.btn-recalc:disabled { background: #c4b5fd; cursor: not-allowed; opacity: 0.7; }
 
-.btn-recalc:disabled {
-  background: #c4b5fd;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* 버튼 스타일 */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2563eb;
-}
-
+/* 경고 버튼 */
 .btn-warning {
   display: inline-flex;
   align-items: center;
@@ -627,14 +566,6 @@ const isOemRegistrationDisabled = computed(() => {
   transition: background 0.2s;
 }
 
-.btn-warning:hover:not(:disabled) {
-  background: #d97706;
-}
-
-.btn-warning:disabled {
-  background: #fcd34d;
-  color: #92400e;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
+.btn-warning:hover:not(:disabled) { background: #d97706; }
+.btn-warning:disabled { background: #fcd34d; color: #92400e; cursor: not-allowed; opacity: 0.7; }
 </style>

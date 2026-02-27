@@ -254,6 +254,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { formatCurrency } from '~/utils/format'
+import { useCommissionFilter } from '~/composables/admin/useCommissionFilter'
 import type {
   Stakeholder,
   StakeholderDistribution,
@@ -261,7 +262,6 @@ import type {
   AnnualDistributionSummary,
   ShareTier
 } from '~/types/commission'
-import { usePermissionButtons } from '~/composables/usePermission'
 import { getAnnualCommissionSummary } from '~/services/commission.service'
 
 // Chart.js dynamic import
@@ -272,12 +272,7 @@ definePageMeta({
   pageTitle: '수익 배분 대시보드'
 })
 
-// 권한
-const { showEditButton } = usePermissionButtons()
-
-// State
-const loading = ref(true)
-const selectedYear = ref(new Date().getFullYear())
+// 페이지 고유 상태
 const monthlyChartRef = ref<HTMLCanvasElement | null>(null)
 const shareChartRef = ref<HTMLCanvasElement | null>(null)
 const stakeholderChartRef = ref<HTMLCanvasElement | null>(null)
@@ -285,119 +280,28 @@ let monthlyChart: any = null
 let shareChart: any = null
 let stakeholderChart: any = null
 
-// 목업 데이터 사용 여부 (UI 테스트용) - 실제 API 연동으로 변경
-const useMockData = ref(false)
-
 // API에서 가져온 데이터
 const apiData = ref<AnnualDistributionSummary | null>(null)
 
 // 지분자 색상
 const stakeholderColors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b']
 
-// 목업 데이터 정의 - 수익 배분 구조
-const mockDistributionSummary: AnnualDistributionSummary = {
-  year: 2026,
-  totalSalesAmount: 2_850_000_000, // 28억 5천만원
-  currentTier: {
-    tierId: 2,
-    year: 2026,
-    tierName: '10억~50억 구간',
-    minAmount: 1_000_000_000,
-    maxAmount: 5_000_000_000,
-    rates: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11 }
-    ]
-  },
-  totalDistributions: [
-    { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 1_824_000_000, paidAmount: 1_824_000_000, unpaidAmount: 0 },
-    { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 285_000_000, paidAmount: 285_000_000, unpaidAmount: 0 },
-    { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 427_500_000, paidAmount: 256_500_000, unpaidAmount: 171_000_000 },
-    { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 313_500_000, paidAmount: 200_000_000, unpaidAmount: 113_500_000 }
-  ],
-  totalUnpaidAmount: 284_500_000,
-  monthlyData: [
-    { year: 2026, month: 1, yearMonth: '2026-01', salesAmount: 180_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 115_200_000, paidAmount: 115_200_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 18_000_000, paidAmount: 18_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 27_000_000, paidAmount: 27_000_000, unpaidAmount: 0 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 19_800_000, paidAmount: 19_800_000, unpaidAmount: 0 }
-    ]},
-    { year: 2026, month: 2, yearMonth: '2026-02', salesAmount: 220_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 140_800_000, paidAmount: 140_800_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 22_000_000, paidAmount: 22_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 33_000_000, paidAmount: 33_000_000, unpaidAmount: 0 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 24_200_000, paidAmount: 24_200_000, unpaidAmount: 0 }
-    ]},
-    { year: 2026, month: 3, yearMonth: '2026-03', salesAmount: 250_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 160_000_000, paidAmount: 160_000_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 25_000_000, paidAmount: 25_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 37_500_000, paidAmount: 37_500_000, unpaidAmount: 0 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 27_500_000, paidAmount: 27_500_000, unpaidAmount: 0 }
-    ]},
-    { year: 2026, month: 4, yearMonth: '2026-04', salesAmount: 280_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 179_200_000, paidAmount: 179_200_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 28_000_000, paidAmount: 28_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 42_000_000, paidAmount: 42_000_000, unpaidAmount: 0 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 30_800_000, paidAmount: 30_800_000, unpaidAmount: 0 }
-    ]},
-    { year: 2026, month: 5, yearMonth: '2026-05', salesAmount: 200_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 128_000_000, paidAmount: 128_000_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 20_000_000, paidAmount: 20_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 30_000_000, paidAmount: 30_000_000, unpaidAmount: 0 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 22_000_000, paidAmount: 22_000_000, unpaidAmount: 0 }
-    ]},
-    { year: 2026, month: 6, yearMonth: '2026-06', salesAmount: 320_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 204_800_000, paidAmount: 204_800_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 32_000_000, paidAmount: 32_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 48_000_000, paidAmount: 48_000_000, unpaidAmount: 0 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 35_200_000, paidAmount: 35_200_000, unpaidAmount: 0 }
-    ]},
-    { year: 2026, month: 7, yearMonth: '2026-07', salesAmount: 290_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 185_600_000, paidAmount: 185_600_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 29_000_000, paidAmount: 29_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 43_500_000, paidAmount: 39_000_000, unpaidAmount: 4_500_000 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 31_900_000, paidAmount: 20_000_000, unpaidAmount: 11_900_000 }
-    ]},
-    { year: 2026, month: 8, yearMonth: '2026-08', salesAmount: 240_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 153_600_000, paidAmount: 153_600_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 24_000_000, paidAmount: 24_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 36_000_000, paidAmount: 0, unpaidAmount: 36_000_000 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 26_400_000, paidAmount: 0, unpaidAmount: 26_400_000 }
-    ]},
-    { year: 2026, month: 9, yearMonth: '2026-09', salesAmount: 270_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 172_800_000, paidAmount: 172_800_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 27_000_000, paidAmount: 27_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 40_500_000, paidAmount: 0, unpaidAmount: 40_500_000 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 29_700_000, paidAmount: 0, unpaidAmount: 29_700_000 }
-    ]},
-    { year: 2026, month: 10, yearMonth: '2026-10', salesAmount: 210_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 134_400_000, paidAmount: 134_400_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 21_000_000, paidAmount: 21_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 31_500_000, paidAmount: 0, unpaidAmount: 31_500_000 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 23_100_000, paidAmount: 0, unpaidAmount: 23_100_000 }
-    ]},
-    { year: 2026, month: 11, yearMonth: '2026-11', salesAmount: 190_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 121_600_000, paidAmount: 121_600_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 19_000_000, paidAmount: 19_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 28_500_000, paidAmount: 0, unpaidAmount: 28_500_000 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 20_900_000, paidAmount: 0, unpaidAmount: 20_900_000 }
-    ]},
-    { year: 2026, month: 12, yearMonth: '2026-12', salesAmount: 200_000_000, distributions: [
-      { stakeholder: 'MANUFACTURER', name: '제조사', rate: 64, amount: 128_000_000, paidAmount: 128_000_000, unpaidAmount: 0 },
-      { stakeholder: 'HEADQUARTERS', name: '본사', rate: 10, amount: 20_000_000, paidAmount: 20_000_000, unpaidAmount: 0 },
-      { stakeholder: 'AGENT', name: '대리점', rate: 15, amount: 30_000_000, paidAmount: 0, unpaidAmount: 30_000_000 },
-      { stakeholder: 'PARTNER', name: '협력사', rate: 11, amount: 22_000_000, paidAmount: 0, unpaidAmount: 22_000_000 }
-    ]}
-  ]
-}
-
-// Computed
-const currentYear = new Date().getFullYear()
-const minYear = currentYear - 4
-const maxYear = currentYear + 1
+// 공통 필터 (연도, 로딩, 데이터 로드)
+const { selectedYear, loading, minYear, maxYear, changeYear, loadData: loadDashboardData } = useCommissionFilter({
+  loadFunction: async () => {
+    try {
+      const response = await getAnnualCommissionSummary(selectedYear.value)
+      if (response) {
+        apiData.value = transformApiResponse(response)
+      }
+    } catch (error) {
+      console.error('대시보드 조회 실패:', error)
+      apiData.value = null
+    }
+    await nextTick()
+    renderCharts()
+  }
+})
 
 // 기본 빈 구간 정의
 const emptyTier: ShareTier = {
@@ -410,9 +314,6 @@ const emptyTier: ShareTier = {
 }
 
 const summary = computed<AnnualDistributionSummary>(() => {
-  if (useMockData.value) {
-    return mockDistributionSummary
-  }
   // API 데이터가 있으면 사용, 없으면 빈 구조 반환
   return apiData.value || {
     year: selectedYear.value,
@@ -440,11 +341,6 @@ const paymentRate = computed(() => {
 })
 
 // Methods
-const changeYear = (delta: number) => {
-  selectedYear.value += delta
-  loadDashboard()
-}
-
 const getTierRange = () => {
   const tier = summary.value.currentTier
   if (!tier) return '-'
@@ -491,27 +387,7 @@ const getMonthPaymentStatusText = (item: MonthlyDistribution) => {
   return '일부지급'
 }
 
-const loadDashboard = async () => {
-  loading.value = true
-  try {
-    if (!useMockData.value) {
-      // 실제 API 호출
-      const response = await getAnnualCommissionSummary(selectedYear.value)
-      if (response) {
-        // 백엔드 응답을 프론트엔드 형식으로 변환
-        apiData.value = transformApiResponse(response)
-      }
-    }
-  } catch (error) {
-    console.error('대시보드 조회 실패:', error)
-    // API 실패 시 mock 데이터로 폴백하지 않고 빈 상태 유지
-    apiData.value = null
-  } finally {
-    loading.value = false
-    await nextTick()
-    renderCharts()
-  }
-}
+const loadDashboard = () => loadDashboardData()
 
 // 백엔드 응답을 프론트엔드 형식으로 변환
 const transformApiResponse = (response: any): AnnualDistributionSummary => {
@@ -723,11 +599,6 @@ const renderCharts = async () => {
   }
 }
 
-// Watch
-watch(selectedYear, () => {
-  loadDashboard()
-})
-
 // Lifecycle
 onMounted(() => {
   loadDashboard()
@@ -781,19 +652,8 @@ onMounted(() => {
   text-align: center;
 }
 
-/* 로딩 컨테이너 */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  color: #6b7280;
-}
-
+/* 로딩 컨테이너 - 색상 커스터마이징 */
 .loading-container i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
   color: #6366f1;
 }
 

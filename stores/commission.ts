@@ -278,12 +278,23 @@ export const useCommissionStore = defineStore('commission', () => {
     try {
       const response = await commissionService.getCommissionPayments(targetYear, params)
 
-      payments.value = response.content
-      paymentPagination.value = {
-        page: response.number,
-        size: response.size,
-        total: response.totalElements,
-        totalPages: response.totalPages
+      // 백엔드가 배열을 직접 반환하는 경우 처리
+      if (Array.isArray(response)) {
+        payments.value = response
+        paymentPagination.value = {
+          page: 0,
+          size: response.length,
+          total: response.length,
+          totalPages: 1
+        }
+      } else {
+        payments.value = response.content || []
+        paymentPagination.value = {
+          page: response.number || 0,
+          size: response.size || 20,
+          total: response.totalElements || 0,
+          totalPages: response.totalPages || 0
+        }
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : '지급 목록 조회 실패'

@@ -96,12 +96,15 @@ const currentPageTitle = computed(() => {
     '/admin/order': '주문관리',
     '/admin/shipping': '출하관리',
     '/admin/transport': '출하관리',      // 출하관리 하위 메뉴
+    '/admin/purchase-order': '출하관리', // 발주서관리는 출하관리 하위
     '/admin/delivery': '납품관리',
     '/admin/delivery-done': '납품관리',
     '/admin/funds': '납품관리',          // 기성청구는 납품관리 하위
     '/admin/statistics': '통계',         // 기성통계(/admin/statistics/funds)도 여기에 포함
     '/admin/message': '문자관리',
     '/admin/basic-info': '기초정보',
+    '/admin/inventory': '재고관리',
+    '/admin/oem': 'OEM 관리',
     '/admin/system': '시스템관리'
   }
 

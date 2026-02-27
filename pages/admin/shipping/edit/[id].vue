@@ -7,14 +7,17 @@
       icon-color="green"
     >
       <template #actions>
-        <!-- 발주서 버튼 (발주서 유무에 따라 생성/다운로드) -->
+        <!-- 출고요청 버튼 -->
         <button
-          class="btn-action btn-info"
-          @click="handlePurchaseOrderClick"
-          :title="hasPurchaseOrder ? '발주서 PDF 다운로드' : '발주서 생성'"
+          v-if="canShowDispatchRequestButton"
+          class="btn-action btn-warning"
+          @click="handleDispatchRequestClick"
+          :disabled="checkingInventory"
+          title="OEM 제조사에 출고요청"
         >
-          <i :class="hasPurchaseOrder ? 'fas fa-file-pdf' : 'fas fa-file-circle-plus'"></i>
-          {{ hasPurchaseOrder ? '발주서' : '발주서 생성' }}
+          <i v-if="checkingInventory" class="fas fa-spinner fa-spin"></i>
+          <i v-else class="fas fa-paper-plane"></i>
+          {{ checkingInventory ? '확인 중...' : '출고요청' }}
         </button>
         <button
           class="btn-action btn-delete"
@@ -149,81 +152,84 @@
                 </div>
               </div>
 
-              <!-- 6. 배송지 정보 - 발주서 생성 후에만 표시 (좌측 컬럼으로 이동) -->
-              <div v-if="hasPurchaseOrder" class="info-group">
+              <!-- 6. 출고요청 정보 (출고요청이 있으면 표시) -->
+              <div v-if="dispatchRequest" class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-map-marker-alt"></i>
-                  <span>배송지 정보</span>
+                  <i class="fas fa-paper-plane"></i>
+                  <span>출고요청 정보</span>
+                  <span
+                    class="dispatch-status-badge"
+                    :class="getDispatchStatusClass(dispatchRequest.status)"
+                  >
+                    {{ getDispatchStatusLabel(dispatchRequest.status) }}
+                  </span>
                 </div>
                 <div class="info-grid grid-2">
-                  <FormField label="우편번호">
+                  <FormField label="OEM 제조사">
                     <input
                       type="text"
-                      v-model="formData.zipcode"
-                      class="form-input-sm text-center"
-                      placeholder="우편번호"
-                      maxlength="10"
-                      :readonly="!canEditOemAndDelivery"
+                      :value="dispatchRequest.oemCompanyName || '-'"
+                      class="form-input-md"
+                      readonly
                     >
                   </FormField>
-                  <FormField label="현장 도착 예정일시">
+                  <FormField label="요청일시">
                     <input
                       type="text"
-                      :value="formatExpectedArrivalAt(formData.expectedArrivalAt)"
+                      :value="formatDateTime(dispatchRequest.requestedAt)"
                       class="form-input-md"
-                      placeholder="예정일시"
                       readonly
                     >
                   </FormField>
                 </div>
-                <div class="info-grid grid-1" style="margin-top: 0.5rem;">
-                  <FormField label="배송지 주소">
+                <div class="info-grid grid-2" style="margin-top: 0.5rem;">
+                  <FormField label="배송지">
                     <input
                       type="text"
-                      v-model="formData.deliveryAddress"
+                      :value="dispatchRequest.deliveryAddress || '-'"
                       class="form-input-xl"
-                      placeholder="배송지 주소"
-                      :readonly="!canEditOemAndDelivery"
+                      readonly
                     >
                   </FormField>
-                </div>
-                <div class="info-grid grid-1" style="margin-top: 0.5rem;">
-                  <FormField label="상세주소">
+                  <FormField label="도착 예정일시">
                     <input
                       type="text"
-                      v-model="formData.addressDetail"
-                      class="form-input-xl"
-                      placeholder="상세주소"
-                      :readonly="!canEditOemAndDelivery"
+                      :value="formatDateTime(dispatchRequest.expectedArrivalDatetime)"
+                      class="form-input-md"
+                      readonly
                     >
                   </FormField>
                 </div>
                 <div class="info-grid grid-2" style="margin-top: 0.5rem;">
-                  <FormField label="현장 인수자">
+                  <FormField label="인수자">
                     <input
                       type="text"
-                      v-model="formData.receiverName"
+                      :value="dispatchRequest.receiverName || '-'"
                       class="form-input-sm"
-                      placeholder="인수자명"
-                      :readonly="!canEditOemAndDelivery"
+                      readonly
                     >
                   </FormField>
                   <FormField label="인수자 연락처">
                     <input
                       type="text"
-                      v-model="formData.receiverPhone"
+                      :value="dispatchRequest.receiverPhone || '-'"
                       class="form-input-sm"
-                      placeholder="010-0000-0000"
-                      :readonly="!canEditOemAndDelivery"
+                      readonly
                     >
                   </FormField>
                 </div>
-                <!-- 발주서 생성 시 수정 불가 안내 -->
-                <div v-if="hasPurchaseOrder" class="field-notice warning">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  발주서가 생성되어 배송지 정보를 변경할 수 없습니다.
+                <div v-if="dispatchRequest.remarks" class="info-grid grid-1" style="margin-top: 0.5rem;">
+                  <FormField label="비고">
+                    <input
+                      type="text"
+                      :value="dispatchRequest.remarks"
+                      class="form-input-xl"
+                      readonly
+                    >
+                  </FormField>
                 </div>
               </div>
+
             </div>
 
             <!-- 우측 컬럼 -->
@@ -262,13 +268,13 @@
                 </div>
               </div>
 
-              <!-- 4. OEM 제조사 정보 (신규) -->
+              <!-- 4. OEM 제조사 + 건설사(시공사) -->
               <div class="info-group">
                 <div class="info-group-header">
                   <i class="fas fa-industry"></i>
-                  <span>OEM 제조사</span>
+                  <span>OEM 제조사 / 건설사(시공사)</span>
                 </div>
-                <div class="info-grid grid-1">
+                <div class="info-grid grid-2">
                   <FormField label="OEM 제조사" required :error="errors.oemCompanyId">
                     <select
                       id="oem-company-select"
@@ -286,22 +292,6 @@
                       </option>
                     </select>
                   </FormField>
-                </div>
-                <!-- 발주서 생성 시 수정 불가 안내 -->
-                <div v-if="hasPurchaseOrder" class="field-notice warning">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  발주서가 생성되어 OEM 제조사를 변경할 수 없습니다.
-                </div>
-              </div>
-
-              <!-- 5. 건설사(시공사) 정보 -->
-              <div class="info-group">
-                <div class="info-group-header">
-                  <i class="fas fa-hard-hat"></i>
-                  <span>건설사(시공사)</span>
-                  <span class="optional-badge">선택</span>
-                </div>
-                <div class="info-grid grid-1">
                   <FormField label="건설사">
                     <input
                       type="text"
@@ -312,55 +302,91 @@
                   </FormField>
                 </div>
               </div>
+
+              <!-- 5. 배송지 정보 -->
+              <div class="info-group">
+                <div class="info-group-header">
+                  <i class="fas fa-map-marker-alt"></i>
+                  <span>배송지 정보</span>
+                </div>
+                <div class="info-grid grid-2">
+                  <FormField label="우편번호">
+                    <input
+                      type="text"
+                      v-model="formData.zipcode"
+                      class="form-input-sm text-center"
+                      placeholder="우편번호"
+                      maxlength="10"
+                      :readonly="!canEditOemAndDelivery"
+                    >
+                  </FormField>
+                  <FormField label="배송지 주소">
+                    <input
+                      type="text"
+                      v-model="formData.deliveryAddress"
+                      class="form-input-xl"
+                      placeholder="배송지 주소"
+                      :readonly="!canEditOemAndDelivery"
+                    >
+                  </FormField>
+                </div>
+                <div class="info-grid grid-2" style="margin-top: 0.5rem;">
+                  <FormField label="상세주소">
+                    <input
+                      type="text"
+                      v-model="formData.addressDetail"
+                      class="form-input-xl"
+                      placeholder="상세주소"
+                      :readonly="!canEditOemAndDelivery"
+                    >
+                  </FormField>
+                  <FormField label="현장 도착 예정일시">
+                    <input
+                      type="text"
+                      :value="formatExpectedArrivalAt(formData.expectedArrivalAt)"
+                      class="form-input-md"
+                      placeholder="예정일시"
+                      readonly
+                    >
+                  </FormField>
+                </div>
+                <div class="info-grid grid-2" style="margin-top: 0.5rem;">
+                  <FormField label="현장 인수자">
+                    <input
+                      type="text"
+                      v-model="formData.receiverName"
+                      class="form-input-sm"
+                      placeholder="인수자명"
+                      :readonly="!canEditOemAndDelivery"
+                    >
+                  </FormField>
+                  <FormField label="인수자 연락처">
+                    <input
+                      type="text"
+                      v-model="formData.receiverPhone"
+                      class="form-input-sm"
+                      placeholder="010-0000-0000"
+                      :readonly="!canEditOemAndDelivery"
+                    >
+                  </FormField>
+                </div>
+              </div>
             </div>
           </div>
         </FormSection>
 
         <FormSection style="margin-top: -20px">
           <div class="items-section-wrapper">
-            <!-- 탭 헤더 -->
-            <div class="items-section-header with-tabs">
+            <!-- 품목 정보 헤더 -->
+            <div class="items-section-header">
               <div class="header-left">
                 <i class="fas fa-box"></i>
                 <span>품목 정보</span>
               </div>
-              <div class="header-tabs">
-                <button
-                  type="button"
-                  class="tab-btn"
-                  :class="{ active: activeTab === 'current' }"
-                  @click="handleTabChange('current')"
-                >
-                  현재 품목
-                </button>
-                <button
-                  type="button"
-                  class="tab-btn"
-                  :class="{ active: activeTab === 'history' }"
-                  @click="handleTabChange('history')"
-                >
-                  변경 이력
-                </button>
-              </div>
-              <div class="header-right">
-                <!-- 추가변경 버튼 (항상 표시) -->
-                <div class="btn-wrapper" :title="additionalChangeDisabledReason">
-                  <button
-                    type="button"
-                    class="btn-additional-change"
-                    :class="{ disabled: !canAdditionalChange }"
-                    :disabled="!canAdditionalChange"
-                    @click="canAdditionalChange && (showAdditionalChangeModal = true)"
-                  >
-                    <i class="fas fa-edit"></i>
-                    추가변경
-                  </button>
-                </div>
-              </div>
             </div>
 
-            <!-- 현재 품목 탭 -->
-            <div v-show="activeTab === 'current'" class="items-table-wrapper">
+            <!-- 품목 테이블 -->
+            <div class="items-table-wrapper">
               <table class="items-table">
                 <thead>
                   <tr>
@@ -369,19 +395,20 @@
                     <th style="width: 80px">품목명</th>
                     <th style="width: 80px">SKU ID</th>
                     <th style="width: 100px">SKU 품명</th>
-                    <th class="col-spec">규격</th>
                     <th>단위</th>
                     <th>발주수량</th>
                     <th>기출하</th>
                     <th>잔여수량</th>
                     <th>출하수량</th>
                     <th>단가</th>
+                    <th>원가</th>
                     <th>금액</th>
+                    <th>비고</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="items.length === 0">
-                    <td colspan="13" class="empty-message">
+                    <td colspan="14" class="empty-message">
                       품목 정보가 없습니다.
                     </td>
                   </tr>
@@ -395,7 +422,6 @@
                       <td>{{ item.itemName || '-' }}</td>
                       <td>{{ item.skuId }}</td>
                       <td>{{ item.skuName }}</td>
-                      <td class="specification-cell" :title="item.specification">{{ truncateText(item.specification, 60) }}</td>
                       <td>{{ item.unit }}</td>
                       <td class="text-right">{{ formatQuantity(item.orderQuantity) }}</td>
                       <td class="text-right" :title="`다른 출하들의 합계: ${formatQuantity(item.otherShipmentsQuantity)}`">
@@ -427,152 +453,49 @@
                         <span v-else>{{ formatQuantity(item.shippingQuantity) }}</span>
                       </td>
                       <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
+                      <td class="text-right">{{ formatNumber(item.costPrice) }}</td>
                       <td class="text-right">{{ formatCurrency(item.shippingQuantity * item.unitPrice) }}</td>
+                      <td class="remark-cell">
+                        <template v-if="getRemarksBadges(item.remarks).length > 0">
+                          <span
+                            v-for="(badge, idx) in getRemarksBadges(item.remarks)"
+                            :key="idx"
+                            class="merge-badge"
+                            :style="{ backgroundColor: badge.color }"
+                          >{{ badge.label }}</span>
+                        </template>
+                        <template v-else>
+                          {{ item.remarks || '-' }}
+                        </template>
+                        <span v-if="getBgradeForSku(item.skuId)" class="bgrade-badge">
+                          B급 {{ getBgradeForSku(item.skuId)?.quantity }}{{ item.unit }}
+                        </span>
+                      </td>
                     </tr>
                   </template>
                 </tbody>
                 <tfoot v-if="items.length > 0">
                   <tr>
-                    <td colspan="8" class="text-right"></td>
-                    <td colspan="2" class="text-right"><strong>총 출하수량</strong></td>
+                    <td colspan="9" class="text-right"><strong>합계</strong></td>
                     <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
-                    <td class="text-right"><strong>총 금액</strong></td>
+                    <td></td>
+                    <td class="text-right"><strong>{{ formatCurrency(totalCostPrice) }}</strong></td>
                     <td class="text-right"><strong>{{ formatCurrency(totalAmount) }}</strong></td>
+                    <td></td>
+                  </tr>
+                  <tr v-if="totalBgradeCostAdjustment > 0">
+                    <td colspan="11" class="text-right bgrade-cost-label">B급 원가 차감</td>
+                    <td class="text-right bgrade-cost-value">-{{ formatCurrency(totalBgradeCostAdjustment) }}</td>
+                    <td colspan="2"></td>
                   </tr>
                 </tfoot>
               </table>
             </div>
 
-            <!-- 변경 이력 탭 -->
-            <div v-show="activeTab === 'history'" class="history-tab-content">
-              <!-- 로딩 -->
-              <div v-if="loadingHistory" class="loading-container">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>변경 이력을 불러오는 중...</p>
-              </div>
-
-              <!-- 이력 없음 -->
-              <div v-else-if="changeHistory.length === 0" class="no-history">
-                <i class="fas fa-history"></i>
-                <p>변경 이력이 없습니다.</p>
-              </div>
-
-              <!-- 이력 목록 -->
-              <div v-else class="history-list">
-                <div v-for="history in changeHistory" :key="history.groupKey" class="history-item">
-                  <table class="history-table">
-                    <thead>
-                      <tr class="history-info-row">
-                        <th colspan="5">
-                          <div class="history-info-line">
-                            <span class="history-info-item">
-                              <span class="history-label">변경일시</span>
-                              <span class="history-value">{{ formatDateTime(history.changedAt) }}</span>
-                            </span>
-                            <span class="history-info-item">
-                              <span class="history-label">변경자</span>
-                              <span class="history-value">{{ history.changedBy }}</span>
-                            </span>
-                            <span class="history-info-item">
-                              <span class="history-label">변경사유</span>
-                              <span class="history-value">{{ history.changeReason }}</span>
-                            </span>
-                            <div class="history-actions">
-                              <button
-                                type="button"
-                                v-if="history.previousReceiptUrl"
-                                class="btn-view-receipt"
-                                @click="showPreviousReceiptsModal = true"
-                              >
-                                <i class="fas fa-file-pdf"></i>
-                                이전 인수증
-                              </button>
-                              <button
-                                type="button"
-                                v-if="canAdditionalChange"
-                                class="btn-revert-group"
-                                @click="confirmRevertGroup(history)"
-                                title="그룹 전체 되돌리기"
-                              >
-                                <i class="fas fa-undo"></i>
-                                전체 되돌리기
-                              </button>
-                            </div>
-                          </div>
-                        </th>
-                      </tr>
-                      <tr>
-                        <th>품목명</th>
-                        <th class="text-right" style="width: 120px;">변경 전</th>
-                        <th class="text-right" style="width: 120px;">변경 후</th>
-                        <th class="text-right" style="width: 100px;">차이</th>
-                        <th v-if="canAdditionalChange" class="text-center" style="width: 80px;">관리</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="item in history.items" :key="item.skuId">
-                        <td>{{ item.itemName }} ({{ item.skuName }})</td>
-                        <td class="text-right">{{ formatNumber(item.beforeQuantity) }}</td>
-                        <td class="text-right">{{ formatNumber(item.afterQuantity) }}</td>
-                        <td class="text-right">
-                          <span :class="item.afterQuantity - item.beforeQuantity > 0 ? 'text-success' : 'text-danger'">
-                            {{ item.afterQuantity - item.beforeQuantity > 0 ? '+' : '' }}{{ formatNumber(item.afterQuantity - item.beforeQuantity) }}
-                          </span>
-                        </td>
-                        <td v-if="canAdditionalChange" class="text-center actions-cell">
-                          <button
-                            type="button"
-                            class="btn-action-sm btn-edit"
-                            @click="openEditHistoryModal(history, item)"
-                            title="수정"
-                          >
-                            <i class="fas fa-edit"></i>
-                            수정
-                          </button>
-                          <button
-                            type="button"
-                            class="btn-action-sm btn-revert"
-                            @click="confirmRevertItem(history, item)"
-                            title="되돌리기"
-                          >
-                            <i class="fas fa-undo"></i>
-                            되돌리기
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
           </div>
         </FormSection>
       </form>
     </div>
-
-    <!-- 추가변경 모달 -->
-    <AdditionalChangeModal
-      :is-open="showAdditionalChangeModal"
-      :shipment-id="shipmentId"
-      :shipment-status="formData.status"
-      :items="items.map(item => ({
-        skuId: item.skuId,
-        itemName: item.itemName,
-        specification: item.specification,
-        shipmentQuantity: item.shippingQuantity,
-        orderQuantity: item.orderQuantity,
-        remainingQuantity: item.remainingQuantity
-      }))"
-      @close="showAdditionalChangeModal = false"
-      @complete="handleAdditionalChangeComplete"
-    />
-
-    <!-- 이전 인수증 모달 -->
-    <PreviousReceiptsModal
-      :is-open="showPreviousReceiptsModal"
-      :shipment-id="shipmentId"
-      @close="showPreviousReceiptsModal = false"
-    />
 
     <!-- 재서명 안내 모달 -->
     <ResignRequiredModal
@@ -581,34 +504,32 @@
       @send-message="handleSendMessage"
     />
 
-    <!-- 변경 이력 수정 모달 -->
-    <ChangeHistoryEditModal
-      v-if="editingHistoryItem"
-      :is-open="showEditHistoryModal"
-      :shipment-id="shipmentId"
-      :item="editingHistoryItem.item"
-      @close="showEditHistoryModal = false; editingHistoryItem = null"
-      @complete="handleEditHistoryComplete"
+    <!-- 재고 부족 현황 모달 -->
+    <InventoryShortageModal
+      :is-open="showInventoryShortageModal"
+      :items="inventoryStatus?.items || []"
+      :message="inventoryStatus?.message || ''"
+      :oem-company-name="inventoryStatus?.oemCompanyName || null"
+      @close="showInventoryShortageModal = false"
     />
 
-    <!-- 발주서 생성 확인 모달 -->
-    <PurchaseOrderConfirmModal
-      :is-open="showPurchaseOrderConfirmModal"
+    <!-- 출고요청 모달 -->
+    <DispatchRequestModal
+      :is-open="showDispatchRequestModal"
       :shipment-id="shipmentId"
       :initial-data="{
-        purchaseOrderDate: '',
-        expectedArrivalAt: '',
         zipcode: formData.zipcode,
         deliveryAddress: formData.deliveryAddress,
         addressDetail: formData.addressDetail,
         siteManagerId: formData.siteManagerId,
         receiverName: formData.receiverName,
         receiverPhone: formData.receiverPhone,
-        oemCompanyId: formData.oemCompanyId
+        oemCompanyId: formData.oemCompanyId,
+        expectedArrivalDatetime: formData.expectedArrivalAt
       }"
       :site-managers="siteManagers"
-      @close="showPurchaseOrderConfirmModal = false"
-      @complete="handlePurchaseOrderComplete"
+      @close="showDispatchRequestModal = false"
+      @created="handleDispatchRequestCreated"
     />
 
   </div>
@@ -628,29 +549,26 @@
  *   * remainingQuantity: 잔여 수량
  *   * maxEditableQuantity: 최대 수정 가능 수량
  */
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
-import { companyService } from '~/services/company.service'
-import { userService } from '~/services/user.service'
-import type { ShipmentDetailWithOrder, ShipmentItemWithOrder } from '~/services/shipment.service'
-import type { CompanyInfoResponse } from '~/types/company'
-import type { UserByRole } from '~/types/user'
-import type { AdditionalChangeResponse, QuantityChangeHistory, QuantityChangeHistoryItem } from '~/types/shipment-change'
-import { formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
+import type { ShipmentDetailWithOrder, ShipmentItemWithOrder, SiblingDeliveryInfo } from '~/services/shipment.service'
+import { formatNumber, formatCurrency, formatQuantity, formatDateTime } from '~/utils/format'
 import { useEditForm } from '~/composables/admin/useEditForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
+import { useShippingFormData } from '~/composables/admin/useShippingFormData'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import { usePermission } from '~/composables/usePermission'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import LoadingSection from '~/components/admin/common/LoadingSection.vue'
 import ErrorSection from '~/components/admin/common/ErrorSection.vue'
-import AdditionalChangeModal from '~/components/shipment/AdditionalChangeModal.vue'
-import PreviousReceiptsModal from '~/components/shipment/PreviousReceiptsModal.vue'
 import ResignRequiredModal from '~/components/shipment/ResignRequiredModal.vue'
-import ChangeHistoryEditModal from '~/components/shipment/ChangeHistoryEditModal.vue'
-import PurchaseOrderConfirmModal from '~/components/shipment/PurchaseOrderConfirmModal.vue'
+import DispatchRequestModal from '~/components/shipment/DispatchRequestModal.vue'
+import InventoryShortageModal from '~/components/shipment/InventoryShortageModal.vue'
+import { dispatchRequestService } from '~/services/dispatch-request.service'
+import type { DispatchRequest, InventoryStatusResponse } from '~/types/dispatch-request'
+import { DISPATCH_STATUS_LABELS, DISPATCH_STATUS_COLORS } from '~/types/dispatch-request'
 
 definePageMeta({
   layout: 'admin',
@@ -681,44 +599,12 @@ const items = ref<OrderItem[]>([])
 // 수량 입력 시 원래 값 저장 (validation 실패 시 복원용)
 const originalQuantities = ref<Map<string, number>>(new Map())
 
-// OEM 제조사 목록
-const oemCompanies = ref<CompanyInfoResponse[]>([])
-const loadingOemCompanies = ref(false)
-
-// 건설사(시공사) 목록
-const builderCompanies = ref<CompanyInfoResponse[]>([])
-const loadingBuilderCompanies = ref(false)
-
-// 현장담당자 목록
-const siteManagers = ref<UserByRole[]>([])
-const loadingSiteManagers = ref(false)
-
-// OEM, 건설사, 현장담당자 데이터 병렬 로드
-onMounted(async () => {
-  loadingOemCompanies.value = true
-  loadingBuilderCompanies.value = true
-  loadingSiteManagers.value = true
-
-  try {
-    // 병렬로 API 호출 (OEM 제조사는 MANUFACTURER 타입만 조회)
-    const [manufacturers, companies, users] = await Promise.all([
-      companyService.getManufacturers(),  // 제조사(MANUFACTURER)만 조회
-      companyService.getCompanies(),
-      userService.getUsersByRoles(['SITE_MANAGER'])
-    ])
-
-    // OEM 제조사는 제조사 타입만, 건설사는 전체 회사 목록 사용
-    oemCompanies.value = manufacturers
-    builderCompanies.value = companies
-    siteManagers.value = users
-  } catch (error) {
-    console.error('초기 데이터 로드 실패:', error)
-  } finally {
-    loadingOemCompanies.value = false
-    loadingBuilderCompanies.value = false
-    loadingSiteManagers.value = false
-  }
-})
+// OEM 제조사 + 현장담당자 공통 데이터 (composable)
+const {
+  oemCompanies, loadingOemCompanies,
+  siteManagers, loadingSiteManagers,
+  setupBuilderAutoSet
+} = useShippingFormData()
 
 // useEditForm 사용
 const {
@@ -929,26 +815,8 @@ const { errors, validateAll, rules } = useFormValidation({
   oemCompanyId: ''
 })
 
-// 건설사 선택 변경 핸들러 (현재는 현장담당자 연동으로 대체됨)
-const onBuilderCompanyChange = () => {
-  const selectedCompany = builderCompanies.value.find(c => c.id === formData.builderCompanyId)
-  formData.builderCompanyName = selectedCompany?.companyName || ''
-}
-
-// 현장담당자 선택 시 건설사 자동 설정
-watch(() => formData.siteManagerId, (newManagerId) => {
-  if (newManagerId) {
-    const selectedManager = siteManagers.value.find(m => m.userid === newManagerId)
-    if (selectedManager?.companyId) {
-      formData.builderCompanyId = selectedManager.companyId
-      formData.builderCompanyName = selectedManager.companyName || ''
-    }
-  } else {
-    // 현장담당자 해제 시 건설사도 초기화
-    formData.builderCompanyId = null
-    formData.builderCompanyName = ''
-  }
-})
+// 현장담당자 선택 시 건설사 자동 설정 (composable)
+setupBuilderAutoSet(formData)
 
 // 총 출하수량 (현재 편집 중인 수량 합계)
 const totalShippingQuantity = computed(() => {
@@ -960,6 +828,47 @@ const totalAmount = computed(() => {
   return items.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * item.unitPrice), 0)
 })
 
+// B급 관련 헬퍼
+const getBgradeForSku = (skuId: string) => {
+  return shipmentData.value?.bgradeItems?.find(bg => bg.skuId === skuId) || null
+}
+
+// 총 원가 (출하수량 * 원가)
+const totalCostPrice = computed(() => {
+  return items.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * (item.costPrice || 0)), 0)
+})
+
+// B급 원가 차감액 (OEM 원가 기준)
+const totalBgradeCostAdjustment = computed(() => {
+  return shipmentData.value?.bgradeItems?.reduce((sum, bg) => {
+    return sum + (bg.originalUnitPrice - bg.adjustedUnitPrice) * bg.quantity
+  }, 0) || 0
+})
+
+// 비고(remarks)에서 합지 배지 정보 추출 (SKU ID 포함)
+const getRemarksBadges = (remarks: string | null | undefined): { label: string; color: string }[] => {
+  if (!remarks) return []
+
+  // 합지 타겟 품목 (합지 결과물): "에서 이전" 또는 "에서 병합됨" 또는 "추가 병합" 포함
+  if (remarks.includes('에서 이전') || remarks.includes('에서 병합됨') || remarks.includes('추가 병합')) {
+    // SKU ID 추출: "24547483, 24547485에서" 패턴
+    const match = remarks.match(/([\d,\s]+)에서/)
+    const skuIds = match ? match[1].trim() : ''
+    return [{ label: skuIds ? `합지 ← ${skuIds}` : '합지', color: '#3b82f6' }]
+  }
+
+  // 합지 소스 품목 (원본): "로" + ("이전" 또는 "병합됨") 포함
+  if ((remarks.includes('이전') || remarks.includes('병합됨')) &&
+      (remarks.includes('로 ') || remarks.includes('로\n'))) {
+    // SKU ID 추출: "24547481로" 패턴
+    const match = remarks.match(/(\d+)로/)
+    const skuId = match ? match[1] : ''
+    return [{ label: skuId ? `합지소스 → ${skuId}` : '합지 소스', color: '#8b5cf6' }]
+  }
+
+  return []
+}
+
 // 비즈니스 로직: 삭제 가능 상태 (대기 또는 취소 상태만)
 const isDeletableStatus = computed(() => {
   return ['PENDING', 'CANCELLED'].includes(formData.status)
@@ -970,9 +879,9 @@ const isEditableStatus = computed(() => {
   return !['COMPLETED', 'CANCELLED'].includes(formData.status)
 })
 
-// 삭제 가능 여부 (권한 + 비즈니스 로직 + 발주서 미생성)
+// 삭제 가능 여부 (권한 + 비즈니스 로직)
 const canDelete = computed(() => {
-  return hasDeletePermission.value && isDeletableStatus.value && !hasPurchaseOrder.value
+  return hasDeletePermission.value && isDeletableStatus.value
 })
 
 // 수량 수정 가능 여부 (대기 상태만 + 수정 권한)
@@ -994,7 +903,6 @@ const getEditDisabledReason = computed(() => {
 
 const getDeleteDisabledReason = computed(() => {
   if (!hasDeletePermission.value) return '삭제 권한이 없습니다'
-  if (hasPurchaseOrder.value) return '발주서가 생성되어 삭제할 수 없습니다'
   if (!isDeletableStatus.value) return '대기 또는 취소 상태에서만 삭제할 수 있습니다'
   return ''
 })
@@ -1011,159 +919,26 @@ const canEditOemAndDelivery = computed(() => {
   if (shipmentData.value?.isBilled) return false
   // 납품완료계가 완료된 경우 수정 불가
   if (shipmentData.value?.deliveryDoneStatus === 'COMPLETED') return false
-  // 발주서가 생성된 경우 수정 불가 (purchaseOrderPdfPath가 있으면 생성된 것)
-  if (shipmentData.value?.purchaseOrderPdfPath) return false
   return true
 })
 
-// 발주서 존재 여부 (purchaseOrderPdfPath로 판단)
-const hasPurchaseOrder = computed(() => {
-  return !!shipmentData.value?.purchaseOrderPdfPath
-})
-
-// 추가변경 가능 여부
-// - 출하가 취소 상태면 불가
-// - 기성에 포함된 출하(isBilled=true)면 불가
-// - 납품완료계가 완료 상태(deliveryDoneStatus=COMPLETED)면 불가
-const canAdditionalChange = computed(() => {
-  // 디버깅: 조건 체크 값 출력
-  console.log('[추가변경 조건 체크]', {
-    status: formData.status,
-    isBilled: shipmentData.value?.isBilled,
-    deliveryDoneStatus: shipmentData.value?.deliveryDoneStatus
-  })
-
-  // 1. 출하가 취소 상태면 불가
-  if (formData.status === 'CANCELLED') {
-    console.log('[추가변경] ❌ 취소 상태로 불가')
-    return false
-  }
-
-  // 2. 기성에 포함된 출하면 불가
-  if (shipmentData.value?.isBilled) {
-    console.log('[추가변경] ❌ 기성 포함으로 불가')
-    return false
-  }
-
-  // 3. 납품완료계가 완료 상태면 불가
-  if (shipmentData.value?.deliveryDoneStatus === 'COMPLETED') {
-    console.log('[추가변경] ❌ 납품완료계 완료로 불가')
-    return false
-  }
-
-  console.log('[추가변경] ✅ 모든 조건 통과 - 활성화')
-  return true
-})
-
-// 추가변경 비활성화 사유 (툴팁용)
-const additionalChangeDisabledReason = computed(() => {
-  if (formData.status === 'CANCELLED') {
-    return '취소된 출하는 변경할 수 없습니다.'
-  }
-  if (shipmentData.value?.isBilled) {
-    return '기성에 포함된 출하는 변경할 수 없습니다.'
-  }
-  if (shipmentData.value?.deliveryDoneStatus === 'COMPLETED') {
-    return '납품완료계가 완료된 상태입니다. 새로운 발주를 등록해주세요.'
-  }
-  return ''
-})
-
-// ========================================
-// 추가변경 관련 상태 및 메서드
-// ========================================
-const activeTab = ref<'current' | 'history'>('current')
-const showAdditionalChangeModal = ref(false)
-const showPreviousReceiptsModal = ref(false)
+// 재서명 안내 모달 / 출고요청 모달
 const showResignRequiredModal = ref(false)
-const showPurchaseOrderConfirmModal = ref(false)
-const changeHistory = ref<QuantityChangeHistory[]>([])
-const loadingHistory = ref(false)
+const showDispatchRequestModal = ref(false)
 
-// 변경 이력 로드
-const loadChangeHistory = async () => {
-  if (!shipmentId.value) return
+// 재고 현황 모달
+const showInventoryShortageModal = ref(false)
+const inventoryStatus = ref<InventoryStatusResponse | null>(null)
+const checkingInventory = ref(false)
 
-  loadingHistory.value = true
-  try {
-    changeHistory.value = await shipmentService.getChangeHistory(shipmentId.value)
-  } catch (error) {
-    console.error('변경 이력 로드 실패:', error)
-    changeHistory.value = []
-  } finally {
-    loadingHistory.value = false
-  }
-}
-
-// 탭 변경 핸들러
-const handleTabChange = (tab: 'current' | 'history') => {
-  activeTab.value = tab
-  if (tab === 'history' && changeHistory.value.length === 0) {
-    loadChangeHistory()
-  }
-}
-
-// 추가변경 완료 핸들러
-const handleAdditionalChangeComplete = async (response: AdditionalChangeResponse) => {
-  showAdditionalChangeModal.value = false
-
-  // 데이터 새로고침
-  if (shipmentId.value) {
-    try {
-      const data = await shipmentService.getShipmentDetail(shipmentId.value)
-      shipmentData.value = data
-
-      // 품목 데이터 다시 매핑
-      items.value = data.items.map((item) => ({
-        ...item,
-        shippingQuantity: item.shipmentQuantity || 0,
-        maxEditableQuantity: (item.shipmentQuantity || 0) + (item.remainingQuantity || 0),
-        orderId: data.orderId,
-        orderItemId: item.skuId,
-        isNewItem: item.remarks === '신규 추가'
-      }))
-
-      // formData 업데이트
-      formData.status = data.status
-    } catch (error) {
-      console.error('데이터 새로고침 실패:', error)
-    }
-  }
-
-  // 변경 이력 새로고침
-  await loadChangeHistory()
-
-  // 재서명 필요한 경우 안내 모달 표시
-  if (response.requiresResign) {
-    showResignRequiredModal.value = true
-  } else {
-    alert('추가변경이 완료되었습니다.')
-  }
-}
+// 출고요청 데이터
+const dispatchRequest = ref<DispatchRequest | null>(null)
+const loadingDispatchRequest = ref(false)
 
 // 메시지 발송 핸들러
 const handleSendMessage = () => {
   // TODO: 메시지 발송 모달 열기 또는 메시지 발송 로직
   alert('메시지 발송 기능은 운송 등록 후 사용할 수 있습니다.')
-}
-
-// 텍스트 truncate (규격 등 긴 텍스트 처리)
-const truncateText = (text: string, maxLength: number = 60): string => {
-  if (!text) return ''
-  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
-}
-
-// 변경 이력 날짜 포맷
-const formatDateTime = (dateStr: string): string => {
-  if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  return date.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 
 // 현장 도착 예정일시 포맷 (datetime-local 값 → 표시용)
@@ -1179,103 +954,16 @@ const formatExpectedArrivalAt = (dateTimeStr: string): string => {
   })
 }
 
-// ========================================
-// 변경 이력 되돌리기/수정 관련 메서드
-// ========================================
-
-// 개별 품목 되돌리기 확인
-const confirmRevertItem = async (history: QuantityChangeHistory, item: QuantityChangeHistoryItem) => {
-  const reason = prompt(
-    `"${item.itemName}" 품목의 변경 이력을 되돌리시겠습니까?\n` +
-    `수량이 ${formatNumber(item.afterQuantity)} → ${formatNumber(item.beforeQuantity)}로 복원됩니다.\n\n` +
-    `되돌리기 사유를 입력하세요:`
-  )
-  if (reason !== null) {
-    await revertHistoryItem(item, reason || '되돌리기')
-  }
-}
-
-// 그룹 전체 되돌리기 확인
-const confirmRevertGroup = async (history: QuantityChangeHistory) => {
-  const reason = prompt(
-    `${formatDateTime(history.changedAt)}에 변경된 ${history.items.length}개 품목의 이력을 모두 되돌리시겠습니까?\n` +
-    `모든 품목의 수량이 변경 전으로 복원됩니다.\n\n` +
-    `되돌리기 사유를 입력하세요:`
-  )
-  if (reason !== null) {
-    await revertHistoryGroup(history, reason || '그룹 되돌리기')
-  }
-}
-
-// 개별 품목 되돌리기 실행
-const revertHistoryItem = async (item: QuantityChangeHistoryItem, revertReason: string) => {
-  try {
-    const response = await shipmentService.revertChangeHistory(
-      shipmentId.value,
-      item.historyId,
-      { revertReason }
-    )
-
-    if (response.success) {
-      alert(response.message || '이력이 되돌려졌습니다.')
-      await refreshData()
-    } else {
-      alert(response.message || '되돌리기에 실패했습니다.')
-    }
-  } catch (error) {
-    console.error('이력 되돌리기 실패:', error)
-    alert(error instanceof Error ? error.message : '되돌리기 중 오류가 발생했습니다.')
-  }
-}
-
-// 그룹 전체 되돌리기 실행
-const revertHistoryGroup = async (history: QuantityChangeHistory, revertReason: string) => {
-  try {
-    const response = await shipmentService.revertChangeHistoryGroup(
-      shipmentId.value,
-      {
-        changedAt: history.changedAt,
-        changeReason: history.changeReason,
-        revertReason
-      }
-    )
-
-    if (response.success) {
-      alert(response.message || '그룹 이력이 되돌려졌습니다.')
-      await refreshData()
-    } else {
-      alert(response.message || '그룹 되돌리기에 실패했습니다.')
-    }
-  } catch (error) {
-    console.error('그룹 이력 되돌리기 실패:', error)
-    alert(error instanceof Error ? error.message : '그룹 되돌리기 중 오류가 발생했습니다.')
-  }
-}
-
-// 수정 모달용 상태
-const showEditHistoryModal = ref(false)
-const editingHistoryItem = ref<{ history: QuantityChangeHistory, item: QuantityChangeHistoryItem } | null>(null)
-
-// 수정 모달 열기
-const openEditHistoryModal = (history: QuantityChangeHistory, item: QuantityChangeHistoryItem) => {
-  editingHistoryItem.value = { history, item }
-  showEditHistoryModal.value = true
-}
-
-// 수정 모달에서 저장 완료 핸들러
-const handleEditHistoryComplete = async () => {
-  showEditHistoryModal.value = false
-  editingHistoryItem.value = null
-  await refreshData()
-}
-
-// 데이터 새로고침 (출하 상세 + 변경 이력)
+// 데이터 새로고침 (출하 상세 + 출고요청)
 const refreshData = async () => {
   if (!shipmentId.value) return
 
   try {
     // 출하 상세 새로고침
     const data = await shipmentService.getShipmentDetail(shipmentId.value)
+
+    // 출고요청 데이터 새로고침
+    loadDispatchRequest()
     shipmentData.value = data
 
     // 품목 데이터 다시 매핑
@@ -1302,9 +990,6 @@ const refreshData = async () => {
     // OEM 제조사 및 현장담당자 정보 업데이트
     formData.oemCompanyId = data.oemCompanyId || null
     formData.siteManagerId = data.siteManagerId || null
-
-    // 변경 이력 새로고침
-    await loadChangeHistory()
   } catch (error) {
     console.error('데이터 새로고침 실패:', error)
   }
@@ -1377,12 +1062,11 @@ const addRemainingQuantity = (item: OrderItem) => {
 
 // 제출 처리
 const handleSubmit = async () => {
-  // 유효성 검사
+  // 유효성 검사 (OEM 제조사는 출고요청 시 선택하므로 여기서는 필수 아님)
   const validationRules = {
     deliveryRequestNo: [rules.required('납품요구번호')],
     shippingDate: [rules.required('출하일자')],
-    status: [rules.required('상태')],
-    oemCompanyId: [rules.required('OEM 제조사')]
+    status: [rules.required('상태')]
   }
 
   if (!validateAll(formData, validationRules)) {
@@ -1415,47 +1099,123 @@ const handleGoBack = () => {
   }
 }
 
-// 발주서 버튼 클릭 (발주서 유무에 따라 생성 모달/다운로드 분기)
-const handlePurchaseOrderClick = async () => {
-  if (!shipmentId.value) {
-    alert('출하 정보를 먼저 불러와 주세요.')
-    return
-  }
-
-  // OEM 제조사 필수 체크 (출하 수정 페이지에서 미리 등록해야 함)
-  if (!formData.oemCompanyId) {
-    alert('발주서 생성을 위해 OEM 제조사를 먼저 선택해 주세요.')
-    // OEM 제조사 선택 필드로 스크롤 및 포커스
-    const oemSelect = document.getElementById('oem-company-select') as HTMLSelectElement
-    if (oemSelect) {
-      oemSelect.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      setTimeout(() => oemSelect.focus(), 300)
+// 출고요청 버튼 클릭 핸들러 (재고 확인 후 분기)
+const handleDispatchRequestClick = async () => {
+  checkingInventory.value = true
+  try {
+    inventoryStatus.value = await dispatchRequestService.checkInventoryStatus(shipmentId.value)
+    if (inventoryStatus.value.canDispatch) {
+      // 재고 충분 → 기존 출고요청 모달 열기
+      showDispatchRequestModal.value = true
+    } else {
+      // 재고 부족 → 부족 현황 모달 열기
+      showInventoryShortageModal.value = true
     }
-    return
-  }
-
-  // 발주서 존재 여부에 따라 분기
-  if (hasPurchaseOrder.value) {
-    // 이미 생성됨 → 바로 다운로드
-    try {
-      await shipmentService.downloadPurchaseOrderPdf(shipmentId.value)
-    } catch (error) {
-      console.error('발주서 PDF 다운로드 실패:', error)
-      const errorMessage = error instanceof Error ? error.message : '발주서 PDF 다운로드에 실패했습니다.'
-      alert(errorMessage)
-    }
-  } else {
-    // 미생성 → 확인 모달 표시
-    showPurchaseOrderConfirmModal.value = true
+  } catch (error: any) {
+    console.error('재고 현황 확인 실패:', error)
+    const errorMessage = error?.message || '알 수 없는 오류'
+    alert(`재고 현황 확인 중 오류가 발생했습니다.\n\n원인: ${errorMessage}\n\n네트워크 연결 상태를 확인하거나 관리자에게 문의하세요.`)
+  } finally {
+    checkingInventory.value = false
   }
 }
 
-// 발주서 생성 완료 핸들러
-const handlePurchaseOrderComplete = async () => {
-  showPurchaseOrderConfirmModal.value = false
-  // 데이터 새로고침 (발주서 생성 상태 반영)
+// 출고요청 버튼 표시 조건 (출고요청이 없는 경우에만 표시)
+const canShowDispatchRequestButton = computed(() => {
+  // 취소/완료 상태에서는 표시하지 않음
+  if (['CANCELLED', 'COMPLETED'].includes(formData.status)) return false
+  // 이미 출고요청이 있으면 표시하지 않음
+  if (dispatchRequest.value) return false
+  return true
+})
+
+// 출고요청 데이터 로드
+const loadDispatchRequest = async () => {
+  if (!shipmentId.value) return
+
+  loadingDispatchRequest.value = true
+  try {
+    dispatchRequest.value = await dispatchRequestService.getDispatchRequestByShipmentId(shipmentId.value)
+  } catch (error) {
+    console.error('출고요청 조회 실패:', error)
+    dispatchRequest.value = null
+  } finally {
+    loadingDispatchRequest.value = false
+  }
+}
+
+/**
+ * 같은 납품요구의 형제 출하에서 배송지/현장소장 정보 프리필
+ * 현재 출하에 배송지 정보가 없고, 출고요청도 없는 경우에만 적용
+ */
+const prefillSiblingDeliveryInfo = async () => {
+  if (!shipmentId.value) return
+
+  // 이미 배송지 정보가 있으면 스킵
+  if (formData.deliveryAddress) return
+  // 이미 출고요청이 있으면 스킵
+  if (dispatchRequest.value) return
+
+  try {
+    const siblingInfo = await shipmentService.getSiblingDeliveryInfo(shipmentId.value)
+    if (!siblingInfo) return
+
+    // 배송지 정보 프리필 (현재 값이 비어있는 필드만)
+    if (!formData.zipcode && siblingInfo.zipcode) {
+      formData.zipcode = siblingInfo.zipcode
+    }
+    if (!formData.deliveryAddress && siblingInfo.deliveryAddress) {
+      formData.deliveryAddress = siblingInfo.deliveryAddress
+    }
+    if (!formData.addressDetail && siblingInfo.addressDetail) {
+      formData.addressDetail = siblingInfo.addressDetail
+    }
+    if (!formData.siteManagerId && siblingInfo.siteManagerId) {
+      formData.siteManagerId = siblingInfo.siteManagerId
+    }
+    if (!formData.receiverName && siblingInfo.receiverName) {
+      formData.receiverName = siblingInfo.receiverName
+    }
+    if (!formData.receiverPhone && siblingInfo.receiverPhone) {
+      formData.receiverPhone = siblingInfo.receiverPhone
+    }
+    if (!formData.oemCompanyId && siblingInfo.oemCompanyId) {
+      formData.oemCompanyId = siblingInfo.oemCompanyId
+    }
+
+    console.log('[출하 수정] 형제 출하 배송지 정보 프리필 완료:', siblingInfo)
+  } catch (error) {
+    console.warn('[출하 수정] 형제 출하 배송지 조회 실패 (무시):', error)
+  }
+}
+
+// 출하 데이터 로드 완료 시 출고요청 조회 + 형제 배송지 프리필
+watch(() => shipmentData.value, async (newData) => {
+  if (newData && shipmentId.value) {
+    await loadDispatchRequest()
+    // 출고요청이 없고 배송지 정보가 비어있으면 형제 출하에서 프리필
+    await prefillSiblingDeliveryInfo()
+  }
+})
+
+// 출고요청 생성 완료 핸들러
+const handleDispatchRequestCreated = async () => {
+  showDispatchRequestModal.value = false
+  // 출고요청 데이터 새로고침
+  await loadDispatchRequest()
+  // 출하 정보 새로고침 (dispatchStatus 반영)
   await refreshData()
-  alert('발주서가 생성되었습니다.')
+  alert('출고요청이 생성되었습니다.')
+}
+
+// 출고요청 상태 라벨
+const getDispatchStatusLabel = (status: string): string => {
+  return DISPATCH_STATUS_LABELS[status as keyof typeof DISPATCH_STATUS_LABELS] || status
+}
+
+// 출고요청 상태 클래스
+const getDispatchStatusClass = (status: string): string => {
+  return DISPATCH_STATUS_COLORS[status as keyof typeof DISPATCH_STATUS_COLORS] || 'bg-gray-100 text-gray-700'
 }
 
 // 삭제 처리
@@ -1468,19 +1228,23 @@ const handleDelete = async () => {
     await shipmentService.deleteShipment(shipmentId.value)
     alert('출하 정보가 삭제되었습니다.')
     handleGoBack()  // 삭제 후에도 returnPage로 이동
-  } catch (error) {
+  } catch (error: any) {
     console.error('출하 정보 삭제 실패:', error)
-    alert('출하 정보 삭제에 실패했습니다.')
+    alert(error.message || '출하 정보 삭제에 실패했습니다.')
   }
 }
 </script>
 
 <style scoped>
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-forms.css';
+
 /*
  * Common styles managed by:
- * - admin-edit-register.css: content-section, two-column-layout, items-table, items-section-wrapper, items-section-header, items-table-wrapper.with-header, items-table tfoot
- * - admin-forms.css: info-grid :deep(.form-field), info-grid :deep(.form-label), info-grid :deep(.required-mark)
- * - admin-common.css: text-center, text-right, empty-message
+ * - admin-common.css: text-center, text-right, empty-message, loading-container, error-container, modal-overlay
+ * - admin-buttons.css: btn-action, btn-primary, btn-secondary, btn-delete, btn-warning
+ * - admin-forms.css: info-grid, info-group, form-input-*, form-select
  */
 
 /* Page-specific: Shipping edit page wrapper */
@@ -1513,24 +1277,7 @@ const handleDelete = async () => {
   cursor: not-allowed;
 }
 
-/* 규격 셀 스타일 - 한 줄로 제한, 넘치면 ... 표시 */
-.specification-cell {
-  max-width: 420px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 탭 헤더 스타일 */
-.items-section-header.with-tabs {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: #f8fafc;
-  border-bottom: 1px solid #e5e7eb;
-}
-
+/* 품목 헤더 스타일 */
 .header-left {
   display: flex;
   align-items: center;
@@ -1541,215 +1288,6 @@ const handleDelete = async () => {
 
 .header-left i {
   color: #6b7280;
-}
-
-.header-tabs {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.tab-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  background: transparent;
-  color: #6b7280;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.tab-btn:hover {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.tab-btn.active {
-  background: #2563eb;
-  color: white;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
-.btn-additional-change {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 1rem;
-  background: #f59e0b;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-additional-change:hover:not(:disabled) {
-  background: #d97706;
-}
-
-.btn-additional-change:disabled,
-.btn-additional-change.disabled {
-  background: #d1d5db;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.btn-wrapper {
-  display: inline-block;
-}
-
-/* 변경 이력 탭 컨텐츠 */
-.history-tab-content {
-  padding: 1rem;
-  min-height: 200px;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  color: #6b7280;
-}
-
-.loading-container i {
-  font-size: 2rem;
-  margin-bottom: 1rem;
-}
-
-.no-history {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  color: #9ca3af;
-}
-
-.no-history i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.no-history p {
-  margin: 0;
-}
-
-/* 변경 이력 목록 */
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.history-item {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.history-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-}
-
-.history-info-row th {
-  padding: 0;
-  background: #f0f9ff;
-  border-bottom: 1px solid #bfdbfe;
-}
-
-.history-info-line {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  padding: 0.875rem 1rem;
-}
-
-.history-info-item {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-}
-
-.history-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #3b82f6;
-  background: #dbeafe;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-}
-
-.history-value {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.btn-view-receipt {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  background: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-view-receipt:hover {
-  background: #b91c1c;
-}
-
-.history-table th {
-  padding: 0.625rem 1rem;
-  text-align: left;
-  background: #f9fafb;
-  font-weight: 600;
-  font-size: 0.75rem;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.history-table th.text-right,
-.history-table td.text-right {
-  text-align: right;
-}
-
-.history-table td {
-  padding: 0.625rem 1rem;
-  border-bottom: 1px solid #f3f4f6;
-  color: #374151;
-}
-
-.history-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.text-success {
-  color: #059669;
-  font-weight: 500;
-}
-
-.text-danger {
-  color: #dc2626;
-  font-weight: 500;
 }
 
 /* 기성포함 배지 스타일 */
@@ -1811,78 +1349,6 @@ const handleDelete = async () => {
 
 .quantity-col input {
   min-width: 70px !important;
-}
-
-/* 변경 이력 액션 버튼 영역 */
-.history-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-/* 그룹 전체 되돌리기 버튼 */
-.btn-revert-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  background: #f59e0b;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-revert-group:hover {
-  background: #d97706;
-}
-
-/* 품목 행 액션 셀 */
-.actions-cell {
-  white-space: nowrap;
-}
-
-/* 텍스트 포함 액션 버튼 (작은 사이즈) */
-.btn-action-sm {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin: 0 2px;
-}
-
-.btn-action-sm i {
-  font-size: 0.625rem;
-}
-
-/* 수정 버튼 */
-.btn-action-sm.btn-edit {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-action-sm.btn-edit:hover {
-  background: #2563eb;
-}
-
-/* 되돌리기 버튼 */
-.btn-action-sm.btn-revert {
-  background: #f59e0b;
-  color: white;
-}
-
-.btn-action-sm.btn-revert:hover {
-  background: #d97706;
 }
 
 /* 전체 너비 섹션 (배송지 정보용) */
@@ -2004,6 +1470,48 @@ const handleDelete = async () => {
   font-size: 0.8125rem;
 }
 
+/* 출고요청 상태 배지 */
+.dispatch-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  margin-left: auto;
+}
+
+/* 출고요청 버튼 스타일 */
+.btn-warning {
+  background: #f59e0b !important;
+  color: white !important;
+  border-color: #f59e0b !important;
+}
+
+.btn-warning:hover {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+}
+
+/* 합지 배지 */
+.merge-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  margin: 1px 2px;
+  white-space: nowrap;
+}
+
+/* 비고 셀 */
+.remark-cell {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* 신규 뱃지 */
 .badge-new {
   display: inline-block;
@@ -2013,5 +1521,29 @@ const handleDelete = async () => {
   font-size: 0.6875rem;
   font-weight: 600;
   border-radius: 4px;
+}
+
+/* B급 배지 */
+.bgrade-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background-color: #fef3c7;
+  color: #b45309;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* B급 원가 차감 (tfoot) */
+.bgrade-cost-label {
+  color: #dc2626;
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.bgrade-cost-value {
+  color: #dc2626;
+  font-weight: 600;
 }
 </style>

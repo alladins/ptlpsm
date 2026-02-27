@@ -532,6 +532,7 @@ definePageMeta({
 import { userService } from '~/services/user.service'
 import { formatPhoneNumberInput, normalizeEmail } from '~/utils/format'
 import { isValidEmail, isValidPhone } from '~/utils/validators'
+import { getRoleName } from '~/types/user'
 
 // 반응형 데이터
 const currentUser = ref<any>({
@@ -832,20 +833,6 @@ const submitPasswordChange = async () => {
 }
 
 // 유틸리티 메서드
-const getRoleName = (roleCode: string) => {
-  const roleNames: { [key: string]: string } = {
-    'SYSTEM_ADMIN': '시스템관리자',
-    'LEADPOWER_MANAGER': '리드파워 담당자',
-    'OEM_MANAGER': 'OEM 담당자',
-    'SITE_MANAGER': '시공사 담당자',
-    'SITE_INSPECTOR': '시공사 감리원',
-    'SALES_MANAGER': '영업 담당자',
-    'DELIVERY_DRIVER': '운송기사',
-    'READ_ONLY': '조회 전용'
-  }
-  return roleNames[roleCode] || roleCode
-}
-
 const getRoleClass = (roleCode: string) => {
   const roleClasses: { [key: string]: string } = {
     'SYSTEM_ADMIN': 'role-admin',

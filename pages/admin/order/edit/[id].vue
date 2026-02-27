@@ -544,6 +544,18 @@ const totalQuantity = computed(() => {
   return parseFloat(sum.toFixed(2))
 })
 
+// 규격에서 두께(mm) 숫자를 추출하여 정렬에 사용
+const extractSpecThickness = (specification: string): number => {
+  if (!specification) return 9999
+  // "NNN×NNN×NNNmm" 또는 "NNN*NNN*NNNmm" 패턴에서 마지막 숫자(두께) 추출
+  const dimMatch = specification.match(/(\d+)\s*[×x*]\s*(\d+)\s*[×x*]\s*(\d+)\s*mm/i)
+  if (dimMatch) return parseInt(dimMatch[3], 10)
+  // "NNNmm" 패턴에서 숫자 추출
+  const mmMatch = specification.match(/(\d+)\s*mm/i)
+  if (mmMatch) return parseInt(mmMatch[1], 10)
+  return 9999
+}
+
 // 데이터 로드
 const loadData = async () => {
   try {
@@ -552,7 +564,7 @@ const loadData = async () => {
     orderData.value = data
 
     // 품목 데이터 변환 (서버 응답 필드명에 맞게 매핑)
-    items.value = data.items.map((item: any) => ({
+    const mappedItems = data.items.map((item: any) => ({
       productName: item.productName || item.itemNm,  // 서버: productName
       specification: item.specification,
       unit: item.unit || item.unitCd,                // 서버: unit
@@ -562,6 +574,11 @@ const loadData = async () => {
       deliveryDeadline: item.deliveryDeadline,
       deliveryTerms: item.deliveryTerms
     }))
+
+    // 규격(두께mm) 기준 오름차순 정렬
+    mappedItems.sort((a: any, b: any) => extractSpecThickness(a.specification) - extractSpecThickness(b.specification))
+
+    items.value = mappedItems
 
     // 건설사 정보 복원 (OEM 제조사는 출하 등록 시 선택)
     if (data.builderCompanyId) {
@@ -815,6 +832,7 @@ onMounted(async () => {
 @import '@/assets/css/admin-forms.css';
 @import '@/assets/css/admin-buttons.css';
 @import '@/assets/css/admin-tables.css';
+@import '@/assets/css/admin-tabs.css';
 
 /*
  * Common styles managed by:
@@ -839,59 +857,16 @@ onMounted(async () => {
   padding: 0.375rem 0.25rem;
 }
 
-/* 탭 네비게이션 */
+/* 탭 네비게이션 (admin-tabs.css override) */
 .tab-navigation {
-  display: flex;
   background: white;
   border-radius: 8px 8px 0 0;
-  border-bottom: 1px solid #e5e7eb;
   margin-bottom: 0;
-}
-
-.tab-button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem 1.5rem;
-  background: transparent;
-  border: none;
-  color: #6b7280;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
-}
-
-.tab-button:hover {
-  color: #374151;
-  background: rgba(0, 0, 0, 0.02);
-}
-
-.tab-button.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
-  background: white;
-}
-
-.tab-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  background: #3b82f6;
-  color: white;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
 }
 
 .tab-content {
   background: white;
   border-radius: 0 0 8px 8px;
-  padding: 1.5rem;
 }
 
 /* 기성/납품확인 탭 */
@@ -944,93 +919,9 @@ onMounted(async () => {
   color: #166534;
 }
 
-/* 상태 배지 */
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
+/* 상태 배지는 admin-common.css에서 관리 */
 
-.status-draft {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.status-pending {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.status-confirmed {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-cancelled {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-/* 결제 상태 배지 (자금관리와 동일) */
-.status-requested {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.status-approved {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.status-paid {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-rejected {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-/* 데이터 테이블 */
-.table-container {
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.data-table th {
-  padding: 0.75rem 1rem;
-  text-align: center;
-  background: #f9fafb;
-  font-weight: 600;
-  color: #374151;
-  border-bottom: 2px solid #e5e7eb;
-  font-size: 0.875rem;
-}
-
-.data-table td {
-  padding: 0.75rem 1rem;
-  text-align: center;
-  border-bottom: 1px solid #f3f4f6;
-  font-size: 0.875rem;
-}
-
-.data-table td.text-right {
-  text-align: right;
-}
-
-.data-table .no-data {
-  text-align: center;
-  color: #9ca3af;
-  padding: 2rem;
-}
-
+/* 데이터 테이블은 admin-tables.css에서 관리 */
 .text-muted {
   color: #9ca3af;
 }
@@ -1114,16 +1005,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .tab-navigation {
-    flex-wrap: wrap;
-  }
-
-  .tab-button {
-    flex: 1;
-    justify-content: center;
-    min-width: 100px;
-  }
-
   .fund-summary-cards {
     grid-template-columns: 1fr;
   }
@@ -1135,7 +1016,7 @@ onMounted(async () => {
   }
 }
 
-/* 주문 상태 배지 */
+/* 주문 상태 배지 (page-specific) */
 .status-in-progress {
   background: #dbeafe;
   color: #1d4ed8;

@@ -6,15 +6,6 @@
       description="운송장 정보를 등록합니다."
     >
       <template #actions>
-        <button
-          v-if="formData.shipmentId"
-          class="btn-action btn-info"
-          @click="handleDownloadPurchaseOrder"
-          title="발주서 PDF 다운로드"
-        >
-          <i class="fas fa-file-pdf"></i>
-          발주서
-        </button>
         <button class="btn-secondary" @click="goBack">
           <i class="fas fa-times"></i>
           취소
@@ -22,11 +13,11 @@
         <button
           class="btn-primary"
           @click="handleSubmit"
-          :disabled="submitting || !canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          :disabled="submitting || !canWrite || inventoryChecking"
+          :title="saveButtonDisabledReason"
         >
           <i class="fas fa-save"></i>
-          {{ submitting ? '저장 중...' : '저장' }}
+          {{ inventoryChecking ? '재고 확인 중...' : submitting ? '저장 중...' : '저장' }}
         </button>
       </template>
     </PageHeader>
@@ -88,6 +79,28 @@
               >
             </FormField>
           </div>
+        </div>
+
+        <!-- 재고 현황 알림 -->
+        <div v-if="inventoryStatus && !inventoryStatus.canDispatch" class="inventory-warning">
+          <div class="warning-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>재고 부족 - 운송 등록 불가</span>
+            <button class="btn-refresh" @click="checkInventory(Number(formData.shipmentId))" :disabled="inventoryChecking">
+              <i class="fas fa-sync-alt" :class="{ 'fa-spin': inventoryChecking }"></i>
+              재확인
+            </button>
+          </div>
+          <div class="warning-items">
+            <div v-for="item in inventoryStatus.items.filter(i => !i.sufficient)" :key="item.skuId" class="warning-item">
+              <span class="sku-name">{{ item.skuName || item.skuId }}</span>
+              <span class="shortage">필요: {{ item.requiredQuantity }} / 재고: {{ item.inventoryQuantity }} (부족: {{ item.shortageQuantity }})</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="inventoryStatus && inventoryStatus.canDispatch" class="inventory-info">
+          <i class="fas fa-info-circle"></i>
+          <span>발주수량 확인 완료 (실제 재고는 저장 시 최종 확인됩니다)</span>
         </div>
 
         <!-- 2. 현장 담당자 정보 (출하에서 가져온 정보 - 읽기전용) -->
@@ -307,6 +320,8 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { transportService } from '~/services/transport.service'
 import { shipmentService } from '~/services/shipment.service'
+import { dispatchRequestService } from '~/services/dispatch-request.service'
+import type { InventoryStatusResponse } from '~/types/dispatch-request'
 import { userService } from '~/services/user.service'
 import type { ShipmentListItem } from '~/services/shipment.service'
 import type { UserByRole } from '~/types/user'
@@ -328,6 +343,37 @@ const route = useRoute()
 
 // 권한
 const { canWrite } = usePermission()
+
+// 재고 현황 확인
+const inventoryStatus = ref<InventoryStatusResponse | null>(null)
+const inventoryChecking = ref(false)
+
+const inventoryAvailable = computed(() => {
+  if (!formData.shipmentId) return true
+  if (!inventoryStatus.value) return true
+  return inventoryStatus.value.canDispatch
+})
+
+const saveButtonDisabledReason = computed(() => {
+  if (!canWrite.value) return '등록 권한이 없습니다'
+  if (submitting.value) return '저장 중...'
+  if (inventoryChecking.value) return '재고 확인 중...'
+  if (!inventoryAvailable.value) return '재고 부족으로 운송 등록이 불가합니다'
+  return ''
+})
+
+const checkInventory = async (shipmentId: number) => {
+  inventoryChecking.value = true
+  inventoryStatus.value = null
+  try {
+    inventoryStatus.value = await dispatchRequestService.checkInventoryStatus(shipmentId)
+  } catch (error) {
+    console.error('재고 현황 확인 실패:', error)
+    inventoryStatus.value = null
+  } finally {
+    inventoryChecking.value = false
+  }
+}
 
 // 사용자 목록
 const deliveryDrivers = ref<UserByRole[]>([])  // DELIVERY_DRIVER (운송기사)
@@ -395,7 +441,12 @@ const {
   },
   onCreateError: (error) => {
     console.error('운송장 등록 실패:', error)
-    alert('운송장 등록에 실패했습니다.')
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    if (errorMsg.includes('재고가 부족')) {
+      alert('발주수량에서 아직 생산이 완료되지 않은 수량이 있습니다.\n생산 완료 후 저장이 가능합니다.')
+    } else {
+      alert('운송장 등록에 실패했습니다.\n' + errorMsg)
+    }
   }
 })
 
@@ -406,12 +457,12 @@ const { errors, validateAll, rules } = useFormValidation({
   driverPhone: ''
 })
 
-// 배차/출차 시각: 배송 예정일 - 1일 00:00 이후부터 선택 가능
+// 배차/출차 시각: 배송 예정일 - 5일 00:00 이후부터 선택 가능
 const minDispatchDate = computed(() => {
   if (formData.deliveryDate) {
     const deliveryDateObj = new Date(formData.deliveryDate)
     const minDate = new Date(deliveryDateObj)
-    minDate.setDate(minDate.getDate() - 1)
+    minDate.setDate(minDate.getDate() - 5)
     minDate.setHours(0, 0, 0, 0)
     return minDate
   }
@@ -596,26 +647,13 @@ const handleShipmentSelect = async (shipment: ShipmentListItem) => {
       })
     }
 
+    // 재고 현황 확인
+    await checkInventory(Number(detail.shipmentId))
+
     closeShipmentPopup()
   } catch (error) {
     console.error('출하 정보 조회 실패:', error)
     alert('출하 정보를 불러오는데 실패했습니다.')
-  }
-}
-
-// 발주서 PDF 다운로드
-const handleDownloadPurchaseOrder = async () => {
-  if (!formData.shipmentId) {
-    alert('출하를 먼저 선택해 주세요.')
-    return
-  }
-  try {
-    await shipmentService.downloadPurchaseOrderPdf(Number(formData.shipmentId))
-  } catch (error) {
-    console.error('발주서 PDF 다운로드 실패:', error)
-    // 백엔드 에러 메시지 표시
-    const errorMessage = error instanceof Error ? error.message : '발주서 PDF 처리에 실패했습니다.'
-    alert(errorMessage)
   }
 }
 
@@ -664,16 +702,16 @@ const handleSubmit = async () => {
     return
   }
 
-  // 배차/출차 시각이 배송 예정일 - 1일 00:00 이전인지 체크
+  // 배차/출차 시각이 배송 예정일 - 5일 00:00 이전인지 체크
   const dispatchTime = new Date(formData.dispatchAt)
   const deliveryDateObj = new Date(formData.deliveryDate)
   const minDispatchTime = new Date(deliveryDateObj)
-  minDispatchTime.setDate(minDispatchTime.getDate() - 1)
+  minDispatchTime.setDate(minDispatchTime.getDate() - 5)
   minDispatchTime.setHours(0, 0, 0, 0)
 
   if (dispatchTime < minDispatchTime) {
     const minDateStr = `${minDispatchTime.getFullYear()}-${String(minDispatchTime.getMonth() + 1).padStart(2, '0')}-${String(minDispatchTime.getDate()).padStart(2, '0')}`
-    alert(`배차/출차 시각은 ${minDateStr} 00:00 이후로 설정해주세요.\n(배송 예정일 하루 전부터 가능)`)
+    alert(`배차/출차 시각은 ${minDateStr} 00:00 이후로 설정해주세요.\n(배송 예정일 5일 전부터 가능)`)
     return
   }
 
@@ -681,6 +719,12 @@ const handleSubmit = async () => {
   const expectedTime = new Date(formData.expectedArrival)
   if (expectedTime <= dispatchTime) {
     alert('도착 예정 시각은 배차/출차 시각 이후로 설정해주세요.')
+    return
+  }
+
+  // 재고 부족 시 안내 메시지 (저장 차단)
+  if (inventoryStatus.value && !inventoryStatus.value.canDispatch) {
+    alert('발주수량에서 아직 생산이 완료되지 않은 수량이 있습니다.\n생산 완료 후 저장이 가능합니다.')
     return
   }
 
@@ -744,6 +788,65 @@ const handleSubmit = async () => {
   background-color: #f8fafc !important;
   color: #64748b !important;
   cursor: not-allowed !important;
+}
+
+/* 재고 부족 경고 배너 */
+.inventory-warning {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+.inventory-warning .warning-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #dc2626;
+  margin-bottom: 0.5rem;
+}
+.inventory-warning .btn-refresh {
+  margin-left: auto;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  background: white;
+  border: 1px solid #fca5a5;
+  border-radius: 0.375rem;
+  color: #dc2626;
+  cursor: pointer;
+}
+.inventory-warning .btn-refresh:hover {
+  background: #fef2f2;
+}
+.inventory-warning .warning-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+.inventory-warning .warning-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  color: #991b1b;
+}
+.inventory-warning .shortage {
+  font-weight: 500;
+}
+.inventory-info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #3b82f6;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+  color: #2563eb;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Responsive */

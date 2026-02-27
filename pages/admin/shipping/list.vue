@@ -108,10 +108,10 @@
               <th>사업명</th>
               <th>출하일자</th>
               <th>상태</th>
-              <th>발주서</th>
+              <th>출고</th>
               <th>출하수량</th>
               <th>출하금액</th>
-              <th>추가변경</th>
+              <th>비고</th>
             </tr>
           </thead>          <tbody>
             <tr
@@ -133,25 +133,22 @@
                 </span>
               </td>
               <td class="text-center">
-                <span v-if="item.purchaseOrderPdfPath" class="po-badge po-generated">생성됨</span>
-                <span v-else class="po-badge po-not-generated">미생성</span>
+                <span :class="getDispatchClass(item)">
+                  {{ getDispatchLabel(item) }}
+                </span>
               </td>
-              <td class="text-right">{{ formatQuantity(item.shipmentQuantity) }}</td>
+              <td class="text-right">{{ formatQuantity(item.shipmentQuantity) }} ㎡</td>
               <td class="text-right">{{ formatCurrency(item.shipmentAmount) }}</td>
               <td class="text-center badges-cell">
-                <span v-if="item.hasBgradeItems" class="bgrade-badge">
-                  B급
-                </span>
-                <span v-if="item.additionalChangeCount && item.additionalChangeCount > 0" class="change-badge">
-                  변경
-                </span>
+                <span v-if="item.hasMergedItems" class="merge-badge">합지</span>
+                <span v-if="item.hasBgradeItems" class="bgrade-badge">B급</span>
               </td>
             </tr>
           </tbody>
           <tfoot v-if="shippingData.length > 0">
             <tr>
               <td colspan="8" class="text-right"><strong>총 출하수량</strong></td>
-              <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
+              <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }} ㎡</strong></td>
               <td class="text-right"><strong>{{ formatCurrency(totalShippingAmount) }}</strong></td>
               <td></td>
             </tr>
@@ -278,7 +275,7 @@ const {
       status: searchForm.value.status,
       page: params.page || 0,
       size: params.size || 10,
-      sort: `shipmentDate,${searchForm.value.sortOrder}`
+      sort: `shipmentId,${searchForm.value.sortOrder}`
     })
 
     // shipmentService 응답을 Spring Page 형식으로 변환
@@ -299,6 +296,32 @@ const {
 // 상태 텍스트 변환 (DB 기반)
 const getStatusText = (status: string): string => {
   return getStatusLabel(status)
+}
+
+// 출고 가능 여부 라벨
+const getDispatchLabel = (item: ShipmentListItem): string => {
+  // 완료/취소/서명대기 → 표시 안 함
+  if (['COMPLETED', 'CANCELLED', 'PENDING_SIGNATURE'].includes(item.status)) return '-'
+  // 이미 출고요청 있음 → 출고 상태 표시
+  if (item.dispatchStatus === 'DISPATCHED') return '발송완료'
+  if (item.dispatchStatus === 'CONFIRMED') return '확인됨'
+  if (item.dispatchStatus === 'REQUESTED') return '출고요청중'
+  // OEM 미설정
+  if (!item.oemCompanyId) return 'OEM미설정'
+  // 재고+발주 기반 판단 (false 또는 0 모두 처리)
+  if (item.inventorySufficient != null && !item.inventorySufficient) return '재고부족'
+  return '출고가능'
+}
+
+// 출고 상태 CSS 클래스
+const getDispatchClass = (item: ShipmentListItem): string => {
+  if (['COMPLETED', 'CANCELLED', 'PENDING_SIGNATURE'].includes(item.status)) return ''
+  if (item.dispatchStatus === 'DISPATCHED') return 'dispatch-dispatched'
+  if (item.dispatchStatus === 'CONFIRMED') return 'dispatch-confirmed'
+  if (item.dispatchStatus === 'REQUESTED') return 'dispatch-requested'
+  if (!item.oemCompanyId) return 'dispatch-no-oem'
+  if (item.inventorySufficient != null && !item.inventorySufficient) return 'dispatch-shortage'
+  return 'dispatch-available'
 }
 
 // 상태별 CSS 클래스 (컨벤션 기반)
@@ -467,6 +490,67 @@ onMounted(async () => {
   color: #c2410c;
 }
 
+/* 출고 상태 배지 */
+.dispatch-available {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.dispatch-requested {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.dispatch-confirmed {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.dispatch-dispatched {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background-color: #ede9fe;
+  color: #6d28d9;
+}
+
+.dispatch-no-oem {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background-color: #ffedd5;
+  color: #c2410c;
+}
+
+.dispatch-shortage {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
 /* 사업명 셀 - 왼쪽 정렬 및 말줄임 처리 */
 .project-name-cell {
   text-align: left;
@@ -495,35 +579,15 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-/* 추가변경 배지 */
-.change-badge {
+/* 합지 배지 */
+.merge-badge {
   display: inline-block;
   padding: 3px 10px;
-  background-color: #e0f2fe;
-  color: #0369a1;
+  background-color: #e0e7ff;
+  color: #3730a3;
   border-radius: 12px;
   font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-/* 발주서 상태 배지 */
-.po-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.po-generated {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.po-not-generated {
-  background-color: #fef3c7;
-  color: #92400e;
+  font-weight: 600;
 }
 
 /* 반응형 - 페이지 특화 스타일만 유지 */

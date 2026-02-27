@@ -52,7 +52,8 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // Constants
-  const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000 // 5분 (밀리초)
+  const ACCESS_TOKEN_VALIDITY_MS = 30 * 60 * 1000 // Access Token 유효시간: 30분
+  const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000 // 만료 임박 판단: 5분
   const USER_INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30분 (밀리초)
 
   // Computed
@@ -102,8 +103,8 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = data.userInfo
     accessToken.value = data.accessToken
     refreshToken.value = data.refreshToken
-    // expiresIn이 서버에서 제공되지 않으므로 기본값 3600초(1시간) 사용
-    tokenExpiry.value = Date.now() + 3600 * 1000
+    // Access Token 유효시간 설정
+    tokenExpiry.value = Date.now() + ACCESS_TOKEN_VALIDITY_MS
     lastActivity.value = Date.now()
 
     // localStorage에 저장 (권한 로드 전에 저장해야 API 호출 가능)
@@ -225,7 +226,7 @@ export const useAuthStore = defineStore('auth', () => {
       // 새 토큰으로 교체
       accessToken.value = result.accessToken
       refreshToken.value = result.refreshToken
-      tokenExpiry.value = Date.now() + 3600 * 1000 // 1시간
+      tokenExpiry.value = Date.now() + ACCESS_TOKEN_VALIDITY_MS
 
       // 대상 사용자 정보로 변경
       // 두 가지 응답 형식 지원:
@@ -334,7 +335,7 @@ export const useAuthStore = defineStore('auth', () => {
       // 토큰 복원
       accessToken.value = result.accessToken
       refreshToken.value = result.refreshToken || null
-      tokenExpiry.value = Date.now() + 3600 * 1000
+      tokenExpiry.value = Date.now() + ACCESS_TOKEN_VALIDITY_MS
 
       // 원래 사용자 정보 복원
       // 서버 응답 필드: originalUserId, originalUserName, targetUserId, targetUserName, targetRole
@@ -544,7 +545,7 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await response.json()
 
       accessToken.value = data.accessToken
-      tokenExpiry.value = Date.now() + (data.expiresIn || 3600) * 1000
+      tokenExpiry.value = Date.now() + (data.expiresIn ? data.expiresIn * 1000 : ACCESS_TOKEN_VALIDITY_MS)
 
       safeStorage.setItem('auth_access_token', data.accessToken)
       safeStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
