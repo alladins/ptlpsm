@@ -111,6 +111,11 @@
             <div class="section-header">
               <i class="fas fa-user-hard-hat"></i>
               <span>현장 인수자 정보</span>
+              <span class="field-hint">
+                <i class="fas fa-info-circle"></i>
+                현장소장은 사전 등록해야 합니다.
+              </span>
+
             </div>
             <div class="form-grid">
               <div class="form-field">
@@ -123,8 +128,8 @@
                   <option :value="null">선택하세요</option>
                   <option
                     v-for="manager in siteManagers"
-                    :key="manager.userid"
-                    :value="manager.userid"
+                    :key="manager.userId"
+                    :value="manager.userId"
                   >
                     {{ manager.userName }} ({{ manager.phone }})
                     <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
@@ -144,6 +149,10 @@
                   class="form-input"
                   placeholder="인수자명"
                 />
+                <span class="field-hint">
+                  <i class="fas fa-info-circle"></i>
+                  인수자가 다를경우 직접 수정/입력 하세요.
+                </span>
               </div>
               <div class="form-field">
                 <label class="form-label">인수자 연락처</label>
@@ -191,7 +200,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { shipmentService } from '~/services/shipment.service'
-import { formatPhoneNumber, formatPhoneNumberInput } from '~/utils/format'
+import { formatPhoneNumber, formatPhoneNumberInput, getLocalDateString } from '~/utils/format'
 import type { UserByRole } from '~/types/user'
 
 // Daum Postcode API 타입 선언
@@ -279,7 +288,7 @@ const closeModal = () => {
 const initializeForm = () => {
   // 발주일자 기본값: 오늘
   const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  const todayStr = getLocalDateString()
   formData.purchaseOrderDate = props.initialData.purchaseOrderDate || todayStr
   formData.expectedArrivalAt = props.initialData.expectedArrivalAt || ''
   formData.zipcode = props.initialData.zipcode || ''
@@ -300,7 +309,7 @@ const initializeForm = () => {
 // 현장소장 선택 시 인수자 정보 자동 입력
 const handleSiteManagerChange = () => {
   if (formData.siteManagerId) {
-    const manager = props.siteManagers.find(m => m.userid === formData.siteManagerId)
+    const manager = props.siteManagers.find(m => m.userId === formData.siteManagerId)
     if (manager) {
       formData.receiverName = manager.userName
       formData.receiverPhone = formatPhoneNumber(manager.phone || '')

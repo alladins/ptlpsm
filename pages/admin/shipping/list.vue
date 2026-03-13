@@ -14,7 +14,7 @@
           검색
         </button>
         <button
-          v-if="showCreateButton"
+          v-if="showCreateButton && !isOemManager"
           class="btn-action btn-primary"
           @click="goToRegister"
           :title="!canWrite ? '권한이 없습니다' : ''"
@@ -40,7 +40,7 @@
           <!-- 납품요구번호 -->
           <div class="search-item">
             <label>납품요구번호:</label>
-            <input type="text" v-model="searchForm.deliveryRequestNo" placeholder="납품요구번호 입력 또는 조회" class="text-input">
+            <input type="text" v-model="searchForm.deliveryRequestNo" placeholder="납품요구번호 입력 또는 조회" class="text-input" @keyup.enter="handleSearch">
             <button type="button" class="btn-search-inline" @click="openOrderSelectPopup">
               <i class="fas fa-search"></i>
               조회
@@ -199,7 +199,7 @@ const router = useRouter()
 const route = useRoute()
 
 // 권한
-const { canWrite, canEdit, canDelete } = usePermission()
+const { canWrite, canEdit, canDelete, isOemManager } = usePermission()
 const { showCreateButton, showEditButton, showDeleteButton } = usePermissionButtons()
 
 // 상태 관리 (DB 기반)
@@ -308,8 +308,12 @@ const getDispatchLabel = (item: ShipmentListItem): string => {
   if (item.dispatchStatus === 'REQUESTED') return '출고요청중'
   // OEM 미설정
   if (!item.oemCompanyId) return 'OEM미설정'
-  // 재고+발주 기반 판단 (false 또는 0 모두 처리)
-  if (item.inventorySufficient != null && !item.inventorySufficient) return '재고부족'
+  // 재고+발주 기반 판단
+  if (item.inventorySufficient != null && !item.inventorySufficient) {
+    // 재고 부족이지만 접수된 발주가 있으면 "입고대기"
+    if (item.hasAcceptedPo) return '입고대기'
+    return '재고부족'
+  }
   return '출고가능'
 }
 
@@ -320,7 +324,10 @@ const getDispatchClass = (item: ShipmentListItem): string => {
   if (item.dispatchStatus === 'CONFIRMED') return 'dispatch-confirmed'
   if (item.dispatchStatus === 'REQUESTED') return 'dispatch-requested'
   if (!item.oemCompanyId) return 'dispatch-no-oem'
-  if (item.inventorySufficient != null && !item.inventorySufficient) return 'dispatch-shortage'
+  if (item.inventorySufficient != null && !item.inventorySufficient) {
+    if (item.hasAcceptedPo) return 'dispatch-incoming'
+    return 'dispatch-shortage'
+  }
   return 'dispatch-available'
 }
 
@@ -549,6 +556,16 @@ onMounted(async () => {
   font-weight: 600;
   background-color: #fee2e2;
   color: #dc2626;
+}
+
+.dispatch-incoming {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
 /* 사업명 셀 - 왼쪽 정렬 및 말줄임 처리 */

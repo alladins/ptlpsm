@@ -65,7 +65,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { formatNumber } from '~/utils/format'
+import { formatNumber, getLocalDateString } from '~/utils/format'
 
 interface Props {
   isOpen: boolean
@@ -86,7 +86,7 @@ const remarks = ref('')
 const submitting = ref(false)
 
 // 오늘 날짜를 기본값으로 설정
-const today = new Date().toISOString().split('T')[0]
+const today = getLocalDateString()
 
 // 금액 입력 포맷팅
 const onAmountInput = (event: Event) => {

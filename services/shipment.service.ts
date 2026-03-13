@@ -57,6 +57,8 @@ export interface ShipmentListItem {
   dispatchStatus?: string | null
   // 재고+발주 충족 여부 (true=출고가능, false=재고부족, null=판단불가)
   inventorySufficient?: boolean | null
+  // 접수된 발주서 존재 여부 (입고대기 표시용)
+  hasAcceptedPo?: boolean | null
 }
 
 export interface ShipmentDetail {
@@ -208,6 +210,8 @@ export interface ShipmentItemWithOrder {
   updatedBy?: string
   shipmentDetails?: any
   shipmentId?: number
+  remarks?: string                     // 비고
+  isNewItem?: boolean                  // 신규 추가 품목 여부
 }
 
 // 형제 출하 배송지 정보 (출고요청 프리필용)

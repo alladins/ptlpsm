@@ -274,6 +274,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from '#imports'
+import { getLocalDateString } from '~/utils/format'
 
 definePageMeta({
   layout: 'admin',
@@ -312,7 +313,7 @@ const uploadedPhotos = ref<Array<{url: string, file: File}>>([])
 
 // 현재 날짜
 const currentDate = computed(() => {
-  return new Date().toISOString().split('T')[0]
+  return getLocalDateString()
 })
 
 // 운송 완료 가능 여부

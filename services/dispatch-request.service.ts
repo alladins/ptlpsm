@@ -214,9 +214,12 @@ class DispatchRequestService {
    * @param shipmentId - 출하 ID
    * @returns 재고 현황 확인 결과
    */
-  async checkInventoryStatus(shipmentId: number): Promise<InventoryStatusResponse> {
-    const url = DISPATCH_REQUEST_ENDPOINTS.inventoryStatus(shipmentId)
-    console.log('[dispatch-request.service] 재고 현황 확인 요청:', { shipmentId, url })
+  async checkInventoryStatus(shipmentId: number, physicalOnly?: boolean): Promise<InventoryStatusResponse> {
+    let url = DISPATCH_REQUEST_ENDPOINTS.inventoryStatus(shipmentId)
+    if (physicalOnly) {
+      url += '?physicalOnly=true'
+    }
+    console.log('[dispatch-request.service] 재고 현황 확인 요청:', { shipmentId, physicalOnly, url })
 
     const response = await fetch(url, {
       method: 'GET',

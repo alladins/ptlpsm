@@ -135,7 +135,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { formatNumber } from '~/utils/format'
+import { formatNumber, formatDateTime } from '~/utils/format'
 import { baselineService } from '~/services/baseline.service'
 
 // Props
@@ -228,17 +228,6 @@ const loadData = async () => {
   }
 }
 
-const formatDateTime = (dateStr: string): string => {
-  if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  return date.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 
 const getDiffClass = (diff: number): string => {
   if (diff > 0) return 'text-success'

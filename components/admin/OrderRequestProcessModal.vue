@@ -184,6 +184,7 @@
     <!-- 납품요구 선택 팝업 -->
     <OrderSelectPopup
       v-if="showOrderSelectPopup"
+      :show="showOrderSelectPopup"
       @close="showOrderSelectPopup = false"
       @select="handleOrderSelect"
     />
@@ -255,7 +256,8 @@ const getUrgencyLabel = (urgency?: MobileOrderUrgency): string => {
   const labels: Record<MobileOrderUrgency, string> = {
     URGENT: '긴급',
     NORMAL: '보통',
-    LOW: '여유'
+    LOW: '여유',
+    FLEXIBLE: '여유'
   }
   return labels[urgency] || urgency
 }

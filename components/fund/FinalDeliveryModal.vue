@@ -16,16 +16,16 @@
         </div>
 
         <template v-else>
-          <!-- 청구 가능 출하 목록 -->
+          <!-- 납품완료 품목 목록 -->
           <div class="table-section">
             <div class="section-header">
-              <h4>미청구 출하 목록</h4>
-              <span class="shipment-count">총 {{ availableShipments.length }}건</span>
+              <h4>납품 품목 목록</h4>
+              <span class="shipment-count">총 {{ deliveryDone?.items?.length || 0 }}건</span>
             </div>
 
-            <div v-if="availableShipments.length === 0" class="empty-message">
+            <div v-if="!deliveryDone || !deliveryDone.items || deliveryDone.items.length === 0" class="empty-message">
               <i class="fas fa-inbox"></i>
-              <p>청구 가능한 출하가 없습니다.</p>
+              <p>납품완료계 데이터가 없습니다.</p>
               <span>납품확인이 완료된 출하가 있어야 납품완료 처리가 가능합니다.</span>
             </div>
 
@@ -33,66 +33,40 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th class="col-date">출하일</th>
-                    <th class="col-no">출하번호</th>
-                    <th class="col-item">품목</th>
-                    <th class="col-qty">수량</th>
+                    <th class="col-no">순번</th>
+                    <th class="col-item">품목명</th>
+                    <th class="col-spec">규격</th>
+                    <th class="col-unit">단위</th>
+                    <th class="col-qty">납품수량</th>
                     <th class="col-amount">금액</th>
-                    <th class="col-confirm">납품확인일</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="shipment in availableShipments" :key="shipment.shipmentId">
-                    <td class="text-center">{{ formatDate(shipment.shipmentDate) }}</td>
-                    <td class="text-center">{{ shipment.shipmentId }}</td>
-                    <td>{{ shipment.itemSummary || '-' }}</td>
-                    <td class="text-right">{{ formatNumber(shipment.totalQuantity) }}</td>
-                    <td class="text-right">{{ formatCurrency(shipment.totalAmount) }}</td>
-                    <td class="text-center">{{ formatDateTime(shipment.deliveryCompletedAt) }}</td>
+                  <tr v-for="item in deliveryDone.items" :key="item.itemId">
+                    <td class="text-center">{{ item.sequenceNumber }}</td>
+                    <td>{{ item.itemName }}</td>
+                    <td>{{ item.specification || '-' }}</td>
+                    <td class="text-center">{{ item.unit }}</td>
+                    <td class="text-right">{{ formatNumber(item.deliveredQuantity) }}</td>
+                    <td class="text-right">{{ formatCurrency(item.totalAmount) }}</td>
                   </tr>
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colspan="3" class="text-right"><strong>합계</strong></td>
+                    <td colspan="4" class="text-right"><strong>합계</strong></td>
                     <td class="text-right"><strong>{{ formatNumber(totalQuantity) }}</strong></td>
                     <td class="text-right"><strong>{{ formatCurrency(totalAmount) }}</strong></td>
-                    <td></td>
                   </tr>
                 </tfoot>
               </table>
             </div>
           </div>
 
-          <!-- 이전 기성 청구 이력 -->
-          <div v-if="previousBaselines.length > 0" class="history-section">
-            <h4>이전 청구 이력</h4>
-            <div class="history-list">
-              <div v-for="baseline in previousBaselines" :key="baseline.baselineId" class="history-item">
-                <span class="history-name">{{ baseline.displayName || `기성 ${baseline.baselineSeq}차` }}</span>
-                <span class="history-date">{{ formatDate(baseline.baselineDate) }}</span>
-                <span class="history-amount">{{ formatCurrency(baseline.totalAmount) }}</span>
-              </div>
-            </div>
-            <div class="history-total">
-              <span>기청구 합계</span>
-              <strong>{{ formatCurrency(previousTotalAmount) }}</strong>
-            </div>
-          </div>
-
-          <!-- 최종 금액 계산 -->
+          <!-- 납품완료 금액 -->
           <div class="calculation-result">
-            <div class="result-row">
-              <label>이번 청구 금액 (미청구 출하 합계)</label>
-              <span class="amount primary">{{ formatCurrency(totalAmount) }}</span>
-            </div>
-            <div class="result-row">
-              <label>기청구 금액</label>
-              <span class="amount">{{ formatCurrency(previousTotalAmount) }}</span>
-            </div>
-            <div class="divider"></div>
             <div class="result-row total">
-              <label>총 청구 금액</label>
-              <span class="amount success">{{ formatCurrency(grandTotalAmount) }}</span>
+              <label>납품완료 총 금액</label>
+              <span class="amount success">{{ formatCurrency(totalAmount) }}</span>
             </div>
           </div>
 
@@ -101,7 +75,7 @@
             <i class="fas fa-info-circle"></i>
             <div class="info-content">
               <strong>납품완료 처리 안내</strong>
-              <p>모든 미청구 출하가 납품완료 차수에 포함됩니다. 선택한 대상자에게 서명 URL이 발송되며, 양쪽 서명이 완료되면 납품완료가 자동 처리됩니다.</p>
+              <p>선택한 대상자에게 납품완료확인서 서명 URL이 발송됩니다. 양쪽 서명이 완료되면 납품완료가 자동 처리됩니다.</p>
             </div>
           </div>
 
@@ -120,8 +94,8 @@
                   <option value="">{{ isLoadingUsers ? '로딩 중...' : '선택하세요' }}</option>
                   <option
                     v-for="manager in siteManagerList"
-                    :key="manager.userid"
-                    :value="manager.userid"
+                    :key="manager.userId"
+                    :value="manager.userId"
                   >
                     {{ manager.userName }} ({{ manager.phone }})
                     <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
@@ -140,8 +114,8 @@
                   <option value="">{{ isLoadingUsers ? '로딩 중...' : '선택하세요' }}</option>
                   <option
                     v-for="inspector in inspectorList"
-                    :key="inspector.userid"
-                    :value="inspector.userid"
+                    :key="inspector.userId"
+                    :value="inspector.userId"
                   >
                     {{ inspector.userName }} ({{ inspector.phone }})
                     <template v-if="inspector.companyName"> - {{ inspector.companyName }}</template>
@@ -194,11 +168,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { formatCurrency, formatNumber, formatDate, formatDateTime } from '~/utils/format'
-import { useBaselineStore } from '~/stores/baseline'
-import { baselineService } from '~/services/baseline.service'
+import { formatCurrency, formatNumber } from '~/utils/format'
+import { getDeliveryDoneByOrderId, sendSignatureUrl } from '~/services/delivery-done.service'
 import { userService } from '~/services/user.service'
-import type { AvailableShipment, BaselineListItem, BaselineSignatureRecipient } from '~/types/baseline'
+import type { DeliveryDone, SignatureRecipient } from '~/types/delivery-done'
 import type { UserByRole } from '~/types/user'
 
 // Props
@@ -216,9 +189,6 @@ const emit = defineEmits<{
   (e: 'submitted'): void
 }>()
 
-// Stores
-const baselineStore = useBaselineStore()
-
 // State
 const isLoading = ref(false)
 const isLoadingUsers = ref(false)
@@ -232,46 +202,35 @@ const selectedInspectorId = ref<number | ''>('')
 const siteManagerList = ref<UserByRole[]>([])
 const inspectorList = ref<UserByRole[]>([])
 
-// 청구 가능 출하 목록
-const availableShipments = ref<AvailableShipment[]>([])
-
-// 이전 기성 차수 목록
-const previousBaselines = ref<BaselineListItem[]>([])
+// 납품완료계 데이터
+const deliveryDone = ref<DeliveryDone | null>(null)
 
 // 선택된 담당자 정보
 const selectedManagerInfo = computed(() => {
   if (!selectedSiteManagerId.value) return null
-  return siteManagerList.value.find(m => m.userid === selectedSiteManagerId.value) || null
+  return siteManagerList.value.find(m => m.userId === selectedSiteManagerId.value) || null
 })
 
 const selectedInspectorInfo = computed(() => {
   if (!selectedInspectorId.value) return null
-  return inspectorList.value.find(i => i.userid === selectedInspectorId.value) || null
+  return inspectorList.value.find(i => i.userId === selectedInspectorId.value) || null
 })
 
 // 합계 계산
 const totalQuantity = computed(() => {
-  return availableShipments.value.reduce((sum, s) => sum + (s.totalQuantity || 0), 0)
+  if (!deliveryDone.value?.items) return 0
+  return deliveryDone.value.items.reduce((sum, item) => sum + (item.deliveredQuantity || 0), 0)
 })
 
 const totalAmount = computed(() => {
-  return availableShipments.value.reduce((sum, s) => sum + (s.totalAmount || 0), 0)
-})
-
-// 이전 청구 합계
-const previousTotalAmount = computed(() => {
-  return previousBaselines.value.reduce((sum, b) => sum + (b.totalAmount || 0), 0)
-})
-
-// 총 청구 금액
-const grandTotalAmount = computed(() => {
-  return totalAmount.value + previousTotalAmount.value
+  if (!deliveryDone.value?.items) return 0
+  return deliveryDone.value.items.reduce((sum, item) => sum + (item.totalAmount || 0), 0)
 })
 
 // 유효성 검사
 const isValid = computed(() => {
-  // 청구할 출하가 있어야 함
-  if (availableShipments.value.length === 0) {
+  // 납품완료계 데이터가 있어야 함
+  if (!deliveryDone.value) {
     return false
   }
 
@@ -299,14 +258,9 @@ const loadData = async () => {
   isLoading.value = true
 
   try {
-    // 청구 가능 출하 목록 로드
-    await baselineStore.loadProgressPaymentDataV2(props.orderId)
-
-    // 청구 가능 출하 목록 설정
-    availableShipments.value = baselineStore.availableShipments
-
-    // 이전 기성 차수 목록 (PROGRESS 타입만)
-    previousBaselines.value = baselineStore.list.filter(b => b.baselineType === 'PROGRESS')
+    // 납품완료계 데이터 로드
+    const result = await getDeliveryDoneByOrderId(props.orderId)
+    deliveryDone.value = result
 
   } catch (error) {
     console.error('데이터 로드 실패:', error)
@@ -331,25 +285,22 @@ const loadUsers = async () => {
 }
 
 const submitFinalDelivery = async () => {
-  if (!isValid.value || isSubmitting.value) return
+  if (!isValid.value || isSubmitting.value || !deliveryDone.value) return
 
   // 추가 확인
-  if (!confirm('납품완료 처리를 진행하시겠습니까?\n\n선택한 대상자에게 서명 URL이 발송되며, 양쪽 서명 완료 시 납품완료가 자동 처리됩니다.')) {
+  if (!confirm('납품완료 처리를 진행하시겠습니까?\n\n선택한 대상자에게 납품완료확인서 서명 URL이 발송됩니다.')) {
     return
   }
 
   isSubmitting.value = true
 
   try {
-    // 모든 출하 선택
-    const allShipmentIds = availableShipments.value.map(s => s.shipmentId)
-
     // 수신자 배열 구성
-    const recipients: BaselineSignatureRecipient[] = []
+    const recipients: SignatureRecipient[] = []
     if (selectedManagerInfo.value) {
       recipients.push({
         recipientType: 'SITE_MANAGER',
-        recipientUserId: selectedManagerInfo.value.userid,
+        recipientUserId: selectedManagerInfo.value.userId,
         recipientName: selectedManagerInfo.value.userName,
         recipientPhone: selectedManagerInfo.value.phone.replace(/[^0-9]/g, '')
       })
@@ -357,24 +308,22 @@ const submitFinalDelivery = async () => {
     if (selectedInspectorInfo.value) {
       recipients.push({
         recipientType: 'SITE_INSPECTOR',
-        recipientUserId: selectedInspectorInfo.value.userid,
+        recipientUserId: selectedInspectorInfo.value.userId,
         recipientName: selectedInspectorInfo.value.userName,
         recipientPhone: selectedInspectorInfo.value.phone.replace(/[^0-9]/g, '')
       })
     }
 
-    // 통합 API 호출 (FINAL 차수 생성 + 서명 URL 발송)
-    await baselineService.createAndSendSignature({
-      orderId: props.orderId,
-      baselineType: 'FINAL',
-      shipmentIds: allShipmentIds,
-      remarks: remarks.value || undefined,
+    // 납품완료계 서명 URL 발송 (delivery-done API)
+    await sendSignatureUrl({
+      deliveryDoneId: deliveryDone.value.deliveryDoneId,
+      documentType: 'CONFIRMATION',
       recipients,
       messageType: 'LMS'
     })
 
     const names = recipients.map(r => r.recipientName).join(', ')
-    alert(`납품완료 차수가 생성되고 서명 URL이 ${names}님에게 발송되었습니다.`)
+    alert(`납품완료확인서 서명 URL이 ${names}님에게 발송되었습니다.`)
     emit('submitted')
     closeModal()
   } catch (error) {
@@ -388,8 +337,7 @@ const submitFinalDelivery = async () => {
 const resetForm = () => {
   confirmFinalDelivery.value = false
   remarks.value = ''
-  availableShipments.value = []
-  previousBaselines.value = []
+  deliveryDone.value = null
   selectedSiteManagerId.value = ''
   selectedInspectorId.value = ''
 }
@@ -585,81 +533,15 @@ watch(() => props.isOpen, (isOpen) => {
   font-weight: 600;
 }
 
-.col-date { width: 100px; }
-.col-no { width: 100px; }
+.col-no { width: 60px; }
 .col-item { min-width: 150px; }
-.col-qty { width: 80px; }
+.col-spec { min-width: 120px; }
+.col-unit { width: 60px; }
+.col-qty { width: 90px; }
 .col-amount { width: 120px; }
-.col-confirm { width: 100px; }
 
 .text-center { text-align: center; }
 .text-right { text-align: right; }
-
-/* 이력 섹션 */
-.history-section {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.history-section h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.history-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.history-item:last-child {
-  border-bottom: none;
-}
-
-.history-name {
-  font-weight: 500;
-  color: #374151;
-}
-
-.history-date {
-  font-size: 0.75rem;
-  color: #9ca3af;
-}
-
-.history-amount {
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.history-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #d1d5db;
-}
-
-.history-total span {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.history-total strong {
-  font-size: 1rem;
-  color: #1f2937;
-}
 
 /* 계산 결과 */
 .calculation-result {
@@ -688,10 +570,6 @@ watch(() => props.isOpen, (isOpen) => {
   color: #1f2937;
 }
 
-.result-row .amount.primary {
-  color: #059669;
-}
-
 .result-row .amount.success {
   color: #2563eb;
 }
@@ -702,12 +580,6 @@ watch(() => props.isOpen, (isOpen) => {
 
 .result-row.total label {
   font-weight: 600;
-}
-
-.divider {
-  height: 1px;
-  background: #d1fae5;
-  margin: 0.5rem 0;
 }
 
 /* 서명 대상자 선택 */

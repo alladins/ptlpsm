@@ -18,6 +18,7 @@
               v-model="searchParams.shipmentNo"
               class="form-input"
               placeholder="출하NO를 입력하세요"
+              @keyup.enter="search"
             >
             <button class="btn-primary" @click="search">
               <i class="fas fa-search"></i>
@@ -38,7 +39,7 @@
                 <th>출하NO</th>
                 <th>납품요구번호</th>
                 <th>수요기관</th>
-                <th>출하일자</th>
+                <th>출고일자</th>
                 <th>상태</th>
                 <th>재고</th>
                 <th>선택</th>
@@ -46,13 +47,13 @@
             </thead>
             <tbody>
               <tr v-if="shipments.length === 0">
-                <td colspan="7" class="empty-message">검색 결과가 없습니다.</td>
+                <td colspan="7" class="empty-message">{{ hasSearched ? '검색 결과가 없습니다.' : '출고 요청된 건이 없습니다.' }}</td>
               </tr>
               <tr v-for="shipment in shipments" :key="shipment.shipmentId">
                 <td>{{ shipment.shipmentNo }}</td>
                 <td>{{ shipment.deliveryRequestNo }}</td>
                 <td>{{ shipment.client }}</td>
-                <td>{{ formatDate(shipment.shipmentDate) }}</td>
+                <td>{{ formatDate(shipment.dispatchDate) }}</td>
                 <td>
                   <span :class="getStatusClass(shipment.status)">
                     {{ getStatusText(shipment.status) }}
@@ -62,8 +63,14 @@
                   <span v-if="inventoryStatusMap[shipment.shipmentId] === null" class="inventory-checking">
                     <i class="fas fa-spinner fa-spin"></i>
                   </span>
-                  <span v-else-if="inventoryStatusMap[shipment.shipmentId] === true" class="inventory-sufficient">
+                  <span v-else-if="inventoryStatusMap[shipment.shipmentId] === 'sufficient'" class="inventory-sufficient">
                     <i class="fas fa-check-circle"></i> 충족
+                  </span>
+                  <span v-else-if="inventoryStatusMap[shipment.shipmentId] === 'pending-inbound'" class="inventory-pending">
+                    <i class="fas fa-clock"></i> 입고대기
+                  </span>
+                  <span v-else-if="inventoryStatusMap[shipment.shipmentId] === 'unknown'" class="inventory-unknown">
+                    <i class="fas fa-question-circle"></i> 확인불가
                   </span>
                   <span v-else class="inventory-insufficient">
                     <i class="fas fa-times-circle"></i> 부족
@@ -73,8 +80,8 @@
                   <button
                     class="btn-success"
                     @click="selectShipment(shipment)"
-                    :disabled="inventoryStatusMap[shipment.shipmentId] === false"
-                    :title="inventoryStatusMap[shipment.shipmentId] === false ? '재고 부족으로 운송 등록이 불가합니다' : ''"
+                    :disabled="inventoryStatusMap[shipment.shipmentId] === 'insufficient' || inventoryStatusMap[shipment.shipmentId] === 'pending-inbound'"
+                    :title="inventoryStatusMap[shipment.shipmentId] === 'insufficient' ? '재고 부족으로 운송 등록이 불가합니다' : inventoryStatusMap[shipment.shipmentId] === 'pending-inbound' ? '입고 완료 후 운송 등록이 가능합니다' : ''"
                   >
                     선택
                   </button>
@@ -140,31 +147,39 @@ const { getStatusLabel } = useCommonStatus()
 const searchParams = ref({
   shipmentNo: '',
 })
+const hasSearched = ref(false)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const shipments = ref<ShipmentListItem[]>([])
 
-// 출하별 재고 상태 (shipmentId → canDispatch)
-// null = 확인 중, true = 충족, false = 부족
-const inventoryStatusMap = ref<Record<number, boolean | null>>({})
+// 출하별 재고 상태 (shipmentId → 상태)
+// null = 확인 중, 'sufficient' = 충족, 'insufficient' = 부족, 'pending-inbound' = 입고대기, 'unknown' = 확인불가
+type InventoryStatus = 'sufficient' | 'insufficient' | 'pending-inbound' | 'unknown' | null
+const inventoryStatusMap = ref<Record<number, InventoryStatus>>({})
 
-// 출하 목록의 재고 상태 일괄 확인
+// 출하 목록의 재고 상태 일괄 확인 (물리 재고 기준)
 const checkInventoryForShipments = async (shipmentList: ShipmentListItem[]) => {
   // 초기화: 모든 항목을 '확인 중' 상태로
   for (const s of shipmentList) {
     inventoryStatusMap.value[s.shipmentId] = null
   }
 
-  // 각 출하별 재고 확인 (병렬 처리)
+  // 각 출하별 재고 확인 (병렬 처리, 물리 재고만)
   await Promise.allSettled(
     shipmentList.map(async (s) => {
       try {
-        const result = await dispatchRequestService.checkInventoryStatus(s.shipmentId)
-        inventoryStatusMap.value[s.shipmentId] = result.canDispatch
+        const result = await dispatchRequestService.checkInventoryStatus(s.shipmentId, true)
+        if (result.canDispatch) {
+          inventoryStatusMap.value[s.shipmentId] = 'sufficient'
+        } else {
+          // 부족한 품목 중 입고대기(PO 발주 있음)인 것이 있는지 확인
+          const hasPendingInbound = result.items?.some(item => item.pendingInbound)
+          inventoryStatusMap.value[s.shipmentId] = hasPendingInbound ? 'pending-inbound' : 'insufficient'
+        }
       } catch (error) {
         console.error(`재고 확인 실패 (shipmentId=${s.shipmentId}):`, error)
-        // 확인 실패 시 선택 허용 (블로킹하지 않음)
-        inventoryStatusMap.value[s.shipmentId] = true
+        // 확인 실패 시 '확인불가'로 표시
+        inventoryStatusMap.value[s.shipmentId] = 'unknown'
       }
     })
   )
@@ -172,6 +187,7 @@ const checkInventoryForShipments = async (shipmentList: ShipmentListItem[]) => {
 
 // 검색
 const search = async () => {
+  hasSearched.value = true
   currentPage.value = 1
   await loadShipments()
 }
@@ -406,6 +422,16 @@ onMounted(() => {
 }
 .inventory-insufficient {
   color: #dc2626;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.inventory-pending {
+  color: #d97706;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.inventory-unknown {
+  color: #9ca3af;
   font-size: 0.8rem;
   font-weight: 500;
 }

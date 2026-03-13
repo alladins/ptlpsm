@@ -198,6 +198,24 @@ class OemCostService {
   }
 
   /**
+   * SKU 전체 OEM 변경 이력 조회 (oemCompanyId 없이)
+   */
+  async getHistoryBySku(skuId: string): Promise<OemCostHistory[]> {
+    const url = `${OEM_COST_ENDPOINTS.historyAll()}?skuId=${encodeURIComponent(skuId)}&size=100`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`SKU 이력 조회 실패: ${response.status}`)
+    }
+
+    const result = await response.json()
+    return result.content || result.data || result
+  }
+
+  /**
    * 특정 원가의 변경 이력 조회
    */
   async getHistoryById(id: number): Promise<OemCostHistory[]> {

@@ -6,7 +6,25 @@
       <p>서명 정보를 불러오는 중...</p>
     </div>
 
-    <!-- 에러 상태 -->
+    <!-- 에러 상태: 이미 완료 -->
+    <div v-else-if="errorType === 'completed'" class="completed-screen">
+      <i class="fas fa-check-circle"></i>
+      <h2>해당 작업은 이미 완료되었습니다.</h2>
+      <p>본인이 하신 것이 아니라면,<br>관리자에게 링크를 재요청해주세요.</p>
+      <button class="btn-close-page" @click="closePage">
+        <i class="fas fa-times"></i>
+        닫기
+      </button>
+    </div>
+
+    <!-- 에러 상태: 링크 만료 -->
+    <div v-else-if="errorType === 'expired'" class="error-screen">
+      <i class="fas fa-clock" style="color: #f59e0b;"></i>
+      <h2>서명 링크가 만료되었습니다.</h2>
+      <p>관리자에게 새 서명 링크를 요청해주세요.</p>
+    </div>
+
+    <!-- 에러 상태: 기타 오류 -->
     <div v-else-if="error" class="error-screen">
       <i class="fas fa-exclamation-triangle"></i>
       <h2>{{ error }}</h2>
@@ -200,6 +218,7 @@ const debugLog = (...args: any[]) => {
 // 상태 관리
 const loading = ref(true)
 const error = ref('')
+const errorType = ref<'completed' | 'expired' | 'error' | ''>('')
 const deliveryDoneInfo = ref<DeliveryDoneMobileInfo | null>(null)
 const isCompleted = ref(false)
 const completedAt = ref('')
@@ -213,10 +232,17 @@ const signatureRef = ref<InstanceType<typeof UiMobileSignatureCanvas> | null>(nu
 // 계산된 값
 const needsOtherSignature = computed(() => {
   if (!deliveryDoneInfo.value) return false
+
+  // Stage 2 (납품완료계): 감리원 1명만 서명 → 다른 서명 불필요
+  const isStage2 = deliveryDoneInfo.value.st1ManagerSignaturePath
+    && deliveryDoneInfo.value.st1InspectorSignaturePath
+  if (isStage2) return false
+
+  // Stage 1 (납품확인서): 현장소장 + 감리원 2인 서명
   if (deliveryDoneInfo.value.recipientType === 'SITE_MANAGER') {
-    return !deliveryDoneInfo.value.hasSupervisorSignature
+    return !deliveryDoneInfo.value.st1InspectorSignaturePath
   } else {
-    return !deliveryDoneInfo.value.hasContractorSignature
+    return !deliveryDoneInfo.value.st1ManagerSignaturePath
   }
 })
 
@@ -311,21 +337,23 @@ onMounted(async () => {
 
   try {
     console.log('🔵 [DEBUG] API 호출 시작: getDeliveryDoneByToken()')
-    deliveryDoneInfo.value = await getDeliveryDoneByToken(token)
+    const queryType = route.query.type as string | undefined
+    console.log('🔵 [DEBUG] URL 쿼리 파라미터 type:', queryType)
+    deliveryDoneInfo.value = await getDeliveryDoneByToken(token, queryType)
 
     console.log('✅ [DEBUG] API 응답 받음 - 전체 데이터:', deliveryDoneInfo.value)
 
     // recipientType fallback: 서버 응답에 없으면 URL 쿼리 파라미터에서 가져오기
     if (!deliveryDoneInfo.value.recipientType) {
       console.warn('⚠️ [DEBUG] recipientType이 서버 응답에 없음 - URL 쿼리 파라미터에서 추출 시도')
-      const queryType = route.query.type as RecipientType | undefined
-      console.log('🔵 [DEBUG] URL 쿼리 파라미터 type:', queryType)
+      const queryTypeAsRecipient = queryType as RecipientType | undefined
+      console.log('🔵 [DEBUG] URL 쿼리 파라미터 type (fallback):', queryTypeAsRecipient)
 
-      if (queryType === 'SITE_MANAGER' || queryType === 'SITE_INSPECTOR') {
-        deliveryDoneInfo.value.recipientType = queryType
+      if (queryTypeAsRecipient === 'SITE_MANAGER' || queryTypeAsRecipient === 'SITE_INSPECTOR') {
+        deliveryDoneInfo.value.recipientType = queryTypeAsRecipient
         console.log('✅ [DEBUG] recipientType 설정 완료 (from query):', deliveryDoneInfo.value.recipientType)
       } else {
-        console.error('❌ [DEBUG] 유효하지 않은 recipientType - 쿼리 파라미터:', queryType)
+        console.error('❌ [DEBUG] 유효하지 않은 recipientType - 쿼리 파라미터:', queryTypeAsRecipient)
       }
     } else {
       console.log('✅ [DEBUG] recipientType이 서버 응답에 포함됨:', deliveryDoneInfo.value.recipientType)
@@ -334,7 +362,7 @@ onMounted(async () => {
     // 요약 정보 필드 확인
     console.log('✅ [DEBUG] 요약 정보 필드:', {
       totalItemCount: deliveryDoneInfo.value?.totalItemCount,
-      totalOrderQuantity: deliveryDoneInfo.value?.totalOrderQuantity,
+      totalOrderQuantity: deliveryDoneInfo.value?.totalOrderedQuantity,
       totalDeliveredQuantity: deliveryDoneInfo.value?.totalDeliveredQuantity
     })
 
@@ -367,8 +395,19 @@ onMounted(async () => {
     console.error('❌ [DEBUG] 납품완료계 정보 로드 실패:', err)
     console.error('❌ [DEBUG] 에러 상세:', {
       message: err instanceof Error ? err.message : '알 수 없는 오류',
+      statusCode: (err as any)?.statusCode,
       stack: err instanceof Error ? err.stack : undefined
     })
+
+    // HTTP 상태코드 기반 에러 타입 분기
+    const statusCode = (err as any)?.statusCode
+    if (statusCode === 403) {
+      errorType.value = 'completed'
+    } else if (statusCode === 410) {
+      errorType.value = 'expired'
+    } else {
+      errorType.value = 'error'
+    }
     error.value = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다'
   } finally {
     console.log('🔵 [DEBUG] loading 상태 종료 - loading = false')

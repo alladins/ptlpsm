@@ -151,7 +151,7 @@
     <ErrorSection v-else-if="!poDetail && !loading" message="발주서 정보를 찾을 수 없습니다." />
 
     <!-- 발주서 상세 내용 -->
-    <div v-else class="content-section">
+    <div v-if="poDetail" class="content-section">
       <FormSection title="발주서 정보">
         <div class="po-info-grid">
           <!-- 발주서 번호 -->
@@ -313,15 +313,15 @@
                   <th style="width: 80px">SKU ID</th>
                   <th style="width: 100px">SKU 품명</th>
                   <th style="width: 100px">품목명</th>
-                  <th style="width: 65px">출하수량</th>
-                  <th style="width: 70px">추가수량</th>
-                  <th style="width: 65px">합계(m²)</th>
-                  <th style="width: 80px">단가</th>
-                  <th style="width: 100px">금액</th>
-                  <th style="width: 120px">생산완료</th>
-                  <th style="width: 70px">생산율</th>
-                  <th style="width: 80px">입고수량</th>
-                  <th style="width: 70px">비고</th>
+                  <th style="width: 70px" class="text-right">출하수량<br><small>(m²)</small></th>
+                  <th style="width: 75px" class="text-right">추가수량<br><small>(m²)</small></th>
+                  <th style="width: 70px" class="text-right">합계<br><small>(m²)</small></th>
+                  <th style="width: 80px" class="text-right">단가<br><small>(원)</small></th>
+                  <th style="width: 100px" class="text-right">금액<br><small>(원)</small></th>
+                  <th style="width: 100px" class="text-right">생산완료<br><small>(m²)</small></th>
+                  <th style="width: 70px" class="text-center">생산율</th>
+                  <th style="width: 80px" class="text-right">입고수량<br><small>(m²)</small></th>
+                  <th style="width: 70px" class="text-center">비고<br><small>(매)</small></th>
                   <th v-if="isEditMode" style="width: 50px">삭제</th>
                 </tr>
               </thead>
@@ -376,15 +376,7 @@
                     <td class="text-right">
                       <strong>{{ formatQuantity(item.quantity) }}</strong>
                     </td>
-                    <td class="text-right">
-                      <input
-                        type="number"
-                        v-model.number="item.unitPrice"
-                        :min="0"
-                        step="100"
-                        class="table-input text-right input-w75"
-                      />
-                    </td>
+                    <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
                     <td class="text-right">{{ formatCurrency((item.quantity || 0) * (item.unitPrice || 0)) }}</td>
                     <td class="text-right">{{ formatQuantity(item.producedQuantity || 0) }}</td>
                     <td class="text-center" :class="getProductionRateClass(item.producedQuantity, item.quantity)">
@@ -433,7 +425,7 @@
                           :max="item.quantity"
                           step="1"
                           class="table-input text-right"
-                          style="width: 100px"
+                          style="width: 80px"
                         />
                         <span class="produce-current">/ {{ formatQuantity(item.quantity) }}</span>
                       </div>
@@ -519,6 +511,56 @@
             </button>
           </div>
           <div class="modal-body">
+            <!-- 반려 영향 분석 결과 -->
+            <div v-if="rejectImpactLoading" class="reject-impact-loading">
+              <i class="fas fa-spinner fa-spin"></i> 영향 분석 중...
+            </div>
+            <div v-else-if="rejectImpact && rejectImpact.affectedShipments.length > 0" class="reject-impact-warning">
+              <div class="impact-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>이 발주서를 반려하면 다음 출하에 영향을 줍니다:</span>
+              </div>
+
+              <!-- 직접 연결된 출하 -->
+              <template v-if="rejectImpact.affectedShipments.filter(s => s.directlyLinked).length > 0">
+                <div class="impact-section-label">직접 연결된 출하</div>
+                <ul class="impact-list">
+                  <li v-for="shipment in rejectImpact.affectedShipments.filter(s => s.directlyLinked)" :key="shipment.shipmentId">
+                    <span class="shipment-no">{{ shipment.shipmentNo }}</span>
+                    <template v-if="shipment.willCancelDispatch">
+                      <span class="impact-action cancel">(출고요청중) → 출고요청이 취소됩니다</span>
+                    </template>
+                    <template v-else-if="shipment.dispatchStatus">
+                      <span class="impact-action warning">({{ shipment.dispatchStatus }}) → 상태 초기화됩니다</span>
+                    </template>
+                    <template v-else>
+                      <span class="impact-action info">→ 재고부족 상태로 변경됩니다</span>
+                    </template>
+                  </li>
+                </ul>
+              </template>
+
+              <!-- 간접 영향 출하 (같은 OEM + SKU) -->
+              <template v-if="rejectImpact.affectedShipments.filter(s => !s.directlyLinked).length > 0">
+                <div class="impact-section-label indirect">같은 OEM/품목의 영향받는 출하</div>
+                <ul class="impact-list">
+                  <li v-for="shipment in rejectImpact.affectedShipments.filter(s => !s.directlyLinked)" :key="shipment.shipmentId">
+                    <span class="shipment-no">{{ shipment.shipmentNo }}</span>
+                    <template v-if="shipment.dispatchStatus === 'REQUESTED'">
+                      <span class="impact-action warning">(출고요청중) → 재고부족으로 변경될 수 있습니다</span>
+                    </template>
+                    <template v-else>
+                      <span class="impact-action info">→ 재고부족 상태로 변경될 수 있습니다</span>
+                    </template>
+                  </li>
+                </ul>
+              </template>
+
+              <div class="impact-summary">
+                반려 후 관련 출하는 "재고부족" 상태로 변경됩니다.
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label">반려 사유 <span class="required">*</span></label>
               <textarea
@@ -571,7 +613,8 @@ import type {
   PurchaseOrderItem,
   PurchaseOrderStatus,
   PurchaseOrderUpdateRequest,
-  ProduceCompleteRequest
+  ProduceCompleteRequest,
+  RejectImpactResponse
 } from '~/types/purchase-order'
 import { PO_STATUS_LABELS, PO_STATUS_COLORS } from '~/types/purchase-order'
 import type { CompanyInfoResponse } from '~/types/company'
@@ -618,6 +661,8 @@ const pdfDownloading = ref(false)
 // 반려 모달
 const showRejectModal = ref(false)
 const rejectReason = ref('')
+const rejectImpact = ref<RejectImpactResponse | null>(null)
+const rejectImpactLoading = ref(false)
 
 // 수정 폼 데이터 (품목 확장)
 interface EditItemRow {
@@ -877,7 +922,19 @@ const handleSaveEdit = async () => {
 
 // 발주서 삭제
 const handleDelete = async () => {
-  if (!confirm('정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return
+  // 연관 출하 영향 확인
+  let confirmMsg = '정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'
+  try {
+    const impact = await purchaseOrderService.getRejectImpact(poId.value)
+    if (impact.affectedShipments.length > 0) {
+      const shipmentNos = impact.affectedShipments.map(s => s.shipmentNo).join(', ')
+      confirmMsg = `이 발주서에 연결된 출하가 있습니다: ${shipmentNos}\n\n삭제하면 출하 연결이 해제됩니다. 정말 삭제하시겠습니까?`
+    }
+  } catch (error) {
+    console.error('삭제 영향 분석 실패:', error)
+  }
+
+  if (!confirm(confirmMsg)) return
 
   submitting.value = true
   try {
@@ -927,14 +984,26 @@ const handleAccept = async () => {
 }
 
 // 반려 모달 열기/닫기
-const openRejectModal = () => {
+const openRejectModal = async () => {
   rejectReason.value = ''
+  rejectImpact.value = null
   showRejectModal.value = true
+
+  // 반려 영향 분석 호출
+  rejectImpactLoading.value = true
+  try {
+    rejectImpact.value = await purchaseOrderService.getRejectImpact(poId.value)
+  } catch (error) {
+    console.error('반려 영향 분석 실패:', error)
+  } finally {
+    rejectImpactLoading.value = false
+  }
 }
 
 const closeRejectModal = () => {
   showRejectModal.value = false
   rejectReason.value = ''
+  rejectImpact.value = null
 }
 
 // 발주서 반려
@@ -1484,6 +1553,96 @@ onMounted(() => {
   margin-bottom: 0;
 }
 
+/* 반려 영향 분석 */
+.reject-impact-loading {
+  text-align: center;
+  padding: 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.reject-impact-warning {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.impact-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.impact-header i {
+  color: #f59e0b;
+}
+
+.impact-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.impact-list li {
+  padding: 0.375rem 0;
+  font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.impact-list li:last-child {
+  border-bottom: none;
+}
+
+.shipment-no {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.impact-section-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  padding-left: 0.25rem;
+}
+
+.impact-section-label.indirect {
+  color: #92400e;
+  margin-top: 0.75rem;
+}
+
+.impact-action.cancel {
+  color: #dc2626;
+  font-size: 0.8125rem;
+}
+
+.impact-action.warning {
+  color: #92400e;
+  font-size: 0.8125rem;
+}
+
+.impact-action.info {
+  color: #2563eb;
+  font-size: 0.8125rem;
+}
+
+.impact-summary {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: #92400e;
+  font-weight: 500;
+}
+
 .modal-body .form-label {
   display: block;
   font-size: 0.875rem;
@@ -1509,6 +1668,13 @@ onMounted(() => {
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid #e5e7eb;
+}
+
+/* 품목 테이블 헤더 단위 표시 */
+.items-table thead th small {
+  font-weight: 400;
+  color: #6b7280;
+  font-size: 0.7rem;
 }
 
 /* 반응형 */

@@ -13,7 +13,8 @@ import type {
   PurchaseOrderCreateRequest,
   PurchaseOrderUpdateRequest,
   PurchaseOrderListFilter,
-  ProduceCompleteRequest
+  ProduceCompleteRequest,
+  RejectImpactResponse
 } from '~/types/purchase-order'
 
 /**
@@ -339,6 +340,39 @@ class PurchaseOrderService {
       return data
     } catch (error) {
       console.error('[purchase-order.service] acceptPurchaseOrder 에러:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 발주서 반려 영향 분석
+   * @param poId - 발주서 ID
+   * @returns 영향받는 출하 목록 및 취소 대상 출고요청 건수
+   */
+  async getRejectImpact(poId: number): Promise<RejectImpactResponse> {
+    try {
+      const url = PURCHASE_ORDER_ENDPOINTS.rejectImpact(poId)
+      console.log('[purchase-order.service] 반려 영향 분석 요청:', { url, poId })
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          ...getAuthHeaders(),
+          'Accept': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[purchase-order.service] 반려 영향 분석 실패:', { status: response.status, error: errorText })
+        throw new Error(`반려 영향 분석 실패: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      console.log('[purchase-order.service] 반려 영향 분석 성공:', data)
+      return data
+    } catch (error) {
+      console.error('[purchase-order.service] getRejectImpact 에러:', error)
       throw error
     }
   }

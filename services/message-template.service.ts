@@ -115,6 +115,24 @@ export async function getMessageTemplate(id: number): Promise<MessageTemplate> {
 }
 
 /**
+ * 메시지 템플릿 코드로 조회
+ */
+export async function getMessageTemplateByCode(code: string): Promise<MessageTemplate> {
+  const url = MESSAGE_TEMPLATE_ENDPOINTS.byCode(code)
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch template by code: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  return transformTemplate(data)
+}
+
+/**
  * 메시지 템플릿 등록
  */
 export async function createMessageTemplate(

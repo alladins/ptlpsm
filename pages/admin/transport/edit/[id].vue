@@ -101,39 +101,34 @@
                 disabled
               >
                 <option value="">현장소장을 선택하세요</option>
-                <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
+                <option v-for="manager in siteManagers" :key="manager.userId" :value="manager.userId">
                   {{ manager.userName }} ({{ manager.companyName || '회사 정보 없음' }})
                 </option>
               </select>
             </FormField>
-            <FormField label="현장 인수자">
-              <div class="input-with-select">
-                <select
-                  v-model="selectedReceiverId"
-                  class="form-input-sm"
-                  disabled
-                >
-                  <option value="direct">직접 입력</option>
-                  <option v-for="manager in siteManagers" :key="manager.userid" :value="manager.userid">
-                    {{ manager.userName }}
-                  </option>
-                </select>
-                <input
-                  type="text"
-                  v-model="formData.receiverName"
-                  class="form-input-md"
-                  placeholder="인수자명을 입력하세요"
-                  disabled
-                  readonly
-                >
-              </div>
+            <FormField label="건설사">
+              <input
+                type="text"
+                v-model="constructionCompany"
+                class="form-input-md readonly-field"
+                placeholder=""
+                readonly
+              >
+            </FormField>
+            <FormField label="인수자명">
+              <input
+                type="text"
+                v-model="formData.receiverName"
+                class="form-input-md"
+                disabled
+                readonly
+              >
             </FormField>
             <FormField label="인수자 연락처">
               <input
                 type="tel"
                 v-model="formData.receiverPhone"
                 class="form-input-md"
-                placeholder="010-0000-0000"
                 disabled
                 readonly
               >
@@ -279,6 +274,7 @@
             <FormField label="배차/출차 시각">
               <VueDatePicker
                 v-model="formData.dispatchAt"
+                model-type="yyyy-MM-dd'T'HH:mm"
                 :enable-time-picker="true"
                 :format="'yyyy-MM-dd HH:mm'"
                 locale="ko"
@@ -290,11 +286,13 @@
                 :disabled="!isSavableStatus"
                 :clearable="false"
                 :min-date="minDispatchDate"
+                @update:model-value="onDispatchAtChange"
               />
             </FormField>
             <FormField label="도착 예정 시각">
               <VueDatePicker
                 v-model="formData.expectedArrival"
+                model-type="yyyy-MM-dd'T'HH:mm"
                 :enable-time-picker="true"
                 :format="'yyyy-MM-dd HH:mm'"
                 locale="ko"
@@ -408,6 +406,13 @@
     </div>
   </div>
 
+<!-- 메시지 발송 결과 모달 -->
+<MessageResultModal
+  :show="showMessageResultModal"
+  :result-info="messageResultInfo"
+  @close="closeMessageResultModal"
+/>
+
 <!-- 운송장 PDF 미리보기 모달 -->
 <PdfPreviewModal
   :pdf-url="transportPdfUrl"
@@ -434,7 +439,10 @@ import { getApiBaseUrl } from '~/services/api'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import { usePermission } from '~/composables/usePermission'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
-import { formatPhoneNumberInput, formatPhoneNumber, formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
+import MessageResultModal from '~/components/admin/transport/MessageResultModal.vue'
+import type { MessageResultInfo } from '~/components/admin/transport/MessageResultModal.vue'
+import { formatPhoneNumberInput, formatPhoneNumber, formatNumber, formatCurrency, formatQuantity, toUtcIsoString, utcToKstDateTimeLocal, utcToKstDateString } from '~/utils/format'
+import { syncDatesOnDeliveryDateChange, adjustExpectedArrivalOnDispatchChange } from '~/utils/transport-date'
 import { validatePhoneNumber } from '~/utils/validate'
 
 
@@ -453,6 +461,16 @@ const { canEdit: hasEditPermission, canDelete: hasDeletePermission } = usePermis
 // 상태 관리 (DB 기반)
 const { getStatusLabel } = useCommonStatus()
 
+// 메시지 발송 결과 모달
+const showMessageResultModal = ref(false)
+const messageResultInfo = ref<MessageResultInfo | null>(null)
+
+// 메시지 결과 모달 닫기
+const closeMessageResultModal = () => {
+  showMessageResultModal.value = false
+  messageResultInfo.value = null
+}
+
 // 운송장 PDF 미리보기 모달
 const showTransportPdfModal = ref(false)
 const transportPdfUrl = ref<string>('')
@@ -467,6 +485,13 @@ const siteManagers = ref<UserByRole[]>([])  // SITE_MANAGER (현장소장/현장
 // 선택된 사용자 ID
 const selectedSupervisorId = ref<number | ''>('')  // 현장소장
 const selectedReceiverId = ref<number | 'direct'>('direct')    // 현장 인수자 ('direct' = 직접입력)
+
+// 건설사 (현장소장의 소속 회사)
+const constructionCompany = computed(() => {
+  if (!selectedSupervisorId.value) return ''
+  const manager = siteManagers.value.find(m => m.userId === selectedSupervisorId.value)
+  return manager?.companyName || ''
+})
 
 // 품목 리스트 (읽기전용)
 const items = ref<ShipmentItemWithOrder[]>([])
@@ -580,11 +605,11 @@ const searchAddress = () => {
 // 현장소장 선택 시 인수자 기본값 자동 입력
 const handleSupervisorChange = () => {
   if (selectedSupervisorId.value) {
-    const supervisor = siteManagers.value.find(m => m.userid === selectedSupervisorId.value)
+    const supervisor = siteManagers.value.find(m => m.userId === selectedSupervisorId.value)
     if (supervisor) {
       // 인수자가 비어있으면 현장소장으로 기본값 설정
       if (!formData.value.receiverName) {
-        selectedReceiverId.value = supervisor.userid
+        selectedReceiverId.value = supervisor.userId
         formData.value.receiverName = supervisor.userName
         formData.value.receiverPhone = formatPhoneNumber(supervisor.phone || '')
       }
@@ -600,7 +625,7 @@ const handleReceiverChange = () => {
     formData.value.receiverPhone = ''
   } else {
     // 현장소장 선택 시 자동 입력
-    const receiver = siteManagers.value.find(m => m.userid === selectedReceiverId.value)
+    const receiver = siteManagers.value.find(m => m.userId === selectedReceiverId.value)
     if (receiver) {
       formData.value.receiverName = receiver.userName
       formData.value.receiverPhone = formatPhoneNumber(receiver.phone || '')
@@ -630,27 +655,20 @@ const minExpectedArrivalDate = computed(() => {
 
 // 배송 예정일 변경 시 배차/출차 시각, 도착 예정 시각의 날짜도 함께 변경
 const onDeliveryDateChange = () => {
-  const newDate = formData.value.deliveryDate
-  if (!newDate) return
+  const result = syncDatesOnDeliveryDateChange(
+    formData.value.deliveryDate,
+    formData.value.dispatchAt,
+    formData.value.expectedArrival
+  )
+  if (result.dispatchAt) formData.value.dispatchAt = result.dispatchAt
+  if (result.expectedArrival) formData.value.expectedArrival = result.expectedArrival
+}
 
-  // 배차/출차 시각의 날짜 부분만 변경 (시간은 유지)
-  if (formData.value.dispatchAt) {
-    const dispatchTime = new Date(formData.value.dispatchAt)
-    const [year, month, day] = newDate.split('-').map(Number)
-    dispatchTime.setFullYear(year, month - 1, day)
-    const hours = String(dispatchTime.getHours()).padStart(2, '0')
-    const minutes = String(dispatchTime.getMinutes()).padStart(2, '0')
-    formData.value.dispatchAt = `${newDate}T${hours}:${minutes}`
-  }
-
-  // 도착 예정 시각의 날짜 부분만 변경 (시간은 유지)
-  if (formData.value.expectedArrival) {
-    const expectedTime = new Date(formData.value.expectedArrival)
-    const [year, month, day] = newDate.split('-').map(Number)
-    expectedTime.setFullYear(year, month - 1, day)
-    const hours = String(expectedTime.getHours()).padStart(2, '0')
-    const minutes = String(expectedTime.getMinutes()).padStart(2, '0')
-    formData.value.expectedArrival = `${newDate}T${hours}:${minutes}`
+// 배차/출차 시각 변경 시 도착 예정 시각 자동 조정
+const onDispatchAtChange = (newValue: string | Date | null) => {
+  const adjusted = adjustExpectedArrivalOnDispatchChange(newValue, formData.value.expectedArrival)
+  if (adjusted) {
+    formData.value.expectedArrival = adjusted
   }
 }
 
@@ -695,7 +713,7 @@ onMounted(async () => {
       projectName: shipmentDetail?.projectName || '',
       clientName: shipmentDetail?.client || '',
       vehicleNo: transportDetail.vehicleNo || '',
-      deliveryDate: transportDetail.deliveryDate?.split('T')[0] || '',
+      deliveryDate: utcToKstDateString(transportDetail.deliveryDate) || '',
       zipcode: transportDetail.zipcode || '',
       deliveryAddress: transportDetail.deliveryAddress || '',
       addressDetail: transportDetail.addressDetail || '',
@@ -704,8 +722,8 @@ onMounted(async () => {
       carrierName: transportDetail.carrierName || '',
       driverName: transportDetail.driverName || '',
       driverPhone: formatPhoneNumber(transportDetail.driverPhone || ''),
-      dispatchAt: transportDetail.dispatchAt?.slice(0, 16) || '',
-      expectedArrival: transportDetail.expectedArrival?.slice(0, 16) || '',
+      dispatchAt: utcToKstDateTimeLocal(transportDetail.dispatchAt) || '',
+      expectedArrival: utcToKstDateTimeLocal(transportDetail.expectedArrival) || '',
       deliveryMemo: transportDetail.deliveryMemo || '',
       status: transportDetail.status || 'PENDING',
       trackingNumber: transportDetail.trackingNumber || ''
@@ -713,15 +731,15 @@ onMounted(async () => {
 
     // 현장소장 셀렉트 박스 매핑 (운송 상세에서 siteManagerId 우선 사용)
     if (transportDetail.siteManagerId) {
-      const matchedManager = siteManagers.value.find(m => m.userid === transportDetail.siteManagerId)
+      const matchedManager = siteManagers.value.find(m => m.userId === transportDetail.siteManagerId)
       if (matchedManager) {
-        selectedSupervisorId.value = matchedManager.userid
+        selectedSupervisorId.value = matchedManager.userId
       }
     } else if (shipmentDetail?.siteManagerId) {
       // 운송에 없으면 출하 상세에서 가져오기
-      const matchedManager = siteManagers.value.find(m => m.userid === shipmentDetail.siteManagerId)
+      const matchedManager = siteManagers.value.find(m => m.userId === shipmentDetail.siteManagerId)
       if (matchedManager) {
-        selectedSupervisorId.value = matchedManager.userid
+        selectedSupervisorId.value = matchedManager.userId
       }
     }
 
@@ -730,7 +748,7 @@ onMounted(async () => {
       const matchedByName = siteManagers.value.find(m => m.userName === formData.value.receiverName)
       if (matchedByName) {
         // 현장소장 목록에 있으면 해당 ID 선택
-        selectedReceiverId.value = matchedByName.userid
+        selectedReceiverId.value = matchedByName.userId
       } else {
         // 현장소장 목록에 없으면 직접 입력으로 설정
         selectedReceiverId.value = 'direct'
@@ -812,8 +830,8 @@ const saveTransport = async () => {
       vehicleNo: formData.value.vehicleNo,
       driverName: formData.value.driverName,
       driverPhone: formData.value.driverPhone,
-      dispatchAt: formData.value.dispatchAt,
-      expectedArrival: formData.value.expectedArrival,
+      dispatchAt: toUtcIsoString(formData.value.dispatchAt),
+      expectedArrival: toUtcIsoString(formData.value.expectedArrival),
       status: formData.value.status
     }
 
@@ -922,28 +940,13 @@ const sendMessageToDriver = async () => {
 
     console.log('메시지 발송 결과:', result)
 
-    // 중복 여부에 따라 다른 메시지 표시
-    const messagePrefix = result.messageAlreadySent
-      ? `이미 메시지가 발송되었습니다.\n(발송 시각: ${result.messageSentAt ? new Date(result.messageSentAt).toLocaleString('ko-KR') : '알 수 없음'})\n\n기존 URL을 재사용합니다.`
-      : `메시지가 발송되었습니다.`
-
-    const copyUrl = confirm(
-      `${messagePrefix}\n\n` +
-      `아래 URL을 기사에게 전달해주세요:\n` +
-      `${result.mobileUrl}\n\n` +
-      `만료 시간: ${new Date(result.tokenExpiresAt).toLocaleString('ko-KR')}\n\n` +
-      `URL을 클립보드에 복사하시겠습니까?`
-    )
-
-    if (copyUrl) {
-      // 클립보드에 URL 복사
-      try {
-        await navigator.clipboard.writeText(result.mobileUrl)
-        alert('URL이 클립보드에 복사되었습니다.')
-      } catch (err) {
-        // 클립보드 API 실패 시 수동 복사
-        prompt('아래 URL을 복사하세요:', result.mobileUrl)
-      }
+    // 결과 모달 표시
+    showMessageResultModal.value = true
+    messageResultInfo.value = {
+      type: result.messageAlreadySent ? 'duplicate' : 'success',
+      mobileUrl: result.mobileUrl,
+      tokenExpiresAt: result.tokenExpiresAt,
+      messageSentAt: result.messageSentAt
     }
   } catch (error) {
     console.error('메시지 전송 실패:', error)
@@ -1213,5 +1216,12 @@ const sendMessageToDriver = async () => {
 
 .input-with-select input {
   flex: 1;
+}
+
+/* 읽기 전용 필드 스타일 */
+.readonly-field {
+  background-color: #f9fafb !important;
+  color: #6b7280;
+  cursor: default;
 }
 </style>

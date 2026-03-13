@@ -2,33 +2,39 @@
  * 납품 관련 유틸리티 함수
  */
 
+import { getLocalDateString } from '~/utils/format'
+
 /**
  * 긴급도 타입 정의
  */
 export type DeliveryUrgency = 'overdue' | 'urgent' | 'upcoming' | 'normal'
 
 /**
- * 두 날짜 사이의 일수 계산
+ * 두 날짜 사이의 일수 계산 (날짜 문자열 기준, UTC 안전)
+ * @param dateStr1 YYYY-MM-DD 형식
+ * @param dateStr2 YYYY-MM-DD 형식
  */
-function daysBetween(date1: Date, date2: Date): number {
+function daysBetweenDateStrings(dateStr1: string, dateStr2: string): number {
   const oneDay = 24 * 60 * 60 * 1000
-  return Math.round((date2.getTime() - date1.getTime()) / oneDay)
+  // YYYY-MM-DD를 UTC 자정으로 파싱 (두 날짜 모두 동일 기준이므로 시간대 편차 없음)
+  const d1 = new Date(dateStr1 + 'T00:00:00Z').getTime()
+  const d2 = new Date(dateStr2 + 'T00:00:00Z').getTime()
+  return Math.round((d2 - d1) / oneDay)
 }
 
 /**
  * 납품기한 기준 긴급도 계산
- * @param deadline 납품기한 (YYYY-MM-DD 형식)
+ * @param deadline 납품기한 (YYYY-MM-DD 형식, UTC 기준)
  * @returns DeliveryUrgency
  */
 export function getDeadlineUrgency(deadline: string): DeliveryUrgency {
   try {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    // KST 기준 오늘 날짜 문자열 (YYYY-MM-DD)
+    const todayStr = getLocalDateString()
+    // deadline이 UTC 날짜 문자열인 경우 그대로 비교 (YYYY-MM-DD)
+    const deadlineStr = deadline.split('T')[0]
 
-    const deadlineDate = new Date(deadline)
-    deadlineDate.setHours(0, 0, 0, 0)
-
-    const daysUntil = daysBetween(today, deadlineDate)
+    const daysUntil = daysBetweenDateStrings(todayStr, deadlineStr)
 
     if (daysUntil < 0) return 'overdue'      // 마감 초과
     if (daysUntil <= 7) return 'urgent'      // 7일 이내
@@ -42,18 +48,16 @@ export function getDeadlineUrgency(deadline: string): DeliveryUrgency {
 
 /**
  * 긴급도에 따른 D-day 뱃지 텍스트 생성
- * @param deadline 납품기한 (YYYY-MM-DD 형식)
+ * @param deadline 납품기한 (YYYY-MM-DD 형식, UTC 기준)
  * @returns D-day 텍스트 (예: "D-5", "D+3")
  */
 export function getUrgencyBadge(deadline: string): string {
   try {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    // KST 기준 오늘 날짜 문자열 (YYYY-MM-DD)
+    const todayStr = getLocalDateString()
+    const deadlineStr = deadline.split('T')[0]
 
-    const deadlineDate = new Date(deadline)
-    deadlineDate.setHours(0, 0, 0, 0)
-
-    const daysUntil = daysBetween(today, deadlineDate)
+    const daysUntil = daysBetweenDateStrings(todayStr, deadlineStr)
 
     if (daysUntil === 0) return 'D-Day'
     if (daysUntil < 0) return `D+${Math.abs(daysUntil)}`

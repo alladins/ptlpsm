@@ -10,7 +10,7 @@ interface LoginResponse {
   success: boolean
   data: {
     userInfo: {
-      userid: number       // PK (숫자)
+      userId: number       // PK (숫자)
       loginId: string      // 로그인 ID (문자열)
       userName: string
       email: string
@@ -90,17 +90,17 @@ class AuthService {
 
   /**
    * 로그아웃
-   * @param userid 사용자 ID (숫자)
+   * @param userId 사용자 ID (숫자)
    * @param loginId 로그인 ID (문자열)
    * @param token 액세스 토큰
    */
-  async logout(userid: number, loginId: string, token: string): Promise<void> {
+  async logout(userId: number, loginId: string, token: string): Promise<void> {
     try {
       const response = await fetch(`${getApiBaseUrl()}/auth/logout`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          userid: userid,
+          userId: userId,
           loginId: loginId
         })
       })

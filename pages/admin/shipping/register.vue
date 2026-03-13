@@ -12,8 +12,8 @@
         <button
           class="btn-action btn-primary"
           @click="handleSubmit"
-          :disabled="submitting || !canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          :disabled="submitting || !canWrite || isOemManager"
+          :title="isOemManager ? 'OEM 제조사 담당자는 출하를 등록할 수 없습니다' : (!canWrite ? '등록 권한이 없습니다' : '')"
         >
           <i class="fas fa-save"></i>
           {{ submitting ? '저장 중...' : '저장' }}
@@ -206,8 +206,8 @@
                       <option :value="null">{{ loadingSiteManagers ? '로딩 중...' : '선택하세요' }}</option>
                       <option
                         v-for="manager in siteManagers"
-                        :key="manager.userid"
-                        :value="manager.userid"
+                        :key="manager.userId"
+                        :value="manager.userId"
                       >
                         {{ manager.userName }} ({{ manager.phone }})
                         <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
@@ -308,7 +308,7 @@
                         >{{ badge.label }}</span>
                       </template>
                       <template v-else>
-                        {{ item.shippingQuantity > 0 ? `${formatQuantity(item.shippingQuantity)} m²` : '-' }}
+                        {{ item.shippingQuantity > 0 ? `${formatQuantity(Math.round(item.shippingQuantity / 2))} 매` : '-' }}
                       </template>
                     </td>
                     <td class="text-center">
@@ -359,7 +359,7 @@
                         >{{ badge.label }}</span>
                       </template>
                       <template v-else>
-                        {{ item.shippingQuantity > 0 ? `${formatQuantity(item.shippingQuantity)} m²` : '-' }}
+                        {{ item.shippingQuantity > 0 ? `${formatQuantity(Math.round(item.shippingQuantity / 2))} 매` : '-' }}
                       </template>
                     </td>
                     <td class="text-center">
@@ -433,7 +433,7 @@ import ItemMergeSelectModal from '~/components/shipment/ItemMergeSelectModal.vue
 import type { OrderDetailResponse } from '~/types/order'
 import type { Item, ItemSku } from '~/services/item.service'
 import { shipmentService } from '~/services/shipment.service'
-import { formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
+import { formatNumber, formatCurrency, formatQuantity, getLocalDateString } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { usePermission } from '~/composables/usePermission'
@@ -449,7 +449,7 @@ definePageMeta({
 const router = useRouter()
 
 // 권한
-const { canWrite } = usePermission()
+const { canWrite, isOemManager } = usePermission()
 
 // OEM 제조사 + 현장담당자 공통 데이터 (composable)
 const {
@@ -933,7 +933,7 @@ const {
     clientNo: '',
     projectName: '',
     clientManagerName: '',
-    shippingDate: new Date().toISOString().split('T')[0],
+    shippingDate: getLocalDateString(),
     status: 'PENDING',
     // OEM 및 배송지 정보 (신규)
     oemCompanyId: null as number | null,

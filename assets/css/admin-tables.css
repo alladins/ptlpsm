@@ -92,34 +92,14 @@
 /* ========== Address Text with Truncation ========== */
 
 .address-text {
+  display: inline-block;
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: help;
-  position: relative;
+  vertical-align: middle;
 }
 
-.address-text:hover {
-  color: var(--primary-500);
-}
-
-/* Tooltip on hover (optional) */
-.address-text[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  background: var(--gray-800);
-  color: white;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  white-space: normal;
-  max-width: 300px;
-  z-index: 10;
-  box-shadow: var(--shadow-md);
-}
 
 /* ========== Organization Info Display (sales/list) ========== */
 

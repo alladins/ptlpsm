@@ -47,7 +47,7 @@
           <div v-else class="items-list">
             <div 
               v-for="item in items" 
-              :key="item.id" 
+              :key="item.itemId"
               class="item-card"
               @click="selectItem(item)"
             >
@@ -72,7 +72,7 @@
                 <!-- SKU 데이터 행 -->              
                 <div
                   v-for="sku in item.itemSkus"
-                  :key="sku.id"
+                  :key="sku.skuId"
                   class="sku-item"
                   @click.stop="selectSku(item, sku)"
                 > 

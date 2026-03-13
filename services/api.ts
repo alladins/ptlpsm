@@ -1,19 +1,23 @@
 // API 환경 설정 서비스
 // 환경별 설정
+// 배포 환경(dev/prod)에서는 nginx 프록시(/api)를 통해 요청 (Mixed Content 방지)
+// 로컬 환경에서만 직접 백엔드 포트로 요청
 const ENV_CONFIG = {
-  // 운영 환경: shipmg.lphydrofoam.com (포트 9032)
+  // 운영 환경: shipmg.lphydrofoam.com (nginx 프록시 사용)
   production: {
     domain: 'shipmg.lphydrofoam.com',
-    apiUrl: 'http://shipmg.lphydrofoam.com:9032/api',
+    apiUrl: '/api',
+    directUrl: 'http://shipmg.lphydrofoam.com:9032/api',
     port: 9032
   },
-  // 개발 환경: leadpower.platree.com (포트 9031)
+  // 개발 환경: leadpower.platree.com (nginx 프록시 사용)
   development: {
     domain: 'leadpower.platree.com',
-    apiUrl: 'http://leadpower.platree.com:9031/api',
+    apiUrl: '/api',
+    directUrl: 'http://leadpower.platree.com:9031/api',
     port: 9031
   },
-  // 로컬 개발 환경
+  // 로컬 개발 환경 (nginx 없이 직접 연결)
   local: {
     domain: 'localhost',
     apiUrl: 'http://localhost:9031/api',
@@ -79,11 +83,14 @@ export const apiEnvironment = {
         return ENV_CONFIG.development.apiUrl
       }
 
-      // localhost
+      // localhost: nginx 프록시 없이 직접 연결 (directUrl 사용)
       if (hostname === 'localhost' || hostname === '127.0.0.1') {
         const stored = localStorage.getItem('api_environment')
         if (stored === 'production') {
-          return ENV_CONFIG.production.apiUrl
+          return ENV_CONFIG.production.directUrl
+        }
+        if (stored === 'development') {
+          return ENV_CONFIG.development.directUrl
         }
         return ENV_CONFIG.local.apiUrl
       }
@@ -100,7 +107,7 @@ export const apiEnvironment = {
     if (process.client) {
       localStorage.setItem('api_environment', 'production')
       console.log('🚀 API 환경을 운영 모드로 설정했습니다. 페이지를 새로고침하세요.')
-      console.log(`   API URL: ${ENV_CONFIG.production.apiUrl}`)
+      console.log(`   API URL: ${ENV_CONFIG.production.directUrl}`)
     }
   },
 
@@ -111,7 +118,7 @@ export const apiEnvironment = {
     if (process.client) {
       localStorage.setItem('api_environment', 'development')
       console.log('🔧 API 환경을 개발 모드로 설정했습니다. 페이지를 새로고침하세요.')
-      console.log(`   API URL: ${ENV_CONFIG.development.apiUrl}`)
+      console.log(`   API URL: ${ENV_CONFIG.development.directUrl}`)
     }
   },
 

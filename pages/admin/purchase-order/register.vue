@@ -53,7 +53,7 @@
             </FormField>
 
             <!-- 발주일자 -->
-            <FormField label="발주일자" :error="errors.orderDate">
+            <FormField label="발주일자" required :error="errors.orderDate">
               <input
                 type="date"
                 v-model="formData.orderDate"
@@ -62,7 +62,7 @@
             </FormField>
 
             <!-- 납기 예정일 -->
-            <FormField label="납기 예정일" :error="errors.expectedCompletionDate">
+            <FormField label="납기 예정일" required :error="errors.expectedCompletionDate">
               <input
                 type="date"
                 v-model="formData.expectedCompletionDate"
@@ -117,12 +117,12 @@
                     <th style="width: 40px">NO</th>
                     <th style="width: 80px">SKU ID</th>
                     <th style="width: 120px">SKU 품명</th>
-                    <th style="width: 70px">출하수량</th>
-                    <th style="width: 80px">추가수량</th>
-                    <th style="width: 70px">합계(m²)</th>
-                    <th style="width: 100px">단가</th>
-                    <th style="width: 120px">금액</th>
-                    <th style="width: 80px">비고</th>
+                    <th style="width: 70px" class="text-right">출하수량<br><small>(m²)</small></th>
+                    <th style="width: 80px" class="text-right">추가수량<br><small>(m²)</small></th>
+                    <th style="width: 70px" class="text-right">합계<br><small>(m²)</small></th>
+                    <th style="width: 100px" class="text-right">단가<br><small>(원)</small></th>
+                    <th style="width: 120px" class="text-right">금액<br><small>(원)</small></th>
+                    <th style="width: 80px" class="text-center">비고<br><small>(매)</small></th>
                     <th style="width: 50px">삭제</th>
                   </tr>
                 </thead>
@@ -459,6 +459,14 @@ const validate = (): boolean => {
     newErrors.oemCompanyId = 'OEM 제조사를 선택하세요.'
   }
 
+  if (!formData.value.orderDate) {
+    newErrors.orderDate = '발주일자를 입력하세요.'
+  }
+
+  if (!formData.value.expectedCompletionDate) {
+    newErrors.expectedCompletionDate = '납기 예정일을 입력하세요.'
+  }
+
   if (formData.value.items.length === 0) {
     alert('품목을 최소 1개 이상 추가하세요.')
     return false
@@ -677,6 +685,13 @@ onMounted(async () => {
 
 .input-w100 {
   width: 100px !important;
+}
+
+/* 품목 테이블 헤더 단위 표시 */
+.items-table thead th small {
+  font-weight: 400;
+  color: #6b7280;
+  font-size: 0.7rem;
 }
 
 /* 반응형 */

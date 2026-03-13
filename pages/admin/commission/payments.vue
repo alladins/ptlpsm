@@ -354,7 +354,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useCommissionStore } from '~/stores/commission'
 import { useCommissionFilter } from '~/composables/admin/useCommissionFilter'
-import { formatCurrency, formatDate } from '~/utils/format'
+import { formatCurrency, formatDate, getLocalDateString } from '~/utils/format'
 import type { CommissionPayment, CommissionPaymentStatus, CommissionPaymentCreateRequest, CommissionPaymentCompleteRequest } from '~/types/commission'
 import { COMMISSION_PAYMENT_STATUS_LABELS } from '~/types/commission'
 
@@ -459,7 +459,7 @@ const openCreateModal = () => {
   createForm.value = {
     year: selectedYear.value,
     scheduledAmount: 0,
-    scheduledDate: new Date().toISOString().split('T')[0],
+    scheduledDate: getLocalDateString(),
     settlementIds: [],
     recipientName: '',
     bankAccount: '',
@@ -491,7 +491,7 @@ const openCompleteModal = (payment: CommissionPayment) => {
   selectedPayment.value = payment
   completeForm.value = {
     paidAmount: payment.scheduledAmount,
-    paidDate: new Date().toISOString().split('T')[0],
+    paidDate: getLocalDateString(),
     remarks: ''
   }
   showCompleteModal.value = true

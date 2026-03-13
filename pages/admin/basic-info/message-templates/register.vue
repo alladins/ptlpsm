@@ -29,9 +29,9 @@ const router = useRouter()
 // 권한
 const { canWrite } = usePermission()
 
-const handleSubmit = async (data: MessageTemplateCreateRequest) => {
+const handleSubmit = async (data: MessageTemplateCreateRequest | import('~/types/message-template').MessageTemplateUpdateRequest) => {
   try {
-    await createMessageTemplate(data)
+    await createMessageTemplate(data as MessageTemplateCreateRequest)
     alert('메시지 템플릿이 등록되었습니다')
     router.push('/admin/basic-info/message-templates/list')
   } catch (error: any) {

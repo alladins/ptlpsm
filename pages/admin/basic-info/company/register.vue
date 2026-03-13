@@ -57,7 +57,7 @@ async function handleCreate(data: CompanyCreateRequest) {
     alert('회사 정보가 등록되었습니다.')
 
     // 등록 성공 시 상세 페이지로 이동
-    router.push(`/admin/basic-info/company/detail/${response.id}`)
+    router.push(`/admin/basic-info/company/detail/${response?.companyId}`)
   } catch (error: any) {
     console.error('Failed to create company:', error)
 

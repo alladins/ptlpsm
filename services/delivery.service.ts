@@ -231,12 +231,31 @@ class DeliveryService {
       const response = await fetch(DELIVERY_ENDPOINTS.getByToken(token))
 
       if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('유효하지 않은 링크입니다.')
-        } else if (response.status === 410) {
-          throw new Error('만료된 링크입니다.')
+        // 백엔드 응답 본문에서 에러 메시지 추출
+        let errorMessage = ''
+        try {
+          const errorBody = await response.json()
+          if (errorBody.message) errorMessage = errorBody.message
+        } catch {
+          // JSON 파싱 실패 시 무시
         }
-        throw new Error(`납품 정보 조회 실패: ${response.status}`)
+
+        if (response.status === 403) {
+          const err = new Error(errorMessage || '해당 작업은 이미 완료되었습니다.')
+          ;(err as any).statusCode = 403
+          throw err
+        }
+        if (response.status === 410) {
+          const err = new Error(errorMessage || '서명 링크가 만료되었습니다.')
+          ;(err as any).statusCode = 410
+          throw err
+        }
+        if (response.status === 404) {
+          const err = new Error(errorMessage || '유효하지 않은 링크입니다.')
+          ;(err as any).statusCode = 404
+          throw err
+        }
+        throw new Error(errorMessage || `납품 정보 조회 실패: ${response.status}`)
       }
 
       // 서버 응답을 DeliveryApiResponse로 파싱
@@ -340,10 +359,10 @@ class DeliveryService {
         throw new Error(result.message || '납품 완료 처리에 실패했습니다.')
       }
 
-      // confirmedAt 필드 검증
+      // confirmedAt 필드 검증 (없을 경우 UTC ISO string으로 현재 시각 보정)
       if (!result.confirmedAt) {
-        console.warn('서버 응답에 confirmedAt이 없습니다. 현재 시각을 사용합니다.')
-        result.confirmedAt = new Date().toISOString()
+        console.warn('서버 응답에 confirmedAt이 없습니다. 현재 UTC 시각을 사용합니다.')
+        result.confirmedAt = new Date().toISOString()  // UTC 기준 ISO-8601
       }
 
       return result

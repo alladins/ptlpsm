@@ -134,7 +134,17 @@
                       ></div>
                     </div>
                     <span class="delivery-rate-text">{{ item.deliveryCompletionRate }}%</span>
+                    <span v-if="item.hasConversionRemainder" class="badge-conversion" title="환산잔량 처리됨">환산</span>
                   </div>
+                  <!-- 환산잔량 버튼 -->
+                  <button
+                    v-if="canProcessConversionRemainder(item)"
+                    class="btn-conversion"
+                    @click.stop="openConversionRemainderModal(item)"
+                    title="환산잔량 처리 (짝수올림 잔여분)"
+                  >
+                    <i class="fas fa-calculator"></i> 환산잔량
+                  </button>
                 </td>
 
                 <!-- 출하횟수 -->
@@ -231,6 +241,14 @@
       v-if="showPdfModal && selectedItem"
       :delivery-done="selectedItem"
       @close="closePdfModal"
+    />
+
+    <!-- 환산잔량 처리 모달 -->
+    <ConversionRemainderModal
+      :is-open="showConversionRemainderModal"
+      :delivery-done-id="selectedConversionItem?.deliveryDoneId ?? null"
+      @close="showConversionRemainderModal = false"
+      @updated="handleConversionUpdated"
     />
   </div>
 </template>
@@ -332,6 +350,8 @@ const showPdfModal = ref(false)
 const selectedConfirmationItem = ref<DeliveryDoneListItem | null>(null)
 const selectedCompletionItem = ref<DeliveryDoneListItem | null>(null)
 const selectedItem = ref<DeliveryDoneListItem | null>(null)  // PDF용
+const showConversionRemainderModal = ref(false)
+const selectedConversionItem = ref<DeliveryDoneListItem | null>(null)
 
 // 계산된 값
 const startIndex = computed(() => {
@@ -456,6 +476,28 @@ function openPdfModal(item: DeliveryDoneListItem) {
 function closePdfModal() {
   showPdfModal.value = false
   selectedItem.value = null
+}
+
+// 환산잔량 처리
+// 조건: 진행중 + 실제 납품 있음 + 총 잔여량 ≤ 4㎡ + 아직 환산잔량 처리 안됨
+function canProcessConversionRemainder(item: DeliveryDoneListItem): boolean {
+  const totalRemaining = (item.totalOrderedQuantity || 0) - (item.totalDeliveredQuantity || 0)
+  return item.status === 'IN_PROGRESS' &&
+         item.totalDeliveredQuantity > 0 &&
+         totalRemaining > 0 &&
+         totalRemaining <= 4 &&
+         !item.hasConversionRemainder
+}
+
+function openConversionRemainderModal(item: DeliveryDoneListItem) {
+  selectedConversionItem.value = item
+  showConversionRemainderModal.value = true
+}
+
+function handleConversionUpdated() {
+  showConversionRemainderModal.value = false
+  selectedConversionItem.value = null
+  loadData()
 }
 
 // 버튼 활성화 조건 (상호 배타적)
@@ -666,6 +708,44 @@ onMounted(async () => {
   color: #374151;
   min-width: 40px;
   text-align: right;
+}
+
+/* 환산 뱃지 */
+.badge-conversion {
+  display: inline-block;
+  padding: 1px 6px;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* 환산잔량 버튼 */
+.btn-conversion {
+  display: block;
+  margin: 4px auto 0;
+  padding: 2px 8px;
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  background: #fffbeb;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-conversion:hover {
+  background: #fef3c7;
+  border-color: #d97706;
+}
+
+.btn-conversion i {
+  font-size: 10px;
+  margin-right: 2px;
 }
 
 /* 상태 배지 */

@@ -12,7 +12,7 @@
           <div class="form-row">
                           <div class="form-group">
                 <label>권한</label>
-                <select v-model="searchForm.role" class="form-select">
+                <select v-model="searchForm.role" class="form-select role-select">
                   <option value="">전체</option>
                   <option v-for="role in userRoles" :key="role.code" :value="role.code">
                     {{ role.codeName }}
@@ -23,17 +23,18 @@
               <label>상태</label>
               <select v-model="searchForm.enabled" class="form-select">
                 <option value="">전체</option>
-                <option value="true">활성</option>
-                <option value="false">비활성</option>
+                <option value="Y">활성</option>
+                <option value="N">비활성</option>
               </select>
             </div>
             <div class="form-group">
               <label>검색어</label>
-              <input 
-                type="text" 
-                v-model="searchForm.searchKeyword" 
-                placeholder="검색어를 입력하세요" 
+              <input
+                type="text"
+                v-model="searchForm.searchKeyword"
+                placeholder="검색어를 입력하세요"
                 class="form-input"
+                @keyup.enter="searchUsers"
               >
             </div>
             <div class="form-group button-group">
@@ -83,7 +84,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in users" :key="user.userid" class="table-row">
+              <tr v-for="user in users" :key="user.userId" class="table-row">
                 <td>{{ user.loginId }}</td>
                 <td>{{ user.userName }}</td>
                 <td>{{ user.email }}</td>
@@ -455,6 +456,7 @@ const editingUser = ref<any>(null)
 
 // 사용자 폼
 const userForm = ref({
+  userId: 0,
   loginId: '',
   password: '',
   userName: '',
@@ -558,6 +560,7 @@ const searchUsers = () => {
 // 등록 모달 열기
 const openAddModal = () => {
   userForm.value = {
+    userId: 0,
     loginId: '',
     password: '',
     userName: '',
@@ -763,7 +766,7 @@ const submitEdit = async () => {
   if (!validateForm() || !editingUser.value) return
 
   try {
-    await userService.updateUser(editingUser.value.userid, userForm.value)
+    await userService.updateUser(editingUser.value.userId, userForm.value)
     closeModal()
     refresh()
     alert('사용자가 성공적으로 수정되었습니다.')
@@ -778,7 +781,7 @@ const deleteUser = async (user: any) => {
   if (!confirm('정말 삭제하시겠습니까?')) return
 
   try {
-    await userService.deleteUser(user.userid)
+    await userService.deleteUser(user.userId)
     refresh()
     alert('사용자가 성공적으로 삭제되었습니다.')
   } catch (error) {
@@ -792,7 +795,7 @@ const submitPasswordChange = async () => {
   if (!validatePasswordForm() || !editingUser.value) return
 
   try {
-    await userService.changePassword(editingUser.value.userid, passwordForm.value)
+    await userService.changePassword(editingUser.value.userId, passwordForm.value)
     closePasswordModal()
     alert('비밀번호가 성공적으로 변경되었습니다.')
   } catch (error) {
@@ -883,6 +886,11 @@ onMounted(() => {
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+/* 권한 셀렉트 박스 너비 */
+.role-select {
+  min-width: 120px;
 }
 
 /* 역할별 배지 색상 */

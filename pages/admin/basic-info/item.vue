@@ -37,6 +37,18 @@
 
         <!-- 품목 목록 테이블 -->
         <div class="table-section">
+          <div class="table-header">
+            <div class="table-info">
+              <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
+            </div>
+            <div class="table-actions">
+              <select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
+                <option :value="10">10개씩</option>
+                <option :value="20">20개씩</option>
+                <option :value="50">50개씩</option>
+              </select>
+            </div>
+          </div>
           <div class="table-container">
             <table class="data-table">
                              <thead>
@@ -107,6 +119,14 @@
             </div>
           </div>
 
+          <!-- 페이지네이션 -->
+          <Pagination
+            v-if="totalPages > 0"
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :disabled="loading"
+            @change="handlePageChange"
+          />
         </div>
       </div>
 
@@ -774,8 +794,18 @@ const {
       return response
     }
   },
-  initialPageSize: 1000
+  initialPageSize: 20
 })
+
+// 페이지 변경
+const handlePageChange = (page: number) => {
+  changePage(page)
+}
+
+// 페이지 크기 변경
+const handlePageSizeChange = () => {
+  changePageSize(pageSize.value)
+}
 
 // 선택된 품목 및 탭 관리
 const selectedItem = ref<Item | null>(null)

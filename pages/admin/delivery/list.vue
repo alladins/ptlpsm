@@ -33,6 +33,7 @@
               v-model="searchForm.deliveryRequestNo"
               placeholder="납품요구번호 검색"
               class="text-input"
+              @keyup.enter="handleSearch"
             >
           </div>
 

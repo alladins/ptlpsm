@@ -138,7 +138,7 @@ export const usePermissionStore = defineStore('permission', () => {
   async function fetchUserMenus(forceRefresh = false): Promise<Menu[]> {
     const authStore = useAuthStore()
 
-    // loginId로 체크 (API 호출에 loginId 사용, userid는 백엔드에서 누락될 수 있음)
+    // loginId로 체크 (API 호출에 loginId 사용, userId는 백엔드에서 누락될 수 있음)
     if (!authStore.user?.loginId) {
       console.warn('사용자 정보가 없습니다 (loginId 없음)')
       return []
@@ -525,7 +525,7 @@ export const usePermissionStore = defineStore('permission', () => {
     if (isFullAccess.value) return true
 
     const authStore = useAuthStore()
-    const userId = authStore.user?.userid
+    const userId = authStore.user?.userId
 
     // 시공사 담당자 또는 감리원
     if (isSiteManager.value || isSiteInspector.value) {
@@ -545,7 +545,7 @@ export const usePermissionStore = defineStore('permission', () => {
     if (isFullAccess.value) return true
 
     const authStore = useAuthStore()
-    const userId = authStore.user?.userid
+    const userId = authStore.user?.userId
 
     // OEM 담당자
     if (isOemManager.value) {
@@ -567,7 +567,7 @@ export const usePermissionStore = defineStore('permission', () => {
     if (isFullAccess.value) return true
 
     const authStore = useAuthStore()
-    const userId = authStore.user?.userid
+    const userId = authStore.user?.userId
 
     // 운송기사
     if (isDeliveryDriver.value) {

@@ -113,7 +113,7 @@ function getCurrentUserId(): string {
     const userInfo = localStorage.getItem('userInfo')
     if (userInfo) {
       const user = JSON.parse(userInfo)
-      return user.loginId || user.userid || user.userName || 'admin'
+      return user.loginId || user.userId || user.userName || 'admin'
     }
 
     // localStorage에서 loginId 직접 확인
@@ -124,7 +124,7 @@ function getCurrentUserId(): string {
     const sessionUser = sessionStorage.getItem('userInfo')
     if (sessionUser) {
       const user = JSON.parse(sessionUser)
-      return user.loginId || user.userid || user.userName || 'admin'
+      return user.loginId || user.userId || user.userName || 'admin'
     }
   } catch (error) {
     console.warn('사용자 정보 가져오기 실패:', error)

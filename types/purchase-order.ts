@@ -238,6 +238,36 @@ export interface ProduceCompleteRequest {
 }
 
 /**
+ * 반려 영향 분석 - 영향받는 출하 정보
+ */
+export interface AffectedShipment {
+  /** 출하 ID */
+  shipmentId: number
+  /** 출하번호 */
+  shipmentNo: string
+  /** 출고요청 상태 */
+  dispatchStatus: string | null
+  /** 출고요청 ID */
+  dispatchRequestId: number | null
+  /** 출고요청 취소 대상 여부 */
+  willCancelDispatch: boolean
+  /** 직접 연결 여부 (false면 같은 OEM/SKU의 간접 영향 출하) */
+  directlyLinked: boolean
+}
+
+/**
+ * 반려 영향 분석 응답
+ */
+export interface RejectImpactResponse {
+  /** 영향받는 출하 목록 */
+  affectedShipments: AffectedShipment[]
+  /** 취소될 출고요청 수 */
+  dispatchCancelCount: number
+  /** 안내 메시지 */
+  message: string
+}
+
+/**
  * 발주서 수정 가능 여부 체크
  * @param detail - 발주서 상세
  * @returns true면 수정 가능

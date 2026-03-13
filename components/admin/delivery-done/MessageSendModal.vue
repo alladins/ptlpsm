@@ -43,8 +43,8 @@
                 <option value="">{{ loading ? '로딩 중...' : '선택하세요' }}</option>
                 <option
                   v-for="supervisor in siteSupervisorList"
-                  :key="supervisor.userid"
-                  :value="supervisor.userid"
+                  :key="supervisor.userId"
+                  :value="supervisor.userId"
                 >
                   {{ supervisor.userName }} ({{ supervisor.phone }})
                   <template v-if="supervisor.companyName"> - {{ supervisor.companyName }}</template>
@@ -64,8 +64,8 @@
                 <option value="">{{ loading ? '로딩 중...' : '선택하세요' }}</option>
                 <option
                   v-for="inspector in inspectorList"
-                  :key="inspector.userid"
-                  :value="inspector.userid"
+                  :key="inspector.userId"
+                  :value="inspector.userId"
                 >
                   {{ inspector.userName }} ({{ inspector.phone }})
                   <template v-if="inspector.companyName"> - {{ inspector.companyName }}</template>
@@ -98,32 +98,21 @@
               발송될 메시지 미리보기
             </h4>
 
+            <!-- 템플릿 로딩 중 -->
+            <div v-if="templateLoading" class="preview-content preview-loading">
+              <i class="fas fa-spinner fa-spin"></i> 템플릿 로딩 중...
+            </div>
+
             <!-- 현장소장 메시지 -->
-            <div v-if="selectedSupervisorInfo" class="preview-content">
+            <div v-if="selectedSupervisorInfo && !templateLoading" class="preview-content">
               <div class="preview-label">현장소장용</div>
-              <p><strong>[LP LEADPOWER 납품완료계]</strong></p>
-              <p>{{ selectedSupervisorInfo.userName }}님, 안녕하세요.</p>
-              <p>
-                {{ deliveryDone.deliveryRequestNo }} 건에 대한
-                현장소장 서명이 필요합니다.
-              </p>
-              <p>아래 링크를 클릭하여 서명해 주시기 바랍니다.</p>
-              <p class="preview-link">[서명 URL이 여기에 표시됩니다]</p>
-              <p class="preview-note">* 링크는 발송 후 1일간 유효합니다.</p>
+              <pre class="preview-text">{{ supervisorPreviewText }}</pre>
             </div>
 
             <!-- 현장감리원 메시지 -->
-            <div v-if="selectedInspectorInfo" class="preview-content" :class="{ 'mt-3': selectedSupervisorInfo }">
+            <div v-if="selectedInspectorInfo && !templateLoading" class="preview-content" :class="{ 'mt-3': selectedSupervisorInfo }">
               <div class="preview-label">현장감리원용</div>
-              <p><strong>[LP LEADPOWER 납품완료계]</strong></p>
-              <p>{{ selectedInspectorInfo.userName }}님, 안녕하세요.</p>
-              <p>
-                {{ deliveryDone.deliveryRequestNo }} 건에 대한
-                현장감리원 서명이 필요합니다.
-              </p>
-              <p>아래 링크를 클릭하여 서명해 주시기 바랍니다.</p>
-              <p class="preview-link">[서명 URL이 여기에 표시됩니다]</p>
-              <p class="preview-note">* 링크는 발송 후 1일간 유효합니다.</p>
+              <pre class="preview-text">{{ inspectorPreviewText }}</pre>
             </div>
           </div>
         </div>
@@ -147,11 +136,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { sendSignatureUrl } from '~/services/delivery-done.service'
 import { userService } from '~/services/user.service'
+import { getMessageTemplateByCode } from '~/services/message-template.service'
 import type { DeliveryDoneListItem, SignatureRecipient } from '~/types/delivery-done'
 import type { UserByRole } from '~/types/user'
+import type { MessageTemplate } from '~/types/message-template'
 
 const props = defineProps<{
   deliveryDone: DeliveryDoneListItem
@@ -168,6 +159,37 @@ const selectedInspectorId = ref<number | ''>('')
 const sending = ref(false)
 const loading = ref(false)
 
+// 템플릿 관련
+const templateLoading = ref(false)
+const siteManagerTemplate = ref<MessageTemplate | null>(null)
+const inspectorTemplate = ref<MessageTemplate | null>(null)
+
+// 템플릿 변수 치환 함수
+function replaceTemplateVariables(content: string, recipientName: string): string {
+  return content
+    .replace(/\{\{supervisorName\}\}/g, recipientName)
+    .replace(/\{\{inspectorName\}\}/g, recipientName)
+    .replace(/\{\{deliveryRequestNo\}\}/g, props.deliveryDone.deliveryRequestNo || '')
+    .replace(/\{\{contractNo\}\}/g, props.deliveryDone.contractNo || '')
+    .replace(/\{\{client\}\}/g, props.deliveryDone.client || '')
+    .replace(/\{\{projectName\}\}/g, props.deliveryDone.projectName || '')
+    .replace(/\{\{contractor\}\}/g, props.deliveryDone.contractorCompanyName || '')
+    .replace(/\{\{signatureUrl\}\}/g, '[발송 시 자동 생성됩니다]')
+    .replace(/\{\{companyPhone\}\}/g, '031-356-6500')
+}
+
+// 현장소장 미리보기 텍스트
+const supervisorPreviewText = computed(() => {
+  if (!siteManagerTemplate.value?.content || !selectedSupervisorInfo.value) return ''
+  return replaceTemplateVariables(siteManagerTemplate.value.content, selectedSupervisorInfo.value.userName)
+})
+
+// 현장감리원 미리보기 텍스트
+const inspectorPreviewText = computed(() => {
+  if (!inspectorTemplate.value?.content || !selectedInspectorInfo.value) return ''
+  return replaceTemplateVariables(inspectorTemplate.value.content, selectedInspectorInfo.value.userName)
+})
+
 // 모달 제목
 const modalTitle = computed(() => {
   return props.documentType === 'CONFIRMATION'
@@ -182,12 +204,12 @@ const inspectorList = ref<UserByRole[]>([])
 // 선택된 담당자 정보
 const selectedSupervisorInfo = computed(() => {
   if (!selectedSiteSupervisorId.value) return null
-  return siteSupervisorList.value.find(s => s.userid === selectedSiteSupervisorId.value) || null
+  return siteSupervisorList.value.find(s => s.userId === selectedSiteSupervisorId.value) || null
 })
 
 const selectedInspectorInfo = computed(() => {
   if (!selectedInspectorId.value) return null
-  return inspectorList.value.find(i => i.userid === selectedInspectorId.value) || null
+  return inspectorList.value.find(i => i.userId === selectedInspectorId.value) || null
 })
 
 // 선택된 인원 수
@@ -225,12 +247,16 @@ const sendButtonText = computed(() => {
   return selectedCount.value > 1 ? `URL 발송 (${selectedCount.value}명)` : 'URL 발송'
 })
 
-// 모달 오픈 시 사용자 목록 로드
+// 모달 오픈 시 사용자 목록 + 메시지 템플릿 로드
 onMounted(async () => {
   loading.value = true
+  templateLoading.value = true
   try {
-    // 역할별 사용자 조회 (SITE_MANAGER + SITE_INSPECTOR)
-    const users = await userService.getUsersByRoles(['SITE_MANAGER', 'SITE_INSPECTOR'])
+    // 사용자 목록 + 템플릿 병렬 조회
+    const [users] = await Promise.all([
+      userService.getUsersByRoles(['SITE_MANAGER', 'SITE_INSPECTOR']),
+      loadTemplates()
+    ])
 
     // 역할별로 분리
     siteSupervisorList.value = users.filter(u => u.role === 'SITE_MANAGER')
@@ -242,6 +268,29 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+// 메시지 템플릿 로드
+async function loadTemplates() {
+  try {
+    if (props.documentType === 'CONFIRMATION') {
+      // 납품확인서: 현장소장 + 현장감리원 템플릿
+      const [managerTpl, inspectorTpl] = await Promise.all([
+        getMessageTemplateByCode('DELIVERY_RECEIPT_SITE_MANAGER'),
+        getMessageTemplateByCode('DELIVERY_RECEIPT_SITE_INSPECTOR')
+      ])
+      siteManagerTemplate.value = managerTpl
+      inspectorTemplate.value = inspectorTpl
+    } else {
+      // 납품완료계: 현장감리원 템플릿만
+      const inspectorTpl = await getMessageTemplateByCode('DELIVERY_DONE_SITE_INSPECTOR')
+      inspectorTemplate.value = inspectorTpl
+    }
+  } catch (error) {
+    console.error('Failed to load message templates:', error)
+  } finally {
+    templateLoading.value = false
+  }
+}
 
 // 시공사 현장소장 선택 시 (다른 선택 유지)
 function onSiteSupervisorChange() {
@@ -266,7 +315,7 @@ async function handleSend() {
     if (selectedSupervisorInfo.value) {
       recipients.push({
         recipientType: 'SITE_MANAGER',
-        recipientUserId: selectedSupervisorInfo.value.userid,
+        recipientUserId: selectedSupervisorInfo.value.userId,
         recipientName: selectedSupervisorInfo.value.userName,
         recipientPhone: selectedSupervisorInfo.value.phone.replace(/[^0-9]/g, '')
       })
@@ -276,7 +325,7 @@ async function handleSend() {
     if (selectedInspectorInfo.value) {
       recipients.push({
         recipientType: 'SITE_INSPECTOR',
-        recipientUserId: selectedInspectorInfo.value.userid,
+        recipientUserId: selectedInspectorInfo.value.userId,
         recipientName: selectedInspectorInfo.value.userName,
         recipientPhone: selectedInspectorInfo.value.phone.replace(/[^0-9]/g, '')
       })
@@ -509,15 +558,20 @@ async function handleSend() {
   margin: 8px 0;
 }
 
-.preview-link {
-  color: #2563eb;
-  font-style: italic;
+.preview-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+  color: #374151;
 }
 
-.preview-note {
-  font-size: 12px;
+.preview-loading {
+  text-align: center;
   color: #9ca3af;
-  margin-top: 12px;
+  padding: 20px;
 }
 
 .modal-footer {

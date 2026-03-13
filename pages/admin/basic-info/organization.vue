@@ -633,7 +633,7 @@ const onRegionChange = () => {
 // 우편번호 찾기
 const searchZipcode = () => {
   new window.daum.Postcode({
-    oncomplete: (data) => {
+    oncomplete: (data: any) => {
       formData.value.zip = data.zonecode
       formData.value.adrs = data.address
       formData.value.dtlAdrs = ''

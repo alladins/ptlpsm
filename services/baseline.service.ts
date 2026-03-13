@@ -577,13 +577,29 @@ export const baselineMobileService = {
       })
 
       if (!response.ok) {
-        if (response.status === 404) {
-          return null // 토큰이 유효하지 않거나 만료됨
+        // 백엔드 응답 본문에서 에러 메시지 추출
+        let errorMessage = ''
+        try {
+          const errorBody = await response.json()
+          if (errorBody.message) errorMessage = errorBody.message
+        } catch {
+          // JSON 파싱 실패 시 무시
+        }
+
+        if (response.status === 403) {
+          const err = new Error(errorMessage || '해당 작업은 이미 완료되었습니다.')
+          ;(err as any).statusCode = 403
+          throw err
         }
         if (response.status === 410) {
-          throw new Error('서명 링크가 만료되었습니다.')
+          const err = new Error(errorMessage || '서명 링크가 만료되었습니다.')
+          ;(err as any).statusCode = 410
+          throw err
         }
-        throw new Error(`HTTP error! status: ${response.status}`)
+        if (response.status === 404) {
+          return null // 토큰이 유효하지 않음
+        }
+        throw new Error(errorMessage || `HTTP error! status: ${response.status}`)
       }
 
       const result = await response.json()

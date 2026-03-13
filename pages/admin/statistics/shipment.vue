@@ -367,7 +367,7 @@ import type {
   ShipmentStatus
 } from '~/types/statistics'
 import { SHIPMENT_STATUS_LABELS } from '~/types/statistics'
-import { formatCurrency, formatNumber } from '~/utils/format'
+import { formatCurrency, formatNumber, getLocalDateString } from '~/utils/format'
 
 definePageMeta({
   layout: 'admin',
@@ -413,12 +413,15 @@ const statistics = ref<ShipmentStatisticsResponse>({
 function getDefaultStartDate(): string {
   const now = new Date()
   now.setMonth(now.getMonth() - 6)
-  return now.toISOString().split('T')[0]
+  // 로컬 타임존 기준 날짜 반환
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function getDefaultEndDate(): string {
-  const now = new Date()
-  return now.toISOString().split('T')[0]
+  return getLocalDateString()
 }
 
 // 데이터 조회

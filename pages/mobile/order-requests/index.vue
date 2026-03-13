@@ -91,7 +91,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { mobileOrderService } from '~/services/mobile-order.service'
-import type { MobileOrderRequest, MobileOrderStatus } from '~/types/mobile-order'
+import type { MobileOrderRequestListItem, MobileOrderStatus } from '~/types/mobile-order'
+import { formatDate } from '~/utils/format'
 
 definePageMeta({
   layout: 'default',
@@ -103,7 +104,7 @@ const router = useRouter()
 // State
 const loading = ref(true)
 const loadingMore = ref(false)
-const requests = ref<MobileOrderRequest[]>([])
+const requests = ref<MobileOrderRequestListItem[]>([])
 const page = ref(1)
 const hasMore = ref(false)
 
@@ -116,18 +117,15 @@ const loadRequests = async (isLoadMore = false) => {
   }
 
   try {
-    const data = await mobileOrderService.getMyRequests({
-      page: page.value,
-      size: 10
-    })
+    const data = await mobileOrderService.getMyRequests()
 
     if (isLoadMore) {
-      requests.value = [...requests.value, ...data.content]
+      requests.value = [...requests.value, ...data]
     } else {
-      requests.value = data.content
+      requests.value = data
     }
 
-    hasMore.value = !data.last
+    hasMore.value = false
   } catch (error) {
     console.error('주문 요청 목록 조회 실패:', error)
   } finally {
@@ -149,16 +147,6 @@ const goToDetail = (requestId: number) => {
   router.push(`/mobile/order-requests/${requestId}`)
 }
 
-const formatDate = (dateStr?: string): string => {
-  if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  })
-}
-
 const getStatusClass = (status?: MobileOrderStatus): string => {
   if (!status) return ''
   switch (status) {
@@ -177,8 +165,10 @@ const getStatusLabel = (status?: MobileOrderStatus): string => {
   if (!status) return '-'
   const labels: Record<MobileOrderStatus, string> = {
     PENDING: '대기',
+    REQUESTED: '접수',
     APPROVED: '승인',
-    REJECTED: '반려'
+    REJECTED: '반려',
+    COMPLETED: '완료'
   }
   return labels[status] || status
 }

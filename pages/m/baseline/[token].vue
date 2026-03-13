@@ -6,7 +6,25 @@
       <p>기성청구 정보를 불러오는 중...</p>
     </div>
 
-    <!-- 에러 상태 -->
+    <!-- 에러 상태: 이미 완료 -->
+    <div v-else-if="errorType === 'completed'" class="completed-screen">
+      <i class="fas fa-check-circle"></i>
+      <h2>해당 작업은 이미 완료되었습니다.</h2>
+      <p>본인이 하신 것이 아니라면,<br>관리자에게 링크를 재요청해주세요.</p>
+      <button class="btn-close-page" @click="closePage">
+        <i class="fas fa-times"></i>
+        닫기
+      </button>
+    </div>
+
+    <!-- 에러 상태: 링크 만료 -->
+    <div v-else-if="errorType === 'expired'" class="error-screen">
+      <i class="fas fa-clock" style="color: #f59e0b;"></i>
+      <h2>서명 링크가 만료되었습니다.</h2>
+      <p>관리자에게 새 서명 링크를 요청해주세요.</p>
+    </div>
+
+    <!-- 에러 상태: 기타 오류 -->
     <div v-else-if="error" class="error-screen">
       <i class="fas fa-exclamation-triangle"></i>
       <h2>{{ error }}</h2>
@@ -154,7 +172,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from '#imports'
 import { baselineMobileService } from '~/services/baseline.service'
 import type { BaselineSignatureInfo, SignatureRecipientType } from '~/types/baseline'
-import { formatCurrency } from '~/utils/format'
+import { formatCurrency, formatDateTime } from '~/utils/format'
 // 명시적 import (SSG 빌드 문제 해결)
 import UiMobileSignatureCanvas from '~/components/ui/mobile/SignatureCanvas.vue'
 
@@ -171,6 +189,7 @@ const recipientTypeFromQuery = (route.query.type as SignatureRecipientType) || u
 // 상태 관리
 const loading = ref(true)
 const error = ref('')
+const errorType = ref<'completed' | 'expired' | 'error' | ''>('')
 const baselineData = ref<BaselineSignatureInfo | null>(null)
 const isCompleted = ref(false)
 const completedAt = ref('')
@@ -201,16 +220,9 @@ const getRecipientTypeIcon = (type?: SignatureRecipientType) => {
   return icons[type] || 'fas fa-user'
 }
 
-// 만료 시간 포맷팅
+// 만료 시간 포맷팅 (UTC → KST 변환)
 const formatExpireTime = (dateString?: string) => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return formatDateTime(dateString)
 }
 
 // 초기 데이터 로드
@@ -223,6 +235,16 @@ onMounted(async () => {
     // 이미 서명 완료된 경우는 alreadySigned 필드로 체크
   } catch (err) {
     console.error('기성청구 정보 로드 실패:', err)
+
+    // HTTP 상태코드 기반 에러 타입 분기
+    const statusCode = (err as any)?.statusCode
+    if (statusCode === 403) {
+      errorType.value = 'completed'
+    } else if (statusCode === 410) {
+      errorType.value = 'expired'
+    } else {
+      errorType.value = 'error'
+    }
     error.value = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다'
   } finally {
     loading.value = false
@@ -246,23 +268,12 @@ const handleSignatureSave = async (blob: Blob) => {
     // 완료 화면으로 전환
     isCompleted.value = true
 
-    // 완료 시각 설정
+    // 완료 시각 설정 (UTC → KST 변환)
     if (result.signedAt) {
-      const date = new Date(result.signedAt)
-      if (!isNaN(date.getTime())) {
-        completedAt.value = date.toLocaleString('ko-KR', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        })
-      } else {
-        completedAt.value = new Date().toLocaleString('ko-KR')
-      }
+      const formatted = formatDateTime(result.signedAt)
+      completedAt.value = formatted !== '-' ? formatted : formatDateTime(new Date().toISOString())
     } else {
-      completedAt.value = new Date().toLocaleString('ko-KR')
+      completedAt.value = formatDateTime(new Date().toISOString())
     }
 
     // 화면 맨 위로 스크롤
@@ -321,23 +332,12 @@ const handleSubmit = async () => {
     // 완료 화면으로 전환
     isCompleted.value = true
 
-    // 완료 시각 설정
+    // 완료 시각 설정 (UTC → KST 변환)
     if (result.signedAt) {
-      const date = new Date(result.signedAt)
-      if (!isNaN(date.getTime())) {
-        completedAt.value = date.toLocaleString('ko-KR', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        })
-      } else {
-        completedAt.value = new Date().toLocaleString('ko-KR')
-      }
+      const formatted = formatDateTime(result.signedAt)
+      completedAt.value = formatted !== '-' ? formatted : formatDateTime(new Date().toISOString())
     } else {
-      completedAt.value = new Date().toLocaleString('ko-KR')
+      completedAt.value = formatDateTime(new Date().toISOString())
     }
 
     // 화면 맨 위로 스크롤

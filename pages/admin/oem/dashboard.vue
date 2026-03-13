@@ -132,82 +132,185 @@
         </div>
       </div>
 
-      <!-- 중단: 선택된 OEM 월별 지급 현황 -->
-      <div class="monthly-section">
-        <div class="section-header">
-          <h3 class="section-title">
-            <i class="fas fa-calendar-alt"></i>
-            월별 지급 현황
-          </h3>
-          <div class="section-actions">
-            <select v-model="selectedOemId" class="oem-select">
-              <option :value="null">전체 OEM</option>
-              <option
-                v-for="oem in summaryList"
-                :key="oem.oemCompanyId"
-                :value="oem.oemCompanyId"
-              >
-                {{ oem.oemCompanyName }}
-              </option>
-            </select>
+      <!-- 품목별 생산 현황 + 월별 지급 현황 (좌우 배치) -->
+      <div class="detail-row">
+        <!-- 좌: 품목별 생산 현황 -->
+        <div class="production-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-cogs"></i>
+              품목별 생산 현황
+            </h3>
+            <div class="section-actions">
+              <select v-model="productionOemId" class="oem-select" :disabled="isOemManager">
+                <option v-if="!isOemManager" :value="null">전체 OEM</option>
+                <option
+                  v-for="oem in summaryList"
+                  :key="oem.oemCompanyId"
+                  :value="oem.oemCompanyId"
+                >
+                  {{ oem.oemCompanyName }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 생산 현황 로딩 -->
+          <div v-if="productionLoading" class="loading-container small">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>생산 현황 데이터를 불러오는 중...</p>
+          </div>
+
+          <!-- 생산 현황 데이터 없음 -->
+          <div v-else-if="filteredProductionStatus.length === 0" class="empty-container small">
+            <i class="fas fa-box-open"></i>
+            <p>해당 연도의 생산 현황이 없습니다.</p>
+          </div>
+
+          <!-- 생산 현황 테이블 -->
+          <div v-else class="table-card">
+            <div class="table-container">
+              <table class="detail-table production-table">
+                <thead>
+                  <tr>
+                    <th v-if="productionOemId === null">OEM 제조사</th>
+                    <th>품목명</th>
+                    <th>발주수량</th>
+                    <th>생산수량</th>
+                    <th>생산률</th>
+                    <th>누적입고</th>
+                    <th>누적출고</th>
+                    <th>잔여재고</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(item, index) in filteredProductionStatus"
+                    :key="`${item.oemCompanyId}-${item.skuId}-${index}`"
+                  >
+                    <td v-if="productionOemId === null" class="text-left">
+                      {{ item.oemCompanyName }}
+                    </td>
+                    <td class="text-left sku-name">
+                      <span class="sku-badge">{{ item.skuId }}</span>
+                      {{ item.skuName }}
+                    </td>
+                    <td class="text-right">{{ formatQuantity(item.orderedQuantity) }}</td>
+                    <td class="text-right">{{ formatQuantity(item.producedQuantity) }}</td>
+                    <td class="text-center">
+                      <span
+                        class="rate-badge"
+                        :class="getRateClass(item.productionRate)"
+                      >
+                        {{ formatPercent(item.productionRate) }}
+                      </span>
+                    </td>
+                    <td class="text-right text-blue">{{ formatQuantity(item.cumulativeInbound) }}</td>
+                    <td class="text-right text-orange">{{ formatQuantity(item.cumulativeOutbound) }}</td>
+                    <td class="text-right">
+                      <strong :class="item.currentInventory > 0 ? 'text-green' : 'text-gray'">
+                        {{ formatQuantity(item.currentInventory) }}
+                      </strong>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td :colspan="productionOemId === null ? 2 : 1" class="text-center">
+                      <strong>합계</strong>
+                    </td>
+                    <td class="text-right"><strong>{{ formatQuantity(productionTotals.ordered) }}</strong></td>
+                    <td class="text-right"><strong>{{ formatQuantity(productionTotals.produced) }}</strong></td>
+                    <td class="text-center">
+                      <strong>{{ formatPercent(productionTotals.rate) }}</strong>
+                    </td>
+                    <td class="text-right text-blue"><strong>{{ formatQuantity(productionTotals.inbound) }}</strong></td>
+                    <td class="text-right text-orange"><strong>{{ formatQuantity(productionTotals.outbound) }}</strong></td>
+                    <td class="text-right text-green"><strong>{{ formatQuantity(productionTotals.inventory) }}</strong></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
 
-        <!-- 월별 지급 로딩 -->
-        <div v-if="monthlyLoading" class="loading-container small">
-          <i class="fas fa-spinner fa-spin"></i>
-          <p>월별 지급 데이터를 불러오는 중...</p>
-        </div>
-
-        <!-- 월별 지급 데이터 없음 -->
-        <div v-else-if="filteredMonthlyPayments.length === 0" class="empty-container small">
-          <i class="fas fa-calendar-times"></i>
-          <p>해당 연도의 지급 내역이 없습니다.</p>
-        </div>
-
-        <!-- 선택된 OEM 월별 테이블 -->
-        <div v-else class="table-card">
-          <div class="table-container">
-            <table class="detail-table">
-              <thead>
-                <tr>
-                  <th v-if="selectedOemId === null">OEM 제조사</th>
-                  <th>연월</th>
-                  <th>건수</th>
-                  <th>지급 합계</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(item, index) in filteredMonthlyPayments"
-                  :key="`${item.oemCompanyId}-${item.yearMonth}-${index}`"
+        <!-- 우: 월별 지급 현황 -->
+        <div class="monthly-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-calendar-alt"></i>
+              월별 지급 현황
+            </h3>
+            <div class="section-actions">
+              <select v-model="selectedOemId" class="oem-select" :disabled="isOemManager">
+                <option v-if="!isOemManager" :value="null">전체 OEM</option>
+                <option
+                  v-for="oem in summaryList"
+                  :key="oem.oemCompanyId"
+                  :value="oem.oemCompanyId"
                 >
-                  <td v-if="selectedOemId === null" class="text-left">
-                    {{ item.oemCompanyName }}
-                  </td>
-                  <td class="text-center">
-                    <span class="month-badge">{{ item.yearMonth }}</span>
-                  </td>
-                  <td class="text-center">{{ item.paymentCount }}</td>
-                  <td class="text-right">
-                    <strong>{{ formatCurrency(item.totalAmount) }}</strong>
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td :colspan="selectedOemId === null ? 2 : 1" class="text-center">
-                    <strong>합계</strong>
-                  </td>
-                  <td class="text-center">
-                    <strong>{{ monthlyTotals.count }}</strong>
-                  </td>
-                  <td class="text-right">
-                    <strong>{{ formatCurrency(monthlyTotals.total) }}</strong>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                  {{ oem.oemCompanyName }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 월별 지급 로딩 -->
+          <div v-if="monthlyLoading" class="loading-container small">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>월별 지급 데이터를 불러오는 중...</p>
+          </div>
+
+          <!-- 월별 지급 데이터 없음 -->
+          <div v-else-if="filteredMonthlyPayments.length === 0" class="empty-container small">
+            <i class="fas fa-calendar-times"></i>
+            <p>해당 연도의 지급 내역이 없습니다.</p>
+          </div>
+
+          <!-- 월별 지급 테이블 -->
+          <div v-else class="table-card">
+            <div class="table-container">
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th v-if="selectedOemId === null">OEM 제조사</th>
+                    <th>연월</th>
+                    <th>건수</th>
+                    <th>지급 합계</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(item, index) in filteredMonthlyPayments"
+                    :key="`${item.oemCompanyId}-${item.yearMonth}-${index}`"
+                  >
+                    <td v-if="selectedOemId === null" class="text-left">
+                      {{ item.oemCompanyName }}
+                    </td>
+                    <td class="text-center">
+                      <span class="month-badge">{{ item.yearMonth }}</span>
+                    </td>
+                    <td class="text-center">{{ item.paymentCount }}</td>
+                    <td class="text-right">
+                      <strong>{{ formatCurrency(item.totalAmount) }}</strong>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td :colspan="selectedOemId === null ? 2 : 1" class="text-center">
+                      <strong>합계</strong>
+                    </td>
+                    <td class="text-center">
+                      <strong>{{ monthlyTotals.count }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatCurrency(monthlyTotals.total) }}</strong>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -224,27 +327,69 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { formatCurrency, formatQuantity, formatPercent } from '~/utils/format'
 import { oemDashboardService } from '~/services/oem-dashboard.service'
-import type { OemDashboardSummary, OemMonthlyPayment } from '~/types/oem-dashboard'
+import { usePermission } from '~/composables/usePermission'
+import { useAuthStore } from '~/stores/auth'
+import type { OemDashboardSummary, OemMonthlyPayment, OemProductionStatus } from '~/types/oem-dashboard'
 
 definePageMeta({
   layout: 'admin',
   pageTitle: 'OEM 대시보드'
 })
 
+const { isOemManager } = usePermission()
+const authStore = useAuthStore()
+
 // 상태
 const loading = ref(true)
 const monthlyLoading = ref(false)
+const productionLoading = ref(false)
 const selectedYear = ref(new Date().getFullYear())
 const selectedOemId = ref<number | null>(null)
+const productionOemId = ref<number | null>(null)
 
 // 데이터
 const summaryList = ref<OemDashboardSummary[]>([])
 const monthlyPayments = ref<OemMonthlyPayment[]>([])
+const productionStatus = ref<OemProductionStatus[]>([])
 
 // 연도 범위
 const currentYear = new Date().getFullYear()
 const minYear = currentYear - 4
 const maxYear = currentYear + 1
+
+// 선택된 OEM에 따른 생산 현황 필터링
+const filteredProductionStatus = computed(() => {
+  if (productionOemId.value === null) {
+    return productionStatus.value
+  }
+  return productionStatus.value.filter(
+    item => item.oemCompanyId === productionOemId.value
+  )
+})
+
+// 생산 현황 합계 계산
+const productionTotals = computed(() => {
+  const data = filteredProductionStatus.value
+  const ordered = data.reduce((sum, item) => sum + (item.orderedQuantity || 0), 0)
+  const produced = data.reduce((sum, item) => sum + (item.producedQuantity || 0), 0)
+  const rate = ordered > 0 ? Math.round((produced / ordered) * 1000) / 10 : 0
+  return {
+    ordered,
+    produced,
+    rate,
+    inbound: data.reduce((sum, item) => sum + (item.cumulativeInbound || 0), 0),
+    outbound: data.reduce((sum, item) => sum + (item.cumulativeOutbound || 0), 0),
+    inventory: data.reduce((sum, item) => sum + (item.currentInventory || 0), 0)
+  }
+})
+
+// 생산률 등급별 CSS 클래스
+const getRateClass = (rate: number) => {
+  if (rate >= 100) return 'rate-complete'
+  if (rate >= 70) return 'rate-high'
+  if (rate >= 40) return 'rate-mid'
+  return 'rate-low'
+}
 
 // 선택된 OEM에 따른 월별 지급 필터링
 const filteredMonthlyPayments = computed(() => {
@@ -270,13 +415,14 @@ const changeYear = (delta: number) => {
   selectedYear.value += delta
 }
 
-// OEM 카드 선택
+// OEM 카드 선택 (생산현황, 월별지급 동시 연동)
 const selectOem = (oemCompanyId: number) => {
   if (selectedOemId.value === oemCompanyId) {
-    // 이미 선택된 카드 클릭 시 선택 해제
     selectedOemId.value = null
+    productionOemId.value = null
   } else {
     selectedOemId.value = oemCompanyId
+    productionOemId.value = oemCompanyId
   }
 }
 
@@ -284,12 +430,25 @@ const selectOem = (oemCompanyId: number) => {
 const loadSummary = async () => {
   loading.value = true
   try {
-    summaryList.value = await oemDashboardService.getOemDashboardSummary()
+    summaryList.value = await oemDashboardService.getOemDashboardSummary(selectedYear.value)
   } catch (error) {
     console.error('OEM 대시보드 요약 조회 실패:', error)
     summaryList.value = []
   } finally {
     loading.value = false
+  }
+}
+
+// 생산 현황 데이터 로드
+const loadProductionStatus = async () => {
+  productionLoading.value = true
+  try {
+    productionStatus.value = await oemDashboardService.getProductionStatus(null, selectedYear.value)
+  } catch (error) {
+    console.error('OEM 생산 현황 조회 실패:', error)
+    productionStatus.value = []
+  } finally {
+    productionLoading.value = false
   }
 }
 
@@ -310,6 +469,7 @@ const loadMonthlyPayments = async () => {
 const loadDashboard = async () => {
   await Promise.all([
     loadSummary(),
+    loadProductionStatus(),
     loadMonthlyPayments()
   ])
 }
@@ -320,8 +480,18 @@ watch(selectedYear, () => {
 })
 
 // 초기 데이터 로드
-onMounted(() => {
-  loadDashboard()
+onMounted(async () => {
+  await loadDashboard()
+  // OEM 담당자는 자동으로 자사 선택 + 잠금
+  if (isOemManager.value && summaryList.value.length > 0) {
+    const myCompanyId = authStore.user?.companyId
+    const myOem = summaryList.value.find(o => o.oemCompanyId === myCompanyId)
+    if (myOem) {
+      selectOem(myOem.oemCompanyId)
+    } else {
+      selectOem(summaryList.value[0].oemCompanyId)
+    }
+  }
 })
 </script>
 
@@ -611,9 +781,86 @@ onMounted(() => {
   font-weight: 600;
 }
 
+/* 좌우 배치 그리드 */
+.detail-row {
+  display: grid;
+  grid-template-columns: 55fr 45fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  align-items: start;
+}
+
+/* 생산 현황 섹션 */
+.production-section {
+  min-width: 0;
+}
+
+.production-table th {
+  white-space: nowrap;
+}
+
+.sku-name {
+  white-space: nowrap;
+}
+
+.sku-badge {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  background: #f1f5f9;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  color: #64748b;
+  margin-right: 0.375rem;
+}
+
+.rate-badge {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.rate-complete {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.rate-high {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.rate-mid {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.rate-low {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.text-blue {
+  color: #2563eb;
+}
+
+.text-orange {
+  color: #ea580c;
+}
+
+.text-green {
+  color: #16a34a;
+}
+
+.text-gray {
+  color: #9ca3af;
+}
+
 /* 월별 지급 섹션 */
 .monthly-section {
-  margin-top: 1rem;
+  min-width: 0;
 }
 
 /* 테이블 카드 */
@@ -685,6 +932,10 @@ onMounted(() => {
 @media (max-width: 1280px) {
   .oem-cards-grid {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+
+  .detail-row {
+    grid-template-columns: 1fr;
   }
 }
 

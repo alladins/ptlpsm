@@ -120,7 +120,16 @@
                 readonly
               >
             </FormField>
-            <FormField label="현장 인수자">
+            <FormField label="건설사">
+              <input
+                type="text"
+                v-model="formData.constructionCompany"
+                class="form-input-md readonly-field"
+                placeholder="출하 선택 시 자동 입력"
+                readonly
+              >
+            </FormField>
+            <FormField label="인수자명">
               <input
                 type="text"
                 v-model="formData.receiverName"
@@ -222,7 +231,7 @@
                 class="form-input-md"
               >
                 <option value="">기사를 선택하세요</option>
-                <option v-for="driver in deliveryDrivers" :key="driver.userid" :value="driver.userid">
+                <option v-for="driver in deliveryDrivers" :key="driver.userId" :value="driver.userId">
                   {{ driver.userName }} ({{ driver.companyName || '운송사 정보 없음' }})
                 </option>
               </select>
@@ -259,6 +268,7 @@
             <FormField label="배차/출차 시각">
               <VueDatePicker
                 v-model="formData.dispatchAt"
+                model-type="yyyy-MM-dd'T'HH:mm"
                 :enable-time-picker="true"
                 :format="'yyyy-MM-dd HH:mm'"
                 locale="ko"
@@ -275,6 +285,7 @@
             <FormField label="도착 예정 시각">
               <VueDatePicker
                 v-model="formData.expectedArrival"
+                model-type="yyyy-MM-dd'T'HH:mm"
                 :enable-time-picker="true"
                 :format="'yyyy-MM-dd HH:mm'"
                 locale="ko"
@@ -325,7 +336,8 @@ import type { InventoryStatusResponse } from '~/types/dispatch-request'
 import { userService } from '~/services/user.service'
 import type { ShipmentListItem } from '~/services/shipment.service'
 import type { UserByRole } from '~/types/user'
-import { formatPhoneNumber, formatPhoneNumberInput, getLocalDateTimeString, getLocalDateString } from '~/utils/format'
+import { formatPhoneNumber, formatPhoneNumberInput, getLocalDateTimeString, getLocalDateString, getDefaultDateTimeString, toUtcIsoString } from '~/utils/format'
+import { calculateTransportDates, syncDatesOnDeliveryDateChange, adjustExpectedArrivalOnDispatchChange } from '~/utils/transport-date'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { usePermission } from '~/composables/usePermission'
@@ -403,8 +415,9 @@ const {
       carrierName: data.carrierName,
       driverName: data.driverName,
       driverPhone: data.driverPhone,
-      dispatchAt: data.dispatchAt,
-      expectedArrival: data.expectedArrival,
+      // KST datetime-local → UTC ISO-8601로 변환하여 API 전송
+      dispatchAt: toUtcIsoString(data.dispatchAt),
+      expectedArrival: toUtcIsoString(data.expectedArrival),
       deliveryMemo: data.deliveryMemo
     }
 
@@ -425,13 +438,14 @@ const {
     addressDetail: '',
     siteManagerId: null as number | null,  // 출하에서 가져옴
     siteManagerName: '',                    // 출하에서 가져옴
+    constructionCompany: '',                // 건설사 (출하에서 가져옴)
     receiverName: '',
     receiverPhone: '',
     carrierName: '',
     driverName: '',
     driverPhone: '',
-    dispatchAt: getLocalDateTimeString(),           // 현재 로컬 시간
-    expectedArrival: getLocalDateTimeString(60),    // 현재 시간 + 1시간
+    dispatchAt: getDefaultDateTimeString(7, 0),      // 오늘 07:00
+    expectedArrival: getDefaultDateTimeString(7, 0), // 오늘 07:00
     deliveryMemo: '',
     status: 'PENDING',
     trackingNumber: ''
@@ -480,47 +494,21 @@ const minExpectedArrivalDate = computed(() => {
 
 // 배차/출차 시각 변경 시 도착 예정 시각 자동 조정
 const onDispatchAtChange = (newValue: string | Date | null) => {
-  if (!newValue) return
-
-  const dispatchTime = new Date(newValue)
-  const expectedTime = formData.expectedArrival ? new Date(formData.expectedArrival) : null
-
-  // 도착 예정 시각이 배차 시각보다 이전이면 배차 시각 + 1시간으로 자동 조정
-  if (!expectedTime || expectedTime <= dispatchTime) {
-    const newExpectedTime = new Date(dispatchTime.getTime() + 60 * 60 * 1000) // +1시간
-    const year = newExpectedTime.getFullYear()
-    const month = String(newExpectedTime.getMonth() + 1).padStart(2, '0')
-    const day = String(newExpectedTime.getDate()).padStart(2, '0')
-    const hours = String(newExpectedTime.getHours()).padStart(2, '0')
-    const minutes = String(newExpectedTime.getMinutes()).padStart(2, '0')
-    formData.expectedArrival = `${year}-${month}-${day}T${hours}:${minutes}`
+  const adjusted = adjustExpectedArrivalOnDispatchChange(newValue, formData.expectedArrival)
+  if (adjusted) {
+    formData.expectedArrival = adjusted
   }
 }
 
 // 배송 예정일 변경 시 배차/출차 시각, 도착 예정 시각의 날짜도 함께 변경
 const onDeliveryDateChange = () => {
-  const newDate = formData.deliveryDate
-  if (!newDate) return
-
-  // 배차/출차 시각의 날짜 부분만 변경 (시간은 유지)
-  if (formData.dispatchAt) {
-    const dispatchTime = new Date(formData.dispatchAt)
-    const [year, month, day] = newDate.split('-').map(Number)
-    dispatchTime.setFullYear(year, month - 1, day)
-    const hours = String(dispatchTime.getHours()).padStart(2, '0')
-    const minutes = String(dispatchTime.getMinutes()).padStart(2, '0')
-    formData.dispatchAt = `${newDate}T${hours}:${minutes}`
-  }
-
-  // 도착 예정 시각의 날짜 부분만 변경 (시간은 유지)
-  if (formData.expectedArrival) {
-    const expectedTime = new Date(formData.expectedArrival)
-    const [year, month, day] = newDate.split('-').map(Number)
-    expectedTime.setFullYear(year, month - 1, day)
-    const hours = String(expectedTime.getHours()).padStart(2, '0')
-    const minutes = String(expectedTime.getMinutes()).padStart(2, '0')
-    formData.expectedArrival = `${newDate}T${hours}:${minutes}`
-  }
+  const result = syncDatesOnDeliveryDateChange(
+    formData.deliveryDate,
+    formData.dispatchAt,
+    formData.expectedArrival
+  )
+  if (result.dispatchAt) formData.dispatchAt = result.dispatchAt
+  if (result.expectedArrival) formData.expectedArrival = result.expectedArrival
 }
 
 // 팝업 상태
@@ -547,30 +535,44 @@ onMounted(async () => {
       formData.deliveryRequestNo = data.deliveryRequestNo || ''
       formData.clientName = data.clientName || ''
 
-      // 출하 ID로 배송 정보 조회
+      // 출하 상세 조회 → expectedArrivalDatetime(납기일자) 기준으로 날짜 자동 계산
       try {
-        const transportDetail = await transportService.getTransportByShipment(data.shipmentId)
-        if (transportDetail) {
-          Object.assign(formData, {
-            zipcode: transportDetail.zipcode || '',
-            deliveryAddress: transportDetail.deliveryAddress || '',
-            addressDetail: transportDetail.addressDetail || '',
-            receiverName: transportDetail.receiverName || '',
-            receiverPhone: transportDetail.receiverPhone || '',
-            deliveryDate: transportDetail.deliveryDate?.split('T')[0] || formData.deliveryDate,
-            carrierName: transportDetail.carrierName || '',
-            trackingNumber: transportDetail.trackingNumber || '',
-            driverName: transportDetail.driverName || '',
-            driverPhone: transportDetail.driverPhone || '',
-            vehicleNo: transportDetail.vehicleNo || '',
-            dispatchAt: transportDetail.dispatchAt?.slice(0, 16) || formData.dispatchAt,
-            expectedArrival: transportDetail.expectedArrival?.slice(0, 16) || formData.expectedArrival,
-            status: transportDetail.status || 'PENDING',
-            deliveryMemo: transportDetail.deliveryMemo || ''
-          })
+        const detail = await shipmentService.getShipmentDetail(data.shipmentId) as any
+        if (detail) {
+          // 출하NO
+          formData.shipmentNo = detail.shipmentNo || ''
+
+          // 배송지 정보 (출하에서 가져옴)
+          formData.zipcode = detail.zipcode || ''
+          formData.deliveryAddress = detail.deliveryAddress || ''
+          formData.addressDetail = detail.addressDetail || ''
+
+          // 현장담당자 정보
+          formData.siteManagerId = detail.siteManagerId || null
+          formData.siteManagerName = detail.siteManagerName || ''
+          formData.constructionCompany = detail.builderCompanyName || detail.siteManagerCompany || ''
+          formData.receiverName = detail.receiverName || detail.siteManagerName || ''
+          formData.receiverPhone = formatPhoneNumber(detail.receiverPhone || detail.siteManagerPhone || '')
+
+          // 배송 일정 - expectedArrivalDatetime(납기일자) 기준으로 자동 계산
+          const arrivalSource = detail.expectedArrivalDatetime || detail.expectedArrivalAt
+          const transportDates = calculateTransportDates(arrivalSource)
+          if (transportDates) {
+            formData.deliveryDate = transportDates.deliveryDate
+            formData.expectedArrival = transportDates.expectedArrival
+            formData.dispatchAt = transportDates.dispatchAt
+
+            console.log('[운송장 등록] URL 데이터 → 배송 일정 자동 설정:', {
+              expectedArrivalDatetime: arrivalSource,
+              ...transportDates
+            })
+          }
+
+          // 재고 현황 확인
+          await checkInventory(Number(data.shipmentId))
         }
       } catch (error) {
-        console.error('배송 정보 조회 실패:', error)
+        console.error('출하 상세 조회 실패:', error)
       }
 
     } catch (error) {
@@ -609,41 +611,21 @@ const handleShipmentSelect = async (shipment: ShipmentListItem) => {
     // 현장담당자 정보 (출하에서 가져옴 - 읽기전용)
     formData.siteManagerId = detail.siteManagerId || null
     formData.siteManagerName = detail.siteManagerName || ''
+    formData.constructionCompany = detail.builderCompanyName || detail.siteManagerCompany || ''
     formData.receiverName = detail.receiverName || detail.siteManagerName || ''
     formData.receiverPhone = formatPhoneNumber(detail.receiverPhone || detail.siteManagerPhone || '')
 
-    // 배송 일정 정보 - expectedArrivalDatetime(현장 도착 예정일시) 기준으로 설정
-    // 서버 필드명: expectedArrivalDatetime (프론트엔드 별칭: expectedArrivalAt)
-    const expectedArrival = detail.expectedArrivalDatetime || detail.expectedArrivalAt
-    if (expectedArrival) {
-      const arrivalDateTime = new Date(expectedArrival)
-
-      // 1. 배송예정일: 현장 도착 예정일시의 날짜 부분
-      const year = arrivalDateTime.getFullYear()
-      const month = String(arrivalDateTime.getMonth() + 1).padStart(2, '0')
-      const day = String(arrivalDateTime.getDate()).padStart(2, '0')
-      formData.deliveryDate = `${year}-${month}-${day}`
-
-      // 2. 도착 예정 시각: 현장 도착 예정일시 그대로
-      const hours = String(arrivalDateTime.getHours()).padStart(2, '0')
-      const minutes = String(arrivalDateTime.getMinutes()).padStart(2, '0')
-      formData.expectedArrival = `${year}-${month}-${day}T${hours}:${minutes}`
-
-      // 3. 배차/출차 시각: 도착 예정일 하루 전 같은 시각
-      const dispatchDateTime = new Date(arrivalDateTime)
-      dispatchDateTime.setDate(dispatchDateTime.getDate() - 1)
-      const dispatchYear = dispatchDateTime.getFullYear()
-      const dispatchMonth = String(dispatchDateTime.getMonth() + 1).padStart(2, '0')
-      const dispatchDay = String(dispatchDateTime.getDate()).padStart(2, '0')
-      const dispatchHours = String(dispatchDateTime.getHours()).padStart(2, '0')
-      const dispatchMinutes = String(dispatchDateTime.getMinutes()).padStart(2, '0')
-      formData.dispatchAt = `${dispatchYear}-${dispatchMonth}-${dispatchDay}T${dispatchHours}:${dispatchMinutes}`
+    // 배송 일정 정보 - expectedArrivalDatetime(납기일자) 기준으로 자동 계산
+    const arrivalSource = detail.expectedArrivalDatetime || detail.expectedArrivalAt
+    const transportDates = calculateTransportDates(arrivalSource)
+    if (transportDates) {
+      formData.deliveryDate = transportDates.deliveryDate
+      formData.expectedArrival = transportDates.expectedArrival
+      formData.dispatchAt = transportDates.dispatchAt
 
       console.log('[운송장 등록] 배송 일정 자동 설정:', {
-        expectedArrivalDatetime: expectedArrival,
-        deliveryDate: formData.deliveryDate,
-        expectedArrival: formData.expectedArrival,
-        dispatchAt: formData.dispatchAt
+        expectedArrivalDatetime: arrivalSource,
+        ...transportDates
       })
     }
 
@@ -665,7 +647,7 @@ const handleDriverPhoneInput = () => {
 // 기사 선택 시 자동 입력
 const handleDriverChange = () => {
   if (selectedDriverId.value) {
-    const driver = deliveryDrivers.value.find((d: UserByRole) => d.userid === selectedDriverId.value)
+    const driver = deliveryDrivers.value.find((d: UserByRole) => d.userId === selectedDriverId.value)
     if (driver) {
       formData.driverName = driver.userName
       formData.carrierName = driver.companyName || ''

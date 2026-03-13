@@ -52,15 +52,25 @@
         <button @click="markAllAsRead">모두 읽음</button>
       </div>
       <div class="notification-list">
-        <div v-for="notification in notifications" :key="notification.id" class="notification-item">
-          <div class="notification-icon">
-            <i :class="notification.icon"></i>
+        <div
+          v-for="notification in notifications"
+          :key="notification.notificationId"
+          class="notification-item"
+          :class="{ 'notification-unread': !notification.isRead }"
+          @click="handleNotificationClick(notification)"
+        >
+          <div class="notification-icon" :class="'icon-' + notification.eventType.toLowerCase().replace(/_/g, '-')">
+            <i :class="getEventIcon(notification.eventType)"></i>
           </div>
           <div class="notification-content">
             <div class="notification-title">{{ notification.title }}</div>
             <div class="notification-message">{{ notification.message }}</div>
-            <div class="notification-time">{{ notification.time }}</div>
+            <div class="notification-time">{{ getRelativeTime(notification.createdAt) }}</div>
           </div>
+        </div>
+        <div v-if="notifications.length === 0" class="notification-empty">
+          <i class="fas fa-bell-slash"></i>
+          <p>알림이 없습니다.</p>
         </div>
       </div>
     </div>
@@ -75,6 +85,9 @@ import { useAuthStore } from '~/stores/auth'
 import { authService } from '~/services/auth.service'
 import SidebarMenu from '~/components/admin/SidebarMenu.vue'
 import ImpersonationBanner from '~/components/admin/common/ImpersonationBanner.vue'
+import { notificationService } from '~/services/notification.service'
+import { EVENT_ICON_MAP } from '~/types/notification'
+import type { Notification } from '~/types/notification'
 
 // Stores
 const authStore = useAuthStore()
@@ -82,7 +95,7 @@ const authStore = useAuthStore()
 // Reactive data
 const sidebarCollapsed = ref(false)
 const showNotifications = ref(false)
-const notificationCount = ref(3)
+const notificationCount = ref(0)
 const isMobileMenuOpen = ref(false)
 
 // Computed
@@ -119,30 +132,53 @@ const currentPageTitle = computed(() => {
   return ''
 })
 
-// Mock notifications
-const notifications = ref([
-  {
-    id: 1,
-    title: '새로운 발주 요청',
-    message: '고객사 A로부터 새로운 발주가 요청되었습니다.',
-    icon: 'fas fa-shopping-cart',
-    time: '5분 전'
-  },
-  {
-    id: 2,
-    title: '출하 완료',
-    message: '주문번호 #12345의 출하가 완료되었습니다.',
-    icon: 'fas fa-truck',
-    time: '1시간 전'
-  },
-  {
-    id: 3,
-    title: '시스템 업데이트',
-    message: '시스템이 성공적으로 업데이트되었습니다.',
-    icon: 'fas fa-cog',
-    time: '2시간 전'
+// 알림 데이터
+const notifications = ref<Notification[]>([])
+let pollingTimer: ReturnType<typeof setInterval> | null = null
+
+// 알림 데이터 로드
+const loadNotifications = async () => {
+  try {
+    const [list, count] = await Promise.all([
+      notificationService.getNotifications(),
+      notificationService.getUnreadCount()
+    ])
+    notifications.value = list
+    notificationCount.value = count
+  } catch (error) {
+    console.error('알림 조회 실패:', error)
   }
-])
+}
+
+// 미읽음 수만 갱신 (폴링용)
+const refreshUnreadCount = async () => {
+  try {
+    notificationCount.value = await notificationService.getUnreadCount()
+  } catch (error) {
+    // 폴링 실패는 무시
+  }
+}
+
+// 상대 시간 변환
+const getRelativeTime = (dateStr: string): string => {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  const diffHour = Math.floor(diffMs / 3600000)
+  const diffDay = Math.floor(diffMs / 86400000)
+
+  if (diffMin < 1) return '방금 전'
+  if (diffMin < 60) return `${diffMin}분 전`
+  if (diffHour < 24) return `${diffHour}시간 전`
+  if (diffDay < 7) return `${diffDay}일 전`
+  return date.toLocaleDateString('ko-KR')
+}
+
+// 이벤트 타입별 아이콘
+const getEventIcon = (eventType: string): string => {
+  return EVENT_ICON_MAP[eventType as keyof typeof EVENT_ICON_MAP] || 'fas fa-bell'
+}
 
 // Methods
 const toggleSidebar = () => {
@@ -172,9 +208,39 @@ const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
 }
 
-const markAllAsRead = () => {
-  notificationCount.value = 0
-  showNotifications.value = false
+const markAllAsRead = async () => {
+  try {
+    await notificationService.markAllAsRead()
+    notificationCount.value = 0
+    notifications.value = notifications.value.map(n => ({ ...n, isRead: true }))
+    showNotifications.value = false
+  } catch (error) {
+    console.error('모두 읽음 처리 실패:', error)
+  }
+}
+
+// 알림 클릭 처리
+const handleNotificationClick = async (notification: Notification) => {
+  // 읽음 처리
+  if (!notification.isRead) {
+    try {
+      await notificationService.markAsRead(notification.notificationId)
+      notification.isRead = true
+      notificationCount.value = Math.max(0, notificationCount.value - 1)
+    } catch (error) {
+      console.error('읽음 처리 실패:', error)
+    }
+  }
+  // 페이지 이동 (referenceUrl에 /list 경로 보정)
+  if (notification.referenceUrl) {
+    showNotifications.value = false
+    let targetUrl = notification.referenceUrl
+    // /admin/xxx 형태이고 하위 경로가 없으면 /list 자동 추가
+    if (targetUrl.startsWith('/admin/') && targetUrl.split('/').length === 3) {
+      targetUrl = `${targetUrl}/list`
+    }
+    await router.push(targetUrl)
+  }
 }
 
 // 대리 로그인 복귀 처리
@@ -198,16 +264,16 @@ const handleLogout = async () => {
     const authStore = useAuthStore()
     
     console.log('로그아웃 시작...', {
-      userid: authStore.user?.userid,
+      userId: authStore.user?.userId,
       hasToken: !!authStore.accessToken
     })
 
     // 서버에 로그아웃 요청
     if (authStore.accessToken && authStore.user) {
-      const userid = authStore.user.userid
+      const userId = authStore.user.userId
       const loginId = authStore.user.loginId
-      if (userid && loginId) {
-        await authService.logout(userid, loginId, authStore.accessToken)
+      if (userId && loginId) {
+        await authService.logout(userId, loginId, authStore.accessToken)
       }
     }
     
@@ -239,10 +305,17 @@ const handleClickOutside = (event: Event) => {
 // Lifecycle
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  // 알림 로드 및 30초 폴링
+  loadNotifications()
+  pollingTimer = setInterval(refreshUnreadCount, 30000)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  if (pollingTimer) {
+    clearInterval(pollingTimer)
+    pollingTimer = null
+  }
 })
 </script>
 
@@ -402,15 +475,16 @@ onUnmounted(() => {
   position: absolute;
   top: 2px;
   right: 2px;
-  background-color: #dc3545;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
   font-size: 10px;
-  padding: 2px 6px;
+  padding: 1px 5px;
   border-radius: 10px;
   min-width: 16px;
   text-align: center;
-  font-weight: bold;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.4);
+  line-height: 14px;
 }
 
 .page-content {
@@ -423,82 +497,188 @@ onUnmounted(() => {
   position: absolute;
   top: 70px;
   right: 20px;
-  width: 350px;
+  width: 360px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
   z-index: 1000;
-  border: 1px solid #e9ecef;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
 }
 
 .notification-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  border-bottom: 1px solid #e9ecef;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafbfc;
 }
 
 .notification-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #495057;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.01em;
 }
 
 .notification-header button {
   background: none;
   border: none;
-  color: #007bff;
+  color: #3b82f6;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+}
+
+.notification-header button:hover {
+  background: #eff6ff;
 }
 
 .notification-list {
-  max-height: 400px;
+  max-height: 380px;
   overflow-y: auto;
+}
+
+.notification-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
 .notification-item {
   display: flex;
-  padding: 15px 20px;
-  border-bottom: 1px solid #f8f9fa;
-  transition: background-color 0.3s ease;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  border-bottom: 1px solid #f8fafc;
+  position: relative;
 }
 
 .notification-item:hover {
-  background-color: #f8f9fa;
+  background-color: #f8fafc;
 }
 
 .notification-item:last-child {
   border-bottom: none;
 }
 
+.notification-unread {
+  background-color: #eff6ff;
+}
+
+.notification-unread::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #3b82f6;
+  border-radius: 0 3px 3px 0;
+}
+
+.notification-unread:hover {
+  background-color: #e8f0fe;
+}
+
 .notification-icon {
-  margin-right: 12px;
-  color: #007bff;
-  font-size: 16px;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: white;
+  background: #94a3b8;
+  margin-top: 1px;
+}
+
+/* 이벤트 타입별 아이콘 배경색 */
+.icon-delivery-register {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.icon-shipment-register {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.icon-purchase-order-register {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.icon-production-complete {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.icon-transport-register {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+
+.icon-signature-register {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+}
+
+.icon-delivery-complete {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
 }
 
 .notification-content {
   flex: 1;
+  min-width: 0;
 }
 
 .notification-title {
-  font-weight: 500;
-  color: #495057;
-  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.3;
+  margin-bottom: 2px;
 }
 
 .notification-message {
-  font-size: 14px;
-  color: #6c757d;
-  margin-bottom: 4px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .notification-time {
-  font-size: 12px;
-  color: #adb5bd;
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.notification-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.notification-empty i {
+  font-size: 28px;
+  margin-bottom: 8px;
+  display: block;
+  opacity: 0.5;
+}
+
+.notification-empty p {
+  margin: 0;
+  font-size: 13px;
 }
 
 /* 반응형 */
@@ -567,24 +747,25 @@ onUnmounted(() => {
     right: 10px;
     left: 10px;
     width: auto;
+    top: 60px;
   }
-  
+
   /* 모바일에서 벨 아이콘 크기 조정 */
   .bell-icon {
     width: 22px;
     height: 22px;
   }
-  
+
   .action-btn {
     width: 40px;
     height: 40px;
   }
-  
+
   .notification-badge {
     top: 1px;
     right: 1px;
-    font-size: 11px;
-    padding: 3px 7px;
+    font-size: 10px;
+    padding: 2px 6px;
   }
   
 }

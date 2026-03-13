@@ -222,6 +222,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, h } from 'vue'
+import { getLocalDateString } from '~/utils/format'
 
 // Props
 interface Props {
@@ -272,7 +273,7 @@ const displayAmount = ref('')
 const isAmountFocused = ref(false)
 
 const formData = reactive({
-  paymentDate: new Date().toISOString().split('T')[0],
+  paymentDate: getLocalDateString(),
   paidAmount: 0,
   bankAccount: '',
   remarks: ''
@@ -281,7 +282,7 @@ const formData = reactive({
 const errors = reactive<FormErrors>({})
 
 // Computed
-const today = computed(() => new Date().toISOString().split('T')[0])
+const today = computed(() => getLocalDateString())
 
 const paymentTypeLabel = computed(() => {
   const labels = {
@@ -468,7 +469,7 @@ const handleClose = () => {
 }
 
 const resetForm = () => {
-  formData.paymentDate = new Date().toISOString().split('T')[0]
+  formData.paymentDate = getLocalDateString()
   formData.paidAmount = 0
   formData.bankAccount = ''
   formData.remarks = ''

@@ -211,7 +211,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { bankAccountService } from '~/services/bank-account.service'
 import { codeService } from '~/services/code.service'
-import { formatCurrency } from '~/utils/format'
+import { formatCurrency, getLocalDateString } from '~/utils/format'
 import type { BankAccount, Transaction, TransactionResponse } from '~/types/bank-account'
 import {
   TRANS_DIRECTION_OPTIONS,
@@ -293,9 +293,12 @@ function getDefaultEndDate(): string {
   return formatDateForInput(new Date())
 }
 
-// 날짜를 input용 문자열로 변환
+// 날짜를 input용 문자열로 변환 (로컬 타임존 기준)
 function formatDateForInput(date: Date): string {
-  return date.toISOString().split('T')[0]
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 // 날짜를 API용 문자열로 변환 (YYYYMMDD)

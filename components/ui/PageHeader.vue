@@ -43,7 +43,7 @@ interface Props {
   /** 페이지 설명 (선택) */
   description?: string
   /** 아이콘 타입 (chart, order, shipping, transport, delivery, default) */
-  icon?: 'chart' | 'order' | 'shipping' | 'transport' | 'delivery' | 'default'
+  icon?: 'chart' | 'chart-line' | 'order' | 'shipping' | 'transport' | 'delivery' | 'warehouse' | 'boxes' | 'default'
   /** 아이콘 색상 (blue, green, orange, purple, cyan) */
   iconColor?: 'blue' | 'green' | 'orange' | 'purple' | 'cyan'
 }

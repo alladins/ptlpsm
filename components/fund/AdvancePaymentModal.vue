@@ -182,7 +182,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, reactive } from 'vue'
-import { formatCurrency, formatNumber, formatDate } from '~/utils/format'
+import { formatCurrency, formatNumber, formatDate, getLocalDateString } from '~/utils/format'
 import { fundService } from '~/services/fund.service'
 import type { AdvancePayment } from '~/types/fund'
 
@@ -229,7 +229,7 @@ const existingAdvances = ref<AdvancePayment[]>([])
 // 폼 데이터
 const form = reactive({
   requestAmount: 0,
-  requestDate: new Date().toISOString().split('T')[0],
+  requestDate: getLocalDateString(),
   remarks: ''
 })
 
@@ -358,7 +358,7 @@ const closeResultModal = () => {
 
 const resetForm = () => {
   form.requestAmount = 0
-  form.requestDate = new Date().toISOString().split('T')[0]
+  form.requestDate = getLocalDateString()
   form.remarks = ''
   formattedRequestAmount.value = ''
 

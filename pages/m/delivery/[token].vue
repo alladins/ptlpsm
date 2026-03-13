@@ -6,7 +6,25 @@
       <p>납품 정보를 불러오는 중...</p>
     </div>
 
-    <!-- 에러 상태 -->
+    <!-- 에러 상태: 이미 완료 -->
+    <div v-else-if="errorType === 'completed'" class="completed-screen">
+      <i class="fas fa-check-circle"></i>
+      <h2>해당 작업은 이미 완료되었습니다.</h2>
+      <p>본인이 하신 것이 아니라면,<br>관리자에게 링크를 재요청해주세요.</p>
+      <button class="btn-close-page" @click="closePage">
+        <i class="fas fa-times"></i>
+        닫기
+      </button>
+    </div>
+
+    <!-- 에러 상태: 링크 만료 -->
+    <div v-else-if="errorType === 'expired'" class="error-screen">
+      <i class="fas fa-clock" style="color: #f59e0b;"></i>
+      <h2>서명 링크가 만료되었습니다.</h2>
+      <p>관리자에게 새 서명 링크를 요청해주세요.</p>
+    </div>
+
+    <!-- 에러 상태: 기타 오류 -->
     <div v-else-if="error" class="error-screen">
       <i class="fas fa-exclamation-triangle"></i>
       <h2>{{ error }}</h2>
@@ -151,7 +169,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from '#imports'
 import { deliveryService } from '~/services/delivery.service'
 import type { DeliveryInfo } from '~/services/delivery.service'
-import { formatQuantity } from '~/utils/format'
+import { formatQuantity, formatDateTime } from '~/utils/format'
 // 명시적 import (SSG 빌드 문제 해결)
 import UiMobileSignatureCanvas from '~/components/ui/mobile/SignatureCanvas.vue'
 import UiMobilePhotoUploader from '~/components/ui/mobile/PhotoUploader.vue'
@@ -167,6 +185,7 @@ const token = route.params.token as string
 // 상태 관리
 const loading = ref(true)
 const error = ref('')
+const errorType = ref<'completed' | 'expired' | 'error' | ''>('')
 const deliveryData = ref<DeliveryInfo | null>(null)
 const isCompleted = ref(false)
 const completedAt = ref('')
@@ -194,16 +213,9 @@ const getMergeLabel = (remarks: string | null | undefined): { label: string; col
   return null
 }
 
-// 만료 시간 포맷팅
+// 만료 시간 포맷팅 (UTC → KST 변환)
 const formatExpireTime = (dateString?: string) => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return formatDateTime(dateString)
 }
 
 // 초기 데이터 로드
@@ -215,11 +227,21 @@ onMounted(async () => {
     // 이미 완료된 경우
     if (deliveryData.value?.status === 'COMPLETED') {
       isCompleted.value = true
-      // completedAt은 서버에서 받아야 함 (임시)
-      completedAt.value = new Date().toLocaleString('ko-KR')
+      // completedAt은 서버에서 받아야 함 (임시: KST 현재 시각)
+      completedAt.value = formatDateTime(new Date().toISOString())
     }
   } catch (err) {
     console.error('납품 정보 로드 실패:', err)
+
+    // HTTP 상태코드 기반 에러 타입 분기
+    const statusCode = (err as any)?.statusCode
+    if (statusCode === 403) {
+      errorType.value = 'completed'
+    } else if (statusCode === 410) {
+      errorType.value = 'expired'
+    } else {
+      errorType.value = 'error'
+    }
     error.value = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다'
   } finally {
     loading.value = false
@@ -303,31 +325,18 @@ const handleSubmit = async () => {
     // 완료 화면으로 전환
     isCompleted.value = true
 
-    // 안전한 날짜 파싱
-    try {
-      if (result.confirmedAt) {
-        const date = new Date(result.confirmedAt)
-        // 유효한 날짜인지 확인
-        if (!isNaN(date.getTime())) {
-          completedAt.value = date.toLocaleString('ko-KR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          })
-        } else {
-          console.warn('Invalid date format:', result.confirmedAt)
-          completedAt.value = new Date().toLocaleString('ko-KR')
-        }
+    // 완료 시각 표시 (UTC → KST 변환)
+    if (result.confirmedAt) {
+      const formatted = formatDateTime(result.confirmedAt)
+      if (formatted !== '-') {
+        completedAt.value = formatted
       } else {
-        console.warn('confirmedAt is missing in server response')
-        completedAt.value = new Date().toLocaleString('ko-KR')
+        console.warn('Invalid date format:', result.confirmedAt)
+        completedAt.value = formatDateTime(new Date().toISOString())
       }
-    } catch (dateError) {
-      console.error('날짜 파싱 에러:', dateError, 'confirmedAt:', result.confirmedAt)
-      completedAt.value = new Date().toLocaleString('ko-KR')
+    } else {
+      console.warn('confirmedAt이 서버 응답에 없습니다. 현재 시각을 사용합니다.')
+      completedAt.value = formatDateTime(new Date().toISOString())
     }
 
     // 화면 맨 위로 스크롤

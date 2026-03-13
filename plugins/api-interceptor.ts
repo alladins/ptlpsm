@@ -37,8 +37,11 @@ export default defineNuxtPlugin(() => {
         }
       }
 
-      // API 호출 시마다 사용자 활동 시간 갱신 (비활성 판단 방지)
-      authStore.updateLastActivity()
+      // 자동 폴링 요청은 사용자 활동으로 간주하지 않음
+      const isPollingRequest = url.includes('/notifications/unread-count')
+      if (!isPollingRequest) {
+        authStore.updateLastActivity()
+      }
     }
 
     try {

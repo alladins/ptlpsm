@@ -71,7 +71,7 @@ export function useShippingFormData() {
   const setupBuilderAutoSet = (formData: BuilderAutoSetTarget) => {
     watch(() => formData.siteManagerId, (newManagerId) => {
       if (newManagerId) {
-        const selectedManager = siteManagers.value.find(m => m.userid === newManagerId)
+        const selectedManager = siteManagers.value.find(m => m.userId === newManagerId)
         if (selectedManager?.companyId) {
           formData.builderCompanyId = selectedManager.companyId
           formData.builderCompanyName = selectedManager.companyName || ''

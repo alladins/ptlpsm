@@ -191,24 +191,18 @@ export const salesService = {
       if (params.salesTitle) queryParams.append('salesTitle', params.salesTitle)
       if (params.salesStatus) queryParams.append('salesStatus', params.salesStatus)
       
-      // 날짜 형식 처리 (ISO 8601)
+      // 날짜 형식 처리 (YYYY-MM-DD 그대로 전달, UTC 변환 방지)
       if (params.expectedDeliveryDateFrom) {
-        const date = new Date(params.expectedDeliveryDateFrom)
-        queryParams.append('expectedDeliveryDateFrom', date.toISOString())
+        queryParams.append('expectedDeliveryDateFrom', params.expectedDeliveryDateFrom)
       }
       if (params.expectedDeliveryDateTo) {
-        const date = new Date(params.expectedDeliveryDateTo)
-        date.setHours(23, 59, 59, 999) // 종료일은 해당일의 마지막 시간으로 설정
-        queryParams.append('expectedDeliveryDateTo', date.toISOString())
+        queryParams.append('expectedDeliveryDateTo', params.expectedDeliveryDateTo)
       }
       if (params.expectedDeliveryDeadlineFrom) {
-        const date = new Date(params.expectedDeliveryDeadlineFrom)
-        queryParams.append('expectedDeliveryDeadlineFrom', date.toISOString())
+        queryParams.append('expectedDeliveryDeadlineFrom', params.expectedDeliveryDeadlineFrom)
       }
       if (params.expectedDeliveryDeadlineTo) {
-        const date = new Date(params.expectedDeliveryDeadlineTo)
-        date.setHours(23, 59, 59, 999) // 종료일은 해당일의 마지막 시간으로 설정
-        queryParams.append('expectedDeliveryDeadlineTo', date.toISOString())
+        queryParams.append('expectedDeliveryDeadlineTo', params.expectedDeliveryDeadlineTo)
       }
       
       if (params.useYn) queryParams.append('useYn', params.useYn)
@@ -289,13 +283,11 @@ export const salesService = {
     try {
       const url = SALES_ENDPOINTS.create()
 
-      // 날짜 형식 처리 (ISO 8601)
+      // 날짜는 YYYY-MM-DD 그대로 전달 (UTC 변환 방지)
       const processedData = {
         ...salesData,
-        expectedDeliveryDate: salesData.expectedDeliveryDate ? new Date(salesData.expectedDeliveryDate).toISOString() : undefined,
-        expectedDeliveryDeadline: salesData.expectedDeliveryDeadline ? new Date(salesData.expectedDeliveryDeadline).toISOString() : undefined,
       }
-      
+
       console.log('📡 영업관리 등록 요청 URL:', url)
       console.log('📤 영업관리 등록 요청 데이터:', processedData)
       console.log('🔍 dminsttNm 필드 확인:', {
@@ -344,13 +336,11 @@ export const salesService = {
     try {
       const url = SALES_ENDPOINTS.update(id)
 
-      // 날짜 형식 처리 (ISO 8601)
+      // 날짜는 YYYY-MM-DD 그대로 전달 (UTC 변환 방지)
       const processedData = {
         ...salesData,
-        expectedDeliveryDate: salesData.expectedDeliveryDate ? new Date(salesData.expectedDeliveryDate).toISOString() : undefined,
-        expectedDeliveryDeadline: salesData.expectedDeliveryDeadline ? new Date(salesData.expectedDeliveryDeadline).toISOString() : undefined,
       }
-      
+
       console.log('📡 영업관리 수정 요청 URL:', url)
       console.log('📤 영업관리 수정 요청 데이터:', processedData)
       console.log('🔍 dminsttNm 필드 확인 (수정):', {

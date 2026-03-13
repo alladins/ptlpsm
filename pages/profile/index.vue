@@ -536,7 +536,7 @@ import { getRoleName } from '~/types/user'
 
 // 반응형 데이터
 const currentUser = ref<any>({
-  userid: 1,
+  userId: 1,
   loginId: 'admin',
   userName: '시스템관리자',
   email: 'admin@ptlpsm.com',

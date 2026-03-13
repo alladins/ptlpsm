@@ -28,6 +28,7 @@ export interface TransportDetail {
   shipmentNo: string              // 출하NO (표시용)
   orderId: number
   deliveryRequestNo: string
+  projectName?: string            // 사업명
   zipcode: string
   deliveryAddress: string
   addressDetail: string

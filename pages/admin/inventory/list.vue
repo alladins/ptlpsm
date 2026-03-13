@@ -13,7 +13,7 @@
           <i v-else class="fas fa-search"></i>
           검색
         </button>
-        <button class="btn-action btn-primary" @click="openTransferModal">
+        <button v-if="!isOemManager" class="btn-action btn-primary" @click="openTransferModal">
           <i class="fas fa-exchange-alt"></i>
           창고간 이동
         </button>
@@ -124,7 +124,7 @@
                 <template v-for="(group, index) in skuGroups" :key="group.skuId">
                   <!-- 품목 메인 행 -->
                   <tr
-                    :class="['sku-group-row', { 'sku-group-expanded': expandedSkuIds[group.skuId] }]"
+                    :class="['sku-group-row', { 'sku-group-expanded': expandedSkuIds[group.skuId], 'zero-stock-row': group.totalQuantity === 0 }]"
                     @click="toggleGroup(group.skuId)"
                   >
                     <td class="text-center row-no">{{ index + 1 }}</td>
@@ -140,8 +140,8 @@
                     <td class="text-right sheet-count">{{ group.totalQuantity > 0 ? Math.round(group.totalQuantity / 2).toLocaleString() + ' 매' : '-' }}</td>
                     <td class="date-cell">{{ formatDateTime(group.lastUpdated) }}</td>
                     <td class="expand-cell">
-                      <span class="expand-hint" :title="'OEM ' + group.details.filter(d => (d.quantity || 0) > 0).length + '사'">
-                        <span class="oem-count-badge">{{ group.details.filter(d => (d.quantity || 0) > 0).length }}사</span>
+                      <span class="expand-hint" :title="'OEM ' + group.details.length + '사'">
+                        <span class="oem-count-badge">{{ group.details.length }}사</span>
                         <i :class="['fas fa-chevron-down expand-icon', { expanded: expandedSkuIds[group.skuId] }]"></i>
                       </span>
                     </td>
@@ -151,9 +151,10 @@
                     <td colspan="10" class="detail-container-cell">
                       <div class="detail-cards">
                         <div
-                          v-for="detail in group.details.filter(d => (d.quantity || 0) > 0)"
+                          v-for="detail in group.details"
                           :key="`${group.skuId}-${detail.inventoryId}`"
                           class="detail-card"
+                          :class="{ 'zero-stock-card': (detail.quantity || 0) === 0 }"
                         >
                           <div class="card-oem">{{ detail.oemCompanyName || '-' }}</div>
                           <div class="card-warehouse">
@@ -380,7 +381,7 @@
                   :key="item.skuId"
                   :value="item.skuId"
                 >
-                  {{ item.skuId }} - {{ item.skuName }} (재고: {{ item.quantity }}{{ item.unit || 'm²' }})
+                  {{ item.skuId }} - {{ item.skuName }} (재고: {{ item.quantity }}{{ (item as any).unit || 'm²' }})
                 </option>
               </select>
               <span v-if="selectedSkuStock > 0" class="sku-stock-info">
@@ -439,12 +440,15 @@ import type { InventoryItem, InventoryTransaction, TransferRequest, SkuTransacti
 import { TRANSACTION_TYPE_LABELS, TRANSACTION_TYPE_COLORS } from '~/types/inventory'
 import type { Warehouse } from '~/types/warehouse'
 import { formatDate, formatDateTime } from '~/utils/format'
+import { usePermission } from '~/composables/usePermission'
 import { useDataTable } from '~/composables/useDataTable'
 
 definePageMeta({
   layout: 'admin',
   pageTitle: '재고 현황'
 })
+
+const { isOemManager } = usePermission()
 
 // 탭 상태
 const activeTab = ref<'inventory' | 'transactions'>('inventory')
@@ -590,14 +594,55 @@ const skuGroups = computed<SkuGroup[]>(() => {
     }
   })
 
-  // 재고 0인 품목 제외, SKU 품명 숫자 오름차순 정렬 (예: HYDRO-22-60T → 60)
+  // skuSummaryMap에만 존재하는 SKU 추가 (inventory 레코드 없이 이력만 있는 경우)
+  skuSummaryMap.value.forEach((summary, skuId) => {
+    if (!groupMap.has(skuId)) {
+      const ordered = summary.totalOrdered || 0
+      const inbound = summary.totalInbound || 0
+      const transferIn = summary.totalTransferIn || 0
+      const outbound = summary.totalOutbound || 0
+      const transferOut = summary.totalTransferOut || 0
+
+      // 이력이 있는 경우만 추가
+      if (inbound > 0 || outbound > 0 || ordered > 0) {
+        // PO 기반 OEM 제조사 정보로 가상 창고 상세 생성
+        const virtualDetails: InventoryItem[] = []
+        if (summary.oemCompanyName) {
+          virtualDetails.push({
+            inventoryId: 0,
+            warehouseId: 0,
+            warehouseName: summary.oemWarehouseName || '(입고대기)',
+            oemCompanyName: summary.oemCompanyName,
+            skuId: skuId,
+            skuName: summary.skuName || skuId,
+            itemName: summary.itemName || '-',
+            quantity: 0,
+            lastUpdated: ''
+          })
+        }
+        groupMap.set(skuId, {
+          skuId: skuId,
+          skuName: summary.skuName || skuId,
+          itemName: summary.itemName || '-',
+          totalQuantity: 0,
+          pendingInbound: Math.max(0, Math.round(ordered) - inbound),
+          totalInbound: inbound + transferIn,
+          totalOutbound: outbound + transferOut,
+          lastUpdated: '',
+          details: virtualDetails
+        })
+      }
+    }
+  })
+
+  // 재고·입고대기·입출고 이력이 모두 없는 품목만 제외, SKU 품명 숫자 오름차순 정렬 (예: HYDRO-22-60T → 60)
   const extractSkuNumber = (skuName: string): number => {
     const match = skuName.match(/(\d+)\s*T?\s*$/i)
     return match ? parseInt(match[1], 10) : 9999
   }
 
   return Array.from(groupMap.values())
-    .filter(g => g.totalQuantity > 0 || g.pendingInbound > 0)
+    .filter(g => g.totalQuantity > 0 || g.pendingInbound > 0 || g.totalInbound > 0 || g.totalOutbound > 0)
     .sort((a, b) => extractSkuNumber(a.skuName) - extractSkuNumber(b.skuName))
 })
 
@@ -1370,6 +1415,22 @@ onMounted(async () => {
 
 .total-row td strong {
   color: #1e293b;
+}
+
+/* 재고 0 항목 시각적 구분 */
+.zero-stock-row {
+  background-color: #f9fafb;
+  opacity: 0.7;
+}
+
+.zero-stock-row:hover {
+  opacity: 0.85;
+}
+
+.zero-stock-card {
+  background-color: #f3f4f6;
+  border-color: #e5e7eb;
+  opacity: 0.7;
 }
 
 /* 반응형 */

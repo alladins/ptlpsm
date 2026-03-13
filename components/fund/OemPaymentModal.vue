@@ -425,7 +425,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import type { OemPayment, ProgressPaymentRequest } from '~/types/fund'
-import { formatCurrency } from '~/utils/format'
+import { formatCurrency, getLocalDateString } from '~/utils/format'
 
 // OEM 제조사 타입
 interface OemCompany {
@@ -503,7 +503,7 @@ const selectedPaymentIds = ref<number[]>([])
 const displayRemainingAmount = ref(0)  // 지급예정 버튼 옆 표시 금액 (클릭 시 0으로 변경)
 
 const formData = reactive({
-  paymentDate: new Date().toISOString().split('T')[0],
+  paymentDate: getLocalDateString(),
   amount: 0,
   oemCompanyId: null as number | null,
   oemCompanyName: '',
@@ -751,7 +751,7 @@ const handleClose = () => {
 }
 
 const resetForm = () => {
-  formData.paymentDate = new Date().toISOString().split('T')[0]
+  formData.paymentDate = getLocalDateString()
   formData.amount = 0
   formData.oemCompanyId = null
   formData.oemCompanyName = ''

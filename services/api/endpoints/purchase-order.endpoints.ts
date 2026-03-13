@@ -94,6 +94,16 @@ export const PURCHASE_ORDER_ENDPOINTS = {
   },
 
   /**
+   * 발주서 반려 영향 분석
+   * @param poId - 발주서 ID
+   * @returns GET /admin/purchase-orders/{poId}/reject-impact
+   */
+  rejectImpact: (poId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/purchase-orders/${poId}/reject-impact`
+  },
+
+  /**
    * 발주서 반려
    * @param poId - 발주서 ID
    * @returns POST /admin/purchase-orders/{poId}/reject

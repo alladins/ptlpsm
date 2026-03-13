@@ -7,17 +7,17 @@
       icon-color="green"
     >
       <template #actions>
-        <!-- 출고요청 버튼 -->
+        <!-- 출고요청 버튼 (재고부족 시 비활성화) -->
         <button
           v-if="canShowDispatchRequestButton"
           class="btn-action btn-warning"
           @click="handleDispatchRequestClick"
-          :disabled="checkingInventory"
-          title="OEM 제조사에 출고요청"
+          :disabled="checkingInventory || (inventoryPreChecked && !inventoryCanDispatch)"
+          :title="inventoryPreChecked && !inventoryCanDispatch ? '재고가 부족하여 출고요청할 수 없습니다' : 'OEM 제조사에 출고요청'"
         >
           <i v-if="checkingInventory" class="fas fa-spinner fa-spin"></i>
           <i v-else class="fas fa-paper-plane"></i>
-          {{ checkingInventory ? '확인 중...' : '출고요청' }}
+          {{ checkingInventory ? '확인 중...' : (inventoryPreChecked && !inventoryCanDispatch ? '재고부족' : '출고요청') }}
         </button>
         <button
           class="btn-action btn-delete"
@@ -123,13 +123,25 @@
                       <option :value="null">{{ loadingSiteManagers ? '로딩 중...' : '선택하세요' }}</option>
                       <option
                         v-for="manager in siteManagers"
-                        :key="manager.userid"
-                        :value="manager.userid"
+                        :key="manager.userId"
+                        :value="manager.userId"
                       >
                         {{ manager.userName }} ({{ manager.phone }})
                         <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
                       </option>
                     </select>
+                  </FormField>
+
+                  <FormField label="배송비">
+                    <input
+                      type="number"
+                      v-model.number="formData.shippingCost"
+                      class="form-input-sm text-right"
+                      placeholder="0"
+                      min="0"
+                      step="1000"
+                      :readonly="!canEdit"
+                    >
                   </FormField>
 
                   <FormField label="총 출하수량">
@@ -165,18 +177,18 @@
                   </span>
                 </div>
                 <div class="info-grid grid-2">
-                  <FormField label="OEM 제조사">
-                    <input
-                      type="text"
-                      :value="dispatchRequest.oemCompanyName || '-'"
-                      class="form-input-md"
-                      readonly
-                    >
-                  </FormField>
                   <FormField label="요청일시">
                     <input
                       type="text"
                       :value="formatDateTime(dispatchRequest.requestedAt)"
+                      class="form-input-md"
+                      readonly
+                    >
+                  </FormField>
+                  <FormField label="도착 예정일시">
+                    <input
+                      type="text"
+                      :value="formatDateTime(dispatchRequest.expectedArrivalDatetime)"
                       class="form-input-md"
                       readonly
                     >
@@ -188,14 +200,6 @@
                       type="text"
                       :value="dispatchRequest.deliveryAddress || '-'"
                       class="form-input-xl"
-                      readonly
-                    >
-                  </FormField>
-                  <FormField label="도착 예정일시">
-                    <input
-                      type="text"
-                      :value="formatDateTime(dispatchRequest.expectedArrivalDatetime)"
-                      class="form-input-md"
                       readonly
                     >
                   </FormField>
@@ -465,7 +469,7 @@
                           >{{ badge.label }}</span>
                         </template>
                         <template v-else>
-                          {{ item.remarks || '-' }}
+                          {{ item.shippingQuantity > 0 ? `${formatQuantity(Math.round(item.shippingQuantity / 2))} 매` : '-' }}
                         </template>
                         <span v-if="getBgradeForSku(item.skuId)" class="bgrade-badge">
                           B급 {{ getBgradeForSku(item.skuId)?.quantity }}{{ item.unit }}
@@ -553,7 +557,7 @@ import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
 import type { ShipmentDetailWithOrder, ShipmentItemWithOrder, SiblingDeliveryInfo } from '~/services/shipment.service'
-import { formatNumber, formatCurrency, formatQuantity, formatDateTime } from '~/utils/format'
+import { formatNumber, formatCurrency, formatQuantity, formatDateTime, utcToKstDateString, utcToKstDateTimeLocal } from '~/utils/format'
 import { useEditForm } from '~/composables/admin/useEditForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { useShippingFormData } from '~/composables/admin/useShippingFormData'
@@ -579,7 +583,7 @@ const router = useRouter()
 const route = useRoute()
 
 // 권한
-const { canEdit: hasEditPermission, canDelete: hasDeletePermission } = usePermission()
+const { canEdit: hasEditPermission, canDelete: hasDeletePermission, isOemManager } = usePermission()
 
 // 상태 관리 (DB 기반)
 const { getStatusLabel: getStatusLabelFromDB, getStatusBadgeClass } = useCommonStatus()
@@ -699,7 +703,8 @@ const {
       deliveryAddress: data.deliveryAddress || null,
       addressDetail: data.addressDetail || null,
       receiverName: data.receiverName || null,
-      receiverPhone: data.receiverPhone || null
+      receiverPhone: data.receiverPhone || null,
+      shippingCost: data.shippingCost || 0
     }
 
     // 수량 수정 가능한 상태일 때만 items 배열 추가
@@ -747,18 +752,12 @@ const {
       throw new Error('발주 정보가 없습니다.')
     }
 
-    // 안전한 날짜 포맷 변환
+    // 안전한 날짜 포맷 변환 (UTC → KST 날짜)
     let formattedDate = ''
     if (shipment.shipmentDate) {
       try {
-        // ISO 8601 형식 (2024-01-15T10:30:00 또는 2024-01-15)
-        if (shipment.shipmentDate.includes('T')) {
-          formattedDate = shipment.shipmentDate.split('T')[0]
-        } else if (shipment.shipmentDate.length >= 10) {
-          formattedDate = shipment.shipmentDate.substring(0, 10)
-        } else {
-          formattedDate = shipment.shipmentDate
-        }
+        // UTC ISO 8601 → KST YYYY-MM-DD 변환
+        formattedDate = utcToKstDateString(shipment.shipmentDate) || shipment.shipmentDate.substring(0, 10)
       } catch (error) {
         console.error('[출하 수정] Date format error:', error, shipment.shipmentDate)
         formattedDate = ''
@@ -786,7 +785,8 @@ const {
       receiverName: shipment.receiverName || '',
       receiverPhone: shipment.receiverPhone || '',
       // 현장 도착 예정일시 (서버 필드명: expectedArrivalDatetime)
-      expectedArrivalAt: shipment.expectedArrivalDatetime || shipment.expectedArrivalAt || ''
+      expectedArrivalAt: shipment.expectedArrivalDatetime || shipment.expectedArrivalAt || '',
+      shippingCost: shipment.shippingCost || 0
     }
   },
   onUpdateSuccess: () => {
@@ -881,6 +881,7 @@ const isEditableStatus = computed(() => {
 
 // 삭제 가능 여부 (권한 + 비즈니스 로직)
 const canDelete = computed(() => {
+  if (isOemManager.value) return false
   return hasDeletePermission.value && isDeletableStatus.value
 })
 
@@ -891,11 +892,17 @@ const canEditQuantity = computed(() => {
 
 // 출하 수정 가능 여부 (권한 + 비즈니스 로직)
 const canEdit = computed(() => {
+  // OEM 제조사 담당자는 수정 불가 (조회만 가능)
+  if (isOemManager.value) return false
+  // 출고요청이 존재하면 수정 불가
+  if (dispatchRequest.value) return false
   return hasEditPermission.value && isEditableStatus.value
 })
 
 // 비활성화 사유 표시 (권한 vs 상태 구분)
 const getEditDisabledReason = computed(() => {
+  if (isOemManager.value) return 'OEM 제조사 담당자는 출하를 수정할 수 없습니다'
+  if (dispatchRequest.value) return '출고요청이 완료된 출하는 수정할 수 없습니다'
   if (!hasEditPermission.value) return '수정 권한이 없습니다'
   if (!isEditableStatus.value) return '완료 또는 취소된 출하는 수정할 수 없습니다'
   return ''
@@ -913,6 +920,10 @@ const getDeleteDisabledReason = computed(() => {
 // - 출하가 취소되지 않은 경우 수정 가능
 // - 발주서가 생성되지 않은 경우에만 수정 가능
 const canEditOemAndDelivery = computed(() => {
+  // OEM 제조사 담당자는 수정 불가
+  if (isOemManager.value) return false
+  // 출고요청이 존재하면 수정 불가
+  if (dispatchRequest.value) return false
   // 출하가 취소 상태면 불가
   if (formData.status === 'CANCELLED') return false
   // 기성에 포함된 경우 수정 불가
@@ -931,6 +942,10 @@ const showInventoryShortageModal = ref(false)
 const inventoryStatus = ref<InventoryStatusResponse | null>(null)
 const checkingInventory = ref(false)
 
+// 재고 사전 확인 (페이지 로드 시 출고요청 버튼 비활성화 판단용)
+const inventoryPreChecked = ref(false)
+const inventoryCanDispatch = ref(true)
+
 // 출고요청 데이터
 const dispatchRequest = ref<DispatchRequest | null>(null)
 const loadingDispatchRequest = ref(false)
@@ -941,17 +956,14 @@ const handleSendMessage = () => {
   alert('메시지 발송 기능은 운송 등록 후 사용할 수 있습니다.')
 }
 
-// 현장 도착 예정일시 포맷 (datetime-local 값 → 표시용)
+// 현장 도착 예정일시 포맷 (UTC → KST 변환 후 표시용)
 const formatExpectedArrivalAt = (dateTimeStr: string): string => {
   if (!dateTimeStr) return '-'
-  const date = new Date(dateTimeStr)
-  return date.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  // UTC ISO 문자열을 KST로 변환 후 사람이 읽기 좋은 형식으로 출력
+  const kst = utcToKstDateTimeLocal(dateTimeStr)
+  if (!kst) return '-'
+  const [datePart, timePart] = kst.split('T')
+  return `${datePart} ${timePart}`
 }
 
 // 데이터 새로고침 (출하 상세 + 출고요청)
@@ -983,7 +995,7 @@ const refreshData = async () => {
     formData.zipcode = data.zipcode || ''
     formData.deliveryAddress = data.deliveryAddress || ''
     formData.addressDetail = data.addressDetail || ''
-    formData.expectedArrivalAt = data.expectedArrivalDatetime || ''
+    formData.expectedArrivalAt = data.expectedArrivalDatetime || data.expectedArrivalAt || ''
     formData.receiverName = data.receiverName || ''
     formData.receiverPhone = data.receiverPhone || ''
 
@@ -1122,6 +1134,8 @@ const handleDispatchRequestClick = async () => {
 
 // 출고요청 버튼 표시 조건 (출고요청이 없는 경우에만 표시)
 const canShowDispatchRequestButton = computed(() => {
+  // OEM 제조사 담당자는 출고요청 불가
+  if (isOemManager.value) return false
   // 취소/완료 상태에서는 표시하지 않음
   if (['CANCELLED', 'COMPLETED'].includes(formData.status)) return false
   // 이미 출고요청이 있으면 표시하지 않음
@@ -1189,12 +1203,23 @@ const prefillSiblingDeliveryInfo = async () => {
   }
 }
 
-// 출하 데이터 로드 완료 시 출고요청 조회 + 형제 배송지 프리필
+// 출하 데이터 로드 완료 시 출고요청 조회 + 형제 배송지 프리필 + 재고 사전 확인
 watch(() => shipmentData.value, async (newData) => {
   if (newData && shipmentId.value) {
     await loadDispatchRequest()
     // 출고요청이 없고 배송지 정보가 비어있으면 형제 출하에서 프리필
     await prefillSiblingDeliveryInfo()
+    // 출고요청 버튼 표시 조건일 때 재고 상태 사전 확인
+    if (canShowDispatchRequestButton.value && formData.oemCompanyId) {
+      try {
+        const status = await dispatchRequestService.checkInventoryStatus(shipmentId.value)
+        inventoryCanDispatch.value = status.canDispatch
+        inventoryPreChecked.value = true
+      } catch (error) {
+        console.error('재고 사전 확인 실패:', error)
+        inventoryCanDispatch.value = true // 확인 실패 시 버튼 활성 유지
+      }
+    }
   }
 })
 

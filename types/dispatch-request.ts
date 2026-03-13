@@ -113,6 +113,10 @@ export interface DispatchRequestCreateInput {
   receiverPhone?: string
   /** 비고 */
   remarks?: string
+  /** 건설사 ID */
+  builderCompanyId?: number | null
+  /** 건설사명 */
+  builderCompanyName?: string
 }
 
 /**
@@ -167,6 +171,8 @@ export interface InventoryItemStatus {
   shortageQuantity: number
   /** 충족 여부 */
   sufficient: boolean
+  /** 입고 대기 여부 (PO 발주는 있으나 물리 재고 미입고) */
+  pendingInbound?: boolean
 }
 
 /**

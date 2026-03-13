@@ -248,5 +248,19 @@ export const codeService = {
       console.error('코드 상세 삭제 실패:', error)
       throw error
     }
+  },
+
+  /**
+   * 활성 코드 목록 조회 (useYn='Y'인 코드만)
+   * GET /api/codes/details/{groupCode}
+   */
+  async getActiveCodes(groupCode: string): Promise<CodeDetail[]> {
+    try {
+      const allCodes = await this.getCodeDetails(groupCode)
+      return allCodes.filter(code => code.useYn === 'Y')
+    } catch (error) {
+      console.error('활성 코드 조회 실패:', error)
+      return []
+    }
   }
 }

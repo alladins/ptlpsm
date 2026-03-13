@@ -36,8 +36,8 @@
   <!-- PDF 미리보기 모달 -->
   <AdminDeliveryPdfPreviewModal
     v-if="showPdfModal"
-    :pdf-url="fullPdfUrl"
-    :delivery-id="deliveryId"
+    :pdf-url="fullPdfUrl || ''"
+    :delivery-id="deliveryId ?? undefined"
     :file-name="`납품영수증_${deliveryId}.pdf`"
     :show="showPdfModal"
     @close="showPdfModal = false"

@@ -8,12 +8,18 @@ import type { BaseEntity } from './common'
 /**
  * 긴급도
  */
-export type OrderUrgency = 'URGENT' | 'NORMAL' | 'LOW'
+export type OrderUrgency = 'URGENT' | 'NORMAL' | 'LOW' | 'FLEXIBLE'
+
+/** @deprecated OrderUrgency 사용 권장 */
+export type MobileOrderUrgency = OrderUrgency
+
+/** @deprecated OrderRequestStatus 사용 권장 */
+export type MobileOrderStatus = OrderRequestStatus
 
 /**
  * 주문 요청 상태
  */
-export type OrderRequestStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'COMPLETED'
+export type OrderRequestStatus = 'PENDING' | 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'COMPLETED'
 
 /**
  * 모바일 주문 요청
@@ -52,6 +58,20 @@ export interface MobileOrderRequest extends BaseEntity {
   remarks: string | null
   /** 요청 품목 목록 */
   items: MobileOrderRequestItem[]
+  /** 요청일 (createdAt 별칭) */
+  requestDate?: string
+  /** 희망 납품일 (requestedDeliveryDate 별칭) */
+  desiredDeliveryDate?: string
+  /** 품목 수 */
+  itemCount?: number
+  /** 긴급 여부 */
+  isUrgent?: boolean
+  /** 추가 메모 */
+  additionalNotes?: string
+  /** 처리일 */
+  processedDate?: string
+  /** 연결된 납품요구번호 */
+  linkedDeliveryRequestNo?: string
 }
 
 /**
@@ -74,6 +94,8 @@ export interface MobileOrderRequestItem {
   unit: string
   /** 품목별 비고 */
   remarks: string | null
+  /** 비고 (remarks 별칭) */
+  note?: string
 }
 
 /**
@@ -93,22 +115,39 @@ export interface MobileOrderRequestListItem {
   createdAt: string
   /** 신규 여부 (관리자 확인 전) */
   isNew?: boolean
+  /** 요청일 (createdAt 별칭) */
+  requestDate?: string
+  /** 희망 납품일 (requestedDeliveryDate 별칭) */
+  desiredDeliveryDate?: string
+  /** 긴급 여부 */
+  isUrgent?: boolean
+  /** 연결된 납품요구번호 */
+  linkedDeliveryRequestNo?: string
+  /** 반려 사유 */
+  rejectReason?: string | null
 }
 
 /**
  * 모바일 주문 요청 생성 요청
  */
+/** @deprecated MobileOrderCreateRequest 사용 권장 */
+export type MobileOrderRequestCreateRequest = MobileOrderCreateRequest
+
 export interface MobileOrderCreateRequest {
   /** 현장명 */
   siteName: string
   /** 배송지 주소 */
   deliveryAddress: string
   /** 요청 납품일 */
-  requestedDeliveryDate: string
+  requestedDeliveryDate?: string
+  /** 희망 납품일 (requestedDeliveryDate 별칭) */
+  desiredDeliveryDate?: string
   /** 긴급도 */
   urgency: OrderUrgency
   /** 비고 */
   remarks?: string
+  /** 추가 요청사항 */
+  additionalNotes?: string
   /** 요청 품목 목록 */
   items: MobileOrderItemCreateRequest[]
 }
@@ -118,11 +157,15 @@ export interface MobileOrderCreateRequest {
  */
 export interface MobileOrderItemCreateRequest {
   /** 품목 ID */
-  itemId: number
+  itemId: number | string
+  /** SKU ID */
+  skuId?: number | string
   /** 요청 수량 */
   quantity: number
   /** 품목별 비고 */
   remarks?: string
+  /** 비고 (remarks 별칭) */
+  note?: string
 }
 
 /**
@@ -212,6 +255,12 @@ export const URGENCY_DISPLAY: Record<OrderUrgency, UrgencyDisplayInfo> = {
     label: '여유',
     badgeClass: 'bg-green-100 text-green-800',
     icon: ''
+  },
+  FLEXIBLE: {
+    code: 'FLEXIBLE',
+    label: '여유',
+    badgeClass: 'bg-green-100 text-green-800',
+    icon: ''
   }
 }
 
@@ -231,9 +280,14 @@ export interface RequestStatusDisplayInfo {
  * 요청 상태 표시 설정
  */
 export const REQUEST_STATUS_DISPLAY: Record<OrderRequestStatus, RequestStatusDisplayInfo> = {
+  PENDING: {
+    code: 'PENDING',
+    label: '대기',
+    badgeClass: 'bg-yellow-100 text-yellow-800'
+  },
   REQUESTED: {
     code: 'REQUESTED',
-    label: '대기',
+    label: '접수',
     badgeClass: 'bg-yellow-100 text-yellow-800'
   },
   APPROVED: {

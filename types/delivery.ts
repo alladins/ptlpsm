@@ -68,6 +68,7 @@ export interface ShipmentTreeNode {
  */
 export interface OrderTreeNode {
   orderId: number
+  deliveryDoneId?: number          // 납품완료계 ID
   deliveryRequestNo: string
   deliveryRequestDate: string  // 납품요구일자
   earliestDeliveryDeadline: string  // 가장 빠른 납품기한

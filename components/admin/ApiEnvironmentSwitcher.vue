@@ -51,7 +51,7 @@ export default defineComponent({
 
     // 현재 모드 업데이트
     const updateCurrentMode = () => {
-      currentMode.value = apiEnvironment.getCurrentMode()
+      currentMode.value = apiEnvironment.getCurrentEnvironment()
     }
 
     // 개발 모드로 전환
@@ -84,7 +84,7 @@ export default defineComponent({
 
     // 자동 감지 모드로 재설정
     const resetToAuto = () => {
-      apiEnvironment.resetToAuto()
+      localStorage.removeItem('api_environment')
       updateCurrentMode()
       
       // 알림 표시

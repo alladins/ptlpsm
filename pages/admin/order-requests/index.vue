@@ -365,7 +365,7 @@ import type {
   MobileOrderUrgency,
   MobileOrderRequestListResponse
 } from '~/types/mobile-order'
-import { formatDate, formatNumber } from '~/utils/format'
+import { formatDate, formatNumber, utcToKstDateString, getLocalDateString } from '~/utils/format'
 import OrderRequestProcessModal from '~/components/admin/OrderRequestProcessModal.vue'
 
 definePageMeta({
@@ -401,7 +401,7 @@ const searchForm = ref({
 // 모달 상태
 const showProcessModal = ref(false)
 const showDetailModal = ref(false)
-const selectedRequest = ref<MobileOrderRequest | null>(null)
+const selectedRequest = ref<MobileOrderRequest>(null as any)
 
 // Computed
 const startIndex = computed(() => {
@@ -431,7 +431,7 @@ const loadRequests = async () => {
 
     const response = await mobileOrderService.getAllRequests(params)
 
-    requests.value = response.content
+    requests.value = response.content as any
     totalElements.value = response.totalElements
     totalPages.value = response.totalPages
 
@@ -466,24 +466,23 @@ const loadStatistics = async () => {
 }
 
 const countNewRequests = (items: MobileOrderRequest[]): number => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // KST 기준 오늘 날짜 문자열 (YYYY-MM-DD)
+  const todayKst = getLocalDateString()
 
   return items.filter(item => {
     if (!item.requestDate) return false
-    const requestDate = new Date(item.requestDate)
-    requestDate.setHours(0, 0, 0, 0)
-    return requestDate.getTime() === today.getTime() && item.status === 'PENDING'
+    // UTC 문자열을 KST 날짜로 변환 후 비교
+    const requestDateKst = utcToKstDateString(item.requestDate)
+    return requestDateKst === todayKst && item.status === 'PENDING'
   }).length
 }
 
 const isNewRequest = (dateStr?: string): boolean => {
   if (!dateStr) return false
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const requestDate = new Date(dateStr)
-  requestDate.setHours(0, 0, 0, 0)
-  return requestDate.getTime() === today.getTime()
+  // KST 기준 오늘 날짜와 비교 (UTC → KST 변환)
+  const todayKst = getLocalDateString()
+  const requestDateKst = utcToKstDateString(dateStr)
+  return requestDateKst === todayKst
 }
 
 const handleSearch = () => {
@@ -528,8 +527,10 @@ const getStatusLabel = (status?: MobileOrderStatus): string => {
   if (!status) return '-'
   const labels: Record<MobileOrderStatus, string> = {
     PENDING: '대기',
+    REQUESTED: '접수',
     APPROVED: '승인',
-    REJECTED: '반려'
+    REJECTED: '반려',
+    COMPLETED: '완료'
   }
   return labels[status] || status
 }
@@ -550,7 +551,8 @@ const getUrgencyLabel = (urgency?: MobileOrderUrgency): string => {
   const labels: Record<MobileOrderUrgency, string> = {
     URGENT: '긴급',
     NORMAL: '보통',
-    LOW: '여유'
+    LOW: '여유',
+    FLEXIBLE: '여유'
   }
   return labels[urgency] || urgency
 }
@@ -584,9 +586,9 @@ const handleProcessSubmit = async (result: { action: 'approve' | 'reject'; order
 
   try {
     if (result.action === 'approve' && result.orderId) {
-      await mobileOrderService.approveRequest(selectedRequest.value.requestId!, result.orderId)
+      await mobileOrderService.approveRequest(selectedRequest.value.requestId!, { orderId: result.orderId })
     } else if (result.action === 'reject' && result.rejectReason) {
-      await mobileOrderService.rejectRequest(selectedRequest.value.requestId!, result.rejectReason)
+      await mobileOrderService.rejectRequest(selectedRequest.value.requestId!, { reason: result.rejectReason })
     }
 
     closeProcessModal()

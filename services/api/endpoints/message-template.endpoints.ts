@@ -36,6 +36,16 @@ export const MESSAGE_TEMPLATE_ENDPOINTS = {
   },
 
   /**
+   * 메시지 템플릿 코드로 조회
+   * @param code 템플릿 코드
+   * @returns GET /api/basic/message-templates/code/{code}
+   */
+  byCode: (code: string) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/basic/message-templates/code/${code}`
+  },
+
+  /**
    * 메시지 템플릿 등록
    * @returns POST /api/basic/message-templates
    */

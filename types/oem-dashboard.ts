@@ -42,6 +42,32 @@ export interface OemDashboardSummary {
 }
 
 /**
+ * OEM 품목별 생산 현황
+ */
+export interface OemProductionStatus {
+  /** OEM 제조사 ID */
+  oemCompanyId: number
+  /** OEM 제조사명 */
+  oemCompanyName: string
+  /** 품목 ID */
+  skuId: string
+  /** 품목명 */
+  skuName: string
+  /** 발주수량 */
+  orderedQuantity: number
+  /** 생산수량 */
+  producedQuantity: number
+  /** 누적입고 */
+  cumulativeInbound: number
+  /** 누적출고 */
+  cumulativeOutbound: number
+  /** 잔여재고 */
+  currentInventory: number
+  /** 생산률(%) */
+  productionRate: number
+}
+
+/**
  * OEM 월별 지급 현황
  */
 export interface OemMonthlyPayment {

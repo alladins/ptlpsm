@@ -163,6 +163,10 @@ export interface OutboundRequest {
 export interface SkuTransactionSummary {
   /** SKU ID */
   skuId: string
+  /** SKU 품명 */
+  skuName?: string
+  /** 품목명 */
+  itemName?: string
   /** 총 발주수량 */
   totalOrdered: number
   /** 입고 수량 (생산완료) */
@@ -173,6 +177,10 @@ export interface SkuTransactionSummary {
   totalOutbound: number
   /** 이동출고 수량 */
   totalTransferOut: number
+  /** OEM 제조사명 (발주서 기반) */
+  oemCompanyName?: string
+  /** OEM 창고명 (발주서 기반) */
+  oemWarehouseName?: string
 }
 
 /**

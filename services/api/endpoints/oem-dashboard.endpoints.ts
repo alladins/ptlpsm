@@ -33,6 +33,15 @@ export const OEM_DASHBOARD_ENDPOINTS = {
   },
 
   /**
+   * OEM 품목별 생산 현황 조회
+   * @returns GET /admin/oem-dashboard/production-status
+   */
+  productionStatus: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/oem-dashboard/production-status`
+  },
+
+  /**
    * OEM 월별 지급 현황 조회
    * @returns GET /admin/oem-dashboard/monthly-payments
    */

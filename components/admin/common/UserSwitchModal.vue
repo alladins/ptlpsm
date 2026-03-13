@@ -67,9 +67,9 @@
           <div v-else class="user-list">
             <div
               v-for="user in filteredUsers"
-              :key="user.userid"
+              :key="user.userId"
               class="user-item"
-              :class="{ selected: selectedUser?.userid === user.userid }"
+              :class="{ selected: selectedUser?.userId === user.userId }"
               @click="selectUser(user)"
             >
               <div class="user-avatar">
@@ -83,7 +83,7 @@
                   <span v-if="user.companyName" class="user-company">{{ user.companyName }}</span>
                 </div>
               </div>
-              <div v-if="selectedUser?.userid === user.userid" class="check-icon">
+              <div v-if="selectedUser?.userId === user.userId" class="check-icon">
                 <i class="fas fa-check-circle"></i>
               </div>
             </div>
@@ -143,11 +143,11 @@ import { AUTH_ENDPOINTS } from '~/services/api/endpoints'
  * 사용자 아이템 인터페이스
  *
  * 스키마 변경:
- * - userid: 숫자 (Primary Key, 기존 id)
+ * - userId: 숫자 (Primary Key, 기존 id)
  * - loginId: 문자열 (로그인용 ID, 기존 userId)
  */
 interface UserItem {
-  userid: number       // PK (숫자, 기존 id)
+  userId: number       // PK (숫자, 기존 id)
   loginId: string      // 로그인 ID (문자열, 기존 userId)
   userName: string
   email?: string
@@ -211,7 +211,7 @@ function getRoleLabel(role: string | undefined | null): string {
 const filteredUsers = computed(() => {
   return users.value.filter(user => {
     // 자기 자신 제외
-    if (user.userid === authStore.user?.userid) return false
+    if (user.userId === authStore.user?.userId) return false
     // 역할 필터 적용 (selectedRole이 비어있으면 전체 표시)
     if (selectedRole.value && user.role !== selectedRole.value) return false
     return true
@@ -289,13 +289,13 @@ async function fetchUsers() {
 
     // Mock 데이터 (개발용)
     users.value = [
-      { userid: 2, loginId: 'leadpower01', userName: '김리드', role: 'LEADPOWER_MANAGER', companyId: 1, companyName: '(주)리드파워' },
-      { userid: 3, loginId: 'oem01', userName: '이OEM', role: 'OEM_MANAGER', companyId: 2, companyName: '(주)하이코리아' },
-      { userid: 4, loginId: 'driver01', userName: '박운송', role: 'DELIVERY_DRIVER', companyId: 3, companyName: '주식회사 유진로지스틱스' },
-      { userid: 5, loginId: 'site01', userName: '최현장', role: 'SITE_MANAGER', companyId: 4, companyName: '(주)한주토건' },
-      { userid: 6, loginId: 'sales01', userName: '정영업', role: 'SALES_MANAGER', companyId: 1, companyName: '(주)리드파워' },
-      { userid: 7, loginId: 'readonly01', userName: '한조회', role: 'READ_ONLY', companyId: 5, companyName: 'PTLPSM' },
-      { userid: 8, loginId: 'inspector01', userName: '윤감리', role: 'SITE_INSPECTOR', companyId: 6, companyName: '플랫트리 주식회사' }
+      { userId: 2, loginId: 'leadpower01', userName: '김리드', role: 'LEADPOWER_MANAGER', companyId: 1, companyName: '(주)리드파워' },
+      { userId: 3, loginId: 'oem01', userName: '이OEM', role: 'OEM_MANAGER', companyId: 2, companyName: '(주)하이코리아' },
+      { userId: 4, loginId: 'driver01', userName: '박운송', role: 'DELIVERY_DRIVER', companyId: 3, companyName: '주식회사 유진로지스틱스' },
+      { userId: 5, loginId: 'site01', userName: '최현장', role: 'SITE_MANAGER', companyId: 4, companyName: '(주)한주토건' },
+      { userId: 6, loginId: 'sales01', userName: '정영업', role: 'SALES_MANAGER', companyId: 1, companyName: '(주)리드파워' },
+      { userId: 7, loginId: 'readonly01', userName: '한조회', role: 'READ_ONLY', companyId: 5, companyName: 'PTLPSM' },
+      { userId: 8, loginId: 'inspector01', userName: '윤감리', role: 'SITE_INSPECTOR', companyId: 6, companyName: '플랫트리 주식회사' }
     ]
     totalPages.value = 1
     error.value = null // Mock 데이터 사용 시 에러 숨김
@@ -345,10 +345,10 @@ async function handleConfirm() {
   switching.value = true
 
   try {
-    const success = await authStore.startImpersonation(selectedUser.value.userid)
+    const success = await authStore.startImpersonation(selectedUser.value.userId)
 
     if (success) {
-      emit('switched', selectedUser.value.userid)
+      emit('switched', selectedUser.value.userId)
       emit('close')
       // 대시보드로 이동하여 권한 및 메뉴 갱신 (권한 없는 페이지에 남지 않도록)
       window.location.href = '/admin'

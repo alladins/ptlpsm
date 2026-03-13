@@ -6,11 +6,11 @@ import { safeStorage } from '~/utils/storage'
  * 사용자 인터페이스
  *
  * 스키마 변경:
- * - userid: 숫자 (Primary Key, 기존 id)
+ * - userId: 숫자 (Primary Key, 기존 id)
  * - loginId: 문자열 (로그인용 ID, 기존 userId)
  */
 interface User {
-  userid: number       // PK (숫자, 기존 id)
+  userId: number       // PK (숫자, 기존 id)
   loginId: string      // 로그인 ID (문자열, 기존 userId)
   userName: string
   email: string
@@ -21,7 +21,7 @@ interface User {
 
 interface ImpersonationState {
   isImpersonating: boolean
-  originalUserid: number | null     // 숫자
+  originalUserId: number | null     // 숫자
   originalUserName: string | null
   originalRole: string | null
 }
@@ -46,7 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Impersonation State (대리 로그인 상태)
   const impersonation = ref<ImpersonationState>({
     isImpersonating: false,
-    originalUserid: null,
+    originalUserId: null,
     originalUserName: null,
     originalRole: null
   })
@@ -81,7 +81,7 @@ export const useAuthStore = defineStore('auth', () => {
   const originalUser = computed(() => {
     if (!impersonation.value.isImpersonating) return null
     return {
-      userid: impersonation.value.originalUserid,
+      userId: impersonation.value.originalUserId,
       userName: impersonation.value.originalUserName,
       role: impersonation.value.originalRole
     }
@@ -154,7 +154,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Impersonation 상태 초기화
     impersonation.value = {
       isImpersonating: false,
-      originalUserid: null,
+      originalUserId: null,
       originalUserName: null,
       originalRole: null
     }
@@ -179,7 +179,7 @@ export const useAuthStore = defineStore('auth', () => {
       return false
     }
 
-    if (user.value?.userid === targetUserId) {
+    if (user.value?.userId === targetUserId) {
       console.error('자기 자신에게는 대리 로그인할 수 없습니다')
       return false
     }
@@ -201,7 +201,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       const data = await response.json()
 
-      // 서버 응답 형식: { accessToken, refreshToken, originalUserid, targetUserid, ... }
+      // 서버 응답 형식: { accessToken, refreshToken, originalUserId, targetUserId, ... }
       // (success/data 래핑 없이 직접 응답)
       let result = data
 
@@ -218,7 +218,7 @@ export const useAuthStore = defineStore('auth', () => {
       // 원래 사용자 정보 저장
       impersonation.value = {
         isImpersonating: true,
-        originalUserid: result.originalUserid ?? user.value?.userid ?? null,
+        originalUserId: result.originalUserId ?? user.value?.userId ?? null,
         originalUserName: result.originalUserName || user.value?.userName || null,
         originalRole: user.value?.role || null
       }
@@ -230,10 +230,10 @@ export const useAuthStore = defineStore('auth', () => {
 
       // 대상 사용자 정보로 변경
       // 두 가지 응답 형식 지원:
-      // 1. 일반 형식: { userid, loginId, userName, role, ... }
-      // 2. target 접두어 형식: { targetUserid, targetLoginId, targetUserName, targetRole, ... }
+      // 1. 일반 형식: { userId, loginId, userName, role, ... }
+      // 2. target 접두어 형식: { targetUserId, targetLoginId, targetUserName, targetRole, ... }
       user.value = {
-        userid: result.userid ?? result.targetUserid ?? 0,
+        userId: result.userId ?? result.targetUserId ?? 0,
         loginId: result.loginId || result.targetLoginId || '',
         userName: result.userName || result.targetUserName || '',
         email: result.email || '',
@@ -340,7 +340,7 @@ export const useAuthStore = defineStore('auth', () => {
       // 원래 사용자 정보 복원
       // 서버 응답 필드: originalUserId, originalUserName, targetUserId, targetUserName, targetRole
       user.value = {
-        userid: result.originalUserId ?? result.targetUserId ?? impersonation.value.originalUserid ?? 0,
+        userId: result.originalUserId ?? result.targetUserId ?? impersonation.value.originalUserId ?? 0,
         loginId: result.originalLoginId || result.targetLoginId || '',
         userName: result.originalUserName ?? result.targetUserName ?? impersonation.value.originalUserName ?? '',
         email: result.email || '',
@@ -352,7 +352,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Impersonation 상태 초기화
       impersonation.value = {
         isImpersonating: false,
-        originalUserid: null,
+        originalUserId: null,
         originalUserName: null,
         originalRole: null
       }
@@ -437,7 +437,7 @@ export const useAuthStore = defineStore('auth', () => {
       } else {
         impersonation.value = {
           isImpersonating: false,
-          originalUserid: null,
+          originalUserId: null,
           originalUserName: null,
           originalRole: null
         }
@@ -466,7 +466,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (data.success && data.data) {
           user.value = data.data
           safeStorage.setJSON('auth_user', data.data)
-        } else if (data.userid) {
+        } else if (data.userId) {
           // data 래퍼 없이 직접 user 정보가 온 경우
           user.value = data
           safeStorage.setJSON('auth_user', data)

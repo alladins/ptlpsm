@@ -7,11 +7,11 @@
  * GET /api/common/users/by-roles?roles=OEM_MANAGER&roles=DELIVERY_DRIVER
  *
  * 스키마 변경:
- * - userid: 숫자 (Primary Key, 기존 id)
+ * - userId: 숫자 (Primary Key, 기존 id)
  * - loginId: 문자열 (로그인용 ID, 기존 userId)
  */
 export interface UserByRole {
-  userid: number       // PK (숫자, 기존 id)
+  userId: number       // PK (숫자, 기존 id)
   loginId: string      // 로그인 ID (문자열, 기존 userId)
   userName: string
   email: string
@@ -95,7 +95,7 @@ export function getRoleName(roleCode: string): string {
  * 드롭다운용 간소화 타입
  */
 export interface UserOption {
-  userid: number       // PK (숫자, 기존 id)
+  userId: number       // PK (숫자, 기존 id)
   userName: string
   phone: string
   companyId: number | null     // 회사 ID (FK)

@@ -111,6 +111,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { formatDateTime } from '~/utils/format'
 import { oemCostService } from '~/services/oem-cost.service'
 import { calculateMarginRate, getMarginRateClass, COST_CHANGE_TYPE_LABELS } from '~/types/oem-cost'
 import type { OemCost, OemCostHistory, CostChangeType } from '~/types/oem-cost'
@@ -136,11 +137,16 @@ const historyList = ref<OemCostHistory[]>([])
 
 // 이력 로드
 const loadHistory = async () => {
-  if (!props.skuId || !props.oemCompanyId) return
+  if (!props.skuId) return
 
   try {
     isLoading.value = true
-    historyList.value = await oemCostService.getHistory(props.skuId, props.oemCompanyId)
+    // oemCompanyId가 0이면 SKU 전체 이력, 아니면 특정 OEM 이력
+    if (props.oemCompanyId) {
+      historyList.value = await oemCostService.getHistory(props.skuId, props.oemCompanyId)
+    } else {
+      historyList.value = await oemCostService.getHistoryBySku(props.skuId)
+    }
   } catch (error) {
     console.error('이력 조회 실패:', error)
     historyList.value = []
@@ -158,18 +164,6 @@ const handleClose = () => {
 const formatCurrency = (amount: number | undefined | null): string => {
   if (amount === undefined || amount === null) return '-'
   return amount.toLocaleString('ko-KR') + '원'
-}
-
-const formatDateTime = (dateStr: string): string => {
-  if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 
 const formatDateRange = (cost: OemCost): string => {

@@ -143,6 +143,7 @@
 </template>
 
 <script setup lang="ts">
+import { getLocalDateString } from '~/utils/format'
 import { getShipmentStatistics } from '~/services/statistics.service'
 import type { RegionBreakdownItem, ShipmentStatisticsRequest } from '~/types/statistics'
 
@@ -184,11 +185,15 @@ const topRegion = computed(() => {
 function getDefaultStartDate(): string {
   const date = new Date()
   date.setFullYear(date.getFullYear() - 1)
-  return date.toISOString().split('T')[0]
+  // 로컬 타임존 기준 날짜 반환
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function getDefaultEndDate(): string {
-  return new Date().toISOString().split('T')[0]
+  return getLocalDateString()
 }
 
 // 통계 데이터 로드

@@ -22,8 +22,7 @@
                 <select
                   v-model="formData.oemCompanyId"
                   class="form-select"
-                  :disabled="loadingManufacturers"
-                  @change="handleOemChange"
+                  disabled
                 >
                   <option :value="null">{{ loadingManufacturers ? '로딩 중...' : '선택하세요' }}</option>
                   <option
@@ -105,22 +104,19 @@
               </div>
               <div class="form-field">
                 <label class="form-label required">현장 도착 예정일시</label>
-                <div class="input-with-clear">
-                  <input
-                    type="datetime-local"
-                    v-model="formData.expectedArrivalDatetime"
-                    class="form-input"
-                  />
-                  <button
-                    type="button"
-                    class="btn-clear-inline"
-                    @click="formData.expectedArrivalDatetime = ''"
-                    :disabled="!formData.expectedArrivalDatetime"
-                    title="초기화"
-                  >
-                    초기화
-                  </button>
-                </div>
+                <VueDatePicker
+                  v-model="formData.expectedArrivalDatetime"
+                  model-type="yyyy-MM-dd'T'HH:mm"
+                  :enable-time-picker="true"
+                  :format="'yyyy-MM-dd HH:mm'"
+                  locale="ko"
+                  time-picker-inline
+                  :action-row="{ showNow: true, showCancel: true, showSelect: true }"
+                  placeholder="날짜와 시간을 선택하세요"
+                  auto-apply
+                  :teleport="true"
+                  :clearable="false"
+                />
                 <span v-if="errors.expectedArrivalDatetime" class="error-message">{{ errors.expectedArrivalDatetime }}</span>
               </div>
               <div class="form-field full-width">
@@ -151,10 +147,15 @@
             <div class="section-header">
               <i class="fas fa-user"></i>
               <span>현장 인수자 정보</span>
+              <span class="field-hint">
+                <i class="fas fa-info-circle"></i>
+                현장소장은 사전 등록해야 합니다.
+              </span>
             </div>
             <div class="form-grid">
+              <!-- 현장소장 선택 -->
               <div class="form-field">
-                <label class="form-label">현장소장</label>
+                <label class="form-label required">현장소장</label>
                 <select
                   v-model="formData.siteManagerId"
                   class="form-select"
@@ -163,18 +164,31 @@
                   <option :value="null">선택하세요</option>
                   <option
                     v-for="manager in siteManagers"
-                    :key="manager.userid"
-                    :value="manager.userid"
+                    :key="manager.userId"
+                    :value="manager.userId"
                   >
                     {{ manager.userName }} ({{ manager.phone }})
                     <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
                   </option>
                 </select>
-                <span class="field-hint">
+                <span v-if="errors.siteManagerId" class="error-message">{{ errors.siteManagerId }}</span>
+                <span v-else class="field-hint">
                   <i class="fas fa-info-circle"></i>
-                  선택 시 인수자 정보가 자동 입력됩니다
+                  선택 시 인수자 정보가 자동 입력됩니다.
                 </span>
               </div>
+              <!-- 건설사 -->
+              <div class="form-field">
+                <label class="form-label">건설사</label>
+                <input
+                  type="text"
+                  v-model="formData.constructionCompany"
+                  class="form-input"
+                  placeholder="현장소장 선택 시 자동 입력"
+                  readonly
+                />
+              </div>
+              <!-- 인수자명 -->
               <div class="form-field">
                 <label class="form-label required">인수자명</label>
                 <input
@@ -184,7 +198,12 @@
                   placeholder="인수자명"
                 />
                 <span v-if="errors.receiverName" class="error-message">{{ errors.receiverName }}</span>
+                <span class="field-hint">
+                  <i class="fas fa-info-circle"></i>
+                  인수자가 다를경우 직접 수정/입력 하세요.
+                </span>
               </div>
+              <!-- 인수자 연락처 -->
               <div class="form-field">
                 <label class="form-label required">인수자 연락처</label>
                 <input
@@ -248,7 +267,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { dispatchRequestService } from '~/services/dispatch-request.service'
 import { companyService } from '~/services/company.service'
-import { formatPhoneNumber, formatPhoneNumberInput } from '~/utils/format'
+import { formatPhoneNumber, formatPhoneNumberInput, getDefaultDateTimeString } from '~/utils/format'
 import type { UserByRole } from '~/types/user'
 import type { CompanyInfoResponse } from '~/types/company'
 import type { DispatchAvailabilityResponse } from '~/types/dispatch-request'
@@ -314,6 +333,7 @@ const formData = reactive({
   siteManagerId: null as number | null,
   siteManagerName: '',
   siteManagerPhone: '',
+  constructionCompany: '',
   receiverName: '',
   receiverPhone: '',
   remarks: ''
@@ -321,6 +341,7 @@ const formData = reactive({
 
 const errors = reactive({
   oemCompanyId: '',
+  siteManagerId: '',
   deliveryAddress: '',
   expectedArrivalDatetime: '',
   receiverName: '',
@@ -342,6 +363,7 @@ onMounted(async () => {
 // 제출 가능 여부 (OEM 제조사 + 배송지 주소 + 인수자 정보 필수 + 가용성 충족)
 const canSubmit = computed(() => {
   if (formData.oemCompanyId === null) return false
+  if (formData.siteManagerId === null) return false
   if (!formData.deliveryAddress) return false
   if (!formData.expectedArrivalDatetime) return false
   if (!formData.receiverName?.trim()) return false
@@ -379,18 +401,20 @@ const initializeForm = () => {
   formData.zipcode = props.initialData.zipcode || ''
   formData.deliveryAddress = props.initialData.deliveryAddress || ''
   formData.addressDetail = props.initialData.addressDetail || ''
-  formData.expectedArrivalDatetime = props.initialData.expectedArrivalDatetime || ''
+  formData.expectedArrivalDatetime = props.initialData.expectedArrivalDatetime || getDefaultDateTimeString(7, 0)
   formData.siteManagerId = props.initialData.siteManagerId || null
   formData.receiverName = props.initialData.receiverName || ''
   formData.receiverPhone = props.initialData.receiverPhone || ''
+  formData.constructionCompany = ''
   formData.remarks = ''
 
   // 현장소장 정보 프리필 + 인수자 정보 자동입력
   if (formData.siteManagerId) {
-    const manager = props.siteManagers.find(m => m.userid === formData.siteManagerId)
+    const manager = props.siteManagers.find(m => m.userId === formData.siteManagerId)
     if (manager) {
       formData.siteManagerName = manager.userName
       formData.siteManagerPhone = manager.phone || ''
+      formData.constructionCompany = manager.companyName || ''
       // 인수자 정보가 비어있으면 현장소장 정보로 채움
       if (!formData.receiverName) {
         formData.receiverName = manager.userName
@@ -407,28 +431,61 @@ const initializeForm = () => {
 
   // 에러 초기화
   errors.oemCompanyId = ''
+  errors.siteManagerId = ''
   errors.deliveryAddress = ''
   errors.expectedArrivalDatetime = ''
   errors.receiverName = ''
   errors.receiverPhone = ''
+
+  // OEM이 이미 설정되어 있으면 가용성 자동 확인
+  if (formData.oemCompanyId) {
+    checkAvailability(formData.oemCompanyId)
+  }
 }
+
+// 선택된 현장소장의 회사 ID (건설사 동기화용)
+const selectedManagerCompanyId = computed(() => {
+  if (!formData.siteManagerId) return null
+  const manager = props.siteManagers.find(m => m.userId === formData.siteManagerId)
+  return manager?.companyId || null
+})
 
 // 현장소장 선택 시 인수자 정보 자동 입력
 const handleSiteManagerChange = () => {
   if (formData.siteManagerId) {
-    const manager = props.siteManagers.find(m => m.userid === formData.siteManagerId)
+    const manager = props.siteManagers.find(m => m.userId === formData.siteManagerId)
     if (manager) {
       formData.siteManagerName = manager.userName
       formData.siteManagerPhone = manager.phone || ''
+      formData.constructionCompany = manager.companyName || ''
       formData.receiverName = manager.userName
       formData.receiverPhone = formatPhoneNumber(manager.phone || '')
     }
+  } else {
+    formData.constructionCompany = ''
   }
 }
 
 // 연락처 입력 포맷팅
 const handlePhoneInput = () => {
   formData.receiverPhone = formatPhoneNumberInput(formData.receiverPhone || '')
+}
+
+// 가용성 확인
+const checkAvailability = async (oemCompanyId: number) => {
+  checkingAvailability.value = true
+  try {
+    availability.value = await dispatchRequestService.checkAvailability(
+      props.shipmentId,
+      oemCompanyId
+    )
+  } catch (error) {
+    console.error('가용성 확인 실패:', error)
+    // 에러 시에도 출고요청은 가능하도록 (서버 에러 등)
+    availability.value = null
+  } finally {
+    checkingAvailability.value = false
+  }
 }
 
 // OEM 선택 변경 시 가용성 확인
@@ -439,19 +496,7 @@ const handleOemChange = async () => {
     return
   }
 
-  checkingAvailability.value = true
-  try {
-    availability.value = await dispatchRequestService.checkAvailability(
-      props.shipmentId,
-      formData.oemCompanyId
-    )
-  } catch (error) {
-    console.error('가용성 확인 실패:', error)
-    // 에러 시에도 출고요청은 가능하도록 (서버 에러 등)
-    availability.value = null
-  } finally {
-    checkingAvailability.value = false
-  }
+  await checkAvailability(formData.oemCompanyId)
 }
 
 // 주소찾기 팝업 열기
@@ -482,6 +527,13 @@ const validate = (): boolean => {
     isValid = false
   } else {
     errors.oemCompanyId = ''
+  }
+
+  if (!formData.siteManagerId) {
+    errors.siteManagerId = '현장소장을 선택하세요'
+    isValid = false
+  } else {
+    errors.siteManagerId = ''
   }
 
   if (!formData.deliveryAddress) {
@@ -534,7 +586,9 @@ const handleSubmit = async () => {
       siteManagerPhone: formData.siteManagerPhone || undefined,
       receiverName: formData.receiverName,
       receiverPhone: formData.receiverPhone,
-      remarks: formData.remarks || undefined
+      remarks: formData.remarks || undefined,
+      builderCompanyId: selectedManagerCompanyId.value || undefined,
+      builderCompanyName: formData.constructionCompany || undefined
     })
 
     emit('created')
@@ -546,10 +600,13 @@ const handleSubmit = async () => {
   }
 }
 
-// 모달 열릴 때 폼 초기화
+// 모달 열릴 때 폼 초기화, 닫힐 때 주소검색 상태 정리
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     initializeForm()
+  } else {
+    // 부모 모달 닫힐 때 주소검색 팝업 상태 리셋 (재오픈 시 검색 버튼 활성화)
+    isPostalSearchOpen.value = false
   }
 })
 </script>
@@ -702,6 +759,12 @@ watch(() => props.isOpen, (isOpen) => {
 .form-textarea {
   resize: vertical;
   min-height: 60px;
+}
+
+.form-input[readonly] {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: default;
 }
 
 .error-message {

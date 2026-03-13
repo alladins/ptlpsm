@@ -23,10 +23,10 @@
         </button>
         <button
           class="btn-link-po"
-          @click="goToPoPaymentTab"
+          @click="goToMonthlyLedger"
         >
           <i class="fas fa-external-link-alt"></i>
-          발주서 지급 관리
+          월별 매출원장
         </button>
       </div>
     </div>
@@ -83,9 +83,9 @@
     <div class="info-banner">
       <i class="fas fa-info-circle"></i>
       <div class="info-content">
-        <p>OEM 지급 등록/완료/삭제는 <strong>발주서 관리 > OEM 지급 현황</strong> 탭에서 관리합니다.</p>
-        <button class="btn-go-po" @click="goToPoPaymentTab">
-          발주서 지급 현황 바로가기 <i class="fas fa-arrow-right"></i>
+        <p>OEM 지급은 <strong>제조생산 > 월별 매출원장</strong>에서 관리합니다.</p>
+        <button class="btn-go-po" @click="goToMonthlyLedger">
+          월별 매출원장 바로가기 <i class="fas fa-arrow-right"></i>
         </button>
       </div>
     </div>
@@ -207,9 +207,9 @@ const { getOemPaymentStatusClass, getOemPaymentStatusLabel } = useFundStatusForm
 // OEM 지급 예정 금액 (기성금의 70%)
 const oemExpectedAmount = computed(() => Math.floor((props.progressPaymentTotal || 0) * 0.7))
 
-// 발주서 지급 현황 탭으로 이동
-function goToPoPaymentTab() {
-  router.push('/admin/purchase-order/list?tab=oem-payment')
+// 월별 매출원장으로 이동
+function goToMonthlyLedger() {
+  router.push('/admin/oem/monthly-ledger')
 }
 </script>
 

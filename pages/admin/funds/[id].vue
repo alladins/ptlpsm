@@ -535,7 +535,7 @@ const canRequestAdvance = computed(() => advanceEligibility.value.eligible)
 /** 미청구 출하 총 건수 (인수 완료 여부 무관) */
 const totalUnclaimedCount = computed(() => {
   return shipments.value.filter(s =>
-    !['CANCELLED', 'DELETED'].includes(s.status) && !s.isBilled
+    !['CANCELLED', 'DELETED'].includes(s.status) && !(s as any).isBilled
   ).length
 })
 
@@ -765,8 +765,8 @@ const handleOpenBalanceConfirmModal = () => {
   }
   // 잔금 요청 정보를 전달하여 모달 열기
   openBalanceConfirmModal({
-    requestId: balanceRequest.value.requestId || balanceRequest.value.paymentId,
-    requestAmount: balanceRequest.value.requestAmount || balanceRequest.value.amount || 0
+    requestId: balanceRequest.value.requestId || (balanceRequest.value as any).paymentId,
+    requestAmount: balanceRequest.value.requestAmount || (balanceRequest.value as any).amount || 0
   })
 }
 

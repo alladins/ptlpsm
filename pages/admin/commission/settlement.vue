@@ -210,7 +210,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { formatCurrency, formatDate, formatDateTime } from '~/utils/format'
+import { formatCurrency, formatDate, formatDateTime, getLocalDateString } from '~/utils/format'
 import {
   createPeriodicSettlement,
   getPeriodicSettlements
@@ -254,7 +254,7 @@ const showCreateModal = ref(false)
 const createForm = ref<CreatePeriodicSettlementRequest>({
   settlementType: 'MID',
   year: selectedYear.value,
-  settlementDate: new Date().toISOString().split('T')[0],
+  settlementDate: getLocalDateString(),
   remarks: ''
 })
 
@@ -295,7 +295,7 @@ const openCreateModal = (type: PeriodicSettlementType) => {
   createForm.value = {
     settlementType: type,
     year: selectedYear.value,
-    settlementDate: new Date().toISOString().split('T')[0],
+    settlementDate: getLocalDateString(),
     remarks: ''
   }
   showCreateModal.value = true

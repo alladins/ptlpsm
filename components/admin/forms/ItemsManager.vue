@@ -124,7 +124,7 @@
 
             <!-- 금액 -->
             <td class="text-right">
-              <span class="amount-text">{{ formatCurrency(item.amount) }}원</span>
+              <span class="amount-text">{{ formatCurrency(item.amount ?? 0) }}원</span>
             </td>
 
             <!-- 납기일 (선택) -->
@@ -161,8 +161,8 @@ import { computed } from 'vue'
 import { formatQuantity } from '~/utils/format'
 
 interface ItemData {
-  skuId?: number
-  itemId?: number
+  skuId?: number | string
+  itemId?: number | string
   itemName?: string
   skuName?: string
   itemSpecification?: string

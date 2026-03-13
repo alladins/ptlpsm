@@ -1,13 +1,22 @@
 // 상담 서비스
 export interface ConsultationData {
-  name: string;
+  name?: string;
   company?: string;
+  companyName?: string;
+  managerName?: string;
   phone: string;
   email: string;
-  serviceType: string;
-  message: string;
-  agreeTerms: boolean;
-  agreePrivacy: boolean;
+  serviceType?: string;
+  message?: string;
+  inquiryContent?: string;
+  inquiryType?: string;
+  revenue?: string;
+  employeeCount?: string;
+  industry?: string;
+  additionalCertifications?: string;
+  agreeTerms?: boolean;
+  agreePrivacy?: boolean;
+  [key: string]: any;
 }
 
 export const consultationService = {

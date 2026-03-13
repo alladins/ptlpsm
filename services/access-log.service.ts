@@ -3,6 +3,7 @@
  * @description 접근로그 조회 및 통계 관련 서비스
  */
 
+import { getLocalDateString } from '~/utils/format'
 import { ACCESS_LOG_ENDPOINTS } from './api/endpoints/access-log.endpoints'
 import { getAuthHeaders } from './api'
 import type {
@@ -48,7 +49,7 @@ export const accessLogService = {
    * @returns 통계 정보
    */
   calculateStatistics(logs: AccessLog[]): AccessLogStatistics {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getLocalDateString()
     const todayLogs = logs.filter(log => log.accessTime.startsWith(today))
 
     // 오늘 접속자 수 (고유 사용자)

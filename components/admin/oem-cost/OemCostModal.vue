@@ -248,6 +248,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { oemCostService } from '~/services/oem-cost.service'
 import { companyService } from '~/services/company.service'
 import { calculateMarginRate, getMarginRateClass } from '~/types/oem-cost'
+import { getLocalDateString } from '~/utils/format'
 import type { OemCost, OemCostCreateRequest, OemCostUpdateRequest } from '~/types/oem-cost'
 import type { CompanyInfoResponse } from '~/types/company'
 
@@ -365,7 +366,7 @@ const resetForm = () => {
   form.value = {
     oemCompanyId: null,
     costPrice: 0,
-    effectiveDate: new Date().toISOString().split('T')[0],
+    effectiveDate: getLocalDateString(),
     expiryDate: '',
     contractNo: '',
     remarks: '',

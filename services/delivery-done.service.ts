@@ -330,10 +330,14 @@ export async function downloadAllPdfs(deliveryDoneId: number): Promise<void> {
  * 토큰으로 납품완료계 정보 조회
  */
 export async function getDeliveryDoneByToken(
-  token: string
+  token: string,
+  recipientType?: string
 ): Promise<DeliveryDoneMobileInfo> {
   try {
-    const url = `${getApiBaseUrl()}/m/delivery-done/${token}`
+    let url = `${getApiBaseUrl()}/m/delivery-done/${token}`
+    if (recipientType) {
+      url += `?type=${recipientType}`
+    }
     const response = await fetch(url, {
       method: 'GET',
       headers: getAuthHeaders()
@@ -355,7 +359,9 @@ export async function getDeliveryDoneByToken(
           errorMessage = '유효하지 않은 서명 링크입니다. 관리자에게 문의해주세요.'
         }
       }
-      throw new Error(errorMessage)
+      const err = new Error(errorMessage)
+      ;(err as any).statusCode = response.status
+      throw err
     }
 
     return await response.json()
@@ -524,6 +530,47 @@ export function canDownloadPdf(status: DeliveryDoneStatus): boolean {
  */
 export function canSubmitToNara(status: DeliveryDoneStatus): boolean {
   return status === DeliveryDoneStatus.COMPLETED
+}
+
+// ==================== 환산잔량 처리 API ====================
+
+/**
+ * 환산잔량 후보 품목 조회
+ */
+export async function getConversionRemainderCandidates(
+  deliveryDoneId: number
+): Promise<import('~/types/delivery-done').ConversionRemainderCandidate[]> {
+  const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/conversion-remainder`
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+
+  if (!response.ok) {
+    throw new Error(`환산잔량 후보 조회 실패: ${response.statusText}`)
+  }
+
+  return await response.json()
+}
+
+/**
+ * 환산잔량 처리
+ */
+export async function processConversionRemainder(
+  deliveryDoneId: number,
+  data: import('~/types/delivery-done').ConversionRemainderRequest
+): Promise<void> {
+  const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/conversion-remainder`
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null)
+    throw new Error(errorData?.message || `환산잔량 처리 실패: ${response.statusText}`)
+  }
 }
 
 // ==================== 사진 선택 관리 API ====================

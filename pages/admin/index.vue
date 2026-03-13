@@ -263,6 +263,8 @@ const router = useRouter()
 const statistics = ref<ShipmentStatisticsResponse>({
   summary: {
     totalOrderCount: 0,
+    totalShipmentCount: 0,
+    totalOrderAmount: 0,
     totalShipmentAmount: 0,
     completionRate: 0,
     statusCount: {
@@ -275,7 +277,9 @@ const statistics = ref<ShipmentStatisticsResponse>({
   },
   periodTrend: [],
   regionBreakdown: [],
-  recentOrders: []
+  recentOrders: [],
+  recentShipments: [],
+  skuOrderStats: []
 })
 
 // OEM 차트 데이터

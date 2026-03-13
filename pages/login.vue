@@ -157,7 +157,14 @@ const handleLogin = async () => {
 
     if (response.success && response.data) {
       // Auth Store에 데이터 저장 (async 함수이므로 await 필요)
-      await authStore.setAuthData(response.data)
+      await authStore.setAuthData({
+        ...response.data,
+        userInfo: {
+          ...response.data.userInfo,
+          companyId: (response.data.userInfo as any).companyId ?? null,
+          companyName: (response.data.userInfo as any).companyName ?? null
+        }
+      })
 
       console.log('로그인 성공:', {
         사용자: response.data.userInfo.userName,

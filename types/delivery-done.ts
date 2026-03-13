@@ -173,8 +173,34 @@ export interface DeliveryDoneListItem {
   hasManagerSignature: boolean              // ✅ Stage 1 시공사 현장소장 서명 여부
   hasInspectorSignature: boolean            // ✅ Stage 1 현장감리원 서명 여부
   hasCompletionInspectorSignature: boolean  // ✅ Stage 2 감리원 최종 서명 여부 (납품완료계)
+  hasContractorSignature?: boolean          // 시공사 서명 완료 여부
+  hasSupervisorSignature?: boolean          // 감독자 서명 완료 여부
+  totalConversionRemainder?: number         // 환산잔량 합계
+  hasConversionRemainder?: boolean          // 환산잔량 처리 여부
   createdAt: string
   updatedAt: string
+}
+
+/**
+ * 환산잔량 후보 응답
+ */
+export interface ConversionRemainderCandidate {
+  skuId: string
+  skuName: string
+  orderedQuantity: number
+  deliveredQuantity: number
+  remainingQuantity: number
+  conversionRemainder: number
+}
+
+/**
+ * 환산잔량 처리 요청
+ */
+export interface ConversionRemainderRequest {
+  items: {
+    skuId: string
+    conversionRemainder: number
+  }[]
 }
 
 /**
@@ -235,6 +261,9 @@ export interface DeliveryDoneMobileInfo {
   supervisorName: string | null
   supervisorCompany: string | null
   hasSupervisorSignature: boolean
+  st1ManagerSignaturePath?: string | null
+  st1InspectorSignaturePath?: string | null
+  st2InspectorSignaturePath?: string | null
 
   // 요약 정보
   totalItemCount: number

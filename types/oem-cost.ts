@@ -226,22 +226,23 @@ export interface RecalcResult {
 
 /**
  * OEM 원가 상태 계산
+ * ★ 날짜 문자열(YYYY-MM-DD)을 직접 비교하여 UTC/로컬 시간대 파싱 오류 방지
+ * effectiveDate / expiryDate는 DB에서 YYYY-MM-DD 형식으로 오므로 문자열 비교가 안전
  */
 export const calculateOemCostStatus = (item: OemCost): OemCostStatus => {
   if (!item.isActive) return 'EXPIRED'
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // KST 기준 오늘 날짜 문자열 (YYYY-MM-DD) — Intl API로 시간대 안전하게 추출
+  const todayStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date())
 
-  const effectiveDate = new Date(item.effectiveDate)
-  effectiveDate.setHours(0, 0, 0, 0)
+  // effectiveDate가 YYYY-MM-DDTHH:mm:ss 형식일 경우 날짜 부분만 추출
+  const effectiveDateStr = item.effectiveDate.split('T')[0]
 
-  if (effectiveDate > today) return 'UPCOMING'
+  if (effectiveDateStr > todayStr) return 'UPCOMING'
 
   if (item.expiryDate) {
-    const expiryDate = new Date(item.expiryDate)
-    expiryDate.setHours(0, 0, 0, 0)
-    if (expiryDate < today) return 'EXPIRED'
+    const expiryDateStr = item.expiryDate.split('T')[0]
+    if (expiryDateStr < todayStr) return 'EXPIRED'
   }
 
   return 'ACTIVE'

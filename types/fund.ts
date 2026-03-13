@@ -236,6 +236,8 @@ export interface ProgressPaymentRequest extends BaseEntity {
   advanceDeductionAmount?: number
   /** 실수금액 (청구금액 - 선급금차감액) - 백엔드 필드명: netPaymentAmount */
   netPaymentAmount?: number
+  /** 지급 유형 (PROGRESS: 기성금, BALANCE: 잔금) */
+  paymentType?: string
 }
 
 /**

@@ -383,7 +383,7 @@ const close = () => {
 
 // Google Ads 전환 추적 변수 설정
 const goog_snippet_vars = function() {
-  var w = window;
+  var w = window as any;
   w.google_conversion_id = 871622967;
   w.google_conversion_label = "jGJlCLnr6asaELfSz58D";
   w.google_conversion_value = 1.0;

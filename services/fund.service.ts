@@ -6,6 +6,7 @@
  * @description 자금 관리, 기성금 요청, 통계 관련 API 호출 서비스
  */
 
+import { getLocalDateString } from '~/utils/format'
 import { getAuthHeaders } from './api'
 import { FUND_ENDPOINTS } from './api/endpoints/fund.endpoints'
 import type {
@@ -598,7 +599,7 @@ export const fundService = {
         body: JSON.stringify({
           fundId: fundId,
           requestAmount: data.amount,
-          requestDate: data.requestDate || new Date().toISOString().split('T')[0],
+          requestDate: data.requestDate || getLocalDateString(),
           remarks: data.remarks
         }),
       })
@@ -893,6 +894,59 @@ export const fundService = {
     }
 
     return response.json()
+  },
+
+  /**
+   * 잔금 정보 조회
+   */
+  async getBalance(fundId: number): Promise<BalanceInfo | null> {
+    try {
+      const url = FUND_ENDPOINTS.createBalance(fundId)
+      console.log('잔금 정보 API 호출:', url)
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        if (response.status === 404) return null
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      return result.data || result
+    } catch (error) {
+      console.error('잔금 정보 조회 실패:', error)
+      return null
+    }
+  },
+
+  /**
+   * 잔금 신청
+   */
+  async requestBalance(fundId: number, data: BalanceCreateRequest): Promise<ProgressPaymentRequest> {
+    try {
+      const url = FUND_ENDPOINTS.createBalance(fundId)
+      console.log('잔금 신청 API 호출:', url, data)
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      return result.data || result
+    } catch (error) {
+      console.error('잔금 신청 실패:', error)
+      throw error
+    }
   },
 
   /**

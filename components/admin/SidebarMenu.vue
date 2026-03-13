@@ -227,11 +227,48 @@ const manualMenus = ref<MenuWithAuth[]>([
         children: []
       },
       {
-        menuId: 33,
+        menuId: 32,
+        menuCode: 'TRANSPORT',
+        menuName: '운송관리',
+        menuUrl: '/admin/transport/list',
+        menuIcon: 'fas fa-route',
+        menuLevel: 2,
+        sortOrder: 2,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      }
+    ]
+  },
+  {
+    menuId: 11,
+    menuCode: 'MANUFACTURING',
+    menuName: '제조생산',
+    menuUrl: '/admin/purchase-order',
+    menuIcon: 'fas fa-industry',
+    menuLevel: 1,
+    sortOrder: 4,
+    visible: 'Y',
+    useYn: 'Y',
+    children: [
+      {
+        menuId: 111,
         menuCode: 'PURCHASE_ORDER',
         menuName: '발주서관리',
         menuUrl: '/admin/purchase-order/list',
         menuIcon: 'fas fa-file-invoice',
+        menuLevel: 2,
+        sortOrder: 1,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 112,
+        menuCode: 'INVENTORY',
+        menuName: '재고현황',
+        menuUrl: '/admin/inventory/list',
+        menuIcon: 'fas fa-boxes',
         menuLevel: 2,
         sortOrder: 2,
         visible: 'Y',
@@ -239,11 +276,11 @@ const manualMenus = ref<MenuWithAuth[]>([
         children: []
       },
       {
-        menuId: 34,
-        menuCode: 'INVENTORY',
-        menuName: '재고현황',
-        menuUrl: '/admin/inventory/list',
-        menuIcon: 'fas fa-boxes',
+        menuId: 113,
+        menuCode: 'OEM_MONTHLY_LEDGER',
+        menuName: '월별 매출원장',
+        menuUrl: '/admin/oem/monthly-ledger',
+        menuIcon: 'fas fa-book',
         menuLevel: 2,
         sortOrder: 3,
         visible: 'Y',
@@ -251,25 +288,13 @@ const manualMenus = ref<MenuWithAuth[]>([
         children: []
       },
       {
-        menuId: 32,
-        menuCode: 'TRANSPORT',
-        menuName: '운송관리',
-        menuUrl: '/admin/transport/list',
-        menuIcon: 'fas fa-route',
-        menuLevel: 2,
-        sortOrder: 4,
-        visible: 'Y',
-        useYn: 'Y',
-        children: []
-      },
-      {
-        menuId: 36,
+        menuId: 114,
         menuCode: 'OEM_DASHBOARD',
         menuName: 'OEM 대시보드',
         menuUrl: '/admin/oem/dashboard',
         menuIcon: 'fas fa-tachometer-alt',
         menuLevel: 2,
-        sortOrder: 5,
+        sortOrder: 4,
         visible: 'Y',
         useYn: 'Y',
         children: []
@@ -283,7 +308,7 @@ const manualMenus = ref<MenuWithAuth[]>([
     menuUrl: '/admin/delivery',
     menuIcon: 'fas fa-check-circle',
     menuLevel: 1,
-    sortOrder: 4,
+    sortOrder: 5,
     visible: 'Y',
     useYn: 'Y',
     children: [
@@ -332,7 +357,7 @@ const manualMenus = ref<MenuWithAuth[]>([
     menuUrl: '/admin/commission',
     menuIcon: 'fas fa-percent',
     menuLevel: 1,
-    sortOrder: 5,
+    sortOrder: 6,
     visible: 'Y',
     useYn: 'Y',
     children: [
@@ -381,7 +406,7 @@ const manualMenus = ref<MenuWithAuth[]>([
     menuUrl: '/admin/statistics',
     menuIcon: 'fas fa-chart-bar',
     menuLevel: 1,
-    sortOrder: 6,
+    sortOrder: 7,
     visible: 'Y',
     useYn: 'Y',
     children: [
@@ -774,7 +799,7 @@ const loadMenus = async () => {
       }
     }
 
-    // 3. 사용자별 메뉴 권한 조회 (loginId로 체크 - userid는 백엔드 응답에 없을 수 있음)
+    // 3. 사용자별 메뉴 권한 조회 (loginId로 체크 - userId는 백엔드 응답에 없을 수 있음)
     if (authStore.isLoggedIn && authStore.user?.loginId) {
       try {
         const userMenusWithAuth = await permissionStore.fetchUserMenus()
@@ -937,7 +962,7 @@ const closeUserSwitchModal = () => {
 }
 
 // 사용자 전환 완료 처리
-const handleUserSwitched = (userid: number) => {
+const handleUserSwitched = (userId: number) => {
   closeUserSwitchModal()
 }
 
@@ -990,7 +1015,7 @@ watch(
       }
 
       // ✅ 사용자가 변경되었으면 메뉴 권한 다시 로드 (대리 로그인 등)
-      const userChanged = oldUser && oldUser.userid !== newUser.userid
+      const userChanged = oldUser && oldUser.userId !== newUser.userId
       if (userChanged) {
         loadMenus()
       }

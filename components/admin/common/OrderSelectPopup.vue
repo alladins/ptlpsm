@@ -2,7 +2,7 @@
   <div v-if="show" class="popup-overlay">
     <div class="popup-content xlarge" @click.stop>
       <div class="popup-header">
-        <h2>발주번호 조회</h2>
+        <h2>납품요구번호 조회</h2>
         <button class="popup-close" @click="close">
           <i class="fas fa-times"></i>
         </button>
@@ -18,6 +18,7 @@
               v-model="searchParams.client"
               class="form-input"
               placeholder="수요기관명을 입력하세요"
+              @keyup.enter="search"
             >
             <button class="btn-primary" @click="search">
               <i class="fas fa-search"></i>
@@ -59,21 +60,11 @@
         </div>
 
         <!-- 페이징 -->
-        <div class="pagination">
-          <button 
-            :disabled="currentPage === 1" 
-            @click="changePage(currentPage - 1)"
-          >
-            이전
-          </button>
-          <span>{{ currentPage }} / {{ totalPages }}</span>
-          <button 
-            :disabled="currentPage === totalPages" 
-            @click="changePage(currentPage + 1)"
-          >
-            다음
-          </button>
-        </div>
+        <Pagination
+          :current-page="currentPage - 1"
+          :total-pages="totalPages"
+          @change="(page: number) => changePage(page + 1)"
+        />
       </div>
     </div>
   </div>

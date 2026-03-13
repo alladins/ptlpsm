@@ -238,7 +238,7 @@
           <button
             v-else
             class="px-3 py-2 text-sm font-medium rounded-md"
-            :class="currentPage === page - 1
+            :class="currentPage === Number(page) - 1
               ? 'text-white bg-blue-600 border border-blue-600'
               : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'"
             @click="goToPage(Number(page) - 1)"
@@ -260,6 +260,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { getLocalDateString } from '~/utils/format'
 import { accessLogService } from '~/services/access-log.service'
 import {
   HTTP_METHOD_CLASSES,
@@ -312,12 +313,16 @@ const searchParams = reactive<AccessLogSearchParams>({
 function getDefaultStartDate(): string {
   const date = new Date()
   date.setDate(date.getDate() - 7)
-  return date.toISOString().split('T')[0]
+  // 로컬 타임존 기준 날짜 반환
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 // 기본 종료일 (오늘)
 function getDefaultEndDate(): string {
-  return new Date().toISOString().split('T')[0]
+  return getLocalDateString()
 }
 
 // 표시될 페이지 번호들
@@ -365,7 +370,7 @@ const loadData = async () => {
     // 빈 값 제거
     if (!params.username) delete params.username
     if (!params.httpMethod) delete params.httpMethod
-    if (params.statusCode === undefined || params.statusCode === null || params.statusCode === '') delete params.statusCode
+    if (params.statusCode === undefined || params.statusCode === null || params.statusCode === ('' as any)) delete params.statusCode
 
     const response = await accessLogService.getAccessLogs(params)
 
@@ -410,7 +415,7 @@ const handleExportExcel = async () => {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `접근로그_${new Date().toISOString().split('T')[0]}.xlsx`
+    link.download = `접근로그_${getLocalDateString()}.xlsx`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)

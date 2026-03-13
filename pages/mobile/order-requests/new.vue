@@ -179,6 +179,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { getLocalDateString } from '~/utils/format'
 import { useRouter } from '#imports'
 import { mobileOrderService } from '~/services/mobile-order.service'
 import { itemService } from '~/services/item.service'
@@ -227,8 +228,7 @@ const urgencyOptions = [
 
 // 최소 날짜 (오늘)
 const minDate = computed(() => {
-  const today = new Date()
-  return today.toISOString().split('T')[0]
+  return getLocalDateString()
 })
 
 // 유효성 검사
@@ -245,7 +245,7 @@ const isValid = computed(() => {
 // Methods
 const loadItems = async () => {
   try {
-    const data = await itemService.getItems({ useYn: 'Y', size: 100 })
+    const data = await itemService.getItems({ size: 100 })
     availableItems.value = data.content || []
   } catch (error) {
     console.error('품목 목록 조회 실패:', error)
