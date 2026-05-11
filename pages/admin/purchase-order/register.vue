@@ -2,61 +2,79 @@
   <div class="po-register">
     <PageHeader
       title="발주서 등록"
-      description="OEM 제조사에 발주서를 등록합니다."
+      :description="isLeadpowerSelected
+        ? '본사 재고를 등록합니다. 저장 후 상세 페이지에서 [바로 입고] 버튼으로 입고 처리합니다.'
+        : 'OEM 제조사에 발주서를 등록 및 본사의 재고 등록합니다.'"
       icon="order"
       icon-color="blue"
     >
       <template #actions>
         <button class="btn-action btn-secondary" @click="goBack">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
           취소
         </button>
         <button
           class="btn-action"
-          @click="handleSaveDraft"
           :disabled="submitting"
+          @click="handleSaveDraft"
         >
-          <i class="fas fa-save"></i>
+          <i class="fas fa-save" />
           {{ submitting ? '저장 중...' : '저장' }}
         </button>
         <button
+          v-if="!isLeadpowerSelected"
           class="btn-action btn-primary"
-          @click="handleSaveAndIssue"
           :disabled="submitting"
+          @click="handleSaveAndIssue"
         >
-          <i class="fas fa-paper-plane"></i>
+          <i class="fas fa-paper-plane" />
           {{ submitting ? '처리 중...' : '저장 후 발행' }}
         </button>
       </template>
     </PageHeader>
-
     <div class="content-section">
-      <form @submit.prevent class="register-form">
+      <form class="register-form" @submit.prevent>
         <FormSection title="발주서 정보">
           <div class="po-info-grid">
-            <!-- OEM 제조사 선택 -->
-            <FormField label="OEM 제조사" required :error="errors.oemCompanyId">
+            <!-- 공급원 선택 (OEM 제조사 / 본사) -->
+            <FormField label="공급원" required :error="errors.oemCompanyId">
               <select
                 v-model="formData.oemCompanyId"
                 class="form-select"
-                :disabled="loadingOemCompanies"
+                :disabled="loadingOemCompanies || isOemManager"
               >
-                <option :value="null">{{ loadingOemCompanies ? '로딩 중...' : '선택하세요' }}</option>
+                <option :value="null">
+                  {{ loadingOemCompanies ? '로딩 중...' : '선택하세요' }}
+                </option>
                 <option
                   v-for="company in oemCompanies"
                   :key="company.id"
                   :value="company.id"
                 >
-                  {{ company.companyName }}
+                  {{ company.companyName }}{{ company.companyType === 'LEADPOWER' ? ' [본사 직접입고용]' : '' }}
                 </option>
               </select>
+              <span v-if="isOemManager" class="form-hint">본인 소속 회사로 자동 설정됩니다.</span>
             </FormField>
+
+            <!-- 본사(LEADPOWER) 선택 시 경고 패널 — PO 56 사고 재발 방지 가드 -->
+            <div v-if="isLeadpowerSelected" class="leadpower-warning-panel">
+              <div class="leadpower-warning-header">
+                <i class="fas fa-exclamation-triangle" />
+                <strong>선택된 제조사는 본사로 다음과 같이 처리되니 주의 바랍니다</strong>
+              </div>
+              <ul class="leadpower-warning-body">
+                <li>발주서 상세 화면에 <b>"바로 입고"</b> 버튼이 노출됩니다.</li>
+                <li>바로 입고 시 모든 품목이 본사 창고에 즉시 입고되며 <b>되돌릴 수 없습니다</b>.</li>
+                <li>외부 OEM 발주라면 다른 제조사를 선택해 주세요.</li>
+              </ul>
+            </div>
 
             <!-- 발주일자 -->
             <FormField label="발주일자" required :error="errors.orderDate">
               <input
-                type="date"
                 v-model="formData.orderDate"
+                type="date"
                 class="form-input-sm text-center"
               >
             </FormField>
@@ -64,8 +82,8 @@
             <!-- 납기 예정일 -->
             <FormField label="납기 예정일" required :error="errors.expectedCompletionDate">
               <input
-                type="date"
                 v-model="formData.expectedCompletionDate"
+                type="date"
                 class="form-input-sm text-center"
               >
             </FormField>
@@ -77,7 +95,7 @@
                 class="form-textarea"
                 rows="2"
                 placeholder="비고 사항을 입력하세요"
-              ></textarea>
+              />
             </FormField>
           </div>
         </FormSection>
@@ -87,7 +105,7 @@
           <div class="items-section-wrapper">
             <div class="items-section-header">
               <div class="header-left">
-                <i class="fas fa-box"></i>
+                <i class="fas fa-box" />
                 <span>품목 정보</span>
               </div>
               <div class="header-buttons">
@@ -96,7 +114,7 @@
                   class="btn-import-shipment"
                   @click="openShipmentPicker"
                 >
-                  <i class="fas fa-truck"></i>
+                  <i class="fas fa-truck" />
                   출하에서 가져오기
                 </button>
                 <button
@@ -104,7 +122,7 @@
                   class="btn-add-item"
                   @click="openSkuSelector"
                 >
-                  <i class="fas fa-plus"></i>
+                  <i class="fas fa-plus" />
                   품목 추가
                 </button>
               </div>
@@ -114,16 +132,36 @@
               <table class="items-table">
                 <thead>
                   <tr>
-                    <th style="width: 40px">NO</th>
-                    <th style="width: 80px">SKU ID</th>
-                    <th style="width: 120px">SKU 품명</th>
-                    <th style="width: 70px" class="text-right">출하수량<br><small>(m²)</small></th>
-                    <th style="width: 80px" class="text-right">추가수량<br><small>(m²)</small></th>
-                    <th style="width: 70px" class="text-right">합계<br><small>(m²)</small></th>
-                    <th style="width: 100px" class="text-right">단가<br><small>(원)</small></th>
-                    <th style="width: 120px" class="text-right">금액<br><small>(원)</small></th>
-                    <th style="width: 80px" class="text-center">비고<br><small>(매)</small></th>
-                    <th style="width: 50px">삭제</th>
+                    <th style="width: 40px">
+                      NO
+                    </th>
+                    <th style="width: 80px">
+                      SKU ID
+                    </th>
+                    <th style="width: 120px">
+                      SKU 품명
+                    </th>
+                    <th style="width: 70px" class="text-right">
+                      출하수량<br><small>(m²)</small>
+                    </th>
+                    <th style="width: 80px" class="text-right">
+                      조정수량<br><small>(m²)</small>
+                    </th>
+                    <th style="width: 70px" class="text-right">
+                      합계<br><small>(m²)</small>
+                    </th>
+                    <th style="width: 100px" class="text-right">
+                      단가<br><small>(원)</small>
+                    </th>
+                    <th style="width: 120px" class="text-right">
+                      금액<br><small>(원)</small>
+                    </th>
+                    <th style="width: 80px" class="text-center">
+                      비고<br><small>(매)</small>
+                    </th>
+                    <th style="width: 50px">
+                      삭제
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -133,8 +171,12 @@
                     </td>
                   </tr>
                   <tr v-for="(item, index) in formData.items" :key="item.skuId">
-                    <td class="text-center">{{ index + 1 }}</td>
-                    <td class="text-center">{{ item.skuId }}</td>
+                    <td class="text-center">
+                      {{ index + 1 }}
+                    </td>
+                    <td class="text-center">
+                      {{ item.skuId }}
+                    </td>
                     <td>{{ item.skuName }}</td>
                     <td class="text-right">
                       {{ (item.shipmentQuantity || 0) > 0 ? formatQuantity(item.shipmentQuantity!) : '-' }}
@@ -143,26 +185,28 @@
                       <input
                         type="number"
                         :value="getAdditionalQuantity(item)"
-                        @input="updateAdditionalQuantity(item, Number(($event.target as HTMLInputElement).value))"
-                        :min="0"
+                        :min="-(item.shipmentQuantity || 0)"
                         step="1"
                         class="table-input text-right input-w75"
-                      />
+                        @input="updateAdditionalQuantity(item, Number(($event.target as HTMLInputElement).value))"
+                      >
                     </td>
                     <td class="text-right">
                       <strong>{{ formatQuantity(item.quantity) }}</strong>
                     </td>
                     <td class="text-right">
                       <input
-                        type="number"
                         v-model.number="item.unitPrice"
+                        type="number"
                         :min="0"
                         step="100"
                         class="table-input text-right input-w100"
                         @change="recalculateAmount(index)"
-                      />
+                      >
                     </td>
-                    <td class="text-right">{{ formatCurrency(getItemAmount(item)) }}</td>
+                    <td class="text-right">
+                      {{ formatCurrency(getItemAmount(item)) }}
+                    </td>
                     <td class="remark-cell text-center">
                       {{ item.quantity > 0 ? `${formatQuantity(Math.round(item.quantity / 2))} 매` : '-' }}
                     </td>
@@ -170,24 +214,38 @@
                       <button
                         type="button"
                         class="btn-remove"
-                        @click="removeItem(index)"
                         title="삭제"
+                        @click="removeItem(index)"
                       >
-                        <i class="fas fa-trash-alt"></i>
+                        <i class="fas fa-trash-alt" />
                       </button>
                     </td>
                   </tr>
                 </tbody>
                 <tfoot v-if="formData.items.length > 0">
                   <tr>
-                    <td colspan="3" class="text-right"><strong>합계</strong></td>
-                    <td class="text-right"><strong>{{ formatQuantity(totalShipmentQuantity) }}</strong></td>
-                    <td class="text-right"><strong>{{ formatQuantity(totalAdditionalQuantity) }}</strong></td>
-                    <td class="text-right"><strong>{{ formatQuantity(totalQuantity) }}</strong></td>
-                    <td class="text-right"><strong>총 금액</strong></td>
-                    <td class="text-right"><strong>{{ formatCurrency(totalAmount) }}</strong></td>
-                    <td class="text-center"><strong>{{ formatQuantity(Math.round(totalQuantity / 2)) }} 매</strong></td>
-                    <td></td>
+                    <td colspan="3" class="text-right">
+                      <strong>합계</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalShipmentQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalAdditionalQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>총 금액</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatCurrency(totalAmount) }}</strong>
+                    </td>
+                    <td class="text-center">
+                      <strong>{{ formatQuantity(Math.round(totalQuantity / 2)) }} 매</strong>
+                    </td>
+                    <td />
                   </tr>
                 </tfoot>
               </table>
@@ -234,6 +292,9 @@ import ShipmentPickerModal from '~/components/admin/ShipmentPickerModal.vue'
 import type { SelectedShipmentItem } from '~/components/admin/ShipmentPickerModal.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
+import { usePermission } from '~/composables/usePermission'
+
+const { isOemManager } = usePermission()
 
 definePageMeta({
   layout: 'admin',
@@ -245,6 +306,13 @@ const router = useRouter()
 // OEM 제조사 목록
 const oemCompanies = ref<CompanyInfoResponse[]>([])
 const loadingOemCompanies = ref(false)
+
+// 본사 선택 여부
+const isLeadpowerSelected = computed(() => {
+  if (!formData.value.oemCompanyId) { return false }
+  const selected = oemCompanies.value.find(c => c.id === formData.value.oemCompanyId)
+  return selected?.companyType === 'LEADPOWER'
+})
 
 // OEM 원가 캐시 (skuId → costPrice)
 const oemCostMap = ref<Map<string, number>>(new Map())
@@ -280,7 +348,7 @@ const formData = ref({
 })
 
 // 오늘 날짜
-function getTodayDate(): string {
+function getTodayDate (): string {
   const now = new Date()
   const year = now.getFullYear()
   const month = String(now.getMonth() + 1).padStart(2, '0')
@@ -288,14 +356,17 @@ function getTodayDate(): string {
   return `${year}-${month}-${day}`
 }
 
-// 추가수량 계산 헬퍼
+// 조정수량 계산 헬퍼 (양수 = 추가, 음수 = 차감)
 const getAdditionalQuantity = (item: PoItemRow): number => {
   return (item.quantity || 0) - (item.shipmentQuantity || 0)
 }
 
-// 추가수량 변경 시 총 수량 갱신
-const updateAdditionalQuantity = (item: PoItemRow, additionalQty: number) => {
-  item.quantity = (item.shipmentQuantity || 0) + Math.max(0, additionalQty || 0)
+// 조정수량 변경 시 총 수량 갱신
+const updateAdditionalQuantity = (item: PoItemRow, adjustQty: number) => {
+  const shipQty = item.shipmentQuantity || 0
+  // 조정수량: 최소 -출하수량 (합계가 0 미만 불가)
+  const clampedQty = Math.max(-shipQty, adjustQty || 0)
+  item.quantity = Math.max(0, shipQty + clampedQty)
 }
 
 // 품목 금액 계산
@@ -313,7 +384,7 @@ const totalShipmentQuantity = computed(() => {
   return formData.value.items.reduce((sum, item) => sum + (item.shipmentQuantity || 0), 0)
 })
 
-// 총 추가수량
+// 총 조정수량
 const totalAdditionalQuantity = computed(() => {
   return formData.value.items.reduce((sum, item) => sum + getAdditionalQuantity(item), 0)
 })
@@ -331,7 +402,7 @@ const totalAmount = computed(() => {
 // OEM 제조사 변경 시 원가 조회
 watch(() => formData.value.oemCompanyId, async (newOemId) => {
   oemCostMap.value.clear()
-  if (!newOemId) return
+  if (!newOemId) { return }
 
   loadingOemCosts.value = true
   try {
@@ -376,7 +447,7 @@ const handleShipmentsConfirm = (shipmentItems: SelectedShipmentItem[], shipmentI
   let mergedCount = 0
 
   for (const item of shipmentItems) {
-    if (!item.shipmentQuantity || item.shipmentQuantity <= 0) continue
+    if (!item.shipmentQuantity || item.shipmentQuantity <= 0) { continue }
 
     const skuIdStr = String(item.skuId)
     const existing = formData.value.items.find(i => i.skuId === skuIdStr)
@@ -402,8 +473,8 @@ const handleShipmentsConfirm = (shipmentItems: SelectedShipmentItem[], shipmentI
   }
 
   const messages = []
-  if (addedCount > 0) messages.push(`${addedCount}개 품목 추가`)
-  if (mergedCount > 0) messages.push(`${mergedCount}개 품목 수량 합산`)
+  if (addedCount > 0) { messages.push(`${addedCount}개 품목 추가`) }
+  if (mergedCount > 0) { messages.push(`${mergedCount}개 품목 수량 합산`) }
   alert(messages.length > 0 ? messages.join(', ') + '되었습니다.' : '추가할 품목이 없습니다.')
 }
 
@@ -502,7 +573,7 @@ const buildRequestData = (): PurchaseOrderCreateRequest => {
 
 // 저장 (DRAFT)
 const handleSaveDraft = async () => {
-  if (!validate()) return
+  if (!validate()) { return }
 
   submitting.value = true
   try {
@@ -520,7 +591,7 @@ const handleSaveDraft = async () => {
 
 // 저장 후 발행 (DRAFT -> ISSUED + PDF 생성)
 const handleSaveAndIssue = async () => {
-  if (!validate()) return
+  if (!validate()) { return }
 
   submitting.value = true
   try {
@@ -551,9 +622,18 @@ const goBack = () => {
 onMounted(async () => {
   loadingOemCompanies.value = true
   try {
-    oemCompanies.value = await companyService.getManufacturers()
+    // OEM 제조사 + 본사(LEADPOWER) 모두 조회
+    // OEM 담당자는 백엔드 필터에 의해 본인 회사만 반환됨
+    const manufacturers = await companyService.getManufacturers()
+    const leadpower = await companyService.getCompanies('LEADPOWER')
+    oemCompanies.value = [...leadpower, ...manufacturers]
+
+    // OEM 담당자: 본인 회사 1건만 반환되므로 자동 선택
+    if (isOemManager.value && oemCompanies.value.length === 1) {
+      formData.value.oemCompanyId = oemCompanies.value[0].id
+    }
   } catch (error) {
-    console.error('OEM 제조사 목록 로드 실패:', error)
+    console.error('회사 목록 로드 실패:', error)
   } finally {
     loadingOemCompanies.value = false
   }
@@ -692,6 +772,42 @@ onMounted(async () => {
   font-weight: 400;
   color: #6b7280;
   font-size: 0.7rem;
+}
+
+/* === 본사(LEADPOWER) 선택 경고 패널 (PO 56 사고 재발 방지 가드) === */
+.leadpower-warning-panel {
+  grid-column: 1 / -1;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 4px;
+  padding: 0.875rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.leadpower-warning-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #92400e;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.leadpower-warning-header i {
+  color: #f59e0b;
+  font-size: 1rem;
+}
+
+.leadpower-warning-body {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #78350f;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.leadpower-warning-body li {
+  margin: 0.125rem 0;
 }
 
 /* 반응형 */

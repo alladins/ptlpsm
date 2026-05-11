@@ -2,6 +2,8 @@
   <div class="statistics-shipment">
     <PageHeader
       title="출하현황 통계"
+      icon="chart"
+      icon-color="blue"
       description="기간별 출하 현황을 통계로 확인합니다."
     />
 
@@ -12,36 +14,54 @@
           <div class="search-item">
             <label>조회기간</label>
             <div class="date-range">
-              <input v-model="searchParams.startDate" type="date" class="date-input" />
+              <input v-model="searchParams.startDate" type="date" class="date-input">
               <span>~</span>
-              <input v-model="searchParams.endDate" type="date" class="date-input" />
+              <input v-model="searchParams.endDate" type="date" class="date-input">
             </div>
           </div>
 
           <div class="search-item">
             <label>조회단위</label>
             <select v-model="searchParams.periodUnit" class="form-select">
-              <option value="daily">일별</option>
-              <option value="weekly">주별</option>
-              <option value="monthly">월별</option>
+              <option value="daily">
+                일별
+              </option>
+              <option value="weekly">
+                주별
+              </option>
+              <option value="monthly">
+                월별
+              </option>
             </select>
           </div>
 
           <div class="search-item">
             <label>상태</label>
             <select v-model="searchParams.status" class="form-select">
-              <option value="">전체</option>
-              <option value="PENDING">대기</option>
-              <option value="IN_PROGRESS">진행중</option>
-              <option value="PENDING_SIGNATURE">서명대기</option>
-              <option value="COMPLETED">납품완료</option>
-              <option value="CANCELLED">취소</option>
+              <option value="">
+                전체
+              </option>
+              <option value="PENDING">
+                대기
+              </option>
+              <option value="IN_PROGRESS">
+                진행중
+              </option>
+              <option value="PENDING_SIGNATURE">
+                서명대기
+              </option>
+              <option value="COMPLETED">
+                납품완료
+              </option>
+              <option value="CANCELLED">
+                취소
+              </option>
             </select>
           </div>
 
           <div class="search-buttons">
             <button class="btn-primary" @click="handleSearch">
-              <i class="fas fa-search"></i>
+              <i class="fas fa-search" />
               조회
             </button>
           </div>
@@ -50,13 +70,13 @@
 
       <!-- 로딩 상태 -->
       <div v-if="loading" class="loading-state">
-        <i class="fas fa-spinner fa-spin"></i>
+        <i class="fas fa-spinner fa-spin" />
         데이터를 불러오는 중...
       </div>
 
       <!-- 에러 상태 -->
       <div v-else-if="error" class="error-state">
-        <i class="fas fa-exclamation-triangle"></i>
+        <i class="fas fa-exclamation-triangle" />
         {{ error }}
       </div>
 
@@ -66,37 +86,43 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon icon-order">
-              <i class="fas fa-file-alt"></i>
+              <i class="fas fa-file-alt" />
             </div>
             <div class="stat-content">
               <h3>총 납품요구</h3>
-              <p class="stat-number">{{ formatNumber(statistics.summary.totalOrderCount) }}건 / {{ formatCompactCurrency(statistics.summary.totalOrderAmount) }}</p>
+              <p class="stat-number">
+                {{ formatNumber(statistics.summary.totalOrderCount) }}건 / {{ formatCompactCurrency(statistics.summary.totalOrderAmount) }}
+              </p>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-amount">
-              <i class="fas fa-truck-loading"></i>
+              <i class="fas fa-truck-loading" />
             </div>
             <div class="stat-content">
               <h3>총 출하</h3>
-              <p class="stat-number">{{ formatNumber(statistics.summary.totalShipmentCount) }}건 / {{ formatCompactCurrency(statistics.summary.totalShipmentAmount) }}</p>
+              <p class="stat-number">
+                {{ formatNumber(statistics.summary.totalShipmentCount) }}건 / {{ formatCompactCurrency(statistics.summary.totalShipmentAmount) }}
+              </p>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-rate">
-              <i class="fas fa-chart-pie"></i>
+              <i class="fas fa-chart-pie" />
             </div>
             <div class="stat-content">
               <h3>납품완료율</h3>
-              <p class="stat-number">{{ statistics.summary.completionRate.toFixed(1) }}%</p>
+              <p class="stat-number">
+                {{ statistics.summary.completionRate.toFixed(1) }}%
+              </p>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-status">
-              <i class="fas fa-tasks"></i>
+              <i class="fas fa-tasks" />
             </div>
             <div class="stat-content">
               <h3>상태별 현황</h3>
@@ -115,8 +141,8 @@
           <!-- 기간별 출하 추이 -->
           <div class="chart-card chart-main">
             <h2>
-              <i class="fas fa-chart-bar"></i>
-              기간별 출하 추이
+              <i class="fas fa-chart-bar" />
+              기간별 납품요구/출하 추이
             </h2>
             <div v-if="statistics.periodTrend.length > 0" class="chart-content">
               <div class="trend-chart">
@@ -127,23 +153,36 @@
                 >
                   <div class="trend-bar-container">
                     <div
-                      class="trend-bar"
+                      class="trend-bar order-bar"
+                      :style="{ height: getBarHeight(item.orderAmount) + '%' }"
+                      :title="`납품요구: ${formatCurrency(item.orderAmount)}`"
+                    >
+                      <span class="bar-value">{{ formatCompactNumber(item.orderAmount) }}</span>
+                    </div>
+                    <div
+                      class="trend-bar shipment-bar"
                       :style="{ height: getBarHeight(item.shipmentAmount) + '%' }"
-                      :title="`${formatCurrency(item.shipmentAmount)}`"
+                      :title="`출하: ${formatCurrency(item.shipmentAmount)}`"
                     >
                       <span class="bar-value">{{ formatCompactNumber(item.shipmentAmount) }}</span>
                     </div>
                   </div>
-                  <div class="trend-label">{{ formatPeriodLabel(item.period) }}</div>
+                  <div class="trend-label">
+                    {{ formatPeriodLabel(item.period) }}
+                  </div>
                   <div class="trend-info">
                     <span>{{ item.orderCount }}건</span>
                     <span>{{ item.completionRate.toFixed(0) }}%</span>
                   </div>
                 </div>
               </div>
+              <div class="trend-legend">
+                <span class="legend-item"><span class="legend-dot order-dot" />납품요구</span>
+                <span class="legend-item"><span class="legend-dot shipment-dot" />출하</span>
+              </div>
             </div>
             <div v-else class="chart-placeholder">
-              <i class="fas fa-chart-bar"></i>
+              <i class="fas fa-chart-bar" />
               <p>데이터가 없습니다</p>
             </div>
           </div>
@@ -151,7 +190,7 @@
           <!-- 상태별 현황 -->
           <div class="chart-card">
             <h2>
-              <i class="fas fa-chart-pie"></i>
+              <i class="fas fa-chart-pie" />
               상태별 현황
             </h2>
             <div class="status-chart">
@@ -163,31 +202,31 @@
               </div>
               <div class="status-legend">
                 <div class="legend-item">
-                  <span class="legend-color pending"></span>
+                  <span class="legend-color pending" />
                   <span class="legend-label">대기</span>
                   <span class="legend-value">{{ statistics.summary.statusCount.pending }}건</span>
                   <span class="legend-percent">({{ getStatusPercent('pending') }}%)</span>
                 </div>
                 <div class="legend-item">
-                  <span class="legend-color in-progress"></span>
+                  <span class="legend-color in-progress" />
                   <span class="legend-label">진행중</span>
                   <span class="legend-value">{{ statistics.summary.statusCount.inProgress }}건</span>
                   <span class="legend-percent">({{ getStatusPercent('inProgress') }}%)</span>
                 </div>
                 <div class="legend-item">
-                  <span class="legend-color pending-signature"></span>
+                  <span class="legend-color pending-signature" />
                   <span class="legend-label">서명대기</span>
                   <span class="legend-value">{{ statistics.summary.statusCount.pendingSignature }}건</span>
                   <span class="legend-percent">({{ getStatusPercent('pendingSignature') }}%)</span>
                 </div>
                 <div class="legend-item">
-                  <span class="legend-color completed"></span>
+                  <span class="legend-color completed" />
                   <span class="legend-label">납품완료</span>
                   <span class="legend-value">{{ statistics.summary.statusCount.completed }}건</span>
                   <span class="legend-percent">({{ getStatusPercent('completed') }}%)</span>
                 </div>
                 <div class="legend-item">
-                  <span class="legend-color cancelled"></span>
+                  <span class="legend-color cancelled" />
                   <span class="legend-label">취소</span>
                   <span class="legend-value">{{ statistics.summary.statusCount.cancelled }}건</span>
                   <span class="legend-percent">({{ getStatusPercent('cancelled') }}%)</span>
@@ -199,7 +238,7 @@
           <!-- 지역별 출하 현황 -->
           <div class="chart-card">
             <h2>
-              <i class="fas fa-map-marker-alt"></i>
+              <i class="fas fa-map-marker-alt" />
               지역별 출하 현황
             </h2>
             <div v-if="statistics.regionBreakdown.length > 0" class="region-chart">
@@ -216,13 +255,15 @@
                   <div
                     class="region-bar"
                     :style="{ width: getRegionBarWidth(item.shipmentAmount) + '%' }"
-                  ></div>
+                  />
                 </div>
-                <div class="region-amount">{{ formatCompactCurrency(item.shipmentAmount) }}</div>
+                <div class="region-amount">
+                  {{ formatCompactCurrency(item.shipmentAmount) }}
+                </div>
               </div>
             </div>
             <div v-else class="chart-placeholder">
-              <i class="fas fa-map-marker-alt"></i>
+              <i class="fas fa-map-marker-alt" />
               <p>데이터가 없습니다</p>
             </div>
           </div>
@@ -233,7 +274,7 @@
           <!-- 최근 출하 현황 (좌측) -->
           <div class="table-section">
             <h2>
-              <i class="fas fa-truck"></i>
+              <i class="fas fa-truck" />
               최근 출하 현황
             </h2>
             <div class="table-container">
@@ -251,14 +292,18 @@
                 </thead>
                 <tbody>
                   <tr v-if="statistics.recentShipments.length === 0">
-                    <td colspan="7" class="empty-cell">데이터가 없습니다</td>
+                    <td colspan="7" class="empty-cell">
+                      데이터가 없습니다
+                    </td>
                   </tr>
                   <tr v-for="shipment in statistics.recentShipments" :key="shipment.shipmentId">
                     <td>{{ shipment.deliveryRequestNo }}</td>
                     <td>{{ shipment.client }}</td>
                     <td>{{ shipment.region || '-' }}</td>
                     <td>{{ shipment.shipmentDate || '-' }}</td>
-                    <td class="text-right">{{ formatCurrency(shipment.amount) }}</td>
+                    <td class="text-right">
+                      {{ formatCurrency(shipment.amount) }}
+                    </td>
                     <td>{{ shipment.vehicleNo || '-' }}</td>
                     <td>
                       <span :class="['status-badge', getStatusClass(shipment.status)]">
@@ -274,7 +319,7 @@
           <!-- SKU별 발주수량 현황 (우측) -->
           <div class="table-section">
             <h2>
-              <i class="fas fa-boxes"></i>
+              <i class="fas fa-boxes" />
               SKU별 발주수량 현황
             </h2>
             <div class="table-container">
@@ -290,14 +335,18 @@
                 </thead>
                 <tbody>
                   <tr v-if="statistics.skuOrderStats.length === 0">
-                    <td colspan="5" class="empty-cell">데이터가 없습니다</td>
+                    <td colspan="5" class="empty-cell">
+                      데이터가 없습니다
+                    </td>
                   </tr>
                   <tr v-for="sku in statistics.skuOrderStats" :key="sku.skuId">
                     <td>{{ sku.itemName }}</td>
                     <td>{{ sku.skuId }}</td>
                     <td>{{ sku.skuName }}</td>
                     <td>{{ sku.unit }}</td>
-                    <td class="text-right">{{ formatNumber(sku.totalOrderedQuantity) }} {{ sku.unit }}</td>
+                    <td class="text-right">
+                      {{ formatNumber(sku.totalOrderedQuantity) }} {{ sku.unit }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -308,7 +357,7 @@
         <!-- 최근 납품요구 현황 -->
         <div class="table-section">
           <h2>
-            <i class="fas fa-list"></i>
+            <i class="fas fa-list" />
             최근 납품요구 현황
           </h2>
           <div class="table-container">
@@ -326,14 +375,18 @@
               </thead>
               <tbody>
                 <tr v-if="statistics.recentOrders.length === 0">
-                  <td colspan="7" class="empty-cell">데이터가 없습니다</td>
+                  <td colspan="7" class="empty-cell">
+                    데이터가 없습니다
+                  </td>
                 </tr>
                 <tr v-for="order in statistics.recentOrders" :key="order.orderId">
                   <td>{{ order.deliveryRequestNo }}</td>
                   <td>{{ order.client }}</td>
                   <td>{{ order.region || '-' }}</td>
                   <td>{{ order.shipmentDate || '-' }}</td>
-                  <td class="text-right">{{ formatCurrency(order.amount) }}</td>
+                  <td class="text-right">
+                    {{ formatCurrency(order.amount) }}
+                  </td>
                   <td>
                     <span :class="['status-badge', getStatusClass(order.status)]">
                       {{ getStatusLabel(order.status) }}
@@ -342,7 +395,7 @@
                   <td>
                     <div class="completion-rate">
                       <div class="rate-bar">
-                        <div class="rate-fill" :style="{ width: order.completionRate + '%' }"></div>
+                        <div class="rate-fill" :style="{ width: order.completionRate + '%' }" />
                       </div>
                       <span class="rate-text">{{ order.completionRate.toFixed(0) }}%</span>
                     </div>
@@ -410,7 +463,7 @@ const statistics = ref<ShipmentStatisticsResponse>({
 })
 
 // 기본 날짜 (6개월 전 ~ 오늘)
-function getDefaultStartDate(): string {
+function getDefaultStartDate (): string {
   const now = new Date()
   now.setMonth(now.getMonth() - 6)
   // 로컬 타임존 기준 날짜 반환
@@ -420,12 +473,12 @@ function getDefaultStartDate(): string {
   return `${y}-${m}-${d}`
 }
 
-function getDefaultEndDate(): string {
+function getDefaultEndDate (): string {
   return getLocalDateString()
 }
 
 // 데이터 조회
-async function loadStatistics() {
+async function loadStatistics () {
   loading.value = true
   error.value = null
 
@@ -454,7 +507,7 @@ async function loadStatistics() {
 }
 
 // API 실패 시 빈 데이터로 fallback
-function loadMockData() {
+function loadMockData () {
   statistics.value = {
     summary: {
       totalOrderCount: 0,
@@ -480,12 +533,12 @@ function loadMockData() {
 }
 
 // 검색
-function handleSearch() {
+function handleSearch () {
   loadStatistics()
 }
 
 // 포맷 함수들
-function formatCompactNumber(value: number): string {
+function formatCompactNumber (value: number): string {
   if (value >= 100000000) {
     return (value / 100000000).toFixed(1) + '억'
   }
@@ -495,7 +548,7 @@ function formatCompactNumber(value: number): string {
   return value.toLocaleString('ko-KR')
 }
 
-function formatCompactCurrency(value: number): string {
+function formatCompactCurrency (value: number): string {
   if (value >= 100000000) {
     return (value / 100000000).toFixed(1) + '억원'
   }
@@ -508,7 +561,7 @@ function formatCompactCurrency(value: number): string {
   return value.toLocaleString('ko-KR') + '원'
 }
 
-function formatPeriodLabel(period: string): string {
+function formatPeriodLabel (period: string): string {
   // 월별: 2024-01 -> 1월
   if (period.match(/^\d{4}-\d{2}$/)) {
     const month = parseInt(period.split('-')[1])
@@ -528,15 +581,17 @@ function formatPeriodLabel(period: string): string {
 }
 
 // 차트 헬퍼 함수
-function getBarHeight(amount: number): number {
-  const maxAmount = Math.max(...statistics.value.periodTrend.map(t => t.shipmentAmount))
-  if (maxAmount === 0) return 0
+function getBarHeight (amount: number): number {
+  const maxAmount = Math.max(
+    ...statistics.value.periodTrend.map(t => Math.max(t.shipmentAmount, t.orderAmount ?? 0))
+  )
+  if (maxAmount === 0) { return 0 }
   return (amount / maxAmount) * 100
 }
 
-function getRegionBarWidth(amount: number): number {
+function getRegionBarWidth (amount: number): number {
   const maxAmount = Math.max(...statistics.value.regionBreakdown.map(r => r.shipmentAmount))
-  if (maxAmount === 0) return 0
+  if (maxAmount === 0) { return 0 }
   return (amount / maxAmount) * 100
 }
 
@@ -549,7 +604,7 @@ const getTotalStatusCount = computed(() => {
 // 도넛 차트 그라데이션 (데이터 기반 동적 생성)
 const donutGradient = computed(() => {
   const total = getTotalStatusCount.value
-  if (total === 0) return '#e5e7eb' // 데이터 없으면 회색
+  if (total === 0) { return '#e5e7eb' } // 데이터 없으면 회색
 
   const { pending, inProgress, pendingSignature, completed, cancelled } = statistics.value.summary.statusCount
 
@@ -592,14 +647,14 @@ const donutGradient = computed(() => {
   return segments.length > 0 ? `conic-gradient(${segments.join(', ')})` : '#e5e7eb'
 })
 
-function getStatusPercent(status: 'pending' | 'inProgress' | 'pendingSignature' | 'completed' | 'cancelled'): string {
+function getStatusPercent (status: 'pending' | 'inProgress' | 'pendingSignature' | 'completed' | 'cancelled'): string {
   const total = getTotalStatusCount.value
-  if (total === 0) return '0'
+  if (total === 0) { return '0' }
   const count = statistics.value.summary.statusCount[status]
   return ((count / total) * 100).toFixed(1)
 }
 
-function getStatusClass(status: string): string {
+function getStatusClass (status: string): string {
   const classMap: Record<string, string> = {
     PENDING: 'pending',
     IN_PROGRESS: 'in-progress',
@@ -610,7 +665,7 @@ function getStatusClass(status: string): string {
   return classMap[status] || ''
 }
 
-function getStatusLabel(status: string): string {
+function getStatusLabel (status: string): string {
   return SHIPMENT_STATUS_LABELS[status as ShipmentStatus] || status
 }
 
@@ -885,24 +940,32 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   flex: 1;
-  max-width: 80px;
+  max-width: 100px;
 }
 
 .trend-bar-container {
   height: 160px;
-  width: 40px;
+  width: 56px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  gap: 2px;
 }
 
 .trend-bar {
-  width: 100%;
-  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  width: 50%;
   border-radius: 4px 4px 0 0;
   position: relative;
   min-height: 4px;
   transition: height 0.3s ease;
+}
+
+.trend-bar.order-bar {
+  background: linear-gradient(180deg, #f59e0b, #d97706);
+}
+
+.trend-bar.shipment-bar {
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
 }
 
 .bar-value {
@@ -914,6 +977,37 @@ onMounted(() => {
   font-weight: 600;
   color: #374151;
   white-space: nowrap;
+}
+
+.trend-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.trend-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legend-dot.order-dot {
+  background: linear-gradient(180deg, #f59e0b, #d97706);
+}
+
+.legend-dot.shipment-dot {
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
 }
 
 .trend-label {

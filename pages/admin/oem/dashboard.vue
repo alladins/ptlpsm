@@ -3,6 +3,8 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       title="OEM 대시보드"
+      icon="order"
+      icon-color="blue"
       description="OEM 제조사별 발주/생산/재고/지급 현황을 한눈에 파악합니다."
     >
       <template #actions>
@@ -12,7 +14,7 @@
             :disabled="selectedYear <= minYear"
             @click="changeYear(-1)"
           >
-            <i class="fas fa-chevron-left"></i>
+            <i class="fas fa-chevron-left" />
           </button>
           <span class="year-display">{{ selectedYear }}년</span>
           <button
@@ -20,7 +22,7 @@
             :disabled="selectedYear >= maxYear"
             @click="changeYear(1)"
           >
-            <i class="fas fa-chevron-right"></i>
+            <i class="fas fa-chevron-right" />
           </button>
         </div>
       </template>
@@ -28,13 +30,13 @@
 
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-container">
-      <i class="fas fa-spinner fa-spin"></i>
+      <i class="fas fa-spinner fa-spin" />
       <p>대시보드 데이터를 불러오는 중...</p>
     </div>
 
     <!-- 데이터 없음 -->
     <div v-else-if="summaryList.length === 0" class="empty-container">
-      <i class="fas fa-industry"></i>
+      <i class="fas fa-industry" />
       <p>등록된 OEM 발주가 없습니다.</p>
     </div>
 
@@ -42,7 +44,7 @@
       <!-- 상단: OEM 통합 요약 카드 -->
       <div class="section-header">
         <h3 class="section-title">
-          <i class="fas fa-th-large"></i>
+          <i class="fas fa-th-large" />
           OEM 제조사별 현황
         </h3>
       </div>
@@ -57,7 +59,7 @@
           <!-- 카드 헤더 -->
           <div class="oem-card-header">
             <div class="oem-name">
-              <i class="fas fa-industry"></i>
+              <i class="fas fa-industry" />
               {{ oem.oemCompanyName }}
             </div>
           </div>
@@ -96,7 +98,7 @@
               <div
                 class="progress-fill production"
                 :style="{ width: Math.min(oem.productionRate, 100) + '%' }"
-              ></div>
+              />
             </div>
             <span class="progress-text">
               {{ formatQuantity(oem.totalProducedQuantity) }} / {{ formatQuantity(oem.totalOrderedQuantity) }}
@@ -123,7 +125,7 @@
               <div
                 class="progress-fill payment"
                 :style="{ width: Math.min(oem.paymentRate, 100) + '%' }"
-              ></div>
+              />
             </div>
             <span class="progress-text unpaid">
               미지급 {{ formatCurrency(oem.unpaidAmount) }}
@@ -138,12 +140,14 @@
         <div class="production-section">
           <div class="section-header">
             <h3 class="section-title">
-              <i class="fas fa-cogs"></i>
+              <i class="fas fa-cogs" />
               품목별 생산 현황
             </h3>
             <div class="section-actions">
               <select v-model="productionOemId" class="oem-select" :disabled="isOemManager">
-                <option v-if="!isOemManager" :value="null">전체 OEM</option>
+                <option v-if="!isOemManager" :value="null">
+                  전체 OEM
+                </option>
                 <option
                   v-for="oem in summaryList"
                   :key="oem.oemCompanyId"
@@ -157,13 +161,13 @@
 
           <!-- 생산 현황 로딩 -->
           <div v-if="productionLoading" class="loading-container small">
-            <i class="fas fa-spinner fa-spin"></i>
+            <i class="fas fa-spinner fa-spin" />
             <p>생산 현황 데이터를 불러오는 중...</p>
           </div>
 
           <!-- 생산 현황 데이터 없음 -->
           <div v-else-if="filteredProductionStatus.length === 0" class="empty-container small">
-            <i class="fas fa-box-open"></i>
+            <i class="fas fa-box-open" />
             <p>해당 연도의 생산 현황이 없습니다.</p>
           </div>
 
@@ -173,7 +177,9 @@
               <table class="detail-table production-table">
                 <thead>
                   <tr>
-                    <th v-if="productionOemId === null">OEM 제조사</th>
+                    <th v-if="productionOemId === null">
+                      OEM 제조사
+                    </th>
                     <th>품목명</th>
                     <th>발주수량</th>
                     <th>생산수량</th>
@@ -195,8 +201,12 @@
                       <span class="sku-badge">{{ item.skuId }}</span>
                       {{ item.skuName }}
                     </td>
-                    <td class="text-right">{{ formatQuantity(item.orderedQuantity) }}</td>
-                    <td class="text-right">{{ formatQuantity(item.producedQuantity) }}</td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.orderedQuantity) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.producedQuantity) }}
+                    </td>
                     <td class="text-center">
                       <span
                         class="rate-badge"
@@ -205,8 +215,12 @@
                         {{ formatPercent(item.productionRate) }}
                       </span>
                     </td>
-                    <td class="text-right text-blue">{{ formatQuantity(item.cumulativeInbound) }}</td>
-                    <td class="text-right text-orange">{{ formatQuantity(item.cumulativeOutbound) }}</td>
+                    <td class="text-right text-blue">
+                      {{ formatQuantity(item.cumulativeInbound) }}
+                    </td>
+                    <td class="text-right text-orange">
+                      {{ formatQuantity(item.cumulativeOutbound) }}
+                    </td>
                     <td class="text-right">
                       <strong :class="item.currentInventory > 0 ? 'text-green' : 'text-gray'">
                         {{ formatQuantity(item.currentInventory) }}
@@ -219,14 +233,24 @@
                     <td :colspan="productionOemId === null ? 2 : 1" class="text-center">
                       <strong>합계</strong>
                     </td>
-                    <td class="text-right"><strong>{{ formatQuantity(productionTotals.ordered) }}</strong></td>
-                    <td class="text-right"><strong>{{ formatQuantity(productionTotals.produced) }}</strong></td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(productionTotals.ordered) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(productionTotals.produced) }}</strong>
+                    </td>
                     <td class="text-center">
                       <strong>{{ formatPercent(productionTotals.rate) }}</strong>
                     </td>
-                    <td class="text-right text-blue"><strong>{{ formatQuantity(productionTotals.inbound) }}</strong></td>
-                    <td class="text-right text-orange"><strong>{{ formatQuantity(productionTotals.outbound) }}</strong></td>
-                    <td class="text-right text-green"><strong>{{ formatQuantity(productionTotals.inventory) }}</strong></td>
+                    <td class="text-right text-blue">
+                      <strong>{{ formatQuantity(productionTotals.inbound) }}</strong>
+                    </td>
+                    <td class="text-right text-orange">
+                      <strong>{{ formatQuantity(productionTotals.outbound) }}</strong>
+                    </td>
+                    <td class="text-right text-green">
+                      <strong>{{ formatQuantity(productionTotals.inventory) }}</strong>
+                    </td>
                   </tr>
                 </tfoot>
               </table>
@@ -238,12 +262,14 @@
         <div class="monthly-section">
           <div class="section-header">
             <h3 class="section-title">
-              <i class="fas fa-calendar-alt"></i>
+              <i class="fas fa-calendar-alt" />
               월별 지급 현황
             </h3>
             <div class="section-actions">
               <select v-model="selectedOemId" class="oem-select" :disabled="isOemManager">
-                <option v-if="!isOemManager" :value="null">전체 OEM</option>
+                <option v-if="!isOemManager" :value="null">
+                  전체 OEM
+                </option>
                 <option
                   v-for="oem in summaryList"
                   :key="oem.oemCompanyId"
@@ -257,13 +283,13 @@
 
           <!-- 월별 지급 로딩 -->
           <div v-if="monthlyLoading" class="loading-container small">
-            <i class="fas fa-spinner fa-spin"></i>
+            <i class="fas fa-spinner fa-spin" />
             <p>월별 지급 데이터를 불러오는 중...</p>
           </div>
 
           <!-- 월별 지급 데이터 없음 -->
           <div v-else-if="filteredMonthlyPayments.length === 0" class="empty-container small">
-            <i class="fas fa-calendar-times"></i>
+            <i class="fas fa-calendar-times" />
             <p>해당 연도의 지급 내역이 없습니다.</p>
           </div>
 
@@ -273,7 +299,9 @@
               <table class="detail-table">
                 <thead>
                   <tr>
-                    <th v-if="selectedOemId === null">OEM 제조사</th>
+                    <th v-if="selectedOemId === null">
+                      OEM 제조사
+                    </th>
                     <th>연월</th>
                     <th>건수</th>
                     <th>지급 합계</th>
@@ -290,7 +318,9 @@
                     <td class="text-center">
                       <span class="month-badge">{{ item.yearMonth }}</span>
                     </td>
-                    <td class="text-center">{{ item.paymentCount }}</td>
+                    <td class="text-center">
+                      {{ item.paymentCount }}
+                    </td>
                     <td class="text-right">
                       <strong>{{ formatCurrency(item.totalAmount) }}</strong>
                     </td>
@@ -385,9 +415,9 @@ const productionTotals = computed(() => {
 
 // 생산률 등급별 CSS 클래스
 const getRateClass = (rate: number) => {
-  if (rate >= 100) return 'rate-complete'
-  if (rate >= 70) return 'rate-high'
-  if (rate >= 40) return 'rate-mid'
+  if (rate >= 100) { return 'rate-complete' }
+  if (rate >= 70) { return 'rate-high' }
+  if (rate >= 40) { return 'rate-mid' }
   return 'rate-low'
 }
 

@@ -275,7 +275,9 @@ export const userService = {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorBody = await response.json().catch(() => null)
+        const errorMessage = errorBody?.message || errorBody?.error || `HTTP error! status: ${response.status}`
+        throw new Error(errorMessage)
       }
 
       return await response.json()
@@ -299,7 +301,9 @@ export const userService = {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorBody = await response.json().catch(() => null)
+        const errorMessage = errorBody?.message || errorBody?.error || `HTTP error! status: ${response.status}`
+        throw new Error(errorMessage)
       }
 
       return await response.json()

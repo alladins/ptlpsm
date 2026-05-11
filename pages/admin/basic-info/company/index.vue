@@ -11,5 +11,5 @@ await navigateTo('/admin/basic-info/company/list', { replace: true })
 </script>
 
 <template>
-  <div></div>
+  <div />
 </template>

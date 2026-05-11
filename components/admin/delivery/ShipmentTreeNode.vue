@@ -4,25 +4,25 @@
       <!-- 출하 헤더 - 한 줄 레이아웃 -->
       <div class="shipment-header" @click="toggleExpand">
         <button class="expand-btn" :class="{ expanded }">
-          <i class="fas" :class="expanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+          <i class="fas" :class="expanded ? 'fa-chevron-down' : 'fa-chevron-right'" />
         </button>
-        <i class="fas fa-box"></i>
+        <i class="fas fa-box" />
         <span class="shipment-id">출하 #{{ shipment.shipmentId }}</span>
         <span class="info-separator">·</span>
         <span class="shipment-date">{{ formatDate(shipment.shipmentDate) }}</span>
         <span class="info-separator">·</span>
         <span class="info-text">
-          <i class="fas fa-user"></i>
+          <i class="fas fa-user" />
           담당자: {{ shipment.shipmentResponsible || '-' }}
         </span>
         <span class="info-separator">·</span>
         <span class="info-text">
-          <i class="fas fa-list"></i>
+          <i class="fas fa-list" />
           품목: {{ shipment.itemSummary || '-' }} ({{ shipment.itemCount }}개)
         </span>
         <span class="info-separator">·</span>
         <span class="shipment-quantity">
-          <i class="fas fa-boxes"></i>
+          <i class="fas fa-boxes" />
           {{ formatQuantity(shipment.shipmentQuantity) }}
         </span>
         <span class="info-separator">·</span>
@@ -47,7 +47,7 @@
 
           <!-- 운송 정보가 없을 때 -->
           <div v-else class="no-transport">
-            <i class="fas fa-truck-loading"></i>
+            <i class="fas fa-truck-loading" />
             <span>운송 정보 없음</span>
           </div>
         </div>
@@ -66,7 +66,7 @@ interface Props {
   shipment: ShipmentTreeNode
   level: number
   defaultExpanded?: boolean
-  deliveryDoneId?: number  // 납품완료계 ID (사진 선택용)
+  deliveryDoneId?: number // 납품완료계 ID (사진 선택용)
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -97,7 +97,7 @@ const getStatusClass = (status: string): string => {
 
 <style scoped>
 .shipment-tree-node {
-  margin-top: 0.75rem;
+  margin-top: 0.375rem;
 }
 
 .shipment-card {
@@ -112,7 +112,7 @@ const getStatusClass = (status: string): string => {
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  padding: 0.875rem 1rem;
+  padding: 0.5rem 0.875rem;
   background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%);
   cursor: pointer;
   transition: background 0.2s;
@@ -202,7 +202,7 @@ const getStatusClass = (status: string): string => {
 
 /* 출하 본문 (확장 시) */
 .shipment-body {
-  padding: 0 1rem 1rem 1rem;
+  padding: 0 0.75rem 0.5rem 0.75rem;
   background: white;
 }
 

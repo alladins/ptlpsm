@@ -84,6 +84,16 @@ export const PURCHASE_ORDER_ENDPOINTS = {
   },
 
   /**
+   * 본사 바로 입고
+   * @param poId - 발주서 ID
+   * @returns POST /admin/purchase-orders/{poId}/direct-stock-in
+   */
+  directStockIn: (poId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/purchase-orders/${poId}/direct-stock-in`
+  },
+
+  /**
    * 발주서 접수
    * @param poId - 발주서 ID
    * @returns POST /admin/purchase-orders/{poId}/accept

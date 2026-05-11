@@ -1,153 +1,59 @@
 /**
- * 영업 상태 코드 Composable (완전 DB 기반)
+ * 영업 상태 코드 composable (SALES_STATUS 그룹).
  *
- * 코드 관리 시스템의 SALES_STATUS 그룹에서 한글 상태 코드를 로드하여 사용
- * CSS 클래스와 배지 색상도 DB에서 관리
+ * createStatusComposable 팩토리로 공통 부분(캐시/로더/라벨/CSS/배지) 처리하고,
+ * 영업 도메인 특화 진척도 메서드(progressOptions, getProgressIndex 등)를 확장.
  *
- * 영업 모듈 전용 상태: 진행중, 완료, 취소, 보류 (한글)
- *
- * 사용 예시:
- * const { statusOptions, getStatusLabel, getStatusClass } = useSalesStatus()
- * await loadStatusCodes()
- *
- * // 드롭다운 옵션으로 사용
- * <select v-model="status">
- *   <option v-for="option in statusOptions" :key="option.value" :value="option.value">
- *     {{ option.label }}
- *   </option>
- * </select>
- *
- * // 상태 라벨 표시
- * <span>{{ getStatusLabel('진행중') }}</span>
- *
- * // 상태별 CSS 클래스
- * <span :class="getStatusClass('완료')">완료</span>
+ * 상태 단계: 초기접촉 → 니즈파악 → 견적제출 → 계약협상 → 계약완료 → 납품완료 + 보류/실패
  */
 
-import { ref, computed } from 'vue'
-import { codeService } from '~/services/code.service'
-import type { StatusCode, StatusOption } from '~/types/common'
+import { computed } from 'vue'
+import type { StatusOption } from '~/types/common'
+import { SALES_PROGRESS_STEPS, SALES_SPECIAL_STATUSES } from '~/types/sales'
+import { clearStatusCache, createStatusComposable } from './createStatusComposable'
 
-// 캐시 (전역)
-let cachedStatusCodes: StatusCode[] | null = null
-let cachePromise: Promise<StatusCode[]> | null = null
+const useStatusBase = createStatusComposable({
+  groupCode: 'SALES_STATUS',
+  autoMount: false
+})
 
-/**
- * 영업 상태 코드 Composable
- */
+const SALES_PROGRESS_COLOR_MAP: Record<string, string> = {
+  '초기접촉': '#6b7280',
+  '니즈파악': '#3b82f6',
+  '견적제출': '#6366f1',
+  '계약협상': '#eab308',
+  '계약완료': '#22c55e',
+  '납품완료': '#10b981',
+  '보류': '#f59e0b',
+  '실패': '#ef4444'
+}
+
 export function useSalesStatus() {
-  // 반응형 상태
-  const statusCodes = ref<StatusCode[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+  const base = useStatusBase()
 
-  /**
-   * DB에서 SALES_STATUS 코드 로드 및 캐싱
-   */
-  const loadStatusCodes = async (): Promise<void> => {
-    // 캐시가 있으면 반환
-    if (cachedStatusCodes) {
-      statusCodes.value = cachedStatusCodes
-      return
-    }
+  const progressOptions = computed<StatusOption[]>(() =>
+    SALES_PROGRESS_STEPS.map((step) => ({ value: step.value, label: step.label }))
+  )
 
-    // 로딩 중이면 대기
-    if (cachePromise) {
-      statusCodes.value = await cachePromise
-      return
-    }
+  const getProgressIndex = (statusCode: string): number =>
+    SALES_PROGRESS_STEPS.findIndex((s) => s.value === statusCode)
 
-    try {
-      loading.value = true
-      error.value = null
+  const isSpecialStatus = (statusCode: string): boolean =>
+    SALES_SPECIAL_STATUSES.includes(statusCode as any)
 
-      // DB에서 로드 (Promise 저장)
-      cachePromise = codeService.getCodeDetails('SALES_STATUS').then(response => {
-        console.log('🔍 [useSalesStatus] 백엔드 응답:', response)
-        const mapped = response.map((detail: any) => ({
-          code: detail.code,
-          codeName: detail.codeName,
-          description: detail.description || '',
-          cssClass: detail.cssClass || 'status-default',
-          badgeClass: detail.badgeClass || 'bg-gray-100 text-gray-800',
-          sortOrder: detail.sortOrder || 0
-        }))
-        console.log('🔍 [useSalesStatus] 매핑된 데이터:', mapped)
-        return mapped
-      })
-
-      // 결과 저장
-      cachedStatusCodes = await cachePromise
-      statusCodes.value = cachedStatusCodes
-      console.log('✅ [useSalesStatus] 캐시 저장 완료:', cachedStatusCodes)
-    } catch (err) {
-      console.error('Failed to load sales status codes:', err)
-      error.value = 'Failed to load status codes'
-      cachedStatusCodes = []
-      statusCodes.value = []
-    } finally {
-      loading.value = false
-      cachePromise = null
-    }
-  }
-
-  /**
-   * 드롭다운 옵션 (computed)
-   */
-  const statusOptions = computed<StatusOption[]>(() => {
-    const options = statusCodes.value.map(status => ({
-      value: status.code,
-      label: status.codeName
-    }))
-    console.log('🔍 [useSalesStatus] statusOptions computed:', options)
-    return options
-  })
-
-  /**
-   * 상태 코드로 라벨 조회
-   */
-  const getStatusLabel = (statusCode: string): string => {
-    const found = statusCodes.value.find(s => s.code === statusCode)
-    return found?.codeName || statusCode
-  }
-
-  /**
-   * 상태 코드로 CSS 클래스 조회
-   */
-  const getStatusClass = (statusCode: string): string => {
-    const found = statusCodes.value.find(s => s.code === statusCode)
-    return found?.cssClass || 'status-default'
-  }
-
-  /**
-   * 상태 코드로 배지 클래스 조회
-   */
-  const getStatusBadgeClass = (statusCode: string): string => {
-    const found = statusCodes.value.find(s => s.code === statusCode)
-    return found?.badgeClass || 'bg-gray-100 text-gray-800'
-  }
+  const getProgressColor = (statusCode: string): string =>
+    SALES_PROGRESS_COLOR_MAP[statusCode] || '#6b7280'
 
   return {
-    // 상태
-    statusCodes,
-    loading,
-    error,
-
-    // 옵션
-    statusOptions,
-
-    // 메서드
-    loadStatusCodes,
-    getStatusLabel,
-    getStatusClass,
-    getStatusBadgeClass
+    ...base,
+    progressOptions,
+    getProgressIndex,
+    isSpecialStatus,
+    getProgressColor
   }
 }
 
-/**
- * 캐시 초기화 (테스트용)
- */
-export function clearSalesStatusCache() {
-  cachedStatusCodes = null
-  cachePromise = null
+/** SALES_STATUS 캐시만 초기화 (호환). */
+export function clearSalesStatusCache(): void {
+  clearStatusCache('SALES_STATUS')
 }

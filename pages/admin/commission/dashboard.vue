@@ -3,32 +3,24 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       title="수익 배분 대시보드"
+      icon="chart"
+      icon-color="purple"
       description="연간 매출 및 수익 배분 현황을 한눈에 파악합니다."
     >
       <template #actions>
-        <div class="year-selector">
-          <button
-            class="year-nav"
-            :disabled="selectedYear <= minYear"
-            @click="changeYear(-1)"
-          >
-            <i class="fas fa-chevron-left"></i>
-          </button>
-          <span class="year-display">{{ selectedYear }}년</span>
-          <button
-            class="year-nav"
-            :disabled="selectedYear >= maxYear"
-            @click="changeYear(1)"
-          >
-            <i class="fas fa-chevron-right"></i>
-          </button>
+        <div class="period-selector">
+          <select v-model="selectedPeriodId" class="period-select" @change="onPeriodChange">
+            <option v-for="p in periodOptions" :key="p.periodId" :value="p.periodId">
+              {{ p.periodName }}
+            </option>
+          </select>
         </div>
       </template>
     </PageHeader>
 
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-container">
-      <i class="fas fa-spinner fa-spin"></i>
+      <i class="fas fa-spinner fa-spin" />
       <p>대시보드 데이터를 불러오는 중...</p>
     </div>
 
@@ -38,11 +30,13 @@
         <div class="kpi-card primary">
           <div class="kpi-header">
             <div class="kpi-icon">
-              <i class="fas fa-chart-line"></i>
+              <i class="fas fa-chart-line" />
             </div>
             <span class="kpi-label">연간 총 매출</span>
           </div>
-          <div class="kpi-value">{{ formatCurrency(summary.totalSalesAmount) }}</div>
+          <div class="kpi-value">
+            {{ formatCurrency(summary.totalSalesAmount) }}
+          </div>
           <div class="kpi-footer">
             <span class="kpi-sub">수익 배분 기준</span>
           </div>
@@ -51,11 +45,13 @@
         <div class="kpi-card info">
           <div class="kpi-header">
             <div class="kpi-icon">
-              <i class="fas fa-layer-group"></i>
+              <i class="fas fa-layer-group" />
             </div>
             <span class="kpi-label">현재 지분율 구간</span>
           </div>
-          <div class="kpi-value tier-value">{{ summary.currentTier?.tierName || '-' }}</div>
+          <div class="kpi-value tier-value">
+            {{ summary.currentTier?.tierName || '-' }}
+          </div>
           <div class="kpi-footer">
             <span class="kpi-sub">{{ getTierRange() }}</span>
           </div>
@@ -64,11 +60,13 @@
         <div class="kpi-card success">
           <div class="kpi-header">
             <div class="kpi-icon">
-              <i class="fas fa-coins"></i>
+              <i class="fas fa-coins" />
             </div>
             <span class="kpi-label">총 배분 금액</span>
           </div>
-          <div class="kpi-value">{{ formatCurrency(totalDistributionAmount) }}</div>
+          <div class="kpi-value">
+            {{ formatCurrency(totalDistributionAmount) }}
+          </div>
           <div class="kpi-footer">
             <span class="kpi-progress">지급 {{ paymentRate }}% 완료</span>
           </div>
@@ -77,11 +75,13 @@
         <div class="kpi-card warning">
           <div class="kpi-header">
             <div class="kpi-icon">
-              <i class="fas fa-hourglass-half"></i>
+              <i class="fas fa-hourglass-half" />
             </div>
             <span class="kpi-label">미지급 합계</span>
           </div>
-          <div class="kpi-value">{{ formatCurrency(summary.totalUnpaidAmount) }}</div>
+          <div class="kpi-value">
+            {{ formatCurrency(summary.totalUnpaidAmount) }}
+          </div>
           <div class="kpi-footer">
             <span class="kpi-remaining">잔여 {{ 100 - paymentRate }}%</span>
           </div>
@@ -92,17 +92,24 @@
       <div class="share-structure-card">
         <div class="share-header">
           <h3 class="section-title">
-            <i class="fas fa-chart-pie"></i>
+            <i class="fas fa-chart-pie" />
             현재 적용 지분율 구조
           </h3>
-          <div class="tier-badge">
-            <i class="fas fa-tag"></i>
-            {{ summary.currentTier?.tierName || '기본 구간' }}
+          <!-- 현재 적용 구간 배지 및 설명 -->
+          <div class="tier-info">
+            <div class="tier-badge">
+              <i class="fas fa-tag" />
+              {{ summary.currentTier?.tierName || '기본 구간' }}
+            </div>
+            <div class="tier-tooltip">
+              <i class="fas fa-info-circle tier-info-icon" />
+              <span class="tier-desc">매출 구간별 비율이 자동 적용됩니다</span>
+            </div>
           </div>
         </div>
         <div class="share-content">
           <div class="share-chart-wrapper">
-            <canvas ref="shareChartRef"></canvas>
+            <canvas ref="shareChartRef" />
           </div>
           <div class="share-legend">
             <div
@@ -110,7 +117,7 @@
               :key="dist.stakeholder"
               class="legend-row"
             >
-              <span class="legend-dot" :style="{ background: stakeholderColors[index] }"></span>
+              <span class="legend-dot" :style="{ background: stakeholderColors[index] }" />
               <span class="legend-name">{{ dist.name }}</span>
               <span class="legend-rate">{{ dist.rate }}%</span>
               <span class="legend-amount">{{ formatCurrency(dist.amount) }}</span>
@@ -127,22 +134,22 @@
         <!-- 월별 매출 & 배분 차트 -->
         <div class="chart-card">
           <h3 class="chart-title">
-            <i class="fas fa-chart-bar"></i>
+            <i class="fas fa-chart-bar" />
             월별 매출 및 배분 현황
           </h3>
           <div class="chart-wrapper">
-            <canvas ref="monthlyChartRef"></canvas>
+            <canvas ref="monthlyChartRef" />
           </div>
         </div>
 
         <!-- 지분자별 배분 비교 차트 -->
         <div class="chart-card">
           <h3 class="chart-title">
-            <i class="fas fa-balance-scale"></i>
+            <i class="fas fa-balance-scale" />
             지분자별 총 배분
           </h3>
           <div class="chart-wrapper bar">
-            <canvas ref="stakeholderChartRef"></canvas>
+            <canvas ref="stakeholderChartRef" />
           </div>
         </div>
       </div>
@@ -150,7 +157,7 @@
       <!-- 월별 상세 테이블 -->
       <div class="detail-table-card">
         <h3 class="table-title">
-          <i class="fas fa-calendar-alt"></i>
+          <i class="fas fa-calendar-alt" />
           월별 수익 배분 상세
         </h3>
         <div class="table-container">
@@ -159,10 +166,24 @@
               <tr>
                 <th>월</th>
                 <th>매출액</th>
-                <th class="stakeholder-col manufacturer">제조사 (64%)</th>
-                <th class="stakeholder-col headquarters">본사 (10%)</th>
-                <th class="stakeholder-col agent">대리점 (15%)</th>
-                <th class="stakeholder-col partner">협력사 (11%)</th>
+                <th class="stakeholder-col manufacturer">
+                  제조사(OEM) {{ currentOemRate }}%
+                </th>
+                <th class="stakeholder-col headquarters">
+                  본사(대표) {{ currentCeoRate }}%
+                </th>
+                <th class="stakeholder-col agent">
+                  에코암스 {{ currentEcoarmsRate }}%
+                </th>
+                <th class="stakeholder-col partner">
+                  영업담당자 {{ currentSalesRate }}%
+                </th>
+                <th class="stakeholder-col certification">
+                  인증관리 {{ currentCertificationRate }}%
+                </th>
+                <th class="stakeholder-col maintenance">
+                  유지보수 {{ currentMaintenanceRate }}%
+                </th>
                 <th>지급 상태</th>
               </tr>
             </thead>
@@ -171,7 +192,9 @@
                 <td class="month-cell">
                   <span class="month-badge">{{ item.month }}월</span>
                 </td>
-                <td class="text-right">{{ formatCurrency(item.salesAmount) }}</td>
+                <td class="text-right">
+                  {{ formatCurrency(item.salesAmount) }}
+                </td>
                 <td class="text-right manufacturer">
                   {{ formatCurrency(getDistributionAmount(item, 'MANUFACTURER')) }}
                 </td>
@@ -184,6 +207,12 @@
                 <td class="text-right partner">
                   {{ formatCurrency(getDistributionAmount(item, 'PARTNER')) }}
                 </td>
+                <td class="text-right certification">
+                  {{ formatCurrency(getDistributionAmount(item, 'CERTIFICATION')) }}
+                </td>
+                <td class="text-right maintenance">
+                  {{ formatCurrency(getDistributionAmount(item, 'MAINTENANCE')) }}
+                </td>
                 <td class="text-center">
                   <span :class="['payment-status-badge', getMonthPaymentStatusClass(item)]">
                     {{ getMonthPaymentStatusText(item) }}
@@ -193,8 +222,12 @@
             </tbody>
             <tfoot>
               <tr>
-                <td class="text-center"><strong>합계</strong></td>
-                <td class="text-right"><strong>{{ formatCurrency(summary.totalSalesAmount) }}</strong></td>
+                <td class="text-center">
+                  <strong>합계</strong>
+                </td>
+                <td class="text-right">
+                  <strong>{{ formatCurrency(summary.totalSalesAmount) }}</strong>
+                </td>
                 <td class="text-right manufacturer">
                   <strong>{{ formatCurrency(getTotalByStakeholder('MANUFACTURER')) }}</strong>
                 </td>
@@ -207,7 +240,15 @@
                 <td class="text-right partner">
                   <strong>{{ formatCurrency(getTotalByStakeholder('PARTNER')) }}</strong>
                 </td>
-                <td class="text-center"><strong>{{ paymentRate }}%</strong></td>
+                <td class="text-right certification">
+                  <strong>{{ formatCurrency(getTotalByStakeholder('CERTIFICATION')) }}</strong>
+                </td>
+                <td class="text-right maintenance">
+                  <strong>{{ formatCurrency(getTotalByStakeholder('MAINTENANCE')) }}</strong>
+                </td>
+                <td class="text-center">
+                  <strong>{{ paymentRate }}%</strong>
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -218,33 +259,43 @@
       <div class="quick-links">
         <NuxtLink to="/admin/system/commission-rates" class="quick-link-card">
           <div class="link-icon blue">
-            <i class="fas fa-percentage"></i>
+            <i class="fas fa-percentage" />
           </div>
           <div class="link-content">
             <span class="link-title">지분율 설정</span>
             <span class="link-desc">연도별 지분율 구간 관리</span>
           </div>
-          <i class="fas fa-chevron-right"></i>
+          <i class="fas fa-chevron-right" />
         </NuxtLink>
         <NuxtLink to="/admin/commission/settlements" class="quick-link-card">
           <div class="link-icon green">
-            <i class="fas fa-list-alt"></i>
+            <i class="fas fa-list-alt" />
           </div>
           <div class="link-content">
             <span class="link-title">정산 이력</span>
             <span class="link-desc">지분자별 정산 현황</span>
           </div>
-          <i class="fas fa-chevron-right"></i>
+          <i class="fas fa-chevron-right" />
+        </NuxtLink>
+        <NuxtLink to="/admin/commission/monthly-snapshots" class="quick-link-card">
+          <div class="link-icon orange">
+            <i class="fas fa-calendar-check" />
+          </div>
+          <div class="link-content">
+            <span class="link-title">월별 수익배분</span>
+            <span class="link-desc">월별 누적매출 기준 수익배분 현황</span>
+          </div>
+          <i class="fas fa-chevron-right" />
         </NuxtLink>
         <NuxtLink to="/admin/commission/payments" class="quick-link-card">
           <div class="link-icon purple">
-            <i class="fas fa-credit-card"></i>
+            <i class="fas fa-credit-card" />
           </div>
           <div class="link-content">
             <span class="link-title">지급 관리</span>
             <span class="link-desc">지분자별 지급 이력 관리</span>
           </div>
-          <i class="fas fa-chevron-right"></i>
+          <i class="fas fa-chevron-right" />
         </NuxtLink>
       </div>
     </div>
@@ -262,7 +313,7 @@ import type {
   AnnualDistributionSummary,
   ShareTier
 } from '~/types/commission'
-import { getAnnualCommissionSummary } from '~/services/commission.service'
+import { getAnnualCommissionSummary, getMonthlySummary, getCommissionPeriods } from '~/services/commission.service'
 
 // Chart.js dynamic import
 let Chart: any = null
@@ -284,15 +335,93 @@ let stakeholderChart: any = null
 const apiData = ref<AnnualDistributionSummary | null>(null)
 
 // 지분자 색상
-const stakeholderColors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b']
+const stakeholderColors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#8B5CF6', '#EC4899']
+
+// 정산기간 관련
+interface PeriodOption {
+  periodId: number
+  periodName: string
+  startYear: number
+  endYear: number
+  startDate: string
+  endDate: string
+}
+const periodOptions = ref<PeriodOption[]>([])
+const selectedPeriodId = ref<number>(0)
+
+async function loadPeriods () {
+  try {
+    const periods = await getCommissionPeriods()
+    periodOptions.value = periods.map((p: any) => {
+      const startMonth = String(p.startMonth).padStart(2, '0')
+      const endMonth = String(p.endMonth).padStart(2, '0')
+      const endDay = new Date(p.endYear, p.endMonth, 0).getDate()
+      return {
+        periodId: p.periodId,
+        periodName: p.periodName,
+        startYear: p.startYear,
+        endYear: p.endYear,
+        startDate: `${p.startYear}-${startMonth}-01`,
+        endDate: `${p.endYear}-${endMonth}-${String(endDay).padStart(2, '0')}`
+      }
+    })
+    const active = periods.find((p: any) => p.isActive)
+    if (active) {
+      selectedPeriodId.value = active.periodId
+      selectedYear.value = active.endYear
+    } else if (periodOptions.value.length > 0) {
+      selectedPeriodId.value = periodOptions.value[0].periodId
+      selectedYear.value = periodOptions.value[0].endYear
+    }
+  } catch (error) {
+    console.error('정산기간 목록 조회 실패:', error)
+  }
+}
+
+function onPeriodChange () {
+  const selected = periodOptions.value.find(p => p.periodId === selectedPeriodId.value)
+  if (selected) {
+    selectedYear.value = selected.endYear
+  }
+  loadDashboardData()
+}
+
+// 테이블 헤더 동적 지분율 - API 응답에서 가져온 실제 적용 비율
+const currentOemRate = computed(() => {
+  const dist = summary.value.totalDistributions?.find(d => d.stakeholder === 'MANUFACTURER')
+  return dist?.rate || 0
+})
+const currentCeoRate = computed(() => {
+  const dist = summary.value.totalDistributions?.find(d => d.stakeholder === 'HEADQUARTERS')
+  return dist?.rate || 0
+})
+const currentEcoarmsRate = computed(() => {
+  const dist = summary.value.totalDistributions?.find(d => d.stakeholder === 'AGENT')
+  return dist?.rate || 0
+})
+const currentSalesRate = computed(() => {
+  const dist = summary.value.totalDistributions?.find(d => d.stakeholder === 'PARTNER')
+  return dist?.rate || 0
+})
+const currentCertificationRate = computed(() => {
+  const dist = summary.value.totalDistributions?.find(d => d.stakeholder === 'CERTIFICATION')
+  return dist?.rate || 0
+})
+const currentMaintenanceRate = computed(() => {
+  const dist = summary.value.totalDistributions?.find(d => d.stakeholder === 'MAINTENANCE')
+  return dist?.rate || 0
+})
 
 // 공통 필터 (연도, 로딩, 데이터 로드)
 const { selectedYear, loading, minYear, maxYear, changeYear, loadData: loadDashboardData } = useCommissionFilter({
   loadFunction: async () => {
     try {
-      const response = await getAnnualCommissionSummary(selectedYear.value)
-      if (response) {
-        apiData.value = transformApiResponse(response)
+      const [annualResponse, monthlyResponse] = await Promise.all([
+        getAnnualCommissionSummary(selectedYear.value),
+        getMonthlySummary(selectedYear.value)
+      ])
+      if (annualResponse) {
+        apiData.value = transformApiResponse(annualResponse, monthlyResponse || [])
       }
     } catch (error) {
       console.error('대시보드 조회 실패:', error)
@@ -336,28 +465,28 @@ const totalPaidAmount = computed(() => {
 })
 
 const paymentRate = computed(() => {
-  if (!totalDistributionAmount.value) return 0
+  if (!totalDistributionAmount.value) { return 0 }
   return Math.round((totalPaidAmount.value / totalDistributionAmount.value) * 100)
 })
 
 // Methods
 const getTierRange = () => {
   const tier = summary.value.currentTier
-  if (!tier) return '-'
+  if (!tier) { return '-' }
   const min = formatCurrency(tier.minAmount)
   const max = tier.maxAmount ? formatCurrency(tier.maxAmount) : '무제한'
   return `${min} ~ ${max}`
 }
 
 const getPaymentStatusClass = (dist: StakeholderDistribution) => {
-  if (dist.unpaidAmount === 0) return 'completed'
-  if (dist.paidAmount === 0) return 'pending'
+  if (dist.unpaidAmount === 0) { return 'completed' }
+  if (dist.paidAmount === 0) { return 'pending' }
   return 'partial'
 }
 
 const getPaymentStatusText = (dist: StakeholderDistribution) => {
-  if (dist.unpaidAmount === 0) return '완료'
-  if (dist.paidAmount === 0) return '미지급'
+  if (dist.unpaidAmount === 0) { return '완료' }
+  if (dist.paidAmount === 0) { return '미지급' }
   return '일부지급'
 }
 
@@ -374,29 +503,29 @@ const getTotalByStakeholder = (stakeholder: Stakeholder): number => {
 const getMonthPaymentStatusClass = (item: MonthlyDistribution) => {
   const totalUnpaid = item.distributions.reduce((sum, d) => sum + d.unpaidAmount, 0)
   const totalPaid = item.distributions.reduce((sum, d) => sum + d.paidAmount, 0)
-  if (totalUnpaid === 0) return 'completed'
-  if (totalPaid === 0) return 'pending'
+  if (totalUnpaid === 0) { return 'completed' }
+  if (totalPaid === 0) { return 'pending' }
   return 'partial'
 }
 
 const getMonthPaymentStatusText = (item: MonthlyDistribution) => {
   const totalUnpaid = item.distributions.reduce((sum, d) => sum + d.unpaidAmount, 0)
   const totalPaid = item.distributions.reduce((sum, d) => sum + d.paidAmount, 0)
-  if (totalUnpaid === 0) return '완료'
-  if (totalPaid === 0) return '미지급'
+  if (totalUnpaid === 0) { return '완료' }
+  if (totalPaid === 0) { return '미지급' }
   return '일부지급'
 }
 
 const loadDashboard = () => loadDashboardData()
 
 // 백엔드 응답을 프론트엔드 형식으로 변환
-const transformApiResponse = (response: any): AnnualDistributionSummary => {
+const transformApiResponse = (response: any, monthlyRawData: any[] = []): AnnualDistributionSummary => {
   // 백엔드 필드명과 프론트엔드 필드명 매핑
   const totalDistributions: StakeholderDistribution[] = [
     {
       stakeholder: 'MANUFACTURER' as Stakeholder,
       name: '제조사(OEM)',
-      rate: 0,
+      rate: response.appliedOemRate || 0,
       amount: response.totalOemAmount || 0,
       paidAmount: 0,
       unpaidAmount: response.totalOemAmount || 0
@@ -404,7 +533,7 @@ const transformApiResponse = (response: any): AnnualDistributionSummary => {
     {
       stakeholder: 'HEADQUARTERS' as Stakeholder,
       name: '본사(대표)',
-      rate: 0,
+      rate: response.appliedCeoRate || 0,
       amount: response.totalCeoAmount || 0,
       paidAmount: 0,
       unpaidAmount: response.totalCeoAmount || 0
@@ -412,7 +541,7 @@ const transformApiResponse = (response: any): AnnualDistributionSummary => {
     {
       stakeholder: 'AGENT' as Stakeholder,
       name: '에코암스',
-      rate: 0,
+      rate: response.appliedEcoarmsRate || 0,
       amount: response.totalEcoarmsAmount || 0,
       paidAmount: 0,
       unpaidAmount: response.totalEcoarmsAmount || 0
@@ -420,10 +549,26 @@ const transformApiResponse = (response: any): AnnualDistributionSummary => {
     {
       stakeholder: 'PARTNER' as Stakeholder,
       name: '영업담당자',
-      rate: 0,
+      rate: response.appliedSalesRate || 0,
       amount: response.totalSalesRepAmount || 0,
       paidAmount: 0,
       unpaidAmount: response.totalSalesRepAmount || 0
+    },
+    {
+      stakeholder: 'CERTIFICATION' as Stakeholder,
+      name: '인증관리',
+      rate: response.appliedCertificationRate || 0,
+      amount: response.totalCertificationAmount || 0,
+      paidAmount: 0,
+      unpaidAmount: response.totalCertificationAmount || 0
+    },
+    {
+      stakeholder: 'MAINTENANCE' as Stakeholder,
+      name: '유지보수',
+      rate: response.appliedMaintenanceRate || 0,
+      amount: response.totalMaintenanceAmount || 0,
+      paidAmount: 0,
+      unpaidAmount: response.totalMaintenanceAmount || 0
     }
   ]
 
@@ -433,17 +578,30 @@ const transformApiResponse = (response: any): AnnualDistributionSummary => {
   return {
     year: response.year || selectedYear.value,
     totalSalesAmount: response.totalSalesAmount || 0,
-    currentTier: response.appliedTier ? {
-      tierId: 0,
-      year: response.year || selectedYear.value,
-      tierName: response.appliedTier,
-      minAmount: 0,
-      maxAmount: null,
-      rates: []
-    } : emptyTier,
+    currentTier: response.appliedTier
+      ? {
+          tierId: 0,
+          year: response.year || selectedYear.value,
+          tierName: response.appliedTier,
+          minAmount: response.tierMinAmount || 0,
+          maxAmount: response.tierMaxAmount || null,
+          rates: []
+        }
+      : emptyTier,
     totalDistributions,
     totalUnpaidAmount,
-    monthlyData: [] // 월별 데이터는 별도 API 필요 (추후 구현)
+    monthlyData: monthlyRawData.map(m => ({
+      month: m.month,
+      salesAmount: m.monthlySalesAmount || 0,
+      distributions: [
+        { stakeholder: 'MANUFACTURER' as Stakeholder, name: '제조사(OEM)', rate: m.appliedOemRate || 0, amount: m.oemAmount || 0, paidAmount: 0, unpaidAmount: m.oemAmount || 0 },
+        { stakeholder: 'HEADQUARTERS' as Stakeholder, name: '본사(대표)', rate: m.appliedCeoRate || 0, amount: m.ceoAmount || 0, paidAmount: 0, unpaidAmount: m.ceoAmount || 0 },
+        { stakeholder: 'AGENT' as Stakeholder, name: '에코암스', rate: m.appliedEcoarmsRate || 0, amount: m.ecoarmsAmount || 0, paidAmount: 0, unpaidAmount: m.ecoarmsAmount || 0 },
+        { stakeholder: 'PARTNER' as Stakeholder, name: '영업담당자', rate: m.appliedSalesRate || 0, amount: m.salesRepAmount || 0, paidAmount: 0, unpaidAmount: m.salesRepAmount || 0 },
+        { stakeholder: 'CERTIFICATION' as Stakeholder, name: '인증관리', rate: m.appliedCertificationRate || 0, amount: m.certificationAmount || 0, paidAmount: 0, unpaidAmount: m.certificationAmount || 0 },
+        { stakeholder: 'MAINTENANCE' as Stakeholder, name: '유지보수', rate: m.appliedMaintenanceRate || 0, amount: m.maintenanceAmount || 0, paidAmount: 0, unpaidAmount: m.maintenanceAmount || 0 }
+      ]
+    }))
   }
 }
 
@@ -456,7 +614,7 @@ const renderCharts = async () => {
 
   // 지분율 도넛 차트
   if (shareChartRef.value) {
-    if (shareChart) shareChart.destroy()
+    if (shareChart) { shareChart.destroy() }
 
     const data = summary.value.totalDistributions?.map(d => d.rate) || []
     const labels = summary.value.totalDistributions?.map(d => d.name) || []
@@ -489,7 +647,7 @@ const renderCharts = async () => {
 
   // 월별 매출 차트 (Stacked Bar)
   if (monthlyChartRef.value) {
-    if (monthlyChart) monthlyChart.destroy()
+    if (monthlyChart) { monthlyChart.destroy() }
 
     const labels = monthlyData.value.map(d => `${d.month}월`)
 
@@ -521,6 +679,18 @@ const renderCharts = async () => {
             data: monthlyData.value.map(d => getDistributionAmount(d, 'PARTNER')),
             backgroundColor: stakeholderColors[3],
             stack: 'distribution'
+          },
+          {
+            label: '인증관리',
+            data: monthlyData.value.map(d => getDistributionAmount(d, 'CERTIFICATION')),
+            backgroundColor: stakeholderColors[4],
+            stack: 'distribution'
+          },
+          {
+            label: '유지보수',
+            data: monthlyData.value.map(d => getDistributionAmount(d, 'MAINTENANCE')),
+            backgroundColor: stakeholderColors[5],
+            stack: 'distribution'
           }
         ]
       },
@@ -551,7 +721,7 @@ const renderCharts = async () => {
 
   // 지분자별 배분 수평 막대 차트
   if (stakeholderChartRef.value) {
-    if (stakeholderChart) stakeholderChart.destroy()
+    if (stakeholderChart) { stakeholderChart.destroy() }
 
     const distributions = summary.value.totalDistributions || []
 
@@ -600,7 +770,8 @@ const renderCharts = async () => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  await loadPeriods()
   loadDashboard()
 })
 </script>
@@ -609,47 +780,21 @@ onMounted(() => {
 @import '@/assets/css/admin-common.css';
 @import '@/assets/css/admin-buttons.css';
 
-/* 연도 선택 */
-.year-selector {
+/* 정산기간 선택 */
+.period-selector {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+}
+
+.period-select {
   padding: 0.5rem 1rem;
-  background: white;
-  border-radius: 12px;
   border: 1px solid #e5e7eb;
-}
-
-.year-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #f3f4f6;
   border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  background: white;
   cursor: pointer;
-  color: #6b7280;
-  transition: all 0.2s;
-}
-
-.year-nav:hover:not(:disabled) {
-  background: #3b82f6;
-  color: white;
-}
-
-.year-nav:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.year-display {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #1f2937;
-  min-width: 80px;
-  text-align: center;
 }
 
 /* 로딩 컨테이너 - 색상 커스터마이징 */
@@ -778,6 +923,33 @@ onMounted(() => {
   color: #6366f1;
 }
 
+/* 구간 배지 + 설명 감싸는 컨테이너 */
+.tier-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 구간 설명 아이콘 + 텍스트 래퍼 */
+.tier-tooltip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 정보 아이콘 */
+.tier-info-icon {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  cursor: help;
+}
+
+/* 구간 설명 텍스트 */
+.tier-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
 .share-content {
   display: grid;
   grid-template-columns: 200px 1fr;
@@ -793,23 +965,24 @@ onMounted(() => {
 .share-legend {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.25rem;
 }
 
 .legend-row {
   display: grid;
-  grid-template-columns: 16px 80px 50px 1fr 80px;
+  grid-template-columns: 12px 80px 50px 1fr 80px;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
   background: #f9fafb;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-size: 0.85rem;
 }
 
 .legend-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
 }
 
 .legend-name {
@@ -1004,7 +1177,7 @@ onMounted(() => {
 /* 빠른 링크 */
 .quick-links {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
 }
 
@@ -1038,6 +1211,7 @@ onMounted(() => {
 .link-icon.blue { background: #eff6ff; color: #3b82f6; }
 .link-icon.green { background: #f0fdf4; color: #10b981; }
 .link-icon.purple { background: #eef2ff; color: #6366f1; }
+.link-icon.orange { background: #fff7ed; color: #f97316; }
 
 .link-content {
   flex: 1;

@@ -186,6 +186,10 @@
   background: white;
 }
 
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 .data-table tbody tr:hover {
   background-color: var(--primary-50);
 }
@@ -414,13 +418,41 @@
  * - btn-search-inline: 인라인 검색 버튼
  */
 
+/* ========== 컴팩트 페이지 헤더 ========== */
+.page-header-compact {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+}
+
+.page-header-compact h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.page-header-compact .page-description {
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.page-header-compact .header-actions-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* ========== 콘텐츠 섹션 ========== */
 .content-section {
-  background: white;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
-  border: 1px solid var(--gray-200);
+  border: none;
 }
 
 .form-section {

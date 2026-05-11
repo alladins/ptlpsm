@@ -5,12 +5,12 @@
         <div class="modal-header">
           <h3>잔금 등록</h3>
           <button class="btn-close" @click="close">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
         <div class="modal-body">
           <div class="info-message">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             <p>잔금을 등록합니다. 등록 후 별도로 "잔금 입금확인"을 진행해야 입금 완료 처리됩니다.</p>
           </div>
 
@@ -18,12 +18,12 @@
             <label>잔금 등록액</label>
             <div class="input-with-unit">
               <input
-                type="text"
                 v-model="formattedAmount"
-                @input="onAmountInput"
+                type="text"
                 class="form-input"
                 placeholder="등록할 잔금 금액"
-              />
+                @input="onAmountInput"
+              >
               <span class="unit">원</span>
             </div>
           </div>
@@ -34,7 +34,7 @@
               v-model="requestDate"
               type="date"
               class="form-input"
-            />
+            >
           </div>
 
           <div class="form-group">
@@ -44,17 +44,19 @@
               class="form-input"
               rows="2"
               placeholder="비고 사항을 입력하세요"
-            ></textarea>
+            />
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="close">취소</button>
+          <button class="btn-secondary" @click="close">
+            취소
+          </button>
           <button
             class="btn-primary"
             :disabled="!isValid || submitting"
             @click="handleSubmit"
           >
-            <i v-if="submitting" class="fas fa-spinner fa-spin"></i>
+            <i v-if="submitting" class="fas fa-spinner fa-spin" />
             <span v-else>잔금 등록</span>
           </button>
         </div>
@@ -118,7 +120,7 @@ const close = () => {
 }
 
 const handleSubmit = async () => {
-  if (!isValid.value || submitting.value) return
+  if (!isValid.value || submitting.value) { return }
 
   submitting.value = true
   try {

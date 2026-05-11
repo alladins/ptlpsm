@@ -8,27 +8,6 @@
   width: 100%;
 }
 
-/* Swiper Pagination Styles */
-.pager-bullets {
-  position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-}
-
-.swiper-pagination-bullet {
-  width: 12px;
-  height: 12px;
-  background: rgba(255, 255, 255, 0.5);
-  opacity: 1;
-  margin: 0 5px;
-}
-
-.swiper-pagination-bullet-active {
-  background: #fff;
-}
-
 .main-section1 {
   padding: 5rem 0;
   background: #fff;

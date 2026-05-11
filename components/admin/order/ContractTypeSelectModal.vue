@@ -4,15 +4,17 @@
       <div class="modal-header">
         <h3>계약 유형 선택</h3>
         <button class="modal-close" @click="handleCancel">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
       <div class="modal-body">
-        <p class="info-text">동일 납품요구번호의 기존 계약이 있습니다.</p>
+        <p class="info-text">
+          동일 납품요구번호의 기존 계약이 있습니다.
+        </p>
 
         <div v-if="detectedContractType && detectedContractType !== 'ORIGINAL'" class="auto-detected-badge">
-          <i class="fas fa-magic"></i>
+          <i class="fas fa-magic" />
           <span>PDF에서 자동 감지: <strong>{{ detectedContractType === 'AMENDMENT' ? '변경계약' : '추가계약' }}</strong></span>
         </div>
 
@@ -29,14 +31,14 @@
 
         <div class="options">
           <label class="option" :class="{ selected: selectedType === 'AMENDMENT' }">
-            <input type="radio" v-model="selectedType" value="AMENDMENT" />
+            <input v-model="selectedType" type="radio" value="AMENDMENT">
             <div class="option-content">
               <span class="option-title">변경계약</span>
               <span class="option-desc">기존 수량을 새 수량으로 대체</span>
             </div>
           </label>
           <label class="option" :class="{ selected: selectedType === 'ADDITIONAL' }">
-            <input type="radio" v-model="selectedType" value="ADDITIONAL" />
+            <input v-model="selectedType" type="radio" value="ADDITIONAL">
             <div class="option-content">
               <span class="option-title">추가계약</span>
               <span class="option-desc">기존 수량에 새 수량을 합산</span>
@@ -46,8 +48,12 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-secondary" @click="handleCancel">취소</button>
-        <button class="btn-primary" :disabled="!selectedType" @click="handleConfirm">확인</button>
+        <button class="btn-secondary" @click="handleCancel">
+          취소
+        </button>
+        <button class="btn-primary" :disabled="!selectedType" @click="handleConfirm">
+          확인
+        </button>
       </div>
     </div>
   </div>
@@ -79,9 +85,9 @@ watch(() => props.isOpen, (isOpen) => {
     if (props.detectedContractType === 'AMENDMENT') {
       selectedType.value = 'AMENDMENT'
     } else if (props.detectedContractType === 'SEPARATE') {
-      selectedType.value = 'ADDITIONAL'  // SEPARATE → ADDITIONAL로 매핑
+      selectedType.value = 'ADDITIONAL' // SEPARATE → ADDITIONAL로 매핑
     } else {
-      selectedType.value = null  // 모달 열 때마다 선택 초기화
+      selectedType.value = null // 모달 열 때마다 선택 초기화
     }
   }
 })

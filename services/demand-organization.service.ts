@@ -70,6 +70,31 @@ export interface CodeCheckResponse {
   message: string
 }
 
+export interface G2bSyncResult {
+  totalFetched: number
+  newCount: number
+  updatedCount: number
+  failedCount: number
+  syncDateTime: string
+}
+
+export interface G2bSyncStatusResponse {
+  syncBatchId: string
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
+  bgnYear: number
+  endYear: number
+  totalFetched: number
+  processedCount: number
+  newCount: number
+  updatedCount: number
+  failedCount: number
+  currentYear: string
+  startedAt: string
+  completedAt: string | null
+  errorMessage: string | null
+  failedDetails: string[]
+}
+
 export const demandOrganizationService = {
   /**
    * 백엔드 API 연결 테스트
@@ -417,6 +442,68 @@ export const demandOrganizationService = {
     } catch (error) {
       console.error('🚨 수요기관명 배치 조회 오류:', error)
       return result
+    }
+  },
+
+  /**
+   * 나라장터 수요기관 동기화
+   * 조달청 Open API에서 수요기관 정보를 가져와 DB에 동기화
+   */
+  /**
+   * 나라장터 수요기관 동기화 시작 (비동기)
+   * 즉시 syncBatchId를 반환하고, 백그라운드에서 처리
+   */
+  async startSyncFromG2b(bgnYear: number, endYear: number): Promise<G2bSyncStatusResponse> {
+    let url = DEMAND_ORGANIZATION_ENDPOINTS.syncG2b()
+    const params = new URLSearchParams()
+    params.append('bgnYear', bgnYear.toString())
+    params.append('endYear', endYear.toString())
+    url += `?${params.toString()}`
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`나라장터 동기화 시작 실패: ${response.status} ${errorText}`)
+    }
+
+    return await response.json()
+  },
+
+  /**
+   * 동기화 진행상황 조회
+   */
+  async getSyncStatus(syncBatchId: string): Promise<G2bSyncStatusResponse> {
+    const url = DEMAND_ORGANIZATION_ENDPOINTS.syncG2bStatus(syncBatchId)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`진행상황 조회 실패: ${response.status}`)
+    }
+
+    return await response.json()
+  },
+
+  /**
+   * 동기화 취소
+   */
+  async cancelSync(syncBatchId: string): Promise<void> {
+    const url = DEMAND_ORGANIZATION_ENDPOINTS.syncG2bCancel(syncBatchId)
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`동기화 취소 실패: ${response.status}`)
     }
   },
 

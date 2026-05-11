@@ -15,8 +15,12 @@
 -->
 <template>
   <div class="form-section">
-    <h2 v-if="title" class="section-title">{{ title }}</h2>
-    <p v-if="description" class="section-description">{{ description }}</p>
+    <h2 v-if="title" class="section-title">
+      {{ title }}
+    </h2>
+    <p v-if="description" class="section-description">
+      {{ description }}
+    </p>
     <div :class="gridClass">
       <slot />
     </div>

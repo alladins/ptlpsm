@@ -9,7 +9,7 @@
           class="btn-primary"
           @click="emit('openFinalDeliveryModal')"
         >
-          <i class="fas fa-check-circle"></i>
+          <i class="fas fa-check-circle" />
           납품완료 처리하기
         </button>
         <!-- 잔금등록 버튼 (납품완료 상태 && 잔금 요청 없음 && 미입금) -->
@@ -18,7 +18,7 @@
           class="btn-primary"
           @click="emit('openBalanceRegisterModal')"
         >
-          <i class="fas fa-coins"></i>
+          <i class="fas fa-coins" />
           잔금등록
         </button>
       </div>
@@ -74,14 +74,14 @@
           class="btn-collection-confirm-lg"
           @click="emit('openBalanceConfirmModal')"
         >
-          <i class="fas fa-check-circle"></i>
+          <i class="fas fa-check-circle" />
           잔금 입금확인
         </button>
       </div>
       <!-- 잔금 입금완료 표시 (status가 PAID일 때만) -->
       <div v-if="balanceRequestStatus === 'PAID'" class="collection-confirm-section">
         <div class="collection-completed">
-          <i class="fas fa-check-circle"></i>
+          <i class="fas fa-check-circle" />
           잔금 입금 완료
         </div>
       </div>

@@ -1,123 +1,144 @@
 <template>
   <div class="company-list">
-    <!-- 페이지 헤더 -->
-    <PageHeader
-      title="회사정보"
-      description="회사 정보를 조회하고 관리합니다."
-    >
-      <template #actions>
-        <button class="btn-action" @click="handleSearch" :disabled="loading">
-          <i class="fas fa-search"></i>
+    <!-- 페이지 헤더 - 컴팩트 -->
+    <div class="page-header-compact">
+      <h1>회사정보</h1>
+      <span class="page-description">회사 정보를 조회하고 관리합니다.</span>
+      <div class="header-actions-right">
+        <button class="btn-action" :disabled="loading" @click="handleSearch">
+          <i class="fas fa-search" />
           검색
         </button>
         <button
-          class="btn-action btn-success"
-          @click="goToRegister"
+          class="btn-action"
+          style="background: linear-gradient(180deg, #16a34a 0%, #15803d 100%); box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3), 0 1px 2px rgba(0, 0, 0, 0.05);"
           :disabled="!canWrite"
           :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          @click="goToRegister"
         >
-          <i class="fas fa-plus"></i>
+          <i class="fas fa-plus" />
           등록
         </button>
-      </template>
-    </PageHeader>
+      </div>
+    </div>
+    <!-- 검색 조건 섹션 -->
+    <div class="search-section-compact">
+      <div class="search-row-single">
+        <!-- 회사명 -->
+        <div class="search-item">
+          <label>회사명:</label>
+          <input
+            v-model="searchForm.companyName"
+            type="text"
+            placeholder="회사명 검색"
+            class="text-input"
+            @keyup.enter="handleSearch"
+          >
+        </div>
 
-    <div class="content-section">
-      <!-- 검색 조건 섹션 -->
-      <div class="search-section-compact">
-        <div class="search-row-single">
-          <!-- 회사명 -->
-          <div class="search-item">
-            <label>회사명:</label>
-            <input
-              type="text"
-              v-model="searchForm.companyName"
-              placeholder="회사명 검색"
-              class="text-input"
-              @keyup.enter="handleSearch"
-            />
-          </div>
+        <!-- 사업자등록번호 -->
+        <div class="search-item">
+          <label>사업자등록번호:</label>
+          <input
+            v-model="searchForm.businessNo"
+            type="text"
+            placeholder="사업자등록번호 검색"
+            class="text-input"
+            @keyup.enter="handleSearch"
+          >
+        </div>
+      </div>
+    </div>
 
-          <!-- 사업자등록번호 -->
-          <div class="search-item">
-            <label>사업자등록번호:</label>
-            <input
-              type="text"
-              v-model="searchForm.businessNo"
-              placeholder="사업자등록번호 검색"
-              class="text-input"
-              @keyup.enter="handleSearch"
-            />
-          </div>
+    <!-- 리스트 테이블 섹션 -->
+    <div class="list-section">
+      <div class="list-header">
+        <div class="list-info">
+          <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
+        </div>
+        <div class="list-actions">
+          <select v-model.number="pageSize" class="page-size-select" @change="handlePageSizeChange">
+            <option :value="10">
+              10개씩
+            </option>
+            <option :value="20">
+              20개씩
+            </option>
+            <option :value="50">
+              50개씩
+            </option>
+          </select>
         </div>
       </div>
 
-      <!-- 리스트 테이블 섹션 -->
-      <div class="list-section">
-        <div class="list-header">
-          <div class="list-info">
-            <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
-          </div>
-          <div class="list-actions">
-            <select v-model.number="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="10">10개씩</option>
-              <option :value="20">20개씩</option>
-              <option :value="50">50개씩</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- 로딩 상태 -->
-        <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
-          <p>데이터를 불러오는 중...</p>
-        </div>
-
-        <!-- 데이터가 없을 때 -->
-        <div v-else-if="companyList.length === 0" class="no-data-message">
-          <i class="fas fa-building"></i>
-          <p>등록된 회사 정보가 없습니다.</p>
-        </div>
-
-        <!-- 테이블 -->
-        <div v-else class="table-container">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width: 5%;">NO</th>
-                <th style="width: 18%;">회사명</th>
-                <th style="width: 14%;">사업자등록번호</th>
-                <th style="width: 12%;">대표자명</th>
-                <th style="width: 13%;">전화번호</th>
-                <th style="width: 18%;">이메일</th>
-                <th style="width: 12%;">설립일자</th>
-                <th style="width: 8%;">직원수</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in companyList" :key="item.id" class="table-row" @click="goToEdit(item.id)" style="cursor: pointer;">
-                <td>{{ startIndex + index }}</td>
-                <td>{{ item.companyName }}</td>
-                <td>{{ item.businessNumber }}</td>
-                <td>{{ item.representative }}</td>
-                <td>{{ item.tel }}</td>
-                <td>{{ item.email }}</td>
-                <td>{{ formatDate(item.establishedDate) }}</td>
-                <td class="text-center">{{ item.employeeCount }}명</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- 페이지네이션 -->
-        <Pagination
-          v-if="totalPages > 0"
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :disabled="loading"
-          @change="handlePageChange"
-        />
+      <!-- 로딩 상태 -->
+      <div v-if="loading" class="loading-message">
+        <i class="fas fa-spinner fa-spin" />
+        <p>데이터를 불러오는 중...</p>
       </div>
+
+      <!-- 데이터가 없을 때 -->
+      <div v-else-if="companyList.length === 0" class="no-data-message">
+        <i class="fas fa-building" />
+        <p>등록된 회사 정보가 없습니다.</p>
+      </div>
+
+      <!-- 테이블 -->
+      <div v-else class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 5%;">
+                NO
+              </th>
+              <th style="width: 18%;">
+                회사명
+              </th>
+              <th style="width: 14%;">
+                사업자등록번호
+              </th>
+              <th style="width: 12%;">
+                대표자명
+              </th>
+              <th style="width: 13%;">
+                전화번호
+              </th>
+              <th style="width: 18%;">
+                이메일
+              </th>
+              <th style="width: 12%;">
+                설립일자
+              </th>
+              <th style="width: 8%;">
+                직원수
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in companyList" :key="item.id" class="table-row" style="cursor: pointer;" @click="goToDetail(item.id)">
+              <td>{{ startIndex + index }}</td>
+              <td>{{ item.companyName }}</td>
+              <td>{{ item.businessNumber }}</td>
+              <td>{{ item.representative }}</td>
+              <td>{{ item.tel }}</td>
+              <td>{{ item.email }}</td>
+              <td>{{ formatDate(item.establishedDate) }}</td>
+              <td class="text-center">
+                {{ item.employeeCount }}명
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 페이지네이션 -->
+      <Pagination
+        v-if="totalPages > 0"
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :disabled="loading"
+        @change="handlePageChange"
+      />
     </div>
   </div>
 </template>
@@ -156,7 +177,7 @@ const pageSize = ref(20)
 
 // 계산된 값
 const startIndex = computed(() => {
-  if (totalElements.value === 0) return 0
+  if (totalElements.value === 0) { return 0 }
   return currentPage.value * pageSize.value + 1
 })
 
@@ -166,7 +187,7 @@ const endIndex = computed(() => {
 })
 
 // 데이터 로드
-async function loadData() {
+async function loadData () {
   loading.value = true
   try {
     // 현재는 전체 조회만 지원 (향후 검색 API 추가 필요)
@@ -200,13 +221,13 @@ async function loadData() {
 }
 
 // 검색
-function handleSearch() {
+function handleSearch () {
   currentPage.value = 0
   loadData()
 }
 
 // 초기화
-function handleReset() {
+function handleReset () {
   searchForm.value = {
     companyName: '',
     businessNo: ''
@@ -216,24 +237,24 @@ function handleReset() {
 }
 
 // 페이지 변경
-function handlePageChange(page: number) {
+function handlePageChange (page: number) {
   currentPage.value = page
   loadData()
 }
 
 // 페이지 크기 변경
-function handlePageSizeChange() {
+function handlePageSizeChange () {
   currentPage.value = 0
   loadData()
 }
 
 // 페이지 이동
-function goToRegister() {
+function goToRegister () {
   router.push('/admin/basic-info/company/register')
 }
 
-function goToEdit(id: number) {
-  router.push(`/admin/basic-info/company/edit/${id}`)
+function goToDetail (id: number) {
+  router.push(`/admin/basic-info/company/detail/${id}`)
 }
 
 // 초기 로드
@@ -244,7 +265,7 @@ onMounted(() => {
 
 <style scoped>
 .company-list {
-  padding: 20px;
+  padding: 0;
 }
 
 /* 헤더 버튼 */

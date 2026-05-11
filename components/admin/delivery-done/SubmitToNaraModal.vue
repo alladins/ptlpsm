@@ -3,11 +3,11 @@
     <div class="modal-container">
       <div class="modal-header">
         <h3>
-          <i class="fas fa-upload"></i>
+          <i class="fas fa-upload" />
           조달청 나라장터 제출
         </h3>
         <button class="btn-close" @click="$emit('close')">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
@@ -39,28 +39,28 @@
         <!-- 제출 확인 -->
         <div class="confirmation-section">
           <h4>
-            <i class="fas fa-exclamation-triangle"></i>
+            <i class="fas fa-exclamation-triangle" />
             제출 전 확인사항
           </h4>
           <div class="checklist">
             <div class="check-item">
-              <i class="fas fa-check-circle" :class="{ success: deliveryDone.hasContractorSignature }"></i>
+              <i class="fas fa-check-circle" :class="{ success: deliveryDone.hasContractorSignature }" />
               <span>현장 소장 서명</span>
             </div>
             <div class="check-item">
-              <i class="fas fa-check-circle" :class="{ success: deliveryDone.hasSupervisorSignature }"></i>
+              <i class="fas fa-check-circle" :class="{ success: deliveryDone.hasSupervisorSignature }" />
               <span>현장감리원 서명</span>
             </div>
             <div class="check-item">
-              <i class="fas fa-check-circle success"></i>
+              <i class="fas fa-check-circle success" />
               <span>납품확인서 PDF</span>
             </div>
             <div class="check-item">
-              <i class="fas fa-check-circle success"></i>
+              <i class="fas fa-check-circle success" />
               <span>납품완료계 PDF</span>
             </div>
             <div class="check-item">
-              <i class="fas fa-check-circle success"></i>
+              <i class="fas fa-check-circle success" />
               <span>사진대지 PDF</span>
             </div>
           </div>
@@ -71,21 +71,21 @@
           <div class="form-group">
             <label class="required">제출자 이름</label>
             <input
-              type="text"
               v-model="submitterName"
+              type="text"
               placeholder="제출자 이름 입력"
               class="form-input"
-            />
+            >
           </div>
 
           <div class="form-group">
             <label class="required">제출자 직책</label>
             <input
-              type="text"
               v-model="submitterPosition"
+              type="text"
               placeholder="예: 대리, 과장, 팀장"
               class="form-input"
-            />
+            >
           </div>
 
           <div class="form-group">
@@ -95,13 +95,13 @@
               placeholder="추가 메모 사항이 있다면 입력해 주세요"
               class="form-textarea"
               rows="3"
-            ></textarea>
+            />
           </div>
         </div>
 
         <!-- 경고 메시지 -->
         <div class="warning-section">
-          <i class="fas fa-info-circle"></i>
+          <i class="fas fa-info-circle" />
           <div>
             <p><strong>제출 후 유의사항:</strong></p>
             <ul>
@@ -114,15 +114,15 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="$emit('close')" :disabled="submitting">
+        <button class="btn-cancel" :disabled="submitting" @click="$emit('close')">
           취소
         </button>
         <button
           class="btn-submit"
-          @click="handleSubmit"
           :disabled="!canSubmit || submitting"
+          @click="handleSubmit"
         >
-          <i class="fas" :class="submitting ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
+          <i class="fas" :class="submitting ? 'fa-spinner fa-spin' : 'fa-upload'" />
           {{ submitting ? '제출 중...' : '조달청 제출' }}
         </button>
       </div>
@@ -158,14 +158,14 @@ const canSubmit = computed(() => {
   )
 })
 
-async function handleSubmit() {
-  if (!canSubmit.value) return
+async function handleSubmit () {
+  if (!canSubmit.value) { return }
 
   const confirmed = confirm(
     `조달청 나라장터에 제출하시겠습니까?\n\n제출 후에는 수정이 불가능합니다.\n\n납품요구번호: ${props.deliveryDone.deliveryRequestNo}\n수요기관: ${props.deliveryDone.client}`
   )
 
-  if (!confirmed) return
+  if (!confirmed) { return }
 
   submitting.value = true
   try {

@@ -55,6 +55,8 @@ export interface ShipmentStatisticsSummary {
   totalOrderAmount: number
   /** 총 출하 금액 (원) */
   totalShipmentAmount: number
+  /** 총 매출금액 - 출하일 기준 (원) */
+  totalShipmentSalesAmount: number
   /** 납품완료율 (%) */
   completionRate: number
   /** 상태별 건수 */
@@ -69,6 +71,8 @@ export interface PeriodTrendItem {
   orderCount: number
   /** 출하 금액 */
   shipmentAmount: number
+  /** 납품요구 금액 */
+  orderAmount: number
   /** 완료 건수 */
   completedCount: number
   /** 납품완료율 (%) */

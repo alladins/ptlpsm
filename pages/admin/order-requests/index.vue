@@ -8,9 +8,9 @@
       icon-color="cyan"
     >
       <template #actions>
-        <button class="btn-action" @click="handleSearch" :disabled="loading">
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-search"></i>
+        <button class="btn-action" :disabled="loading" @click="handleSearch">
+          <i v-if="loading" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-search" />
           검색
         </button>
       </template>
@@ -21,7 +21,7 @@
       <div class="stats-cards">
         <div class="stat-card">
           <div class="stat-icon stat-icon--red">
-            <i class="fas fa-bell"></i>
+            <i class="fas fa-bell" />
           </div>
           <div class="stat-content">
             <h3>신규 요청</h3>
@@ -30,7 +30,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon stat-icon--yellow">
-            <i class="fas fa-clock"></i>
+            <i class="fas fa-clock" />
           </div>
           <div class="stat-content">
             <h3>대기중</h3>
@@ -39,7 +39,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon stat-icon--green">
-            <i class="fas fa-check-circle"></i>
+            <i class="fas fa-check-circle" />
           </div>
           <div class="stat-content">
             <h3>승인</h3>
@@ -48,7 +48,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon stat-icon--gray">
-            <i class="fas fa-times-circle"></i>
+            <i class="fas fa-times-circle" />
           </div>
           <div class="stat-content">
             <h3>반려</h3>
@@ -63,19 +63,27 @@
           <!-- 요청일자 -->
           <div class="search-item">
             <label>요청일자:</label>
-            <input type="date" v-model="searchForm.startDate" class="date-input">
+            <input v-model="searchForm.startDate" type="date" class="date-input">
             <span class="separator">~</span>
-            <input type="date" v-model="searchForm.endDate" class="date-input">
+            <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
           <!-- 상태 -->
           <div class="search-item">
             <label>상태:</label>
             <select v-model="searchForm.status" class="form-select">
-              <option value="">전체</option>
-              <option value="PENDING">대기</option>
-              <option value="APPROVED">승인</option>
-              <option value="REJECTED">반려</option>
+              <option value="">
+                전체
+              </option>
+              <option value="PENDING">
+                대기
+              </option>
+              <option value="APPROVED">
+                승인
+              </option>
+              <option value="REJECTED">
+                반려
+              </option>
             </select>
           </div>
 
@@ -83,10 +91,18 @@
           <div class="search-item">
             <label>긴급도:</label>
             <select v-model="searchForm.urgency" class="form-select">
-              <option value="">전체</option>
-              <option value="URGENT">긴급</option>
-              <option value="NORMAL">보통</option>
-              <option value="LOW">여유</option>
+              <option value="">
+                전체
+              </option>
+              <option value="URGENT">
+                긴급
+              </option>
+              <option value="NORMAL">
+                보통
+              </option>
+              <option value="LOW">
+                여유
+              </option>
             </select>
           </div>
 
@@ -94,8 +110,8 @@
           <div class="search-item search-keyword">
             <label>검색어:</label>
             <input
-              type="text"
               v-model="searchForm.keyword"
+              type="text"
               placeholder="현장명, 요청자명"
               class="keyword-input"
               @keyup.enter="handleSearch"
@@ -112,17 +128,23 @@
             <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
-            <select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="10">10개씩</option>
-              <option :value="20">20개씩</option>
-              <option :value="50">50개씩</option>
+            <select v-model="pageSize" class="page-size-select" @change="handlePageSizeChange">
+              <option :value="10">
+                10개씩
+              </option>
+              <option :value="20">
+                20개씩
+              </option>
+              <option :value="50">
+                50개씩
+              </option>
             </select>
           </div>
         </div>
 
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <p>데이터를 불러오는 중...</p>
         </div>
 
@@ -131,16 +153,34 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 50px;">No</th>
-                <th style="width: 60px;">신규</th>
-                <th style="width: 110px;">요청일</th>
+                <th style="width: 50px;">
+                  No
+                </th>
+                <th style="width: 60px;">
+                  신규
+                </th>
+                <th style="width: 110px;">
+                  요청일
+                </th>
                 <th>현장명</th>
-                <th style="width: 100px;">요청자</th>
-                <th style="width: 80px;">품목수</th>
-                <th style="width: 80px;">긴급도</th>
-                <th style="width: 110px;">희망납품일</th>
-                <th style="width: 80px;">상태</th>
-                <th style="width: 120px;">처리</th>
+                <th style="width: 100px;">
+                  요청자
+                </th>
+                <th style="width: 80px;">
+                  품목수
+                </th>
+                <th style="width: 80px;">
+                  긴급도
+                </th>
+                <th style="width: 110px;">
+                  희망납품일
+                </th>
+                <th style="width: 80px;">
+                  상태
+                </th>
+                <th style="width: 120px;">
+                  처리
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -153,12 +193,14 @@
                 <td>{{ startIndex + index }}</td>
                 <td>
                   <span v-if="isNewRequest(item.requestDate)" class="new-badge">
-                    <i class="fas fa-circle"></i>
+                    <i class="fas fa-circle" />
                     NEW
                   </span>
                 </td>
                 <td>{{ formatDate(item.requestDate) }}</td>
-                <td class="text-left">{{ item.siteName }}</td>
+                <td class="text-left">
+                  {{ item.siteName }}
+                </td>
                 <td>{{ item.requesterName }}</td>
                 <td>{{ item.itemCount }}건</td>
                 <td>
@@ -179,14 +221,14 @@
                       class="btn-process"
                       @click.stop="openProcessModal(item)"
                     >
-                      <i class="fas fa-tasks"></i>
+                      <i class="fas fa-tasks" />
                       처리
                     </button>
                     <button
                       class="btn-view"
                       @click.stop="openDetailModal(item)"
                     >
-                      <i class="fas fa-eye"></i>
+                      <i class="fas fa-eye" />
                     </button>
                   </div>
                 </td>
@@ -196,7 +238,7 @@
 
           <!-- 데이터가 없을 때 -->
           <div v-if="requests.length === 0" class="no-data-message">
-            <i class="fas fa-inbox"></i>
+            <i class="fas fa-inbox" />
             <p>등록된 주문 요청이 없습니다.</p>
           </div>
         </div>
@@ -226,7 +268,7 @@
         <div class="modal-header">
           <h3>주문 요청 상세</h3>
           <button class="modal-close" @click="closeDetailModal">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
         <div class="modal-body">
@@ -234,7 +276,7 @@
             <!-- 기본 정보 -->
             <div class="info-group">
               <div class="info-group-header">
-                <i class="fas fa-info-circle"></i>
+                <i class="fas fa-info-circle" />
                 <span>요청 정보</span>
               </div>
               <div class="info-grid grid-3">
@@ -270,7 +312,7 @@
             <!-- 요청 품목 -->
             <div class="info-group">
               <div class="info-group-header">
-                <i class="fas fa-box"></i>
+                <i class="fas fa-box" />
                 <span>요청 품목 ({{ selectedRequest.items?.length || 0 }}건)</span>
               </div>
               <div class="items-table-wrapper">
@@ -289,7 +331,9 @@
                       <td>{{ idx + 1 }}</td>
                       <td>{{ item.itemName }}</td>
                       <td>{{ item.specification || '-' }}</td>
-                      <td class="text-right">{{ formatNumber(item.quantity) }}</td>
+                      <td class="text-right">
+                        {{ formatNumber(item.quantity) }}
+                      </td>
                       <td>{{ item.note || '-' }}</td>
                     </tr>
                   </tbody>
@@ -300,7 +344,7 @@
             <!-- 추가 메모 -->
             <div v-if="selectedRequest.additionalNotes" class="info-group">
               <div class="info-group-header">
-                <i class="fas fa-sticky-note"></i>
+                <i class="fas fa-sticky-note" />
                 <span>추가 메모</span>
               </div>
               <div class="notes-content">
@@ -311,7 +355,7 @@
             <!-- 처리 결과 (승인/반려 시) -->
             <div v-if="selectedRequest.status !== 'PENDING'" class="info-group">
               <div class="info-group-header">
-                <i class="fas fa-clipboard-check"></i>
+                <i class="fas fa-clipboard-check" />
                 <span>처리 결과</span>
               </div>
               <div class="info-grid grid-2">
@@ -328,7 +372,7 @@
                 <div v-if="selectedRequest.status === 'APPROVED'" class="info-item">
                   <label>연결된 납품요구</label>
                   <span class="linked-order">
-                    <i class="fas fa-link"></i>
+                    <i class="fas fa-link" />
                     {{ selectedRequest.linkedDeliveryRequestNo || '-' }}
                   </span>
                 </div>
@@ -341,13 +385,15 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="closeDetailModal">닫기</button>
+          <button class="btn-secondary" @click="closeDetailModal">
+            닫기
+          </button>
           <button
             v-if="selectedRequest?.status === 'PENDING'"
             class="btn-primary"
             @click="openProcessModalFromDetail"
           >
-            <i class="fas fa-tasks"></i>
+            <i class="fas fa-tasks" />
             처리하기
           </button>
         </div>
@@ -405,7 +451,7 @@ const selectedRequest = ref<MobileOrderRequest>(null as any)
 
 // Computed
 const startIndex = computed(() => {
-  if (totalElements.value === 0) return 0
+  if (totalElements.value === 0) { return 0 }
   return (currentPage.value - 1) * pageSize.value + 1
 })
 
@@ -423,11 +469,11 @@ const loadRequests = async () => {
       size: pageSize.value
     }
 
-    if (searchForm.value.startDate) params.startDate = searchForm.value.startDate
-    if (searchForm.value.endDate) params.endDate = searchForm.value.endDate
-    if (searchForm.value.status) params.status = searchForm.value.status
-    if (searchForm.value.urgency) params.urgency = searchForm.value.urgency
-    if (searchForm.value.keyword) params.keyword = searchForm.value.keyword
+    if (searchForm.value.startDate) { params.startDate = searchForm.value.startDate }
+    if (searchForm.value.endDate) { params.endDate = searchForm.value.endDate }
+    if (searchForm.value.status) { params.status = searchForm.value.status }
+    if (searchForm.value.urgency) { params.urgency = searchForm.value.urgency }
+    if (searchForm.value.keyword) { params.keyword = searchForm.value.keyword }
 
     const response = await mobileOrderService.getAllRequests(params)
 
@@ -469,8 +515,8 @@ const countNewRequests = (items: MobileOrderRequest[]): number => {
   // KST 기준 오늘 날짜 문자열 (YYYY-MM-DD)
   const todayKst = getLocalDateString()
 
-  return items.filter(item => {
-    if (!item.requestDate) return false
+  return items.filter((item) => {
+    if (!item.requestDate) { return false }
     // UTC 문자열을 KST 날짜로 변환 후 비교
     const requestDateKst = utcToKstDateString(item.requestDate)
     return requestDateKst === todayKst && item.status === 'PENDING'
@@ -478,7 +524,7 @@ const countNewRequests = (items: MobileOrderRequest[]): number => {
 }
 
 const isNewRequest = (dateStr?: string): boolean => {
-  if (!dateStr) return false
+  if (!dateStr) { return false }
   // KST 기준 오늘 날짜와 비교 (UTC → KST 변환)
   const todayKst = getLocalDateString()
   const requestDateKst = utcToKstDateString(dateStr)
@@ -514,7 +560,7 @@ const handlePageSizeChange = () => {
 
 // 상태 관련 헬퍼
 const getStatusClass = (status?: MobileOrderStatus): string => {
-  if (!status) return ''
+  if (!status) { return '' }
   switch (status) {
     case 'PENDING': return 'status-pending'
     case 'APPROVED': return 'status-approved'
@@ -524,7 +570,7 @@ const getStatusClass = (status?: MobileOrderStatus): string => {
 }
 
 const getStatusLabel = (status?: MobileOrderStatus): string => {
-  if (!status) return '-'
+  if (!status) { return '-' }
   const labels: Record<MobileOrderStatus, string> = {
     PENDING: '대기',
     REQUESTED: '접수',
@@ -537,7 +583,7 @@ const getStatusLabel = (status?: MobileOrderStatus): string => {
 
 // 긴급도 관련 헬퍼
 const getUrgencyClass = (urgency?: MobileOrderUrgency): string => {
-  if (!urgency) return ''
+  if (!urgency) { return '' }
   switch (urgency) {
     case 'URGENT': return 'urgency-urgent'
     case 'NORMAL': return 'urgency-normal'
@@ -547,7 +593,7 @@ const getUrgencyClass = (urgency?: MobileOrderUrgency): string => {
 }
 
 const getUrgencyLabel = (urgency?: MobileOrderUrgency): string => {
-  if (!urgency) return '-'
+  if (!urgency) { return '-' }
   const labels: Record<MobileOrderUrgency, string> = {
     URGENT: '긴급',
     NORMAL: '보통',
@@ -582,7 +628,7 @@ const openProcessModalFromDetail = () => {
 }
 
 const handleProcessSubmit = async (result: { action: 'approve' | 'reject'; orderId?: number; rejectReason?: string }) => {
-  if (!selectedRequest.value) return
+  if (!selectedRequest.value) { return }
 
   try {
     if (result.action === 'approve' && result.orderId) {

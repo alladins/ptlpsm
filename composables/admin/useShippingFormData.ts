@@ -47,13 +47,14 @@ export function useShippingFormData() {
     loadingSiteManagers.value = true
 
     try {
-      // 병렬로 API 호출 (OEM 제조사는 MANUFACTURER 타입만 조회)
-      const [manufacturers, users] = await Promise.all([
+      // 병렬로 API 호출 (OEM 제조사 + 본사)
+      const [manufacturers, leadpower, users] = await Promise.all([
         companyService.getManufacturers(),
+        companyService.getCompanies('LEADPOWER'),
         userService.getUsersByRoles(['SITE_MANAGER'])
       ])
 
-      oemCompanies.value = manufacturers
+      oemCompanies.value = [...leadpower, ...manufacturers]
       siteManagers.value = users
     } catch (error) {
       console.error('초기 데이터 로드 실패:', error)

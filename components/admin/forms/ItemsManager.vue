@@ -25,7 +25,7 @@
         <span class="summary-label">총 금액</span>
         <span class="summary-value">{{ formatCurrency(totalAmount) }}원</span>
       </div>
-      <button type="button" @click="$emit('add-item-with-selector')" class="btn-add-item">
+      <button type="button" class="btn-add-item" @click="$emit('add-item-with-selector')">
         품목 추가
       </button>
     </div>
@@ -35,16 +35,36 @@
       <table class="items-table">
         <thead>
           <tr>
-            <th style="width: 50px">No.</th>
-            <th style="width: 200px">품목명</th>
-            <th style="width: 150px">SKU명</th>
-            <th style="width: 200px">규격</th>
-            <th style="width: 70px">단위</th>
-            <th style="width: 120px">단가</th>
-            <th style="width: 90px">수량</th>
-            <th style="width: 130px">금액</th>
-            <th v-if="showDeliveryDate" style="width: 130px">납기일</th>
-            <th style="width: 80px">삭제</th>
+            <th style="width: 50px">
+              No.
+            </th>
+            <th style="width: 200px">
+              품목명
+            </th>
+            <th style="width: 150px">
+              SKU명
+            </th>
+            <th style="width: 200px">
+              규격
+            </th>
+            <th style="width: 70px">
+              단위
+            </th>
+            <th style="width: 120px">
+              단가
+            </th>
+            <th style="width: 90px">
+              수량
+            </th>
+            <th style="width: 130px">
+              금액
+            </th>
+            <th v-if="showDeliveryDate" style="width: 130px">
+              납기일
+            </th>
+            <th style="width: 80px">
+              삭제
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -55,15 +75,17 @@
           </tr>
           <tr v-for="(item, index) in items" :key="index">
             <!-- No. -->
-            <td class="text-center">{{ index + 1 }}</td>
+            <td class="text-center">
+              {{ index + 1 }}
+            </td>
 
             <!-- 품목명 -->
             <td>
               <button
                 type="button"
-                @click="$emit('open-selector', index)"
                 class="btn-select-item"
                 :class="{ 'has-value': item.itemName }"
+                @click="$emit('open-selector', index)"
               >
                 {{ item.itemName || '품목 선택' }}
               </button>
@@ -77,7 +99,7 @@
                 class="form-input-sm text-center"
                 readonly
                 placeholder="-"
-              />
+              >
             </td>
 
             <!-- 규격 -->
@@ -88,7 +110,7 @@
                 class="form-input-sm text-center"
                 readonly
                 placeholder="-"
-              />
+              >
             </td>
 
             <!-- 단위 -->
@@ -99,27 +121,27 @@
                 class="form-input-sm text-center"
                 readonly
                 placeholder="-"
-              />
+              >
             </td>
 
             <!-- 단가 -->
             <td>
               <input
                 :value="formatNumber(item.unitPrice)"
-                @input="handleUnitPriceInput($event, index)"
                 type="text"
                 class="form-input-sm text-right"
-              />
+                @input="handleUnitPriceInput($event, index)"
+              >
             </td>
 
             <!-- 수량 -->
             <td>
               <input
                 :value="formatNumber(item.quantity)"
-                @input="handleQuantityInput($event, index)"
                 type="text"
                 class="form-input-sm text-right"
-              />
+                @input="handleQuantityInput($event, index)"
+              >
             </td>
 
             <!-- 금액 -->
@@ -133,15 +155,15 @@
                 v-model="item.deliveryDate"
                 type="date"
                 class="form-input-sm"
-              />
+              >
             </td>
 
             <!-- 삭제 -->
             <td class="text-center">
               <button
                 type="button"
-                @click="$emit('remove-item', index)"
                 class="btn-remove-item"
+                @click="$emit('remove-item', index)"
               >
                 삭제
               </button>
@@ -201,13 +223,13 @@ const totalAmount = computed(() => {
 
 // 통화 포맷팅
 const formatCurrency = (value: number): string => {
-  if (!value) return '0'
+  if (!value) { return '0' }
   return new Intl.NumberFormat('ko-KR').format(value)
 }
 
 // 숫자 포맷팅 (쉼표 추가) - 수량 포맷팅은 공통 유틸 사용
 const formatNumber = (value: number | undefined): string => {
-  if (!value) return ''
+  if (!value) { return '' }
   return formatQuantity(value)
 }
 

@@ -3,11 +3,11 @@
     <div class="modal-container">
       <div class="modal-header">
         <h3>
-          <i class="fas fa-file-pdf"></i>
+          <i class="fas fa-file-pdf" />
           PDF 다운로드
         </h3>
         <button class="btn-close" @click="$emit('close')">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
@@ -38,14 +38,14 @@
               @click="openPdfPreview('confirmation')"
             >
               <div class="pdf-icon">
-                <i class="fas fa-file-pdf"></i>
+                <i class="fas fa-file-pdf" />
               </div>
               <div class="pdf-info">
                 <h5>납품 확인서</h5>
                 <p>계약물품 및 납품내역</p>
               </div>
               <div class="pdf-action">
-                <i class="fas fa-eye"></i>
+                <i class="fas fa-eye" />
               </div>
             </button>
 
@@ -55,14 +55,14 @@
               @click="openPdfPreview('completion')"
             >
               <div class="pdf-icon">
-                <i class="fas fa-file-pdf"></i>
+                <i class="fas fa-file-pdf" />
               </div>
               <div class="pdf-info">
                 <h5>납품완료계</h5>
                 <p>납품 완료 증명서</p>
               </div>
               <div class="pdf-action">
-                <i class="fas fa-eye"></i>
+                <i class="fas fa-eye" />
               </div>
             </button>
 
@@ -72,14 +72,14 @@
               @click="openPdfPreview('photo-sheet')"
             >
               <div class="pdf-icon">
-                <i class="fas fa-file-pdf"></i>
+                <i class="fas fa-file-pdf" />
               </div>
               <div class="pdf-info">
                 <h5>사진대지</h5>
                 <p>납품 현장 사진</p>
               </div>
               <div class="pdf-action">
-                <i class="fas fa-eye"></i>
+                <i class="fas fa-eye" />
               </div>
             </button>
 
@@ -89,14 +89,14 @@
               @click="downloadExcel"
             >
               <div class="pdf-icon excel-icon">
-                <i class="fas fa-file-excel"></i>
+                <i class="fas fa-file-excel" />
               </div>
               <div class="pdf-info">
                 <h5>납품내역서</h5>
                 <p>엑셀 다운로드</p>
               </div>
               <div class="pdf-action">
-                <i class="fas fa-download"></i>
+                <i class="fas fa-download" />
               </div>
             </button>
           </div>
@@ -107,7 +107,7 @@
               class="btn-batch-download"
               @click="downloadAll"
             >
-              <i class="fas fa-file-archive"></i>
+              <i class="fas fa-file-archive" />
               모든 PDF 일괄 다운로드 (ZIP)
             </button>
           </div>
@@ -115,7 +115,7 @@
 
         <!-- 안내 메시지 -->
         <div class="notice-section">
-          <i class="fas fa-info-circle"></i>
+          <i class="fas fa-info-circle" />
           <p>PDF 버튼을 클릭하면 미리보기 창이 열립니다. 미리보기에서 다운로드할 수 있습니다.</p>
         </div>
       </div>
@@ -151,8 +151,8 @@ import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 type PdfType = 'confirmation' | 'completion' | 'photo-sheet'
 
 const pdfTypeNames: Record<PdfType, string> = {
-  'confirmation': '납품확인서',
-  'completion': '납품완료계',
+  confirmation: '납품확인서',
+  completion: '납품완료계',
   'photo-sheet': '사진대지'
 }
 
@@ -172,7 +172,7 @@ const previewFileName = ref('')
 /**
  * PDF 미리보기 모달 열기
  */
-function openPdfPreview(pdfType: PdfType) {
+function openPdfPreview (pdfType: PdfType) {
   const url = getPdfDownloadUrl(props.deliveryDone.deliveryDoneId, pdfType)
   previewPdfUrl.value = url
   previewFileName.value = `${pdfTypeNames[pdfType]}_${props.deliveryDone.deliveryRequestNo}.pdf`
@@ -182,7 +182,7 @@ function openPdfPreview(pdfType: PdfType) {
 /**
  * PDF 미리보기 모달 닫기
  */
-function closePdfPreview() {
+function closePdfPreview () {
   showPdfPreview.value = false
   previewPdfUrl.value = ''
   previewFileName.value = ''
@@ -191,7 +191,7 @@ function closePdfPreview() {
 /**
  * 납품내역서 엑셀 다운로드
  */
-async function downloadExcel() {
+async function downloadExcel () {
   try {
     await downloadBaselineInvoiceExcel(props.deliveryDone.orderId)
   } catch (error) {
@@ -205,7 +205,7 @@ async function downloadExcel() {
 /**
  * 모든 PDF 일괄 다운로드
  */
-async function downloadAll() {
+async function downloadAll () {
   try {
     await downloadAllPdfs(props.deliveryDone.deliveryDoneId)
   } catch (error) {

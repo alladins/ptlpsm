@@ -2,13 +2,13 @@
   <div class="secure-image-wrapper">
     <!-- 로딩 중 -->
     <div v-if="loading" class="loading-placeholder">
-      <i class="fas fa-spinner fa-spin"></i>
+      <i class="fas fa-spinner fa-spin" />
       <span>이미지 로딩 중...</span>
     </div>
 
     <!-- 에러 -->
     <div v-else-if="error" class="error-placeholder">
-      <i class="fas fa-exclamation-triangle"></i>
+      <i class="fas fa-exclamation-triangle" />
       <span>이미지 로드 실패</span>
     </div>
 
@@ -20,7 +20,7 @@
       :class="imageClass"
       :loading="loadingStrategy"
       @error="handleImageError"
-    />
+    >
   </div>
 </template>
 
@@ -52,7 +52,7 @@ const loadingStrategy = ref(props.loading)
  * /api/... 형태의 URL에 API base URL을 추가
  */
 const getFullUrl = (url: string): string => {
-  if (!url) return ''
+  if (!url) { return '' }
 
   // 이미 절대 URL인 경우 그대로 반환
   if (url.startsWith('http://') || url.startsWith('https://')) {

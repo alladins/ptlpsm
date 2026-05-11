@@ -4,9 +4,9 @@
       <div class="modal-content">
         <!-- 헤더 -->
         <div class="modal-header">
-          <h3>품목 병합</h3>
+          <h3>품목 합지</h3>
           <button type="button" class="close-btn" @click="handleClose">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
@@ -14,7 +14,9 @@
         <div class="modal-body">
           <!-- 추가할 품목 정보 -->
           <div class="new-item-info">
-            <div class="info-label">추가할 품목</div>
+            <div class="info-label">
+              추가할 품목
+            </div>
             <div class="info-box">
               <span class="badge-new">신규</span>
               <span class="item-name">{{ newItem.itemName }}</span>
@@ -23,37 +25,63 @@
             </div>
           </div>
 
-          <!-- 병합 수량 입력 -->
+          <!-- 수량 입력 -->
           <div class="merge-quantity-section">
-            <label>병합 수량 (필수)</label>
-            <div class="quantity-input-group">
-              <input
-                type="number"
-                v-model.number="mergeQuantity"
-                :min="0"
-                placeholder="0"
-                class="quantity-input"
-              />
-              <span class="unit">{{ newItem.unit || 'm2' }}</span>
+            <div class="quantity-row">
+              <div class="quantity-field">
+                <label>합지수량</label>
+                <div class="quantity-input-group">
+                  <input
+                    v-model.number="mergeQuantity"
+                    type="number"
+                    :min="0"
+                    placeholder="0"
+                    class="quantity-input"
+                    :disabled="additionalQuantity > 0"
+                  >
+                  <span class="unit">{{ newItem.unit || 'm2' }}</span>
+                </div>
+                <span class="hint">기존 품목에서 차감되는 수량</span>
+              </div>
+              <div class="quantity-field">
+                <label>추가수량</label>
+                <div class="quantity-input-group">
+                  <input
+                    v-model.number="additionalQuantity"
+                    type="number"
+                    :min="0"
+                    placeholder="0"
+                    :disabled="mergeQuantity > 0"
+                    class="quantity-input additional-input"
+                  >
+                  <span class="unit">{{ newItem.unit || 'm2' }}</span>
+                </div>
+                <span class="hint">순수 추가되는 수량</span>
+              </div>
             </div>
-            <span class="hint">이 수량이 각 선택 품목에서 차감됩니다</span>
             <span v-if="quantityWarning" class="error-hint">
               {{ quantityWarning }}
             </span>
           </div>
 
-          <!-- 병합 대상 선택 -->
-          <div class="merge-target-section">
-            <label>병합 대상 선택 (최대 2개)</label>
+          <!-- 병합 대상 선택 (병합수량이 있을 때만 표시) -->
+          <div v-if="mergeQuantity > 0" class="merge-target-section">
+            <label>합지 대상 선택 (최대 2개)</label>
             <div class="target-table-wrapper">
               <table class="merge-target-table">
                 <thead>
                   <tr>
-                    <th style="width: 40px"></th>
+                    <th style="width: 40px" />
                     <th>SKU 품명</th>
-                    <th style="width: 80px">출하수량</th>
-                    <th style="width: 80px">잔여수량</th>
-                    <th style="width: 80px">차감 후</th>
+                    <th style="width: 80px">
+                      출하수량
+                    </th>
+                    <th style="width: 80px">
+                      잔여수량
+                    </th>
+                    <th style="width: 80px">
+                      차감 후
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -69,11 +97,15 @@
                         :checked="item.selected"
                         tabindex="-1"
                         style="pointer-events: none;"
-                      />
+                      >
                     </td>
                     <td>{{ item.skuName }}</td>
-                    <td class="text-right">{{ formatQuantity(item.currentQuantity) }}</td>
-                    <td class="text-right">{{ formatQuantity(item.remainingQuantity) }}</td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.currentQuantity) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.remainingQuantity) }}
+                    </td>
                     <td class="text-right" :class="getDeductedClass(item)">
                       {{ getDeductedQuantity(item) }}
                     </td>
@@ -85,23 +117,30 @@
 
           <!-- 안내 메시지 -->
           <div v-if="selectedCount > 0 && mergeQuantity > 0" class="info-message">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             선택한 {{ selectedCount }}개 품목에서 각각 {{ mergeQuantity }}씩 차감됩니다.
+          </div>
+          <div v-if="additionalQuantity > 0" class="info-message info-additional">
+            <i class="fas fa-plus-circle" />
+            추가수량 {{ additionalQuantity }}이 신규로 추가됩니다.
+          </div>
+
+          <!-- 전량 출하 안내 -->
+          <div v-if="mergeQuantity > 0 || additionalQuantity > 0" class="info-message info-notice">
+            <i class="fas fa-exclamation-circle" />
+            추가/합지된 수량은 해당 출하에서 <strong>전량 출하</strong>됩니다. 부분 출하는 지원되지 않습니다.
           </div>
         </div>
 
         <!-- 푸터 -->
         <div class="modal-footer">
-          <button type="button" class="btn-secondary" @click="handleSkip">
-            병합 없이 추가
-          </button>
           <button type="button" class="btn-cancel" @click="handleClose">
             취소
           </button>
           <button
             type="button"
             class="btn-primary"
-            :disabled="!isValidMerge"
+            :disabled="!isValidAction"
             @click="handleConfirm"
           >
             확인
@@ -130,8 +169,8 @@ interface NewItemInfo {
 interface ExistingItem {
   skuId: string
   skuName: string
-  currentQuantity: number  // 출하수량
-  remainingQuantity: number  // 잔여수량
+  currentQuantity: number // 출하수량
+  remainingQuantity: number // 잔여수량
 }
 
 interface Props {
@@ -142,7 +181,7 @@ interface Props {
 
 // Emits
 interface MergeResult {
-  newItem: NewItemInfo & { shippingQuantity: number }
+  newItem: NewItemInfo & { shippingQuantity: number; additionalQuantity: number }
   deductions: { skuId: string; skuName: string; amount: number }[]
 }
 
@@ -157,6 +196,7 @@ const emit = defineEmits<Emits>()
 
 // 상태
 const mergeQuantity = ref(0)
+const additionalQuantity = ref(0)
 
 interface TargetItem extends ExistingItem {
   selected: boolean
@@ -168,6 +208,7 @@ const targetItems = ref<TargetItem[]>([])
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     mergeQuantity.value = 0
+    additionalQuantity.value = 0
     targetItems.value = props.existingItems.map(item => ({
       ...item,
       selected: false
@@ -183,7 +224,7 @@ const selectedCount = computed(() => {
 // 선택 토글 (최대 2개 제한) - 인덱스 기반 업데이트로 반응성 보장
 const toggleSelection = (skuId: string) => {
   const index = targetItems.value.findIndex(i => i.skuId === skuId)
-  if (index === -1) return
+  if (index === -1) { return }
 
   const currentItem = targetItems.value[index]
 
@@ -202,7 +243,7 @@ const toggleSelection = (skuId: string) => {
 
 // 수량 초과 경고 메시지 (잔여수량 기준으로 검증)
 const quantityWarning = computed(() => {
-  if (mergeQuantity.value <= 0) return null
+  if (mergeQuantity.value <= 0) { return null }
   const selected = targetItems.value.filter(i => i.selected)
   for (const item of selected) {
     // 전체 출하 가능 수량 = 잔여수량 (발주에서 아직 출하되지 않은 수량)
@@ -213,28 +254,38 @@ const quantityWarning = computed(() => {
   return null
 })
 
-// 검증
+// 검증: 병합 수량이 있으면 대상 선택 필수, 추가수량만 있으면 바로 가능
 const isValidMerge = computed(() => {
-  if (selectedCount.value === 0) return false
-  if (mergeQuantity.value <= 0) return false
-  if (quantityWarning.value) return false
+  if (mergeQuantity.value <= 0) { return false }
+  if (selectedCount.value === 0) { return false }
+  if (quantityWarning.value) { return false }
   return true
+})
+
+// 전체 확인 버튼 활성화 조건
+const isValidAction = computed(() => {
+  // 병합수량이 있으면 병합 검증 통과 필요
+  if (mergeQuantity.value > 0) { return isValidMerge.value }
+  // 추가수량만 있으면 OK
+  if (additionalQuantity.value > 0) { return true }
+  // 둘 다 없으면 비활성화
+  return false
 })
 
 // 차감 후 수량 계산 (잔여수량에서 차감)
 const getDeductedQuantity = (item: TargetItem): string => {
-  if (!item.selected || mergeQuantity.value <= 0) return '-'
+  if (!item.selected || mergeQuantity.value <= 0) { return '-' }
   const result = item.remainingQuantity - mergeQuantity.value
-  if (result < 0) return '불가'
+  if (result < 0) { return '불가' }
   return String(result)
 }
 
 // 차감 후 클래스
 const getDeductedClass = (item: TargetItem): string => {
-  if (!item.selected || mergeQuantity.value <= 0) return ''
+  if (!item.selected || mergeQuantity.value <= 0) { return '' }
   const result = item.remainingQuantity - mergeQuantity.value
-  if (result < 0) return 'deducted-invalid'
-  if (result === 0) return 'deducted-zero'
+  if (result < 0) { return 'deducted-invalid' }
+  if (result === 0) { return 'deducted-zero' }
   return 'deducted-quantity'
 }
 
@@ -243,29 +294,30 @@ const handleClose = () => {
   emit('close')
 }
 
-// 병합 없이 추가 (입력된 수량 전달)
-const handleSkip = () => {
-  emit('skip', mergeQuantity.value)
-}
-
-// 확인
+// 확인 (병합 + 추가수량 통합 처리)
 const handleConfirm = () => {
-  if (!isValidMerge.value) return
+  if (!isValidAction.value) { return }
 
-  const selected = targetItems.value.filter(i => i.selected)
-  const result: MergeResult = {
-    newItem: {
-      ...props.newItem,
-      shippingQuantity: mergeQuantity.value
-    },
-    deductions: selected.map(item => ({
-      skuId: item.skuId,
-      skuName: item.skuName,
-      amount: mergeQuantity.value
-    }))
+  // 병합수량이 있으면 병합 처리
+  if (mergeQuantity.value > 0 && isValidMerge.value) {
+    const selected = targetItems.value.filter(i => i.selected)
+    const result: MergeResult = {
+      newItem: {
+        ...props.newItem,
+        shippingQuantity: mergeQuantity.value,
+        additionalQuantity: additionalQuantity.value || 0
+      },
+      deductions: selected.map(item => ({
+        skuId: item.skuId,
+        skuName: item.skuName,
+        amount: mergeQuantity.value
+      }))
+    }
+    emit('confirm', result)
+  } else {
+    // 추가수량만 있는 경우 (병합 없이 추가)
+    emit('skip', additionalQuantity.value)
   }
-
-  emit('confirm', result)
 }
 </script>
 
@@ -345,7 +397,7 @@ const handleConfirm = () => {
 
 .info-box {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   background: #f0fdf4;
@@ -355,39 +407,63 @@ const handleConfirm = () => {
 
 .badge-new {
   display: inline-block;
-  padding: 0.125rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   background: #10b981;
   color: white;
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .item-name {
   font-weight: 600;
   color: #1f2937;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .item-sku {
-  color: #6b7280;
+  color: #374151;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .item-spec {
   color: #9ca3af;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  word-break: break-all;
 }
 
-/* 병합 수량 입력 */
+/* 수량 입력 */
 .merge-quantity-section {
   margin-bottom: 1.5rem;
 }
 
-.merge-quantity-section label {
+.quantity-row {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.quantity-field {
+  flex: 1;
+}
+
+.quantity-field label,
+.merge-quantity-section > label {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
   color: #374151;
   margin-bottom: 0.5rem;
+}
+
+.additional-input {
+  border-color: #10b981 !important;
 }
 
 .quantity-input-group {
@@ -535,6 +611,19 @@ const handleConfirm = () => {
 
 .info-message i {
   font-size: 1rem;
+}
+
+.info-message.info-additional {
+  background: #f0fdf4;
+  color: #059669;
+  margin-top: 0.5rem;
+}
+
+.info-message.info-notice {
+  background: #fffbeb;
+  color: #b45309;
+  margin-top: 0.5rem;
+  border: 1px solid #fde68a;
 }
 
 /* 푸터 */

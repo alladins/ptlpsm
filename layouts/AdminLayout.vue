@@ -1,14 +1,14 @@
 <template>
   <div class="admin-layout">
     <!-- 모바일 메뉴 오버레이 -->
-    <div 
-      v-if="isMobileMenuOpen" 
+    <div
+      v-if="isMobileMenuOpen"
       class="mobile-overlay"
       @click="toggleMobileMenu"
-    ></div>
-    
-    <SidebarMenu 
-      :collapsed="false" 
+    />
+
+    <SidebarMenu
+      :collapsed="false"
       :mobile-open="isMobileMenuOpen"
       @logout="handleLogout"
       @close-mobile="toggleMobileMenu"
@@ -17,16 +17,18 @@
       <header class="admin-header">
         <div class="header-content">
           <div class="header-left">
-            <h1 class="page-title">{{ pageTitle || '대시보드' }}</h1>
+            <h1 class="page-title">
+              {{ pageTitle || '대시보드' }}
+            </h1>
           </div>
           <div class="header-actions">
             <!-- 사이트 보기 버튼 -->
             <nuxt-link to="/" class="header-action-btn" title="사이트 보기" target="_blank" rel="noopener noreferrer">
-              <i class="fas fa-external-link-alt"></i>
+              <i class="fas fa-external-link-alt" />
               <span class="btn-text">PTPLPSM</span>
             </nuxt-link>
             <button class="mobile-menu-btn" @click="toggleMobileMenu">
-              <i class="fas fa-bars"></i>
+              <i class="fas fa-bars" />
             </button>
           </div>
         </div>
@@ -39,8 +41,8 @@
 </template>
 
 <script setup>
-import SidebarMenu from '~/components/admin/SidebarMenu.vue'
 import { ref, computed } from 'vue'
+import SidebarMenu from '~/components/admin/SidebarMenu.vue'
 
 // Props
 const props = defineProps({
@@ -66,20 +68,20 @@ const logout = () => {
   if (confirm('로그아웃 하시겠습니까?')) {
     try {
       console.log('로그아웃 처리 시작')
-      
+
       // 브라우저 환경에서만 로컬 스토리지 정리
       if (process.client) {
         localStorage.removeItem('auth')
         sessionStorage.clear()
       }
-      
+
       console.log('로그아웃 완료, 로그인 페이지로 이동')
-      
+
       // 로그인 페이지로 이동
       navigateTo('/login')
     } catch (error) {
       console.error('로그아웃 처리 중 오류:', error)
-      
+
       // 오류가 발생해도 로그인 페이지로 이동
       navigateTo('/login')
     }
@@ -268,7 +270,7 @@ useHead({
   .admin-content {
     margin-left: 280px;
   }
-  
+
   .mobile-menu-btn {
     display: none;
   }
@@ -350,4 +352,4 @@ useHead({
   font-size: 20px;
   color: #6b7280;
 }
-</style> 
+</style>

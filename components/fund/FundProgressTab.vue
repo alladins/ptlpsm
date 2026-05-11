@@ -4,11 +4,11 @@
       <h4>기성금 이력</h4>
       <button
         class="btn-primary"
-        @click="emit('openModal')"
         :disabled="!canRequestProgress"
         :title="progressButtonTooltip"
+        @click="emit('openModal')"
       >
-        <i class="fas fa-plus"></i>
+        <i class="fas fa-plus" />
         기성 청구하기
       </button>
     </div>
@@ -18,9 +18,15 @@
           <tr>
             <th>차수</th>
             <th>청구일</th>
-            <th class="col-amount">청구금액</th>
-            <th v-if="hasAdvancePayment" class="col-amount">선급금차감</th>
-            <th v-if="hasAdvancePayment" class="col-amount">실수금액</th>
+            <th class="col-amount">
+              청구금액
+            </th>
+            <th v-if="hasAdvancePayment" class="col-amount">
+              선급금차감
+            </th>
+            <th v-if="hasAdvancePayment" class="col-amount">
+              실수금액
+            </th>
             <th>서명상태</th>
             <th>수금일</th>
             <th>상태</th>
@@ -30,12 +36,16 @@
         </thead>
         <tbody>
           <tr v-if="filteredProgressPayments.length === 0">
-            <td :colspan="hasAdvancePayment ? 10 : 8" class="no-data">기성금 이력이 없습니다.</td>
+            <td :colspan="hasAdvancePayment ? 10 : 8" class="no-data">
+              기성금 이력이 없습니다.
+            </td>
           </tr>
-          <tr v-else v-for="payment in filteredProgressPayments" :key="payment.requestId || payment.paymentId">
+          <tr v-for="payment in filteredProgressPayments" v-else :key="payment.requestId || payment.paymentId">
             <td>{{ payment.paymentSeq }}차</td>
             <td>{{ payment.requestDate }}</td>
-            <td class="text-right">{{ formatCurrency(payment.requestAmount) }}</td>
+            <td class="text-right">
+              {{ formatCurrency(payment.requestAmount) }}
+            </td>
             <td v-if="hasAdvancePayment" class="text-right deduction-amount">
               {{ payment.advanceDeductionAmount ? '-' + formatCurrency(payment.advanceDeductionAmount) : '-' }}
             </td>
@@ -57,7 +67,7 @@
               <!-- 서명 미완료: 서명 대기중 표시 -->
               <div v-if="!isSignatureCompleted(payment.signatureStatus)" class="pdf-actions">
                 <span class="signature-pending-badge">
-                  <i class="fas fa-clock"></i>
+                  <i class="fas fa-clock" />
                   서명 대기중
                 </span>
               </div>
@@ -65,20 +75,20 @@
               <div v-else class="pdf-actions">
                 <button
                   class="btn-pdf-sm"
-                  @click="emit('viewConfirmationPdf', payment.baselineId)"
                   :disabled="!payment.baselineId"
                   title="납품확인서"
+                  @click="emit('viewConfirmationPdf', payment.baselineId)"
                 >
-                  <i class="fas fa-file-pdf"></i>
+                  <i class="fas fa-file-pdf" />
                   납품확인서
                 </button>
                 <button
                   class="btn-pdf-sm btn-pdf-photo"
-                  @click="emit('viewPhotoSheetPdf', payment.baselineId)"
                   :disabled="!payment.baselineId"
                   title="사진대지"
+                  @click="emit('viewPhotoSheetPdf', payment.baselineId)"
                 >
-                  <i class="fas fa-images"></i>
+                  <i class="fas fa-images" />
                   사진대지
                 </button>
               </div>
@@ -88,14 +98,14 @@
               <button
                 v-if="payment.status === 'APPROVED'"
                 class="btn-collection-confirm"
-                @click="emit('openCollectionConfirm', payment)"
                 title="수금 확인"
+                @click="emit('openCollectionConfirm', payment)"
               >
-                <i class="fas fa-check-circle"></i>
+                <i class="fas fa-check-circle" />
                 수금확인
               </button>
               <span v-else-if="payment.status === 'PAID'" class="collection-completed">
-                <i class="fas fa-check"></i>
+                <i class="fas fa-check" />
                 완료
               </span>
               <span v-else class="collection-pending">-</span>

@@ -94,5 +94,34 @@ export const DEMAND_ORGANIZATION_ENDPOINTS = {
   toggleStatus: (dminsttCd: string) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/basic/demand-organizations/${dminsttCd}`
+  },
+
+  /**
+   * 나라장터 수요기관 동기화
+   * @returns POST /basic/demand-organizations/sync/g2b
+   */
+  syncG2b: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/basic/demand-organizations/sync/g2b`
+  },
+
+  /**
+   * 나라장터 동기화 진행상황 조회
+   * @param syncBatchId - 동기화 배치 ID
+   * @returns GET /basic/demand-organizations/sync/g2b/status/{syncBatchId}
+   */
+  syncG2bStatus: (syncBatchId: string) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/basic/demand-organizations/sync/g2b/status/${syncBatchId}`
+  },
+
+  /**
+   * 나라장터 동기화 취소
+   * @param syncBatchId - 동기화 배치 ID
+   * @returns POST /basic/demand-organizations/sync/g2b/cancel/{syncBatchId}
+   */
+  syncG2bCancel: (syncBatchId: string) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/basic/demand-organizations/sync/g2b/cancel/${syncBatchId}`
   }
 } as const

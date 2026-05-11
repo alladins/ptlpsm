@@ -24,8 +24,12 @@
       <slot />
     </div>
 
-    <p v-if="error" class="form-error">{{ error }}</p>
-    <p v-else-if="hint" class="form-hint">{{ hint }}</p>
+    <p v-if="error" class="form-error">
+      {{ error }}
+    </p>
+    <p v-else-if="hint" class="form-hint">
+      {{ hint }}
+    </p>
   </div>
 </template>
 

@@ -194,7 +194,8 @@ class OemCostService {
       throw new Error(`이력 조회 실패: ${response.status}`)
     }
 
-    return response.json()
+    const result = await response.json()
+    return result.list || result.content || result.data || result
   }
 
   /**
@@ -212,7 +213,7 @@ class OemCostService {
     }
 
     const result = await response.json()
-    return result.content || result.data || result
+    return result.list || result.content || result.data || result
   }
 
   /**

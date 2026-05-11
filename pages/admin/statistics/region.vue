@@ -2,6 +2,8 @@
   <div class="statistics-region">
     <PageHeader
       title="지역별 통계"
+      icon="chart"
+      icon-color="blue"
       description="지역별 출하/매출 현황을 통계로 확인합니다."
     />
 
@@ -15,7 +17,7 @@
               v-model="searchParams.startDate"
               type="date"
               class="form-control"
-            />
+            >
           </div>
           <div class="form-group">
             <label>조회 종료일</label>
@@ -23,18 +25,24 @@
               v-model="searchParams.endDate"
               type="date"
               class="form-control"
-            />
+            >
           </div>
           <div class="form-group">
             <label>조회 단위</label>
             <select v-model="searchParams.periodUnit" class="form-control">
-              <option value="daily">일별</option>
-              <option value="weekly">주별</option>
-              <option value="monthly">월별</option>
+              <option value="daily">
+                일별
+              </option>
+              <option value="weekly">
+                주별
+              </option>
+              <option value="monthly">
+                월별
+              </option>
             </select>
           </div>
           <button class="btn-action btn-primary" @click="loadStatistics">
-            <i class="fas fa-search"></i> 조회
+            <i class="fas fa-search" /> 조회
           </button>
         </div>
       </div>
@@ -43,62 +51,68 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-map-marker-alt"></i>
+            <i class="fas fa-map-marker-alt" />
           </div>
           <div class="stat-content">
             <h3>활성 지역수</h3>
-            <p class="stat-number">{{ activeRegionCount }}</p>
+            <p class="stat-number">
+              {{ activeRegionCount }}
+            </p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-truck"></i>
+            <i class="fas fa-truck" />
           </div>
           <div class="stat-content">
             <h3>총 출하 건수</h3>
-            <p class="stat-number">{{ totalShipmentCount.toLocaleString() }}</p>
+            <p class="stat-number">
+              {{ totalShipmentCount.toLocaleString() }}
+            </p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-won-sign"></i>
+            <i class="fas fa-won-sign" />
           </div>
           <div class="stat-content">
             <h3>총 매출액</h3>
-            <p class="stat-number">{{ formatCurrency(totalSalesAmount) }}</p>
+            <p class="stat-number">
+              {{ formatCurrency(totalSalesAmount) }}
+            </p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-trophy"></i>
+            <i class="fas fa-trophy" />
           </div>
           <div class="stat-content">
             <h3>최고 매출 지역</h3>
-            <p class="stat-number">{{ topRegion.name || '-' }}</p>
-            <p class="stat-change">{{ formatCurrency(topRegion.amount) }}</p>
+            <p class="stat-number">
+              {{ topRegion.name || '-' }}
+            </p>
+            <p class="stat-change">
+              {{ formatCurrency(topRegion.amount) }}
+            </p>
           </div>
         </div>
       </div>
 
       <div class="chart-section">
         <div class="chart-card">
-          <h2>지역별 영업 현황</h2>
-          <div class="chart-placeholder">
-            <i class="fas fa-chart-bar"></i>
-            <p>지역별 차트 영역</p>
-            <small>실제 구현 시 Chart.js 또는 D3.js 등을 사용하여 차트를 표시합니다.</small>
+          <h2>지역별 출하현황</h2>
+          <div class="chart-wrapper">
+            <canvas ref="regionBarChartRef" />
           </div>
         </div>
 
         <div class="chart-card">
           <h2>지역별 고객 분포</h2>
-          <div class="chart-placeholder">
-            <i class="fas fa-pie-chart"></i>
-            <p>파이 차트 영역</p>
-            <small>실제 구현 시 Chart.js 또는 D3.js 등을 사용하여 차트를 표시합니다.</small>
+          <div class="chart-wrapper">
+            <canvas ref="regionPieChartRef" />
           </div>
         </div>
       </div>
@@ -106,7 +120,7 @@
       <div class="table-section">
         <h2>지역별 상세 현황</h2>
         <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i> 데이터를 불러오는 중...
+          <i class="fas fa-spinner fa-spin" /> 데이터를 불러오는 중...
         </div>
         <div v-else-if="regionData.length === 0" class="empty-message">
           조회된 데이터가 없습니다.
@@ -143,6 +157,7 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import { getLocalDateString } from '~/utils/format'
 import { getShipmentStatistics } from '~/services/statistics.service'
 import type { RegionBreakdownItem, ShipmentStatisticsRequest } from '~/types/statistics'
@@ -151,6 +166,23 @@ definePageMeta({
   layout: 'admin',
   pageTitle: '지역별통계'
 })
+
+// Chart.js dynamic import
+let Chart: any = null
+
+// 차트 refs
+const regionBarChartRef = ref<HTMLCanvasElement | null>(null)
+const regionPieChartRef = ref<HTMLCanvasElement | null>(null)
+let regionBarChart: any = null
+let regionPieChart: any = null
+
+// 차트 색상 팔레트
+const regionColors = [
+  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+  '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
+  '#14b8a6', '#e11d48', '#a855f7', '#0ea5e9', '#22c55e',
+  '#eab308', '#dc2626'
+]
 
 // 상태 관리
 const loading = ref(false)
@@ -182,7 +214,7 @@ const topRegion = computed(() => {
 })
 
 // 기본 날짜 설정 (최근 1년)
-function getDefaultStartDate(): string {
+function getDefaultStartDate (): string {
   const date = new Date()
   date.setFullYear(date.getFullYear() - 1)
   // 로컬 타임존 기준 날짜 반환
@@ -192,12 +224,12 @@ function getDefaultStartDate(): string {
   return `${y}-${m}-${d}`
 }
 
-function getDefaultEndDate(): string {
+function getDefaultEndDate (): string {
   return getLocalDateString()
 }
 
 // 통계 데이터 로드
-async function loadStatistics() {
+async function loadStatistics () {
   loading.value = true
   try {
     const response = await getShipmentStatistics(searchParams.value)
@@ -207,6 +239,9 @@ async function loadStatistics() {
       ...item,
       averageAmount: item.orderCount > 0 ? Math.round(item.shipmentAmount / item.orderCount) : 0
     }))
+
+    await nextTick()
+    renderCharts()
 
     console.log('📊 지역별 통계 로드 완료:', regionData.value)
   } catch (error) {
@@ -218,15 +253,98 @@ async function loadStatistics() {
 }
 
 // 금액 포맷팅
-function formatCurrency(amount: number): string {
+function formatCurrency (amount: number): string {
   return `₩${amount.toLocaleString()}`
 }
 
 // 완료율 클래스 결정
-function getSuccessRateClass(rate: number): string {
-  if (rate >= 80) return 'high'
-  if (rate >= 70) return 'medium'
+function getSuccessRateClass (rate: number): string {
+  if (rate >= 80) { return 'high' }
+  if (rate >= 70) { return 'medium' }
   return 'low'
+}
+
+// 차트 렌더링
+async function renderCharts () {
+  if (!Chart) {
+    const chartModule = await import('chart.js/auto')
+    Chart = chartModule.default
+  }
+
+  // 수평 Bar 차트: 지역별 출하현황
+  if (regionBarChartRef.value) {
+    if (regionBarChart) { regionBarChart.destroy() }
+    regionBarChart = new Chart(regionBarChartRef.value, {
+      type: 'bar',
+      data: {
+        labels: regionData.value.map(d => d.region),
+        datasets: [{
+          label: '출하금액',
+          data: regionData.value.map(d => d.shipmentAmount),
+          backgroundColor: regionColors.slice(0, regionData.value.length),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx: any) => `출하금액: ₩${ctx.raw.toLocaleString()}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: {
+              callback: (v: any) => `₩${Number(v).toLocaleString()}`
+            }
+          }
+        }
+      }
+    })
+  }
+
+  // 도넛 차트: 지역별 고객 분포
+  if (regionPieChartRef.value) {
+    if (regionPieChart) { regionPieChart.destroy() }
+    regionPieChart = new Chart(regionPieChartRef.value, {
+      type: 'doughnut',
+      data: {
+        labels: regionData.value.map(d => d.region),
+        datasets: [{
+          data: regionData.value.map(d => d.orderCount),
+          backgroundColor: regionColors.slice(0, regionData.value.length),
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { boxWidth: 12, padding: 16, font: { size: 12 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx: any) => {
+                const total = ctx.dataset.data.reduce((a: number, b: number) => a + b, 0)
+                const pct = ((ctx.raw / total) * 100).toFixed(1)
+                return `${ctx.label}: ${ctx.raw}건 (${pct}%)`
+              }
+            }
+          }
+        },
+        cutout: '55%'
+      }
+    })
+  }
 }
 
 // 초기 로드
@@ -411,6 +529,11 @@ onMounted(() => {
   color: #6b7280;
 }
 
+.chart-wrapper {
+  height: 300px;
+  position: relative;
+}
+
 .chart-placeholder i {
   font-size: 3rem;
   margin-bottom: 1rem;
@@ -492,59 +615,63 @@ onMounted(() => {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   .stat-card {
     padding: 1rem;
   }
-  
+
   .stat-icon {
     width: 40px;
     height: 40px;
     font-size: 1.25rem;
   }
-  
+
   .stat-content h3 {
     font-size: 0.875rem;
   }
-  
+
   .stat-number {
     font-size: 1.5rem;
   }
-  
+
   .chart-section {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   .chart-card {
     padding: 1rem;
   }
-  
+
   .chart-placeholder {
     height: 200px;
   }
-  
+
+  .chart-wrapper {
+    height: 250px;
+  }
+
   .chart-placeholder i {
     font-size: 2rem;
   }
-  
+
   .chart-placeholder p {
     font-size: 1rem;
   }
-  
+
   .table-section {
     padding: 1rem;
   }
-  
+
   .data-table {
     font-size: 0.75rem;
   }
-  
+
   .data-table th,
   .data-table td {
     padding: 0.5rem;
   }
-  
+
   /* 모바일에서 숨길 컬럼들 */
   .data-table th:nth-child(3),
   .data-table th:nth-child(4),

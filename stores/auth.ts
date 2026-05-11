@@ -14,6 +14,8 @@ interface User {
   loginId: string      // 로그인 ID (문자열, 기존 userId)
   userName: string
   email: string
+  phone?: string           // 연락처
+  position?: string        // 직함
   role: string
   companyId: number | null     // 회사 ID (FK)
   companyName: string | null   // 회사명

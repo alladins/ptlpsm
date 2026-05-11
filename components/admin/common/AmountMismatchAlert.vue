@@ -1,10 +1,10 @@
 <template>
   <div v-if="modelValue" class="alert-popup">
     <div class="alert-content">
-      <i class="fas fa-exclamation-circle"></i>
+      <i class="fas fa-exclamation-circle" />
       <span>{{ message || '계약금액이 품목 합산금액과 다릅니다.' }}</span>
       <button class="alert-close" @click="$emit('update:modelValue', false)">
-        <i class="fas fa-times"></i>
+        <i class="fas fa-times" />
       </button>
     </div>
   </div>

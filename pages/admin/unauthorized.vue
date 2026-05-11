@@ -3,9 +3,9 @@
     <div class="unauthorized-page">
       <!-- 배경 장식 요소 -->
       <div class="bg-decoration">
-        <div class="bg-circle bg-circle-1"></div>
-        <div class="bg-circle bg-circle-2"></div>
-        <div class="bg-grid"></div>
+        <div class="bg-circle bg-circle-1" />
+        <div class="bg-circle bg-circle-2" />
+        <div class="bg-grid" />
       </div>
 
       <!-- 메인 콘텐츠 -->
@@ -13,18 +13,28 @@
         <!-- 아이콘 영역 -->
         <div class="icon-container">
           <div class="icon-shield">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              <line x1="9" y1="9" x2="15" y2="15"/>
-              <line x1="15" y1="9" x2="9" y2="15"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+              <line x1="15" y1="9" x2="9" y2="15" />
             </svg>
           </div>
-          <div class="icon-pulse"></div>
+          <div class="icon-pulse" />
         </div>
 
         <!-- 텍스트 영역 -->
         <div class="text-container">
-          <h1 class="title">접근 권한이 없습니다</h1>
+          <h1 class="title">
+            접근 권한이 없습니다
+          </h1>
           <p class="description">
             요청하신 페이지에 접근할 수 있는 권한이 없습니다.<br>
             필요한 권한이 있다고 생각되시면 시스템 관리자에게 문의하세요.
@@ -33,10 +43,18 @@
           <!-- 추가 정보 박스 -->
           <div class="info-box">
             <div class="info-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="16" x2="12" y2="12"/>
-                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
               </svg>
             </div>
             <div class="info-content">
@@ -49,16 +67,32 @@
         <!-- 버튼 영역 -->
         <div class="button-container">
           <button class="btn btn-primary" @click="goToDashboard">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
             대시보드로 이동
           </button>
           <button class="btn btn-secondary" @click="goBack">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"/>
-              <polyline points="12 19 5 12 12 5"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
             </svg>
             이전 페이지
           </button>
@@ -91,25 +125,25 @@ const authStore = useAuthStore()
 const userRole = computed(() => {
   const role = authStore.role
   const roleNames: Record<string, string> = {
-    'SYSTEM_ADMIN': '시스템관리자',
-    'LEADPOWER_MANAGER': '리드파워 담당자',
-    'OEM_MANAGER': 'OEM 담당자',
-    'SITE_MANAGER': '시공사 담당자',
-    'SITE_INSPECTOR': '시공사 감리원',
-    'SALES_MANAGER': '영업 담당자',
-    'DELIVERY_DRIVER': '운송기사',
-    'READ_ONLY': '조회 전용'
+    SYSTEM_ADMIN: '시스템관리자',
+    LEADPOWER_MANAGER: '리드파워 담당자',
+    OEM_MANAGER: 'OEM 담당자',
+    SITE_MANAGER: '시공사 담당자',
+    SITE_INSPECTOR: '시공사 감리원',
+    SALES_MANAGER: '영업 담당자',
+    DELIVERY_DRIVER: '운송기사',
+    READ_ONLY: '조회 전용'
   }
   return role ? (roleNames[role] || role) : '알 수 없음'
 })
 
 // 대시보드로 이동
-function goToDashboard() {
+function goToDashboard () {
   router.push('/admin/dashboard')
 }
 
 // 이전 페이지로 이동
-function goBack() {
+function goBack () {
   if (window.history.length > 2) {
     router.back()
   } else {

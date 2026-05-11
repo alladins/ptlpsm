@@ -4,7 +4,7 @@
       <div class="modal-header">
         <h3>주문 요청 처리</h3>
         <button class="modal-close" @click="handleClose">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
@@ -13,7 +13,7 @@
         <div class="request-summary">
           <div class="summary-header">
             <div class="summary-title">
-              <i class="fas fa-file-alt"></i>
+              <i class="fas fa-file-alt" />
               요청 정보
             </div>
             <span class="urgency-badge" :class="getUrgencyClass(request.urgency)">
@@ -43,7 +43,7 @@
         <!-- 요청 품목 목록 -->
         <div class="items-section">
           <div class="section-header">
-            <i class="fas fa-box"></i>
+            <i class="fas fa-box" />
             요청 품목 ({{ request.items?.length || 0 }}건)
           </div>
           <div class="items-table-wrapper">
@@ -60,9 +60,13 @@
               <tbody>
                 <tr v-for="(item, idx) in request.items" :key="idx">
                   <td>{{ idx + 1 }}</td>
-                  <td class="text-left">{{ item.itemName }}</td>
+                  <td class="text-left">
+                    {{ item.itemName }}
+                  </td>
                   <td>{{ item.specification || '-' }}</td>
-                  <td class="text-right">{{ formatNumber(item.quantity) }}</td>
+                  <td class="text-right">
+                    {{ formatNumber(item.quantity) }}
+                  </td>
                   <td>{{ item.note || '-' }}</td>
                 </tr>
               </tbody>
@@ -73,7 +77,7 @@
         <!-- 처리 선택 -->
         <div class="process-section">
           <div class="section-header">
-            <i class="fas fa-tasks"></i>
+            <i class="fas fa-tasks" />
             처리
           </div>
 
@@ -84,7 +88,7 @@
               :class="{ active: processType === 'approve' }"
               @click="processType = 'approve'"
             >
-              <i class="fas fa-check-circle"></i>
+              <i class="fas fa-check-circle" />
               승인
             </button>
             <button
@@ -92,7 +96,7 @@
               :class="{ active: processType === 'reject' }"
               @click="processType = 'reject'"
             >
-              <i class="fas fa-times-circle"></i>
+              <i class="fas fa-times-circle" />
               반려
             </button>
           </div>
@@ -110,7 +114,7 @@
                   readonly
                 >
                 <button class="btn-search-sm" @click="openOrderSelectPopup">
-                  <i class="fas fa-search"></i>
+                  <i class="fas fa-search" />
                   선택
                 </button>
               </div>
@@ -123,8 +127,8 @@
             <div class="new-order-option">
               <label class="checkbox-label">
                 <input
-                  type="checkbox"
                   v-model="createNewOrder"
+                  type="checkbox"
                   @change="handleCreateNewOrderChange"
                 >
                 <span>기존 납품요구가 없는 경우, 신규 생성</span>
@@ -141,7 +145,7 @@
                 class="form-textarea"
                 rows="4"
                 placeholder="반려 사유를 입력하세요"
-              ></textarea>
+              />
               <p class="field-hint">
                 반려 사유는 요청자에게 전달됩니다.
               </p>
@@ -166,16 +170,18 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-secondary" @click="handleClose">취소</button>
+        <button class="btn-secondary" @click="handleClose">
+          취소
+        </button>
         <button
           class="btn-primary"
           :class="{ 'btn-reject': processType === 'reject' }"
           :disabled="!isValid || processing"
           @click="handleSubmit"
         >
-          <i v-if="processing" class="fas fa-spinner fa-spin"></i>
-          <i v-else-if="processType === 'approve'" class="fas fa-check"></i>
-          <i v-else class="fas fa-times"></i>
+          <i v-if="processing" class="fas fa-spinner fa-spin" />
+          <i v-else-if="processType === 'approve'" class="fas fa-check" />
+          <i v-else class="fas fa-times" />
           {{ processType === 'approve' ? '승인 처리' : '반려 처리' }}
         </button>
       </div>
@@ -227,8 +233,8 @@ const quickRejectReasons = [
 
 // Computed
 const selectedOrderDisplay = computed(() => {
-  if (createNewOrder.value) return '(신규 납품요구 생성)'
-  if (selectedOrder.value) return selectedOrder.value.deliveryRequestNo
+  if (createNewOrder.value) { return '(신규 납품요구 생성)' }
+  if (selectedOrder.value) { return selectedOrder.value.deliveryRequestNo }
   return ''
 })
 
@@ -242,7 +248,7 @@ const isValid = computed(() => {
 
 // Methods
 const getUrgencyClass = (urgency?: MobileOrderUrgency): string => {
-  if (!urgency) return ''
+  if (!urgency) { return '' }
   switch (urgency) {
     case 'URGENT': return 'urgency-urgent'
     case 'NORMAL': return 'urgency-normal'
@@ -252,7 +258,7 @@ const getUrgencyClass = (urgency?: MobileOrderUrgency): string => {
 }
 
 const getUrgencyLabel = (urgency?: MobileOrderUrgency): string => {
-  if (!urgency) return '-'
+  if (!urgency) { return '-' }
   const labels: Record<MobileOrderUrgency, string> = {
     URGENT: '긴급',
     NORMAL: '보통',
@@ -283,7 +289,7 @@ const handleCreateNewOrderChange = () => {
 }
 
 const handleSubmit = async () => {
-  if (!isValid.value || processing.value) return
+  if (!isValid.value || processing.value) { return }
 
   processing.value = true
 

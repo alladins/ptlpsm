@@ -5,7 +5,7 @@
         <div class="modal-header">
           <h3>출고요청</h3>
           <button class="modal-close" @click="closeModal">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
@@ -13,7 +13,7 @@
           <!-- OEM 제조사 선택 -->
           <div class="form-section">
             <div class="section-header">
-              <i class="fas fa-industry"></i>
+              <i class="fas fa-industry" />
               <span>OEM 제조사</span>
             </div>
             <div class="form-grid">
@@ -24,7 +24,9 @@
                   class="form-select"
                   disabled
                 >
-                  <option :value="null">{{ loadingManufacturers ? '로딩 중...' : '선택하세요' }}</option>
+                  <option :value="null">
+                    {{ loadingManufacturers ? '로딩 중...' : '선택하세요' }}
+                  </option>
                   <option
                     v-for="company in manufacturers"
                     :key="company.id"
@@ -39,13 +41,13 @@
 
             <!-- 가용성 확인 결과 -->
             <div v-if="checkingAvailability" class="availability-loading">
-              <i class="fas fa-spinner fa-spin"></i>
+              <i class="fas fa-spinner fa-spin" />
               <span>재고/발주서 확인 중...</span>
             </div>
 
             <div v-else-if="availability" class="availability-result" :class="availabilityClass">
               <div class="availability-header">
-                <i :class="availabilityIcon"></i>
+                <i :class="availabilityIcon" />
                 <span>{{ availability.message }}</span>
               </div>
               <div v-if="availability.items && availability.items.length > 0" class="availability-items">
@@ -67,7 +69,7 @@
                       재고 {{ item.inventoryQuantity }}개 / 필요 {{ item.requiredQuantity }}개
                     </template>
                   </span>
-                  <i :class="item.sufficient ? 'fas fa-check-circle text-green' : 'fas fa-exclamation-circle text-red'"></i>
+                  <i :class="item.sufficient ? 'fas fa-check-circle text-green' : 'fas fa-exclamation-circle text-red'" />
                 </div>
               </div>
             </div>
@@ -76,7 +78,7 @@
           <!-- 배송지 정보 -->
           <div class="form-section">
             <div class="section-header">
-              <i class="fas fa-map-marker-alt"></i>
+              <i class="fas fa-map-marker-alt" />
               <span>배송지 정보</span>
             </div>
             <div class="form-grid">
@@ -84,20 +86,20 @@
                 <label class="form-label">우편번호</label>
                 <div class="input-with-button">
                   <input
-                    type="text"
                     v-model="formData.zipcode"
+                    type="text"
                     class="form-input"
                     placeholder="우편번호"
                     maxlength="10"
                     readonly
-                  />
+                  >
                   <button
                     type="button"
                     class="btn-search"
-                    @click="openPostalSearch"
                     :disabled="isPostalSearchOpen"
+                    @click="openPostalSearch"
                   >
-                    <i class="fas fa-search"></i>
+                    <i class="fas fa-search" />
                     검색
                   </button>
                 </div>
@@ -122,22 +124,22 @@
               <div class="form-field full-width">
                 <label class="form-label required">배송지 주소</label>
                 <input
-                  type="text"
                   v-model="formData.deliveryAddress"
+                  type="text"
                   class="form-input"
                   placeholder="주소찾기를 이용하세요"
                   readonly
-                />
+                >
                 <span v-if="errors.deliveryAddress" class="error-message">{{ errors.deliveryAddress }}</span>
               </div>
               <div class="form-field full-width">
                 <label class="form-label">상세주소</label>
                 <input
-                  type="text"
                   v-model="formData.addressDetail"
+                  type="text"
                   class="form-input"
                   placeholder="상세주소 (선택)"
-                />
+                >
               </div>
             </div>
           </div>
@@ -145,10 +147,10 @@
           <!-- 현장 인수자 정보 -->
           <div class="form-section">
             <div class="section-header">
-              <i class="fas fa-user"></i>
+              <i class="fas fa-user" />
               <span>현장 인수자 정보</span>
               <span class="field-hint">
-                <i class="fas fa-info-circle"></i>
+                <i class="fas fa-info-circle" />
                 현장소장은 사전 등록해야 합니다.
               </span>
             </div>
@@ -161,19 +163,23 @@
                   class="form-select"
                   @change="handleSiteManagerChange"
                 >
-                  <option :value="null">선택하세요</option>
+                  <option :value="null">
+                    선택하세요
+                  </option>
                   <option
                     v-for="manager in siteManagers"
                     :key="manager.userId"
                     :value="manager.userId"
                   >
                     {{ manager.userName }} ({{ manager.phone }})
-                    <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
+                    <template v-if="manager.companyName">
+                      - {{ manager.companyName }}
+                    </template>
                   </option>
                 </select>
                 <span v-if="errors.siteManagerId" class="error-message">{{ errors.siteManagerId }}</span>
                 <span v-else class="field-hint">
-                  <i class="fas fa-info-circle"></i>
+                  <i class="fas fa-info-circle" />
                   선택 시 인수자 정보가 자동 입력됩니다.
                 </span>
               </div>
@@ -181,25 +187,25 @@
               <div class="form-field">
                 <label class="form-label">건설사</label>
                 <input
-                  type="text"
                   v-model="formData.constructionCompany"
+                  type="text"
                   class="form-input"
                   placeholder="현장소장 선택 시 자동 입력"
                   readonly
-                />
+                >
               </div>
               <!-- 인수자명 -->
               <div class="form-field">
                 <label class="form-label required">인수자명</label>
                 <input
-                  type="text"
                   v-model="formData.receiverName"
+                  type="text"
                   class="form-input"
                   placeholder="인수자명"
-                />
+                >
                 <span v-if="errors.receiverName" class="error-message">{{ errors.receiverName }}</span>
                 <span class="field-hint">
-                  <i class="fas fa-info-circle"></i>
+                  <i class="fas fa-info-circle" />
                   인수자가 다를경우 직접 수정/입력 하세요.
                 </span>
               </div>
@@ -207,12 +213,12 @@
               <div class="form-field">
                 <label class="form-label required">인수자 연락처</label>
                 <input
-                  type="tel"
                   v-model="formData.receiverPhone"
+                  type="tel"
                   class="form-input"
                   placeholder="010-0000-0000"
                   @input="handlePhoneInput"
-                />
+                >
                 <span v-if="errors.receiverPhone" class="error-message">{{ errors.receiverPhone }}</span>
               </div>
             </div>
@@ -221,7 +227,7 @@
           <!-- 비고 -->
           <div class="form-section">
             <div class="section-header">
-              <i class="fas fa-sticky-note"></i>
+              <i class="fas fa-sticky-note" />
               <span>비고</span>
             </div>
             <div class="form-grid">
@@ -231,15 +237,15 @@
                   class="form-input form-textarea"
                   placeholder="비고 (선택)"
                   rows="3"
-                ></textarea>
+                />
               </div>
             </div>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button class="btn-secondary" @click="closeModal" :disabled="isSubmitting">
-            <i class="fas fa-times"></i>
+          <button class="btn-secondary" :disabled="isSubmitting" @click="closeModal">
+            <i class="fas fa-times" />
             취소
           </button>
           <button
@@ -247,8 +253,8 @@
             :disabled="!canSubmit || isSubmitting"
             @click="handleSubmit"
           >
-            <i v-if="isSubmitting" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-paper-plane"></i>
+            <i v-if="isSubmitting" class="fas fa-spinner fa-spin" />
+            <i v-else class="fas fa-paper-plane" />
             {{ isSubmitting ? '요청 중...' : '출고요청' }}
           </button>
         </div>
@@ -362,29 +368,29 @@ onMounted(async () => {
 
 // 제출 가능 여부 (OEM 제조사 + 배송지 주소 + 인수자 정보 필수 + 가용성 충족)
 const canSubmit = computed(() => {
-  if (formData.oemCompanyId === null) return false
-  if (formData.siteManagerId === null) return false
-  if (!formData.deliveryAddress) return false
-  if (!formData.expectedArrivalDatetime) return false
-  if (!formData.receiverName?.trim()) return false
-  if (!formData.receiverPhone?.trim()) return false
-  if (checkingAvailability.value) return false
-  if (availability.value && !availability.value.available) return false
+  if (formData.oemCompanyId === null) { return false }
+  if (formData.siteManagerId === null) { return false }
+  if (!formData.deliveryAddress) { return false }
+  if (!formData.expectedArrivalDatetime) { return false }
+  if (!formData.receiverName?.trim()) { return false }
+  if (!formData.receiverPhone?.trim()) { return false }
+  if (checkingAvailability.value) { return false }
+  if (availability.value && !availability.value.available) { return false }
   return true
 })
 
 // 가용성 결과 스타일
 const availabilityClass = computed(() => {
-  if (!availability.value) return ''
-  if (availability.value.available) return 'availability-success'
+  if (!availability.value) { return '' }
+  if (availability.value.available) { return 'availability-success' }
   // 일부 충족 여부 확인
   const hasAnySufficient = availability.value.items?.some(i => i.sufficient)
   return hasAnySufficient ? 'availability-warning' : 'availability-error'
 })
 
 const availabilityIcon = computed(() => {
-  if (!availability.value) return ''
-  if (availability.value.available) return 'fas fa-check-circle'
+  if (!availability.value) { return '' }
+  if (availability.value.available) { return 'fas fa-check-circle' }
   return 'fas fa-exclamation-triangle'
 })
 
@@ -445,7 +451,7 @@ const initializeForm = () => {
 
 // 선택된 현장소장의 회사 ID (건설사 동기화용)
 const selectedManagerCompanyId = computed(() => {
-  if (!formData.siteManagerId) return null
+  if (!formData.siteManagerId) { return null }
   const manager = props.siteManagers.find(m => m.userId === formData.siteManagerId)
   return manager?.companyId || null
 })
@@ -501,7 +507,7 @@ const handleOemChange = async () => {
 
 // 주소찾기 팝업 열기
 const openPostalSearch = () => {
-  if (isPostalSearchOpen.value) return
+  if (isPostalSearchOpen.value) { return }
 
   isPostalSearchOpen.value = true
 
@@ -569,7 +575,7 @@ const validate = (): boolean => {
 
 // 제출 처리
 const handleSubmit = async () => {
-  if (!validate() || isSubmitting.value) return
+  if (!validate() || isSubmitting.value) { return }
 
   isSubmitting.value = true
 

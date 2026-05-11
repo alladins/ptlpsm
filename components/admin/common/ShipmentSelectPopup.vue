@@ -4,7 +4,7 @@
       <div class="popup-header">
         <h2>출하NO 조회</h2>
         <button class="popup-close" @click="close">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
@@ -14,18 +14,18 @@
           <div class="search-input-group">
             <label>출하NO</label>
             <input
-              type="text"
               v-model="searchParams.shipmentNo"
+              type="text"
               class="form-input"
               placeholder="출하NO를 입력하세요"
               @keyup.enter="search"
             >
             <button class="btn-primary" @click="search">
-              <i class="fas fa-search"></i>
+              <i class="fas fa-search" />
               검색
             </button>
             <button class="btn-secondary" @click="close">
-              <i class="fas fa-times"></i>
+              <i class="fas fa-times" />
               닫기
             </button>
           </div>
@@ -47,7 +47,9 @@
             </thead>
             <tbody>
               <tr v-if="shipments.length === 0">
-                <td colspan="7" class="empty-message">{{ hasSearched ? '검색 결과가 없습니다.' : '출고 요청된 건이 없습니다.' }}</td>
+                <td colspan="7" class="empty-message">
+                  {{ hasSearched ? '검색 결과가 없습니다.' : '출고 요청된 건이 없습니다.' }}
+                </td>
               </tr>
               <tr v-for="shipment in shipments" :key="shipment.shipmentId">
                 <td>{{ shipment.shipmentNo }}</td>
@@ -61,27 +63,27 @@
                 </td>
                 <td>
                   <span v-if="inventoryStatusMap[shipment.shipmentId] === null" class="inventory-checking">
-                    <i class="fas fa-spinner fa-spin"></i>
+                    <i class="fas fa-spinner fa-spin" />
                   </span>
                   <span v-else-if="inventoryStatusMap[shipment.shipmentId] === 'sufficient'" class="inventory-sufficient">
-                    <i class="fas fa-check-circle"></i> 충족
+                    <i class="fas fa-check-circle" /> 충족
                   </span>
                   <span v-else-if="inventoryStatusMap[shipment.shipmentId] === 'pending-inbound'" class="inventory-pending">
-                    <i class="fas fa-clock"></i> 입고대기
+                    <i class="fas fa-clock" /> 입고대기
                   </span>
                   <span v-else-if="inventoryStatusMap[shipment.shipmentId] === 'unknown'" class="inventory-unknown">
-                    <i class="fas fa-question-circle"></i> 확인불가
+                    <i class="fas fa-question-circle" /> 확인불가
                   </span>
                   <span v-else class="inventory-insufficient">
-                    <i class="fas fa-times-circle"></i> 부족
+                    <i class="fas fa-times-circle" /> 부족
                   </span>
                 </td>
                 <td>
                   <button
                     class="btn-success"
-                    @click="selectShipment(shipment)"
                     :disabled="inventoryStatusMap[shipment.shipmentId] === 'insufficient' || inventoryStatusMap[shipment.shipmentId] === 'pending-inbound'"
                     :title="inventoryStatusMap[shipment.shipmentId] === 'insufficient' ? '재고 부족으로 운송 등록이 불가합니다' : inventoryStatusMap[shipment.shipmentId] === 'pending-inbound' ? '입고 완료 후 운송 등록이 가능합니다' : ''"
+                    @click="selectShipment(shipment)"
                   >
                     선택
                   </button>
@@ -145,7 +147,7 @@ const { getStatusLabel } = useCommonStatus()
 
 // 상태 관리
 const searchParams = ref({
-  shipmentNo: '',
+  shipmentNo: ''
 })
 const hasSearched = ref(false)
 const currentPage = ref(1)
@@ -211,7 +213,7 @@ const loadShipments = async () => {
 
     // OEM 회사 필터: OEM_MANAGER만 자신의 OEM 회사 출하만 표시
     // 상태 필터는 백엔드 SQL에서 처리 (dispatchedOnly + NOT EXISTS transports)
-    const filteredShipments = response.content.filter(shipment => {
+    const filteredShipments = response.content.filter((shipment) => {
       if (!isAdminRole.value && userCompanyId.value) {
         if (shipment.oemCompanyId !== userCompanyId.value) {
           return false
@@ -236,7 +238,7 @@ const loadShipments = async () => {
 
 // 날짜 포맷팅
 const formatDate = (dateString: string): string => {
-  if (!dateString) return '-'
+  if (!dateString) { return '-' }
   const date = new Date(dateString)
   return date.toLocaleDateString('ko-KR')
 }

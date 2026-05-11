@@ -107,5 +107,14 @@ export const ORDER_ENDPOINTS = {
   createAmendment: (orderId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/orders/${orderId}/amendment`
+  },
+
+  /**
+   * 납품요구 금액 합계 조회
+   * @returns GET /admin/orders/summary?params
+   */
+  summary: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/orders/summary`
   }
 } as const

@@ -3,11 +3,13 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       title="납품완료"
+      icon="delivery"
+      icon-color="green"
       description="발주별 납품완료를 관리하고 서명 URL을 발송합니다."
     >
       <template #actions>
         <button class="btn-action" @click="handleSearch">
-          <i class="fas fa-search"></i>
+          <i class="fas fa-search" />
           검색
         </button>
       </template>
@@ -20,40 +22,42 @@
           <!-- 납품요구일자 -->
           <div class="search-item">
             <label>납품요구일자:</label>
-            <input type="date" v-model="searchForm.startDate" class="date-input" />
+            <input v-model="searchForm.startDate" type="date" class="date-input">
             <span class="separator">~</span>
-            <input type="date" v-model="searchForm.endDate" class="date-input" />
+            <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
           <!-- 납품요구번호 -->
           <div class="search-item">
             <label>납품요구번호:</label>
             <input
-              type="text"
               v-model="searchForm.deliveryRequestNo"
+              type="text"
               placeholder="납품요구번호 검색"
               class="text-input"
               @keyup.enter="handleSearch"
-            />
+            >
           </div>
 
           <!-- 계약번호 -->
           <div class="search-item">
             <label>계약번호:</label>
             <input
-              type="text"
               v-model="searchForm.contractNo"
+              type="text"
               placeholder="계약번호 검색"
               class="text-input"
               @keyup.enter="handleSearch"
-            />
+            >
           </div>
 
           <!-- 상태 (DB 기반) -->
           <div class="search-item">
             <label>상태:</label>
             <select v-model="searchForm.status" class="condition-select">
-              <option value="">전체</option>
+              <option value="">
+                전체
+              </option>
               <option v-for="option in statusOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
@@ -69,23 +73,29 @@
             <span>총 {{ totalElements }}건 중 {{ startIndex }}-{{ endIndex }}건 표시</span>
           </div>
           <div class="list-actions">
-            <select v-model.number="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="10">10개씩</option>
-              <option :value="20">20개씩</option>
-              <option :value="50">50개씩</option>
+            <select v-model.number="pageSize" class="page-size-select" @change="handlePageSizeChange">
+              <option :value="10">
+                10개씩
+              </option>
+              <option :value="20">
+                20개씩
+              </option>
+              <option :value="50">
+                50개씩
+              </option>
             </select>
           </div>
         </div>
 
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <p>데이터를 불러오는 중...</p>
         </div>
 
         <!-- 데이터가 없을 때 -->
         <div v-else-if="deliveryDoneList.length === 0" class="no-data-message">
-          <i class="fas fa-file-contract"></i>
+          <i class="fas fa-file-contract" />
           <p>등록된 납품완료계가 없습니다.</p>
         </div>
 
@@ -94,32 +104,56 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 12%;">납품요구번호</th>
-                <th style="width: 16%;">수요기관</th>
-                <th style="width: 20%;">사업명</th>
-                <th style="width: 12%;">시공사</th>
-                <th style="width: 9%;">납품률</th>
-                <th style="width: 7%;">출하횟수</th>
-                <th style="width: 9%;">상태</th>
-                <th style="width: 10%;">문자발송</th>
-                <th style="width: 5%;">문서보기</th>
+                <th style="width: 12%;">
+                  납품요구번호
+                </th>
+                <th style="width: 16%;">
+                  수요기관
+                </th>
+                <th style="width: 20%;">
+                  사업명
+                </th>
+                <th style="width: 12%;">
+                  시공사
+                </th>
+                <th style="width: 9%;">
+                  납품률
+                </th>
+                <th style="width: 7%;">
+                  출하횟수
+                </th>
+                <th style="width: 9%;">
+                  상태
+                </th>
+                <th style="width: 10%;">
+                  문자발송
+                </th>
+                <th style="width: 5%;">
+                  문서보기
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in deliveryDoneList" :key="item.deliveryDoneId">
                 <!-- 납품요구번호 -->
-                <td>{{ item.deliveryRequestNo }}</td>
+                <td>
+                  <a class="link-primary" style="cursor: pointer;" @click.stop="goToDetail(item.deliveryDoneId)">
+                    {{ item.deliveryRequestNo }}
+                  </a>
+                </td>
 
                 <!-- 수요기관 -->
-                <td class="text-left">{{ item.client }}</td>
+                <td class="text-left clickable-cell" @click="goToDetail(item.deliveryDoneId)">
+                  {{ item.client }}
+                </td>
 
                 <!-- 사업명 -->
-                <td class="text-left truncate" :title="item.projectName">
+                <td class="text-left truncate clickable-cell" :title="item.projectName" @click="goToDetail(item.deliveryDoneId)">
                   {{ item.projectName }}
                 </td>
 
                 <!-- 시공사 -->
-                <td class="text-left truncate" :title="item.contractorCompanyName">
+                <td class="text-left truncate clickable-cell" :title="item.contractorCompanyName" @click="goToDetail(item.deliveryDoneId)">
                   {{ item.contractorCompanyName }}
                 </td>
 
@@ -131,7 +165,7 @@
                         class="delivery-rate-fill"
                         :style="{ width: item.deliveryCompletionRate + '%' }"
                         :class="getRateClass(item.deliveryCompletionRate)"
-                      ></div>
+                      />
                     </div>
                     <span class="delivery-rate-text">{{ item.deliveryCompletionRate }}%</span>
                     <span v-if="item.hasConversionRemainder" class="badge-conversion" title="환산잔량 처리됨">환산</span>
@@ -140,15 +174,17 @@
                   <button
                     v-if="canProcessConversionRemainder(item)"
                     class="btn-conversion"
-                    @click.stop="openConversionRemainderModal(item)"
                     title="환산잔량 처리 (짝수올림 잔여분)"
+                    @click.stop="openConversionRemainderModal(item)"
                   >
-                    <i class="fas fa-calculator"></i> 환산잔량
+                    <i class="fas fa-calculator" /> 환산잔량
                   </button>
                 </td>
 
                 <!-- 출하횟수 -->
-                <td class="text-center">{{ item.totalDeliveryCount }}회</td>
+                <td class="text-center">
+                  {{ item.totalDeliveryCount }}회
+                </td>
 
                 <!-- 상태 -->
                 <td>
@@ -162,27 +198,27 @@
                   <div class="message-buttons">
                     <!-- 납품확인서 메시지 (현장소장 + 감리원 서명 요청) -->
                     <button
-                      @click.stop="openConfirmationMessageModal(item)"
                       class="btn-message btn-primary"
                       :disabled="!canSendConfirmationMessage(item)"
                       :title="canSendConfirmationMessage(item)
                         ? '납품확인서 서명 URL 발송 (현장소장 + 감리원)'
                         : '서명 대기 상태에서만 가능합니다'"
+                      @click.stop="openConfirmationMessageModal(item)"
                     >
-                      <i class="fas fa-file-signature"></i>
+                      <i class="fas fa-file-signature" />
                       <span>확인서</span>
                     </button>
 
                     <!-- 납품완료계 메시지 (감리원 서명 요청) -->
                     <button
-                      @click.stop="openCompletionMessageModal(item)"
                       class="btn-message btn-info"
                       :disabled="!canSendCompletionMessage(item)"
                       :title="canSendCompletionMessage(item)
                         ? '납품완료계 서명 URL 발송 (감리원)'
                         : '납품확인서 서명 완료 후 가능합니다'"
+                      @click.stop="openCompletionMessageModal(item)"
                     >
-                      <i class="fas fa-clipboard-check"></i>
+                      <i class="fas fa-clipboard-check" />
                       <span>완료계</span>
                     </button>
                   </div>
@@ -191,14 +227,14 @@
                 <!-- 문서보기: PDF -->
                 <td>
                   <button
-                    @click.stop="openPdfModal(item)"
                     class="btn-pdf btn-success"
                     :disabled="!canDownloadPdf(item.status)"
                     :title="canDownloadPdf(item.status)
                       ? 'PDF 다운로드 (납품확인서, 납품완료계, 사진대지)'
                       : '완료 또는 제출 상태에서만 가능합니다'"
+                    @click.stop="openPdfModal(item)"
                   >
-                    <i class="fas fa-file-pdf"></i>
+                    <i class="fas fa-file-pdf" />
                     <span>PDF</span>
                   </button>
                 </td>
@@ -247,6 +283,7 @@
     <ConversionRemainderModal
       :is-open="showConversionRemainderModal"
       :delivery-done-id="selectedConversionItem?.deliveryDoneId ?? null"
+      :threshold="conversionRemainderThreshold"
       @close="showConversionRemainderModal = false"
       @updated="handleConversionUpdated"
     />
@@ -260,6 +297,7 @@ import {
   getDeliveryDoneList,
   canDownloadPdf
 } from '~/services/delivery-done.service'
+import { systemSettingService } from '~/services/systemSetting.service'
 import type {
   DeliveryDoneListItem,
   DeliveryDoneSearchParams,
@@ -275,16 +313,21 @@ definePageMeta({
 
 const router = useRouter()
 
+// 상세 페이지로 이동
+function goToDetail (deliveryDoneId: number) {
+  router.push(`/admin/delivery-done/detail/${deliveryDoneId}`)
+}
+
 // DB 기반 상태 관리
 const { statusOptions, loadStatusCodes, getStatusLabel, getStatusClass: getStatusBadgeClass } = useCommonStatus()
 
 // 상태 한글 변환 (DB 실패 시 로컬 fallback)
 const statusLabelMap: Record<string, string> = {
-  'PENDING': '대기',
-  'IN_PROGRESS': '진행중',
-  'PENDING_SIGNATURE': '서명대기',
-  'COMPLETED': '완료',
-  'SUBMITTED': '제출완료'
+  PENDING: '대기',
+  IN_PROGRESS: '진행중',
+  PENDING_SIGNATURE: '서명대기',
+  COMPLETED: '완료',
+  SUBMITTED: '제출완료'
 }
 
 const getStatusLabelWithFallback = (status: string): string => {
@@ -344,18 +387,19 @@ const totalElements = ref(0)
 const pageSize = ref(20)
 
 // 모달 상태
-const showConfirmationMessageModal = ref(false)  // 납품확인서 메시지 모달
-const showCompletionMessageModal = ref(false)    // 납품완료계 메시지 모달
+const showConfirmationMessageModal = ref(false) // 납품확인서 메시지 모달
+const showCompletionMessageModal = ref(false) // 납품완료계 메시지 모달
 const showPdfModal = ref(false)
 const selectedConfirmationItem = ref<DeliveryDoneListItem | null>(null)
 const selectedCompletionItem = ref<DeliveryDoneListItem | null>(null)
-const selectedItem = ref<DeliveryDoneListItem | null>(null)  // PDF용
+const selectedItem = ref<DeliveryDoneListItem | null>(null) // PDF용
 const showConversionRemainderModal = ref(false)
 const selectedConversionItem = ref<DeliveryDoneListItem | null>(null)
+const conversionRemainderThreshold = ref(4) // 기본값 4, API에서 갱신
 
 // 계산된 값
 const startIndex = computed(() => {
-  if (totalElements.value === 0) return 0
+  if (totalElements.value === 0) { return 0 }
   return currentPage.value * pageSize.value + 1
 })
 
@@ -365,7 +409,7 @@ const endIndex = computed(() => {
 })
 
 // 데이터 로드
-async function loadData() {
+async function loadData () {
   loading.value = true
   try {
     const params: DeliveryDoneSearchParams = {
@@ -396,13 +440,13 @@ watch(
 )
 
 // 검색
-function handleSearch() {
+function handleSearch () {
   currentPage.value = 0
   loadData()
 }
 
 // 초기화
-function handleReset() {
+function handleReset () {
   searchForm.value = {
     startDate: getSixMonthsAgo(),
     endDate: getOneMonthLater(),
@@ -418,96 +462,96 @@ function handleReset() {
 }
 
 // 페이지 변경
-function handlePageChange(page: number) {
+function handlePageChange (page: number) {
   currentPage.value = page
   loadData()
 }
 
 // 페이지 크기 변경
-function handlePageSizeChange() {
+function handlePageSizeChange () {
   searchForm.value.size = pageSize.value
   currentPage.value = 0
   loadData()
 }
 
 // 납품률 클래스
-function getRateClass(rate: number): string {
-  if (rate === 100) return 'rate-complete'
-  if (rate >= 80) return 'rate-high'
-  if (rate >= 50) return 'rate-medium'
+function getRateClass (rate: number): string {
+  if (rate === 100) { return 'rate-complete' }
+  if (rate >= 80) { return 'rate-high' }
+  if (rate >= 50) { return 'rate-medium' }
   return 'rate-low'
 }
 
 // 납품확인서 메시지 모달 (현장소장 + 감리원)
-function openConfirmationMessageModal(item: DeliveryDoneListItem) {
+function openConfirmationMessageModal (item: DeliveryDoneListItem) {
   selectedConfirmationItem.value = item
   showConfirmationMessageModal.value = true
 }
 
-function closeConfirmationMessageModal() {
+function closeConfirmationMessageModal () {
   showConfirmationMessageModal.value = false
   selectedConfirmationItem.value = null
 }
 
 // 납품완료계 메시지 모달 (감리원만)
-function openCompletionMessageModal(item: DeliveryDoneListItem) {
+function openCompletionMessageModal (item: DeliveryDoneListItem) {
   selectedCompletionItem.value = item
   showCompletionMessageModal.value = true
 }
 
-function closeCompletionMessageModal() {
+function closeCompletionMessageModal () {
   showCompletionMessageModal.value = false
   selectedCompletionItem.value = null
 }
 
 // 메시지 발송 성공 핸들러 (공통)
-function handleMessageSent() {
+function handleMessageSent () {
   closeConfirmationMessageModal()
   closeCompletionMessageModal()
   loadData()
 }
 
 // PDF 다운로드 모달 열기
-function openPdfModal(item: DeliveryDoneListItem) {
+function openPdfModal (item: DeliveryDoneListItem) {
   selectedItem.value = item
   showPdfModal.value = true
 }
 
-function closePdfModal() {
+function closePdfModal () {
   showPdfModal.value = false
   selectedItem.value = null
 }
 
 // 환산잔량 처리
-// 조건: 진행중 + 실제 납품 있음 + 총 잔여량 ≤ 4㎡ + 아직 환산잔량 처리 안됨
-function canProcessConversionRemainder(item: DeliveryDoneListItem): boolean {
+// 조건: 진행중 + 실제 납품 있음 + 총 잔여량 ≤ 임계값(시스템 설정) + 아직 환산잔량 처리 안됨
+function canProcessConversionRemainder (item: DeliveryDoneListItem): boolean {
   const totalRemaining = (item.totalOrderedQuantity || 0) - (item.totalDeliveredQuantity || 0)
   return item.status === 'IN_PROGRESS' &&
          item.totalDeliveredQuantity > 0 &&
          totalRemaining > 0 &&
-         totalRemaining <= 4 &&
+         totalRemaining <= conversionRemainderThreshold.value &&
          !item.hasConversionRemainder
 }
 
-function openConversionRemainderModal(item: DeliveryDoneListItem) {
+function openConversionRemainderModal (item: DeliveryDoneListItem) {
   selectedConversionItem.value = item
   showConversionRemainderModal.value = true
 }
 
-function handleConversionUpdated() {
+function handleConversionUpdated () {
   showConversionRemainderModal.value = false
   selectedConversionItem.value = null
   loadData()
 }
 
 // 버튼 활성화 조건 (상호 배타적)
-function canSendConfirmationMessage(item: DeliveryDoneListItem): boolean {
+function canSendConfirmationMessage (item: DeliveryDoneListItem): boolean {
   // 납품확인서: 서명대기 상태 AND 서명 미완료
   return item.status === 'PENDING_SIGNATURE' &&
          !(item.hasManagerSignature && item.hasInspectorSignature)
 }
 
-function canSendCompletionMessage(item: DeliveryDoneListItem): boolean {
+function canSendCompletionMessage (item: DeliveryDoneListItem): boolean {
   // 납품완료계: Stage 1 서명 완료 AND Stage 2 서명 미완료 AND 최종 완료 아님
   // hasCompletionInspectorSignature 체크로 중복 발송 방지
   return item.hasManagerSignature &&
@@ -519,15 +563,26 @@ function canSendCompletionMessage(item: DeliveryDoneListItem): boolean {
 
 // 초기 로드
 onMounted(async () => {
-  await loadStatusCodes()  // 상태 코드 먼저 로드
+  await loadStatusCodes() // 상태 코드 먼저 로드
+  // 환산잔량 임계값 로드
+  try {
+    const settings = await systemSettingService.getSettingsByGroup('DELIVERY')
+    const threshold = settings.find(s => s.settingKey === 'CONVERSION_REMAINDER_THRESHOLD')
+    if (threshold) {
+      conversionRemainderThreshold.value = Number(threshold.settingValue)
+    }
+  } catch (e) {
+    console.warn('시스템 설정 로드 실패, 기본값 사용:', e)
+  }
   loadData()
 })
 </script>
 
 <style scoped>
-.delivery-done-list {
-  padding: 20px;
-}
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-tables.css';
+@import '@/assets/css/admin-search.css';
 
 /* 검색 섹션 */
 .search-section-compact {
@@ -664,6 +719,15 @@ onMounted(async () => {
 
 .link-primary:hover {
   text-decoration: underline;
+}
+
+.clickable-cell {
+  cursor: pointer;
+}
+
+.clickable-cell:hover {
+  color: #2563eb;
+  background-color: #f0f7ff;
 }
 
 /* 납품률 바 */

@@ -2,12 +2,14 @@
   <div class="grid md:grid-cols-3 gap-6 my-8">
     <div v-for="card in [...isoCards, ...additionalCards]" :key="card.title" class="relative">
       <div :class="[card.color, 'text-white p-4 flex justify-between items-center']">
-        <h3 class="text-lg font-bold">{{ card.title }}</h3>
+        <h3 class="text-lg font-bold">
+          {{ card.title }}
+        </h3>
         <button
-          @click="toggleCard(card.title)"
           class="p-1 hover:bg-white/20 rounded-full"
+          @click="toggleCard(card.title)"
         >
-          <PlusIcon class="w-6 h-6" />
+          <i class="fas fa-plus text-2xl" />
         </button>
       </div>
       <div v-if="expandedCard === card.title" class="p-4">
@@ -26,7 +28,6 @@
 
 <script setup>
 import { ref } from 'vue'
-import { PlusIcon } from 'lucide-vue-next'
 
 const expandedCard = ref(null)
 
@@ -97,4 +98,3 @@ const toggleCard = (title) => {
   expandedCard.value = expandedCard.value === title ? null : title
 }
 </script>
-

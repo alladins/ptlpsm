@@ -188,6 +188,66 @@ export const SALES_ENDPOINTS = {
     return `${baseUrl}/admin/sales/${salesId}/link-contract`
   },
 
+  // 활동 기록 엔드포인트
+
+  /**
+   * 활동 목록 조회
+   * @param salesId - 영업 ID
+   * @returns GET /admin/sales/{salesId}/activities
+   */
+  activities: (salesId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/sales/${salesId}/activities`
+  },
+
+  /**
+   * 활동 등록
+   * @param salesId - 영업 ID
+   * @returns POST /admin/sales/{salesId}/activities
+   */
+  createActivity: (salesId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/sales/${salesId}/activities`
+  },
+
+  /**
+   * 활동 수정
+   * @param salesId - 영업 ID
+   * @param activityId - 활동 ID
+   * @returns PUT /admin/sales/{salesId}/activities/{activityId}
+   */
+  updateActivity: (salesId: number, activityId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/sales/${salesId}/activities/${activityId}`
+  },
+
+  /**
+   * 활동 삭제
+   * @param salesId - 영업 ID
+   * @param activityId - 활동 ID
+   * @returns DELETE /admin/sales/{salesId}/activities/{activityId}
+   */
+  deleteActivity: (salesId: number, activityId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/sales/${salesId}/activities/${activityId}`
+  },
+
+  /**
+   * 활동 파일 업로드
+   */
+  uploadActivityFile: (salesId: number, activityId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/sales/${salesId}/activities/${activityId}/files`
+  },
+
+  /**
+   * 활동 파일 삭제/다운로드
+   */
+  activityFile: (salesId: number, activityId: number, fileId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/sales/${salesId}/activities/${activityId}/files/${fileId}`
+  },
+
   // 영업 예측 엔드포인트
   forecast: {
     /**

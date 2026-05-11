@@ -3,28 +3,28 @@
     <!-- 메인 비주얼 섹션 -->
     <section style="position: relative; min-height: 80vh; background-color: white; display: flex; align-items: center; justify-content: center; overflow: hidden;">
       <!-- 배경 비디오 -->
-      <video 
+      <video
         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;"
-        autoplay 
-        muted 
-        loop 
+        autoplay
+        muted
+        loop
         playsinline
       >
         <source src="/images/main/intro.mp4" type="video/mp4">
       </video>
-      
+
       <!-- 배경 오버레이 (비디오 위에 어두운 레이어) -->
-      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); z-index: 2;"></div>
-      
+      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); z-index: 2;" />
+
       <div style="max-width: 1200px; margin: 0 auto; padding: 0 1rem; text-align: center; position: relative; z-index: 10;">
         <div style="margin-bottom: 3rem;">
-          <img 
-            src="/images/common/logo.png" 
-            alt="PTPLPSM 로고" 
+          <img
+            src="/images/common/logo.png"
+            alt="PTPLPSM 로고"
             style="margin: 0 auto 2rem; width: 12rem; height: auto; max-width: 16rem;"
-          />
+          >
         </div>
-        
+
         <h1 style="font-size: 2.25rem; font-weight: bold; margin-bottom: 1.5rem; line-height: 1.2; color: white;">
           통합 출하관리 시스템
         </h1>
@@ -35,7 +35,7 @@
           365일, 24시간 중단 없이 운영되는 출하관리 시스템으로<br>
           <strong style="color: #60a5fa;">효율적인 출하 프로세스 관리</strong>와 <strong style="color: #60a5fa;">비즈니스 성장</strong>을 지원합니다
         </p>
-        
+
         <div style="display: flex; flex-direction: column; gap: 1.5rem; justify-content: center; align-items: center;">
           <button
             style="background-color: #2563eb; color: white; padding: 1rem 2.5rem; border-radius: 0.5rem; font-weight: 600; border: none; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transition: all 0.3s ease;"
@@ -44,7 +44,7 @@
             <span style="display: flex; align-items: center; gap: 0.5rem;">
               관리자 시스템
               <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </span>
           </button>
@@ -60,8 +60,8 @@
             </span>
           </button-->
         </div>
-      </div>            
-    </section>   
+      </div>
+    </section>
 
     <!-- 제품 소개 섹션 -->
     <section style="padding: 5rem 0; background-color: white;">
@@ -74,30 +74,32 @@
             PTPLPSM 통합 출하관리 시스템
           </p>
         </div>
-        
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;">
           <div>
-            <h3 style="font-size: 1.875rem; font-weight: bold; margin-bottom: 1.5rem; color: #1f2937;">PTPLPSM</h3>
+            <h3 style="font-size: 1.875rem; font-weight: bold; margin-bottom: 1.5rem; color: #1f2937;">
+              PTPLPSM
+            </h3>
             <p style="font-size: 1.125rem; color: #6b7280; margin-bottom: 2rem; line-height: 1.75;">
-              통합 출하관리 시스템 PTPLPSM은 다양한 업무 프로세스를 수용하여 
+              통합 출하관리 시스템 PTPLPSM은 다양한 업무 프로세스를 수용하여
               상황판에 효과적으로 전시, 표출할 수 있는 제품입니다.
             </p>
             <ul style="margin-bottom: 2rem;">
               <li style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
                 <svg style="width: 1.5rem; height: 1.5rem; color: #2563eb; margin-top: 0.25rem; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
                 <span style="color: #374151;">실시간 출하 현황 모니터링</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
                 <svg style="width: 1.5rem; height: 1.5rem; color: #2563eb; margin-top: 0.25rem; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
                 <span style="color: #374151;">자동화된 워크플로우 관리</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
                 <svg style="width: 1.5rem; height: 1.5rem; color: #2563eb; margin-top: 0.25rem; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
                 <span style="color: #374151;">통합 데이터 분석 및 리포트</span>
               </li>
@@ -106,14 +108,18 @@
               더 알아보기
             </button>
           </div>
-          
+
           <div style="display: flex; justify-content: center;">
             <div style="background: linear-gradient(to bottom right, #2563eb, #1d4ed8); border-radius: 0.5rem; padding: 2rem; text-align: center; color: white;">
               <svg style="width: 8rem; height: 8rem; margin: 0 auto 1.5rem; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
               </svg>
-              <h4 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">통합 관리 시스템</h4>
-              <p style="font-size: 1.125rem; opacity: 0.9;">모든 출하 프로세스를 한 곳에서 관리</p>
+              <h4 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">
+                통합 관리 시스템
+              </h4>
+              <p style="font-size: 1.125rem; opacity: 0.9;">
+                모든 출하 프로세스를 한 곳에서 관리
+              </p>
             </div>
           </div>
         </div>

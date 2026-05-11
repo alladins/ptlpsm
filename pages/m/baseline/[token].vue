@@ -2,71 +2,71 @@
   <div class="mobile-baseline">
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-screen">
-      <div class="loading-spinner"></div>
+      <div class="loading-spinner" />
       <p>기성청구 정보를 불러오는 중...</p>
     </div>
 
     <!-- 에러 상태: 이미 완료 -->
     <div v-else-if="errorType === 'completed'" class="completed-screen">
-      <i class="fas fa-check-circle"></i>
+      <i class="fas fa-check-circle" />
       <h2>해당 작업은 이미 완료되었습니다.</h2>
       <p>본인이 하신 것이 아니라면,<br>관리자에게 링크를 재요청해주세요.</p>
       <button class="btn-close-page" @click="closePage">
-        <i class="fas fa-times"></i>
+        <i class="fas fa-times" />
         닫기
       </button>
     </div>
 
     <!-- 에러 상태: 링크 만료 -->
     <div v-else-if="errorType === 'expired'" class="error-screen">
-      <i class="fas fa-clock" style="color: #f59e0b;"></i>
+      <i class="fas fa-clock" style="color: #f59e0b;" />
       <h2>서명 링크가 만료되었습니다.</h2>
       <p>관리자에게 새 서명 링크를 요청해주세요.</p>
     </div>
 
     <!-- 에러 상태: 기타 오류 -->
     <div v-else-if="error" class="error-screen">
-      <i class="fas fa-exclamation-triangle"></i>
+      <i class="fas fa-exclamation-triangle" />
       <h2>{{ error }}</h2>
       <p>관리자에게 문의해주세요.</p>
     </div>
 
     <!-- 이미 서명 완료 -->
     <div v-else-if="baselineData?.alreadySigned" class="completed-screen">
-      <i class="fas fa-check-circle"></i>
+      <i class="fas fa-check-circle" />
       <h2>이미 서명을 완료하셨습니다</h2>
       <p>감사합니다!</p>
       <div class="completed-info">
         <p><strong>{{ getRecipientTypeLabel(baselineData?.recipientType) }}:</strong> {{ baselineData?.recipientName }}님</p>
       </div>
       <button class="btn-close-page" @click="closePage">
-        <i class="fas fa-times"></i>
+        <i class="fas fa-times" />
         닫기
       </button>
     </div>
 
     <!-- 서명 완료 후 화면 -->
     <div v-else-if="isCompleted" class="completed-screen">
-      <i class="fas fa-check-circle"></i>
+      <i class="fas fa-check-circle" />
       <h2>서명이 완료되었습니다</h2>
       <p>감사합니다!</p>
       <div class="completed-info">
         <p><strong>완료 시각:</strong> {{ completedAt }}</p>
         <p v-if="allSignaturesCompleted" class="all-completed-notice">
-          <i class="fas fa-file-pdf"></i>
+          <i class="fas fa-file-pdf" />
           모든 서명이 완료되어 PDF가 생성됩니다.
         </p>
         <p v-else class="partial-notice">
-          <i class="fas fa-info-circle"></i>
+          <i class="fas fa-info-circle" />
           다른 담당자의 서명을 기다리고 있습니다.
         </p>
       </div>
       <p v-if="autoCloseCountdown > 0" class="auto-close-notice">
-        <i class="fas fa-clock"></i>
+        <i class="fas fa-clock" />
         {{ autoCloseCountdown }}초 후 자동으로 닫힙니다...
       </p>
       <button class="btn-close-page" @click="closePage">
-        <i class="fas fa-times"></i>
+        <i class="fas fa-times" />
         닫기
       </button>
     </div>
@@ -81,7 +81,7 @@
 
       <!-- 기성청구 정보 -->
       <section class="info-section">
-        <h2><i class="fas fa-file-invoice-dollar"></i> 기성청구 정보</h2>
+        <h2><i class="fas fa-file-invoice-dollar" /> 기성청구 정보</h2>
         <div class="info-grid">
           <div class="grid-item full-width">
             <span class="label">납품요구번호</span>
@@ -112,19 +112,21 @@
 
       <!-- 서명자 정보 -->
       <section class="info-section signer-info">
-        <h2><i class="fas fa-user"></i> 서명자 정보</h2>
+        <h2><i class="fas fa-user" /> 서명자 정보</h2>
         <div class="signer-card">
           <div class="signer-role">
-            <i :class="getRecipientTypeIcon(baselineData?.recipientType)"></i>
+            <i :class="getRecipientTypeIcon(baselineData?.recipientType)" />
             {{ getRecipientTypeLabel(baselineData?.recipientType) }}
           </div>
-          <div class="signer-name">{{ baselineData?.recipientName }}님</div>
+          <div class="signer-name">
+            {{ baselineData?.recipientName }}님
+          </div>
           <div v-if="baselineData?.otherSignerCompleted" class="other-signer-status">
-            <i class="fas fa-check-circle"></i>
+            <i class="fas fa-check-circle" />
             다른 담당자 서명 완료
           </div>
           <div v-else class="other-signer-status waiting">
-            <i class="fas fa-clock"></i>
+            <i class="fas fa-clock" />
             다른 담당자 서명 대기중
           </div>
         </div>
@@ -132,7 +134,7 @@
 
       <!-- 품목 요약 (있는 경우) -->
       <section v-if="baselineData?.itemSummary" class="info-section">
-        <h2><i class="fas fa-box"></i> 청구 품목</h2>
+        <h2><i class="fas fa-box" /> 청구 품목</h2>
         <div class="item-summary">
           {{ baselineData.itemSummary }}
         </div>
@@ -140,7 +142,7 @@
 
       <!-- 서명 섹션 -->
       <section class="info-section">
-        <h2><i class="fas fa-signature"></i> 서명</h2>
+        <h2><i class="fas fa-signature" /> 서명</h2>
         <UiMobileSignatureCanvas
           ref="signatureRef"
           @save="handleSignatureSave"
@@ -150,16 +152,16 @@
       <!-- 제출 버튼 -->
       <div class="submit-section">
         <div class="expire-notice">
-          <i class="fas fa-clock"></i>
+          <i class="fas fa-clock" />
           유효 기간: {{ formatExpireTime(baselineData?.expiresAt) }}
         </div>
         <button
           class="btn-submit"
-          @click="handleSubmit"
           :disabled="submitting"
+          @click="handleSubmit"
         >
-          <i v-if="submitting" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-check"></i>
+          <i v-if="submitting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-check" />
           {{ submitting ? '제출 중...' : '서명 완료' }}
         </button>
       </div>
@@ -202,7 +204,7 @@ const signatureRef = ref<any>(null)
 
 // 수신자 타입 라벨
 const getRecipientTypeLabel = (type?: SignatureRecipientType) => {
-  if (!type) return '-'
+  if (!type) { return '-' }
   const labels: Record<SignatureRecipientType, string> = {
     SITE_MANAGER: '현장소장',
     SITE_INSPECTOR: '현장감리원'
@@ -212,7 +214,7 @@ const getRecipientTypeLabel = (type?: SignatureRecipientType) => {
 
 // 수신자 타입 아이콘
 const getRecipientTypeIcon = (type?: SignatureRecipientType) => {
-  if (!type) return 'fas fa-user'
+  if (!type) { return 'fas fa-user' }
   const icons: Record<SignatureRecipientType, string> = {
     SITE_MANAGER: 'fas fa-user-tie',
     SITE_INSPECTOR: 'fas fa-user-check'
@@ -303,14 +305,14 @@ const handleSubmit = async () => {
   }
 
   const confirmed = confirm(
-    `서명을 제출하시겠습니까?\n\n` +
+    '서명을 제출하시겠습니까?\n\n' +
     `${getRecipientTypeLabel(baselineData.value?.recipientType)}: ${baselineData.value?.recipientName}님\n` +
     `기성 차수: ${baselineData.value?.baselineSeq}차\n` +
     `청구금액: ${formatCurrency(baselineData.value?.requestAmount)}원\n\n` +
-    `제출 후에는 수정할 수 없습니다.`
+    '제출 후에는 수정할 수 없습니다.'
   )
 
-  if (!confirmed) return
+  if (!confirmed) { return }
 
   submitting.value = true
 

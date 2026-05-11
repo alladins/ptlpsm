@@ -3,11 +3,11 @@
     <div class="modal-container">
       <div class="modal-header">
         <h3>
-          <i class="fas fa-paper-plane"></i>
+          <i class="fas fa-paper-plane" />
           {{ modalTitle }}
         </h3>
         <button class="btn-close" @click="$emit('close')">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
@@ -32,22 +32,26 @@
         <div class="form-section">
           <div class="recipient-grid" :class="{ 'single-column': documentType === 'COMPLETION' }">
             <!-- 시공사 현장소장 (납품확인서만 표시) -->
-            <div class="form-group" v-if="documentType === 'CONFIRMATION'">
+            <div v-if="documentType === 'CONFIRMATION'" class="form-group">
               <label class="required">시공사 현장소장</label>
               <select
                 v-model="selectedSiteSupervisorId"
                 class="form-select"
-                @change="onSiteSupervisorChange"
                 :disabled="loading"
+                @change="onSiteSupervisorChange"
               >
-                <option value="">{{ loading ? '로딩 중...' : '선택하세요' }}</option>
+                <option value="">
+                  {{ loading ? '로딩 중...' : '선택하세요' }}
+                </option>
                 <option
                   v-for="supervisor in siteSupervisorList"
                   :key="supervisor.userId"
                   :value="supervisor.userId"
                 >
                   {{ supervisor.userName }} ({{ supervisor.phone }})
-                  <template v-if="supervisor.companyName"> - {{ supervisor.companyName }}</template>
+                  <template v-if="supervisor.companyName">
+                    - {{ supervisor.companyName }}
+                  </template>
                 </option>
               </select>
             </div>
@@ -58,17 +62,21 @@
               <select
                 v-model="selectedInspectorId"
                 class="form-select"
-                @change="onInspectorChange"
                 :disabled="loading"
+                @change="onInspectorChange"
               >
-                <option value="">{{ loading ? '로딩 중...' : '선택하세요' }}</option>
+                <option value="">
+                  {{ loading ? '로딩 중...' : '선택하세요' }}
+                </option>
                 <option
                   v-for="inspector in inspectorList"
                   :key="inspector.userId"
                   :value="inspector.userId"
                 >
                   {{ inspector.userName }} ({{ inspector.phone }})
-                  <template v-if="inspector.companyName"> - {{ inspector.companyName }}</template>
+                  <template v-if="inspector.companyName">
+                    - {{ inspector.companyName }}
+                  </template>
                 </option>
               </select>
             </div>
@@ -81,11 +89,11 @@
             <label>발송 대상 ({{ selectedCount }}명)</label>
             <div class="selected-recipients">
               <div v-if="selectedSupervisorInfo" class="recipient-badge contractor">
-                <i class="fas fa-user-tie"></i>
+                <i class="fas fa-user-tie" />
                 <span>현장소장: {{ selectedSupervisorInfo.userName }}</span>
               </div>
               <div v-if="selectedInspectorInfo" class="recipient-badge supervisor">
-                <i class="fas fa-user-check"></i>
+                <i class="fas fa-user-check" />
                 <span>현장감리원: {{ selectedInspectorInfo.userName }}</span>
               </div>
             </div>
@@ -94,24 +102,28 @@
           <!-- 미리보기 -->
           <div class="message-preview">
             <h4>
-              <i class="fas fa-eye"></i>
+              <i class="fas fa-eye" />
               발송될 메시지 미리보기
             </h4>
 
             <!-- 템플릿 로딩 중 -->
             <div v-if="templateLoading" class="preview-content preview-loading">
-              <i class="fas fa-spinner fa-spin"></i> 템플릿 로딩 중...
+              <i class="fas fa-spinner fa-spin" /> 템플릿 로딩 중...
             </div>
 
             <!-- 현장소장 메시지 -->
             <div v-if="selectedSupervisorInfo && !templateLoading" class="preview-content">
-              <div class="preview-label">현장소장용</div>
+              <div class="preview-label">
+                현장소장용
+              </div>
               <pre class="preview-text">{{ supervisorPreviewText }}</pre>
             </div>
 
             <!-- 현장감리원 메시지 -->
             <div v-if="selectedInspectorInfo && !templateLoading" class="preview-content" :class="{ 'mt-3': selectedSupervisorInfo }">
-              <div class="preview-label">현장감리원용</div>
+              <div class="preview-label">
+                현장감리원용
+              </div>
               <pre class="preview-text">{{ inspectorPreviewText }}</pre>
             </div>
           </div>
@@ -119,15 +131,15 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="$emit('close')" :disabled="sending">
+        <button class="btn-cancel" :disabled="sending" @click="$emit('close')">
           취소
         </button>
         <button
           class="btn-send"
-          @click="handleSend"
           :disabled="!canSend || sending"
+          @click="handleSend"
         >
-          <i class="fas" :class="sending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+          <i class="fas" :class="sending ? 'fa-spinner fa-spin' : 'fa-paper-plane'" />
           {{ sending ? '발송 중...' : sendButtonText }}
         </button>
       </div>
@@ -146,7 +158,7 @@ import type { MessageTemplate } from '~/types/message-template'
 
 const props = defineProps<{
   deliveryDone: DeliveryDoneListItem
-  documentType: 'CONFIRMATION' | 'COMPLETION'  // 납품확인서 | 납품완료계
+  documentType: 'CONFIRMATION' | 'COMPLETION' // 납품확인서 | 납품완료계
 }>()
 
 const emit = defineEmits<{
@@ -165,7 +177,7 @@ const siteManagerTemplate = ref<MessageTemplate | null>(null)
 const inspectorTemplate = ref<MessageTemplate | null>(null)
 
 // 템플릿 변수 치환 함수
-function replaceTemplateVariables(content: string, recipientName: string): string {
+function replaceTemplateVariables (content: string, recipientName: string): string {
   return content
     .replace(/\{\{supervisorName\}\}/g, recipientName)
     .replace(/\{\{inspectorName\}\}/g, recipientName)
@@ -180,13 +192,13 @@ function replaceTemplateVariables(content: string, recipientName: string): strin
 
 // 현장소장 미리보기 텍스트
 const supervisorPreviewText = computed(() => {
-  if (!siteManagerTemplate.value?.content || !selectedSupervisorInfo.value) return ''
+  if (!siteManagerTemplate.value?.content || !selectedSupervisorInfo.value) { return '' }
   return replaceTemplateVariables(siteManagerTemplate.value.content, selectedSupervisorInfo.value.userName)
 })
 
 // 현장감리원 미리보기 텍스트
 const inspectorPreviewText = computed(() => {
-  if (!inspectorTemplate.value?.content || !selectedInspectorInfo.value) return ''
+  if (!inspectorTemplate.value?.content || !selectedInspectorInfo.value) { return '' }
   return replaceTemplateVariables(inspectorTemplate.value.content, selectedInspectorInfo.value.userName)
 })
 
@@ -203,20 +215,20 @@ const inspectorList = ref<UserByRole[]>([])
 
 // 선택된 담당자 정보
 const selectedSupervisorInfo = computed(() => {
-  if (!selectedSiteSupervisorId.value) return null
+  if (!selectedSiteSupervisorId.value) { return null }
   return siteSupervisorList.value.find(s => s.userId === selectedSiteSupervisorId.value) || null
 })
 
 const selectedInspectorInfo = computed(() => {
-  if (!selectedInspectorId.value) return null
+  if (!selectedInspectorId.value) { return null }
   return inspectorList.value.find(i => i.userId === selectedInspectorId.value) || null
 })
 
 // 선택된 인원 수
 const selectedCount = computed(() => {
   let count = 0
-  if (selectedSupervisorInfo.value) count++
-  if (selectedInspectorInfo.value) count++
+  if (selectedSupervisorInfo.value) { count++ }
+  if (selectedInspectorInfo.value) { count++ }
   return count
 })
 
@@ -270,7 +282,7 @@ onMounted(async () => {
 })
 
 // 메시지 템플릿 로드
-async function loadTemplates() {
+async function loadTemplates () {
   try {
     if (props.documentType === 'CONFIRMATION') {
       // 납품확인서: 현장소장 + 현장감리원 템플릿
@@ -293,17 +305,17 @@ async function loadTemplates() {
 }
 
 // 시공사 현장소장 선택 시 (다른 선택 유지)
-function onSiteSupervisorChange() {
+function onSiteSupervisorChange () {
   // 아무것도 하지 않음 - 독립적 선택 유지
 }
 
 // 현장감리원 선택 시 (다른 선택 유지)
-function onInspectorChange() {
+function onInspectorChange () {
   // 아무것도 하지 않음 - 독립적 선택 유지
 }
 
-async function handleSend() {
-  if (!canSend.value) return
+async function handleSend () {
+  if (!canSend.value) { return }
 
   sending.value = true
 
@@ -334,7 +346,7 @@ async function handleSend() {
     // API 호출 (한 번에 다중 수신자)
     await sendSignatureUrl({
       deliveryDoneId: props.deliveryDone.deliveryDoneId,
-      documentType: props.documentType,  // CONFIRMATION or COMPLETION
+      documentType: props.documentType, // CONFIRMATION or COMPLETION
       recipients,
       messageType: 'LMS'
     })

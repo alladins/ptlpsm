@@ -5,18 +5,20 @@
         <!-- 모달 헤더 -->
         <div class="modal-header">
           <h2 class="modal-title">
-            <i class="fas fa-file-contract"></i>
+            <i class="fas fa-file-contract" />
             {{ modalTitle }}
           </h2>
           <button class="modal-close-btn" @click="handleClose">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
         <!-- 모달 바디 -->
         <div class="modal-body">
           <div class="info-section">
-            <h3 class="section-title">기준 계약 정보</h3>
+            <h3 class="section-title">
+              기준 계약 정보
+            </h3>
             <div class="info-grid">
               <div class="info-item">
                 <label>납품요구번호:</label>
@@ -38,14 +40,16 @@
           </div>
 
           <div class="amendment-type-section">
-            <h3 class="section-title">계약 유형 선택</h3>
+            <h3 class="section-title">
+              계약 유형 선택
+            </h3>
             <div class="type-buttons">
               <button
                 class="type-btn"
                 :class="{ active: amendmentType === 'AMENDMENT' }"
                 @click="selectType('AMENDMENT')"
               >
-                <i class="fas fa-edit"></i>
+                <i class="fas fa-edit" />
                 <div class="type-info">
                   <strong>변경계약</strong>
                   <span>기존 수량을 변경된 수량으로 대체</span>
@@ -56,7 +60,7 @@
                 :class="{ active: amendmentType === 'ADDITIONAL' }"
                 @click="selectType('ADDITIONAL')"
               >
-                <i class="fas fa-plus-circle"></i>
+                <i class="fas fa-plus-circle" />
                 <div class="type-info">
                   <strong>추가계약</strong>
                   <span>기존 수량에 신규 수량 추가</span>
@@ -75,19 +79,23 @@
                 ref="fileInput"
                 type="file"
                 accept="application/pdf"
-                @change="handleFileChange"
                 class="file-input"
-              />
+                @change="handleFileChange"
+              >
               <button class="upload-btn" @click="triggerFileInput">
-                <i class="fas fa-cloud-upload-alt"></i>
+                <i class="fas fa-cloud-upload-alt" />
                 {{ pdfFile ? pdfFile.name : 'PDF 파일 선택' }}
               </button>
-              <p class="upload-hint">변경/추가된 품목 정보가 포함된 납품요구서를 업로드해주세요.</p>
+              <p class="upload-hint">
+                변경/추가된 품목 정보가 포함된 납품요구서를 업로드해주세요.
+              </p>
             </div>
           </div>
 
           <div v-if="previewData" class="preview-section">
-            <h3 class="section-title">미리보기</h3>
+            <h3 class="section-title">
+              미리보기
+            </h3>
             <div class="preview-info">
               <div class="preview-item">
                 <label>신규 납품요구번호:</label>
@@ -106,19 +114,19 @@
 
           <!-- 에러 메시지 -->
           <div v-if="errorMessage" class="error-message">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="fas fa-exclamation-circle" />
             {{ errorMessage }}
           </div>
         </div>
 
         <!-- 모달 푸터 -->
         <div class="modal-footer">
-          <button class="btn-secondary" @click="handleClose" :disabled="loading">
+          <button class="btn-secondary" :disabled="loading" @click="handleClose">
             취소
           </button>
-          <button class="btn-primary" @click="handleSubmit" :disabled="!canSubmit || loading">
-            <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-check"></i>
+          <button class="btn-primary" :disabled="!canSubmit || loading" @click="handleSubmit">
+            <i v-if="loading" class="fas fa-spinner fa-spin" />
+            <i v-else class="fas fa-check" />
             {{ loading ? '처리중...' : '생성' }}
           </button>
         </div>
@@ -158,7 +166,7 @@ const modalTitle = computed(() => {
 })
 
 const newDeliveryRequestNo = computed(() => {
-  if (!props.originalOrder) return ''
+  if (!props.originalOrder) { return '' }
   const baseNo = extractBaseDeliveryRequestNo(props.originalOrder.deliveryRequestNo)
   // 다음 시퀀스 예상 (실제 번호는 서버에서 생성)
   return `${baseNo}-XX`
@@ -168,8 +176,8 @@ const canSubmit = computed(() => {
   return amendmentType.value && pdfFile.value && !loading.value
 })
 
-function extractBaseDeliveryRequestNo(deliveryRequestNo: string): string {
-  if (!deliveryRequestNo) return ''
+function extractBaseDeliveryRequestNo (deliveryRequestNo: string): string {
+  if (!deliveryRequestNo) { return '' }
   const parts = deliveryRequestNo.split('-')
   if (parts.length > 1) {
     const lastPart = parts[parts.length - 1]
@@ -180,19 +188,19 @@ function extractBaseDeliveryRequestNo(deliveryRequestNo: string): string {
   return deliveryRequestNo
 }
 
-function selectType(type: 'AMENDMENT' | 'ADDITIONAL') {
+function selectType (type: 'AMENDMENT' | 'ADDITIONAL') {
   amendmentType.value = type
 }
 
-function triggerFileInput() {
+function triggerFileInput () {
   fileInput.value?.click()
 }
 
-async function handleFileChange(event: Event) {
+async function handleFileChange (event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
 
-  if (!file) return
+  if (!file) { return }
 
   if (file.type !== 'application/pdf') {
     errorMessage.value = 'PDF 파일만 업로드 가능합니다.'
@@ -216,8 +224,8 @@ async function handleFileChange(event: Event) {
   }
 }
 
-async function handleSubmit() {
-  if (!canSubmit.value || !props.originalOrder || !previewData.value) return
+async function handleSubmit () {
+  if (!canSubmit.value || !props.originalOrder || !previewData.value) { return }
 
   try {
     loading.value = true
@@ -253,8 +261,8 @@ async function handleSubmit() {
   }
 }
 
-function handleClose() {
-  if (loading.value) return
+function handleClose () {
+  if (loading.value) { return }
 
   // 상태 초기화
   amendmentType.value = 'AMENDMENT'

@@ -2,12 +2,24 @@
   <!-- 관리자 페이지에서는 footer를 표시하지 않음 -->
   <footer v-if="!isAdminPage" class="footer">
     <div class="inner">
-      <div class="footer-top">        
+      <div class="footer-top">
         <div class="footer-menu">
           <ul>
-            <li><NuxtLink to="/terms">이용약관</NuxtLink></li>
-            <li><NuxtLink to="/privacy">개인정보처리방침</NuxtLink></li>
-            <li><NuxtLink to="/login">관리</NuxtLink></li>
+            <li>
+              <NuxtLink to="/terms">
+                이용약관
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/privacy">
+                개인정보처리방침
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/login">
+                관리
+              </NuxtLink>
+            </li>
           </ul>
         </div>
       </div>
@@ -18,7 +30,7 @@
             <span>대표이사: </span>
             <span>사업자등록번호: </span>
             <span>이메일: info@leadpower21.com</span>
-            <p>주소 : 경기도 성남시 분당구 판교역로 240 A동 415호 (13493)</p>	
+            <p>주소 : 경기도 성남시 분당구 판교역로 240 A동 415호 (13493)</p>
             <p>Copyright © 2025 LEADPOWER. All rights reserved.</p>
           </div>
           <div class="footer-tel">
@@ -127,24 +139,23 @@ const isAdminPage = computed(() => {
   .footer-info {
     flex-direction: column;
   }
-  
+
   .footer-tel {
     text-align: left;
     margin-top: 15px;
   }
-  
+
   .address span {
     display: block;
     margin-right: 0;
   }
-  
+
   .footer-menu ul {
     flex-wrap: wrap;
   }
-  
+
   .footer-menu li {
     margin-bottom: 10px;
   }
 }
 </style>
-

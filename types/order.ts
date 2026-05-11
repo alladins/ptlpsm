@@ -62,8 +62,13 @@ export interface OrderResponse {
   client: string
   clientManagerName: string
   projectName: string
+  /** ★ 정책: 모든 매출·계약총액·집계 기준은 itemTotalAmount(품대계).
+   *   orders.total_amount와 orders.commission은 PDF 원본 보존용으로만 저장되며
+   *   UI·통계·PDF(납품확인서/완료계) 합계 계산에 사용하지 않는다. */
   itemTotalAmount: string
+  /** 수수료 (참고 표기 전용) */
   commission: string
+  /** PDF 원본 합계금액 (레거시, 집계·표시에 사용하지 않음) */
   totalAmount: string
   deliveryRequestNo: string
   deliveryRequestDate: string
@@ -86,6 +91,7 @@ export interface OrderSearchRequest {
   endDate?: string
   contractId?: string
   client?: string
+  projectName?: string  // 사업명 (프로젝트명) — 발주 선택 모달 검색용
   salesId?: number
   page?: number
   size?: number
@@ -160,8 +166,11 @@ export interface OrderCreateRequest {
   paymentMethod: string
   deliveryRequestDate: string
   projectName: string
+  /** ★ 정책: 모든 매출·계약총액·집계 기준은 itemTotalAmount(품대계). */
   itemTotalAmount: string
+  /** 수수료 (참고 표기 전용) */
   commission: string
+  /** PDF 원본 합계금액 (레거시, 집계·표시에 사용하지 않음) */
   totalAmount: string
   partialDelivery: string
   inspectionAgency: string

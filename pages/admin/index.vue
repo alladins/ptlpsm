@@ -7,41 +7,141 @@
         description="PTPLPSM 출하관리 시스템"
       />
 
-      <!-- 요약 카드 -->
+      <!-- 빠른 액션 (가로 한 줄) -->
+      <div class="quick-actions-bar">
+        <button class="action-btn-inline" @click="goToSales">
+          <i class="fas fa-plus" />
+          <span>영업 등록</span>
+        </button>
+        <button class="action-btn-inline" @click="goToOrder">
+          <i class="fas fa-shopping-cart" />
+          <span>발주 등록</span>
+        </button>
+        <button class="action-btn-inline" @click="goToShipping">
+          <i class="fas fa-truck" />
+          <span>출하 등록</span>
+        </button>
+        <button class="action-btn-inline" @click="goToTransport">
+          <i class="fas fa-route" />
+          <span>운송장 관리</span>
+        </button>
+      </div>
+
+      <!-- 기간 필터 -->
+      <div class="dashboard-filter">
+        <div class="filter-group">
+          <label>조회기간:</label>
+          <select v-model="periodType" class="filter-select" @change="onPeriodChange">
+            <option value="period">
+              정산기간별
+            </option>
+            <option value="year">
+              연도별
+            </option>
+            <option value="half">
+              반기별
+            </option>
+            <option value="quarter">
+              분기별
+            </option>
+            <option value="custom">
+              직접선택
+            </option>
+          </select>
+          <select v-if="periodType === 'period'" v-model="selectedPeriodId" class="filter-select" @change="onPeriodChange">
+            <option v-for="p in periodOptions" :key="p.periodId" :value="p.periodId">
+              {{ p.periodName }}
+            </option>
+          </select>
+          <select v-if="periodType !== 'custom' && periodType !== 'period'" v-model="selectedYear" class="filter-select" @change="onPeriodChange">
+            <option v-for="y in yearOptions" :key="y" :value="y">
+              {{ y }}년
+            </option>
+          </select>
+          <select v-if="periodType === 'half'" v-model="selectedHalf" class="filter-select" @change="onPeriodChange">
+            <option value="1">
+              상반기
+            </option>
+            <option value="2">
+              하반기
+            </option>
+          </select>
+          <select v-if="periodType === 'quarter'" v-model="selectedQuarter" class="filter-select" @change="onPeriodChange">
+            <option value="1">
+              1분기
+            </option>
+            <option value="2">
+              2분기
+            </option>
+            <option value="3">
+              3분기
+            </option>
+            <option value="4">
+              4분기
+            </option>
+          </select>
+          <template v-if="periodType === 'custom'">
+            <input v-model="customStartDate" type="date" class="filter-date" @change="onPeriodChange">
+            <span class="filter-separator">~</span>
+            <input v-model="customEndDate" type="date" class="filter-date" @change="onPeriodChange">
+          </template>
+          <span class="filter-period-label">{{ periodLabel }}</span>
+        </div>
+      </div>
+
+      <!-- 요약 카드 - 5개 한 행 -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon icon-order">
-            <i class="fas fa-file-alt"></i>
+            <i class="fas fa-file-alt" />
           </div>
           <div class="stat-content">
             <h3>총 납품요구 건수</h3>
-            <p class="stat-number">{{ formatNumber(statistics.summary.totalOrderCount) }}건</p>
+            <p class="stat-number">
+              {{ formatNumber(statistics.summary.totalOrderCount) }}건
+            </p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon icon-amount">
-            <i class="fas fa-won-sign"></i>
+            <i class="fas fa-won-sign" />
           </div>
           <div class="stat-content">
-            <h3>총 출하 금액</h3>
-            <p class="stat-number">{{ formatCurrency(statistics.summary.totalShipmentAmount) }}</p>
+            <h3>총 납품요구금액</h3>
+            <p class="stat-number">
+              {{ formatCurrency(statistics.summary.totalOrderAmount) }}
+            </p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-sales">
+            <i class="fas fa-chart-line" />
+          </div>
+          <div class="stat-content">
+            <h3>총 매출금액</h3>
+            <p class="stat-number">
+              {{ formatCurrency(statistics.summary.totalShipmentSalesAmount) }}
+            </p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon icon-rate">
-            <i class="fas fa-chart-pie"></i>
+            <i class="fas fa-chart-pie" />
           </div>
           <div class="stat-content">
             <h3>납품완료율</h3>
-            <p class="stat-number">{{ statistics.summary.completionRate.toFixed(1) }}%</p>
+            <p class="stat-number">
+              {{ statistics.summary.completionRate.toFixed(1) }}%
+            </p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon icon-status">
-            <i class="fas fa-tasks"></i>
+            <i class="fas fa-tasks" />
           </div>
           <div class="stat-content">
             <h3>상태별 현황</h3>
@@ -60,7 +160,7 @@
         <!-- OEM 제조사별 월별 제조원가 -->
         <div class="chart-card chart-main">
           <h2>
-            <i class="fas fa-industry"></i>
+            <i class="fas fa-industry" />
             OEM 제조사별 월별 제조원가
           </h2>
           <div v-if="oemChartData.length > 0" class="chart-content">
@@ -81,12 +181,14 @@
                     <span class="oem-bar-value">{{ formatCompactNumber(item.manufacturingCost) }}</span>
                   </div>
                 </div>
-                <div class="oem-label">{{ formatOemMonth(monthData.month) }}</div>
+                <div class="oem-label">
+                  {{ formatOemMonth(monthData.month) }}
+                </div>
               </div>
             </div>
           </div>
           <div v-else class="chart-placeholder">
-            <i class="fas fa-industry"></i>
+            <i class="fas fa-industry" />
             <p>데이터가 없습니다</p>
           </div>
         </div>
@@ -94,7 +196,7 @@
         <!-- 기간별 출하 추이 -->
         <div class="chart-card chart-main">
           <h2>
-            <i class="fas fa-chart-bar"></i>
+            <i class="fas fa-chart-bar" />
             기간별 출하 추이
           </h2>
           <div v-if="statistics.periodTrend.length > 0" class="chart-content">
@@ -113,7 +215,9 @@
                     <span class="bar-value">{{ formatCompactNumber(item.shipmentAmount) }}</span>
                   </div>
                 </div>
-                <div class="trend-label">{{ formatPeriodLabel(item.period) }}</div>
+                <div class="trend-label">
+                  {{ formatPeriodLabel(item.period) }}
+                </div>
                 <div class="trend-info">
                   <span>{{ item.orderCount }}건</span>
                 </div>
@@ -121,7 +225,7 @@
             </div>
           </div>
           <div v-else class="chart-placeholder">
-            <i class="fas fa-chart-bar"></i>
+            <i class="fas fa-chart-bar" />
             <p>데이터가 없습니다</p>
           </div>
         </div>
@@ -129,7 +233,7 @@
         <!-- 상태별 현황 -->
         <div class="chart-card">
           <h2>
-            <i class="fas fa-chart-pie"></i>
+            <i class="fas fa-chart-pie" />
             상태별 현황
           </h2>
           <div class="status-chart">
@@ -141,35 +245,37 @@
             </div>
             <div class="status-legend">
               <div class="legend-item">
-                <span class="legend-color pending"></span>
+                <span class="legend-color pending" />
                 <span class="legend-label">대기</span>
                 <span class="legend-value">{{ statistics.summary.statusCount.pending }}건</span>
               </div>
               <div class="legend-item">
-                <span class="legend-color in-progress"></span>
+                <span class="legend-color in-progress" />
                 <span class="legend-label">진행중</span>
                 <span class="legend-value">{{ statistics.summary.statusCount.inProgress }}건</span>
               </div>
               <div class="legend-item">
-                <span class="legend-color pending-signature"></span>
+                <span class="legend-color pending-signature" />
                 <span class="legend-label">서명대기</span>
                 <span class="legend-value">{{ statistics.summary.statusCount.pendingSignature }}건</span>
               </div>
               <div class="legend-item">
-                <span class="legend-color completed"></span>
+                <span class="legend-color completed" />
                 <span class="legend-label">납품완료</span>
                 <span class="legend-value">{{ statistics.summary.statusCount.completed }}건</span>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
+      <!-- 지역별 현황 + 최근 활동 (2컬럼) -->
+      <div class="region-activity-section">
         <!-- 지역별 출하 현황 -->
-        <div class="chart-card">
-          <h2>
-            <i class="fas fa-map-marker-alt"></i>
-            지역별 현황
-          </h2>
+        <div class="content-card">
+          <div class="card-header">
+            <h2><i class="fas fa-map-marker-alt" /> 지역별 현황</h2>
+          </div>
           <div v-if="statistics.regionBreakdown.length > 0" class="region-chart">
             <div
               v-for="item in statistics.regionBreakdown"
@@ -184,60 +290,34 @@
                 <div
                   class="region-bar"
                   :style="{ width: getRegionBarWidth(item.shipmentAmount) + '%' }"
-                ></div>
+                />
               </div>
-              <div class="region-amount">{{ formatCompactCurrency(item.shipmentAmount) }}</div>
+              <div class="region-amount">
+                {{ formatCompactCurrency(item.shipmentAmount) }}
+              </div>
             </div>
           </div>
           <div v-else class="chart-placeholder">
-            <i class="fas fa-map-marker-alt"></i>
+            <i class="fas fa-map-marker-alt" />
             <p>데이터가 없습니다</p>
           </div>
         </div>
-      </div>
 
-      <!-- 하단 영역 -->
-      <div class="bottom-section">
         <!-- 최근 활동 -->
         <div class="content-card">
           <div class="card-header">
-            <h2><i class="fas fa-clock"></i> 최근 활동</h2>
+            <h2><i class="fas fa-clock" /> 최근 활동</h2>
           </div>
           <div class="activity-list-compact">
             <div v-for="activity in recentActivities" :key="activity.id" class="activity-item-compact">
               <div class="activity-icon-compact" :class="activity.type">
-                <i :class="activity.icon"></i>
+                <i :class="activity.icon" />
               </div>
               <div class="activity-content-compact">
                 <span class="activity-title-compact">{{ activity.title }}</span>
                 <span class="activity-time-compact">{{ activity.time }}</span>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- 빠른 액션 -->
-        <div class="content-card">
-          <div class="card-header">
-            <h2><i class="fas fa-bolt"></i> 빠른 액션</h2>
-          </div>
-          <div class="quick-actions-compact">
-            <button class="action-btn-compact" @click="goToSales">
-              <i class="fas fa-plus"></i>
-              <span>영업 등록</span>
-            </button>
-            <button class="action-btn-compact" @click="goToOrder">
-              <i class="fas fa-shopping-cart"></i>
-              <span>발주 등록</span>
-            </button>
-            <button class="action-btn-compact" @click="goToShipping">
-              <i class="fas fa-truck"></i>
-              <span>출하 등록</span>
-            </button>
-            <button class="action-btn-compact" @click="goToTransport">
-              <i class="fas fa-route"></i>
-              <span>운송장 관리</span>
-            </button>
           </div>
         </div>
       </div>
@@ -249,6 +329,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { getOemMonthlyChart, getShipmentStatistics } from '~/services/statistics.service'
+import { getCommissionPeriods } from '~/services/commission.service'
 import type { ShipmentStatisticsResponse, OemChartData } from '~/types/statistics'
 
 // 레이아웃 설정
@@ -266,6 +347,7 @@ const statistics = ref<ShipmentStatisticsResponse>({
     totalShipmentCount: 0,
     totalOrderAmount: 0,
     totalShipmentAmount: 0,
+    totalShipmentSalesAmount: 0,
     completionRate: 0,
     statusCount: {
       pending: 0,
@@ -284,6 +366,110 @@ const statistics = ref<ShipmentStatisticsResponse>({
 
 // OEM 차트 데이터
 const oemChartData = ref<OemChartData[]>([])
+
+// 정산기간 목록
+interface PeriodOption {
+  periodId: number
+  periodName: string
+  startDate: string
+  endDate: string
+}
+const periodOptions = ref<PeriodOption[]>([])
+const selectedPeriodId = ref<number>(0)
+
+// 기간 필터 상태
+const currentYear = new Date().getFullYear()
+const periodType = ref('period')
+const selectedYear = ref(currentYear)
+const selectedHalf = ref('1')
+const selectedQuarter = ref('1')
+const customStartDate = ref(`${currentYear}-01-01`)
+const customEndDate = ref(`${currentYear}-12-31`)
+
+// 연도 옵션 (최근 5년)
+const yearOptions = computed(() => {
+  const years = []
+  for (let y = currentYear; y >= currentYear - 4; y--) {
+    years.push(y)
+  }
+  return years
+})
+
+// 기간 라벨 표시
+const periodLabel = computed(() => {
+  const { start, end } = getDateRange()
+  return `${start} ~ ${end}`
+})
+
+// 기간 타입에 따른 날짜 범위 계산
+function getDateRange (): { start: string, end: string } {
+  const year = selectedYear.value
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+  switch (periodType.value) {
+    case 'period': {
+      const selected = periodOptions.value.find(p => p.periodId === selectedPeriodId.value)
+      if (selected) {
+        return { start: selected.startDate, end: selected.endDate < todayStr ? selected.endDate : todayStr }
+      }
+      return { start: `${year}-01-01`, end: todayStr }
+    }
+    case 'year':
+      return { start: `${year}-01-01`, end: year === currentYear ? todayStr : `${year}-12-31` }
+    case 'half': {
+      const half = parseInt(selectedHalf.value)
+      const startMonth = half === 1 ? '01' : '07'
+      const endMonth = half === 1 ? '06' : '12'
+      const endDate = `${year}-${endMonth}-${half === 1 ? '30' : '31'}`
+      return { start: `${year}-${startMonth}-01`, end: year === currentYear ? todayStr : endDate }
+    }
+    case 'quarter': {
+      const q = parseInt(selectedQuarter.value)
+      const startMonth = String((q - 1) * 3 + 1).padStart(2, '0')
+      const endMonths = ['03', '06', '09', '12']
+      const endDays = ['31', '30', '30', '31']
+      const endDate = `${year}-${endMonths[q - 1]}-${endDays[q - 1]}`
+      return { start: `${year}-${startMonth}-01`, end: year === currentYear ? todayStr : endDate }
+    }
+    case 'custom':
+      return { start: customStartDate.value, end: customEndDate.value }
+    default:
+      return { start: `${year}-01-01`, end: todayStr }
+  }
+}
+
+// 정산기간 목록 로드
+async function loadPeriods () {
+  try {
+    const periods = await getCommissionPeriods()
+    periodOptions.value = periods.map((p: any) => {
+      const startMonth = String(p.startMonth).padStart(2, '0')
+      const endMonth = String(p.endMonth).padStart(2, '0')
+      const endDay = new Date(p.endYear, p.endMonth, 0).getDate()
+      return {
+        periodId: p.periodId,
+        periodName: p.periodName,
+        startDate: `${p.startYear}-${startMonth}-01`,
+        endDate: `${p.endYear}-${endMonth}-${String(endDay).padStart(2, '0')}`
+      }
+    })
+    // 활성 기간을 기본 선택
+    const active = periods.find((p: any) => p.isActive)
+    if (active) {
+      selectedPeriodId.value = active.periodId
+    } else if (periodOptions.value.length > 0) {
+      selectedPeriodId.value = periodOptions.value[0].periodId
+    }
+  } catch (error) {
+    console.error('정산기간 목록 조회 실패:', error)
+  }
+}
+
+// 기간 변경 핸들러
+function onPeriodChange () {
+  loadDashboardData()
+}
 
 // 최근 활동 데이터
 const recentActivities = ref([
@@ -325,7 +511,7 @@ const recentActivities = ref([
 ])
 
 // OEM 차트 데이터 로드
-async function loadOemChartData() {
+async function loadOemChartData () {
   try {
     const currentYear = new Date().getFullYear()
     oemChartData.value = await getOemMonthlyChart(currentYear)
@@ -336,39 +522,33 @@ async function loadOemChartData() {
   }
 }
 
-// 대시보드 데이터 로드 (실제 API 호출)
-async function loadDashboardData() {
+// 대시보드 데이터 로드 (기간 필터 연동)
+async function loadDashboardData () {
   try {
-    // 최근 6개월 데이터 조회
-    const today = new Date()
-    const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1)
-
-    const startDate = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`
-    const endDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    const { start, end } = getDateRange()
 
     const data = await getShipmentStatistics({
-      startDate,
-      endDate,
+      startDate: start,
+      endDate: end,
       periodUnit: 'monthly'
     })
 
     statistics.value = data
   } catch (error) {
     console.error('대시보드 데이터 로드 실패:', error)
-    // 실패 시 기본값 유지
   }
 }
 
 // 포맷 함수들
-function formatNumber(value: number): string {
+function formatNumber (value: number): string {
   return value.toLocaleString('ko-KR')
 }
 
-function formatCurrency(value: number): string {
+function formatCurrency (value: number): string {
   return value.toLocaleString('ko-KR') + '원'
 }
 
-function formatCompactNumber(value: number): string {
+function formatCompactNumber (value: number): string {
   if (value >= 100000000) {
     return (value / 100000000).toFixed(1) + '억'
   }
@@ -378,7 +558,7 @@ function formatCompactNumber(value: number): string {
   return value.toLocaleString('ko-KR')
 }
 
-function formatCompactCurrency(value: number): string {
+function formatCompactCurrency (value: number): string {
   if (value >= 100000000) {
     return (value / 100000000).toFixed(1) + '억원'
   }
@@ -391,7 +571,7 @@ function formatCompactCurrency(value: number): string {
   return value.toLocaleString('ko-KR') + '원'
 }
 
-function formatPeriodLabel(period: string): string {
+function formatPeriodLabel (period: string): string {
   if (period.match(/^\d{4}-\d{2}$/)) {
     const month = parseInt(period.split('-')[1])
     return `${month}월`
@@ -408,28 +588,28 @@ function formatPeriodLabel(period: string): string {
 }
 
 // 차트 헬퍼 함수
-function getBarHeight(amount: number): number {
+function getBarHeight (amount: number): number {
   const maxAmount = Math.max(...statistics.value.periodTrend.map(t => t.shipmentAmount))
-  if (maxAmount === 0) return 0
+  if (maxAmount === 0) { return 0 }
   return (amount / maxAmount) * 100
 }
 
-function getRegionBarWidth(amount: number): number {
+function getRegionBarWidth (amount: number): number {
   const maxAmount = Math.max(...statistics.value.regionBreakdown.map(r => r.shipmentAmount))
-  if (maxAmount === 0) return 0
+  if (maxAmount === 0) { return 0 }
   return (amount / maxAmount) * 100
 }
 
 // OEM 차트 헬퍼 함수
-function getOemBarHeight(amount: number): number {
-  if (oemChartData.value.length === 0) return 0
+function getOemBarHeight (amount: number): number {
+  if (oemChartData.value.length === 0) { return 0 }
   const allAmounts = oemChartData.value.flatMap(m => m.data.map(d => d.manufacturingCost))
   const maxAmount = Math.max(...allAmounts)
-  if (maxAmount === 0) return 0
+  if (maxAmount === 0) { return 0 }
   return (amount / maxAmount) * 100
 }
 
-function formatOemMonth(month: string): string {
+function formatOemMonth (month: string): string {
   // YYYY-MM -> MM월
   const parts = month.split('-')
   return `${parseInt(parts[1])}월`
@@ -448,7 +628,8 @@ const goToShipping = () => router.push('/admin/shipping/list')
 const goToTransport = () => router.push('/admin/transport/list')
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  await loadPeriods()
   loadDashboardData()
   loadOemChartData()
 })
@@ -461,11 +642,118 @@ onMounted(() => {
   gap: 1.5rem;
 }
 
+/* 빠른 액션 바 (조회기간 필터 상단) */
+.quick-actions-bar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.action-btn-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #1f2937;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  flex: 1 1 0;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.action-btn-inline:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #eff6ff;
+}
+
+.action-btn-inline i {
+  font-size: 0.875rem;
+}
+
+/* 지역별 현황 + 최근 활동 2컬럼 */
+.region-activity-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* 기간 필터 */
+.dashboard-filter {
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.filter-select {
+  padding: 0.375rem 0.625rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.filter-date {
+  padding: 0.375rem 0.625rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #374151;
+}
+
+.filter-date:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.filter-separator {
+  color: #9ca3af;
+  font-size: 0.8125rem;
+}
+
+.filter-period-label {
+  margin-left: 0.5rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
 /* 요약 카드 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .stat-card {
@@ -503,6 +791,11 @@ onMounted(() => {
 
 .icon-status {
   background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+}
+
+.icon-sales {
+  background: #dcfce7;
+  color: #16a34a;
 }
 
 .stat-content h3 {
@@ -852,13 +1145,6 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* 하단 영역 */
-.bottom-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
 .content-card {
   background: white;
   border-radius: 8px;
@@ -960,41 +1246,6 @@ onMounted(() => {
   margin-left: 0.5rem;
 }
 
-/* 빠른 액션 (컴팩트) */
-.quick-actions-compact {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
-}
-
-.action-btn-compact {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 0.75rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #1f2937;
-  font-size: 0.8125rem;
-}
-
-.action-btn-compact:hover {
-  background: white;
-  border-color: #3b82f6;
-  color: #3b82f6;
-}
-
-.action-btn-compact i {
-  font-size: 0.875rem;
-}
-
-.action-btn-compact span {
-  font-weight: 500;
-}
-
 /* 반응형 */
 @media (max-width: 1200px) {
   .chart-section {
@@ -1015,21 +1266,34 @@ onMounted(() => {
     grid-column: span 1;
   }
 
-  .bottom-section {
+  .region-activity-section {
     grid-template-columns: 1fr;
   }
 
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 
-  .quick-actions-compact {
-    grid-template-columns: 1fr;
+  .action-btn-inline {
+    min-width: 120px;
   }
 }
 
 @media (max-width: 480px) {
   .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .quick-actions-bar {
+    flex-wrap: wrap;
+  }
+
+  .action-btn-inline {
+    flex: 1 1 calc(50% - 0.375rem);
+    min-width: 0;
+  }
+
+  .region-activity-section {
     grid-template-columns: 1fr;
   }
 }

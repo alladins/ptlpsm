@@ -1,9 +1,9 @@
 <template>
   <div class="code-management">
-    <PageHeader
-      title="코드관리"
-      description="시스템에서 사용되는 코드 그룹과 코드 상세를 관리합니다."
-    />
+    <div class="page-header-compact">
+      <h1>코드관리</h1>
+      <span class="page-description">시스템에서 사용되는 코드 그룹과 코드 상세를 관리합니다.</span>
+    </div>
 
     <!-- 코드 관리 컨테이너 -->
     <div class="code-management-container">
@@ -11,12 +11,20 @@
       <div class="code-groups-section">
         <!-- 통합 헤더: 타이틀 + 필터 + 검색 + 등록 (한 줄) -->
         <div class="integrated-header">
-          <h2 class="section-title">코드 그룹 관리</h2>
+          <h2 class="section-title">
+            코드 그룹 관리
+          </h2>
 
           <select v-model="groupStatusFilter" class="filter-select">
-            <option value="">전체</option>
-            <option value="Y">사용</option>
-            <option value="N">미사용</option>
+            <option value="">
+              전체
+            </option>
+            <option value="Y">
+              사용
+            </option>
+            <option value="N">
+              미사용
+            </option>
           </select>
 
           <div class="search-box">
@@ -27,14 +35,19 @@
               class="search-input"
               @keyup.enter="searchGroups"
             >
-            <button @click="searchGroups" class="search-button">
-              <i class="fas fa-search"></i>
+            <button class="search-button" @click="searchGroups">
+              <i class="fas fa-search" />
             </button>
           </div>
 
-          <button @click="openGroupModal('create')" class="btn-register">
-            <i class="fas fa-plus"></i> 등록
+          <button class="btn-register" @click="openGroupModal('create')">
+            <i class="fas fa-plus" /> 등록
           </button>
+        </div>
+
+        <!-- 건수 표시 -->
+        <div class="table-info-bar">
+          <span>총 {{ groupTable.totalElements.value }}개 중 {{ groupTable.startIndex.value }}-{{ groupTable.endIndex.value }}개 표시</span>
         </div>
 
         <!-- 코드 그룹 목록 -->
@@ -42,21 +55,25 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th @click="sortGroups('groupCode')" class="sortable">
+                <th class="sortable" @click="sortGroups('groupCode')">
                   코드 그룹 코드
-                  <i :class="getSortIcon('groupCode', groupSortBy, groupSortOrder)"></i>
+                  <i :class="getSortIcon('groupCode', groupSortBy, groupSortOrder)" />
                 </th>
-                <th @click="sortGroups('groupName')" class="sortable">
+                <th class="sortable" @click="sortGroups('groupName')">
                   코드 그룹명
-                  <i :class="getSortIcon('groupName', groupSortBy, groupSortOrder)"></i>
+                  <i :class="getSortIcon('groupName', groupSortBy, groupSortOrder)" />
                 </th>
-                <th @click="sortGroups('useYn')" class="sortable">
+                <th class="sortable" @click="sortGroups('sortOrder')">
+                  정렬 순서
+                  <i :class="getSortIcon('sortOrder', groupSortBy, groupSortOrder)" />
+                </th>
+                <th class="sortable" @click="sortGroups('useYn')">
                   사용 여부
-                  <i :class="getSortIcon('useYn', groupSortBy, groupSortOrder)"></i>
+                  <i :class="getSortIcon('useYn', groupSortBy, groupSortOrder)" />
                 </th>
-                <th @click="sortGroups('createdAt')" class="sortable">
+                <th class="sortable" @click="sortGroups('createdAt')">
                   등록일
-                  <i :class="getSortIcon('createdAt', groupSortBy, groupSortOrder)"></i>
+                  <i :class="getSortIcon('createdAt', groupSortBy, groupSortOrder)" />
                 </th>
                 <th>관리</th>
               </tr>
@@ -71,6 +88,7 @@
               >
                 <td>{{ group.groupCode }}</td>
                 <td>{{ group.groupName }}</td>
+                <td>{{ group.sortOrder }}</td>
                 <td>
                   <span :class="['status-badge', group.useYn === 'Y' ? 'active' : 'inactive']">
                     {{ group.useYn === 'Y' ? '사용' : '미사용' }}
@@ -78,13 +96,11 @@
                 </td>
                 <td>{{ formatDate(group.createdAt) }}</td>
                 <td class="action-buttons">
-                  <button @click.stop="openGroupModal('edit', group)" class="btn-edit" title="수정">
-                    <i class="fas fa-edit"></i>
-                    <span>수정</span>
+                  <button class="btn-icon btn-edit" title="수정" @click.stop="openGroupModal('edit', group)">
+                    <i class="fas fa-edit" />
                   </button>
-                  <button @click.stop="deleteGroup(group.groupCode)" class="btn-delete" title="삭제">
-                    <i class="fas fa-trash"></i>
-                    <span>삭제</span>
+                  <button class="btn-icon btn-delete" title="삭제" @click.stop="deleteGroup(group.groupCode)">
+                    <i class="fas fa-trash" />
                   </button>
                 </td>
               </tr>
@@ -94,9 +110,6 @@
 
         <!-- 페이지네이션 -->
         <div class="pagination-section">
-          <div class="pagination-info">
-            총 {{ groupTable.totalElements.value }}개 중 {{ groupTable.startIndex.value }}-{{ groupTable.endIndex.value }}개 표시
-          </div>
           <Pagination
             :current-page="groupTable.currentPage.value"
             :total-pages="groupTable.totalPages.value"
@@ -109,12 +122,20 @@
       <div class="code-details-section">
         <!-- 통합 헤더: 타이틀 + 필터 + 검색 + 등록 (한 줄) -->
         <div class="integrated-header">
-          <h2 class="section-title">코드 상세 관리</h2>
+          <h2 class="section-title">
+            코드 상세 관리
+          </h2>
 
           <select v-model="detailStatusFilter" class="filter-select">
-            <option value="">전체</option>
-            <option value="Y">사용</option>
-            <option value="N">미사용</option>
+            <option value="">
+              전체
+            </option>
+            <option value="Y">
+              사용
+            </option>
+            <option value="N">
+              미사용
+            </option>
           </select>
 
           <div class="search-box">
@@ -125,18 +146,23 @@
               class="search-input"
               @keyup.enter="searchDetails"
             >
-            <button @click="searchDetails" class="search-button">
-              <i class="fas fa-search"></i>
+            <button class="search-button" @click="searchDetails">
+              <i class="fas fa-search" />
             </button>
           </div>
 
           <button
-            @click="openDetailModal('create')"
             class="btn-register"
             :disabled="!selectedGroupCode"
+            @click="openDetailModal('create')"
           >
-            <i class="fas fa-plus"></i> 등록
+            <i class="fas fa-plus" /> 등록
           </button>
+        </div>
+
+        <!-- 건수 표시 -->
+        <div class="table-info-bar">
+          <span>총 {{ detailTable.totalElements.value }}개 중 {{ detailTable.startIndex.value }}-{{ detailTable.endIndex.value }}개 표시</span>
         </div>
 
         <!-- 코드 상세 목록 -->
@@ -144,25 +170,25 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th @click="sortDetails('groupName')" class="sortable">
+                <th class="sortable" @click="sortDetails('groupName')">
                   코드 그룹
-                  <i :class="getSortIcon('groupName', detailSortBy, detailSortOrder)"></i>
+                  <i :class="getSortIcon('groupName', detailSortBy, detailSortOrder)" />
                 </th>
-                <th @click="sortDetails('code')" class="sortable">
+                <th class="sortable" @click="sortDetails('code')">
                   코드
-                  <i :class="getSortIcon('code', detailSortBy, detailSortOrder)"></i>
+                  <i :class="getSortIcon('code', detailSortBy, detailSortOrder)" />
                 </th>
-                <th @click="sortDetails('codeName')" class="sortable">
+                <th class="sortable" @click="sortDetails('codeName')">
                   코드명
-                  <i :class="getSortIcon('codeName', detailSortBy, detailSortOrder)"></i>
+                  <i :class="getSortIcon('codeName', detailSortBy, detailSortOrder)" />
                 </th>
-                <th @click="sortDetails('sortOrder')" class="sortable">
+                <th class="sortable" @click="sortDetails('sortOrder')">
                   정렬 순서
-                  <i :class="getSortIcon('sortOrder', detailSortBy, detailSortOrder)"></i>
+                  <i :class="getSortIcon('sortOrder', detailSortBy, detailSortOrder)" />
                 </th>
-                <th @click="sortDetails('useYn')" class="sortable">
+                <th class="sortable" @click="sortDetails('useYn')">
                   사용 여부
-                  <i :class="getSortIcon('useYn', detailSortBy, detailSortOrder)"></i>
+                  <i :class="getSortIcon('useYn', detailSortBy, detailSortOrder)" />
                 </th>
                 <th>관리</th>
               </tr>
@@ -171,7 +197,7 @@
               <tr v-if="!selectedGroupCode" class="no-selection-row">
                 <td colspan="6" class="no-selection-message">
                   <div class="empty-state">
-                    <i class="fas fa-info-circle"></i>
+                    <i class="fas fa-info-circle" />
                     <span>코드 그룹을 선택해주세요</span>
                   </div>
                 </td>
@@ -179,12 +205,12 @@
               <tr v-else-if="sortedDetails.length === 0" class="no-data-row">
                 <td colspan="6" class="no-data-message">
                   <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
+                    <i class="fas fa-inbox" />
                     <span>해당 그룹에 등록된 코드가 없습니다</span>
                   </div>
                 </td>
               </tr>
-              <tr v-else v-for="detail in detailTable.items.value" :key="`${detail.groupCode}-${detail.code}`" class="table-row">
+              <tr v-for="detail in detailTable.items.value" v-else :key="`${detail.groupCode}-${detail.code}`" class="table-row">
                 <td>{{ detail.groupCode }}</td>
                 <td>{{ detail.code }}</td>
                 <td>{{ detail.codeName }}</td>
@@ -195,13 +221,11 @@
                   </span>
                 </td>
                 <td class="action-buttons">
-                  <button @click="openDetailModal('edit', detail)" class="btn-edit" title="수정">
-                    <i class="fas fa-edit"></i>
-                    <span>수정</span>
+                  <button class="btn-icon btn-edit" title="수정" @click="openDetailModal('edit', detail)">
+                    <i class="fas fa-edit" />
                   </button>
-                  <button @click="deleteDetail(detail.groupCode, detail.code)" class="btn-delete" title="삭제">
-                    <i class="fas fa-trash"></i>
-                    <span>삭제</span>
+                  <button class="btn-icon btn-delete" title="삭제" @click="deleteDetail(detail.groupCode, detail.code)">
+                    <i class="fas fa-trash" />
                   </button>
                 </td>
               </tr>
@@ -211,9 +235,6 @@
 
         <!-- 페이지네이션 -->
         <div class="pagination-section">
-          <div class="pagination-info">
-            총 {{ detailTable.totalElements.value }}개 중 {{ detailTable.startIndex.value }}-{{ detailTable.endIndex.value }}개 표시
-          </div>
           <Pagination
             :current-page="detailTable.currentPage.value"
             :total-pages="detailTable.totalPages.value"
@@ -228,12 +249,12 @@
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>{{ groupModalMode === 'create' ? '새 코드 그룹 등록' : '코드 그룹 수정' }}</h3>
-          <button @click="closeGroupModal" class="modal-close">
-            <i class="fas fa-times"></i>
+          <button class="modal-close" @click="closeGroupModal">
+            <i class="fas fa-times" />
           </button>
         </div>
         <div class="modal-body">
-          <form @submit.prevent="saveGroup" class="form">
+          <form class="form" @submit.prevent="saveGroup">
             <div class="form-group">
               <label for="groupCode">코드 그룹 코드 *</label>
               <input
@@ -262,20 +283,36 @@
                 v-model="groupForm.description"
                 rows="3"
                 class="form-textarea"
-              ></textarea>
+              />
+            </div>
+            <div class="form-group">
+              <label for="groupSortOrder">정렬 순서</label>
+              <input
+                id="groupSortOrder"
+                v-model.number="groupForm.sortOrder"
+                type="number"
+                min="0"
+                class="form-input"
+              >
             </div>
             <div class="form-group">
               <label for="groupUseYn">사용 여부</label>
               <select id="groupUseYn" v-model="groupForm.useYn" class="form-select">
-                <option value="Y">사용</option>
-                <option value="N">미사용</option>
+                <option value="Y">
+                  사용
+                </option>
+                <option value="N">
+                  미사용
+                </option>
               </select>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button @click="closeGroupModal" class="btn-secondary">취소</button>
-          <button @click="saveGroup" class="btn-primary">
+          <button class="btn-secondary" @click="closeGroupModal">
+            취소
+          </button>
+          <button class="btn-primary" @click="saveGroup">
             {{ groupModalMode === 'create' ? '등록' : '수정' }}
           </button>
         </div>
@@ -287,12 +324,12 @@
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>{{ detailModalMode === 'create' ? '새 코드 등록' : '코드 수정' }}</h3>
-          <button @click="closeDetailModal" class="modal-close">
-            <i class="fas fa-times"></i>
+          <button class="modal-close" @click="closeDetailModal">
+            <i class="fas fa-times" />
           </button>
         </div>
         <div class="modal-body">
-          <form @submit.prevent="saveDetail" class="form">
+          <form class="form" @submit.prevent="saveDetail">
             <div class="form-group">
               <label for="detailGroupCode">코드 그룹 *</label>
               <select
@@ -302,7 +339,9 @@
                 class="form-select"
                 :disabled="detailModalMode === 'create'"
               >
-                <option value="">코드 그룹을 선택하세요</option>
+                <option value="">
+                  코드 그룹을 선택하세요
+                </option>
                 <option v-for="group in allCodeGroups" :key="group.groupCode" :value="group.groupCode">
                   {{ group.groupName }}
                 </option>
@@ -339,7 +378,7 @@
                 v-model="detailForm.description"
                 rows="3"
                 class="form-textarea"
-              ></textarea>
+              />
             </div>
             <div class="form-group">
               <label for="detailSortOrder">정렬 순서</label>
@@ -357,15 +396,21 @@
             <div class="form-group">
               <label for="detailUseYn">사용 여부</label>
               <select id="detailUseYn" v-model="detailForm.useYn" class="form-select">
-                <option value="Y">사용</option>
-                <option value="N">미사용</option>
+                <option value="Y">
+                  사용
+                </option>
+                <option value="N">
+                  미사용
+                </option>
               </select>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button @click="closeDetailModal" class="btn-secondary">취소</button>
-          <button @click="saveDetail" class="btn-primary">
+          <button class="btn-secondary" @click="closeDetailModal">
+            취소
+          </button>
+          <button class="btn-primary" @click="saveDetail">
             {{ detailModalMode === 'create' ? '등록' : '수정' }}
           </button>
         </div>
@@ -393,8 +438,8 @@ const allCodeDetails = ref<CodeDetail[]>([])
 // 코드 그룹
 const groupSearchKeyword = ref('')
 const groupStatusFilter = ref('')
-const groupSortBy = ref('groupCode')
-const groupSortOrder = ref<'asc' | 'desc'>('asc')
+const groupSortBy = ref('sortOrder')
+const groupSortOrder = ref<'asc' | 'desc'>('desc')
 const selectedGroupCode = ref<string>('')
 
 // 코드 상세
@@ -516,12 +561,12 @@ const sortedDetails = computed(() => {
 })
 
 // ===== 정렬/필터 변경 시 useDataTable에 데이터 반영 =====
-watch(sortedGroups, (data) => {
-  groupTable.setData(data)
+watch([sortedGroups, () => groupTable.currentPage.value], () => {
+  groupTable.setData(sortedGroups.value)
 }, { immediate: true })
 
-watch(sortedDetails, (data) => {
-  detailTable.setData(data)
+watch([sortedDetails, () => detailTable.currentPage.value], () => {
+  detailTable.setData(sortedDetails.value)
 }, { immediate: true })
 
 // ===== API 호출 =====
@@ -604,7 +649,7 @@ const sortDetails = (field: string) => {
 }
 
 const getSortIcon = (field: string, sortBy: string, sortOrder: string) => {
-  if (sortBy !== field) return 'fas fa-sort'
+  if (sortBy !== field) { return 'fas fa-sort' }
   return sortOrder === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
 }
 
@@ -654,7 +699,7 @@ const saveGroup = async () => {
 }
 
 const deleteGroup = async (groupCode: string) => {
-  if (!confirm('정말로 이 코드 그룹을 삭제하시겠습니까?')) return
+  if (!confirm('정말로 이 코드 그룹을 삭제하시겠습니까?')) { return }
 
   try {
     await codeService.deleteCodeGroup(groupCode)
@@ -713,7 +758,7 @@ const saveDetail = async () => {
 }
 
 const deleteDetail = async (groupCode: string, code: string) => {
-  if (!confirm('정말로 이 코드를 삭제하시겠습니까?')) return
+  if (!confirm('정말로 이 코드를 삭제하시겠습니까?')) { return }
 
   try {
     await codeService.deleteCodeDetail(groupCode, code)
@@ -754,10 +799,10 @@ onMounted(() => {
 
 .code-groups-section,
 .code-details-section {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   flex: 1;
   min-width: 0;
 }
@@ -767,13 +812,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 16px;
+  padding: 10px 0;
   border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
+  background: transparent;
 }
 
 .section-title {
-  font-size: 14px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: #1f2937;
   margin: 0;
@@ -782,10 +827,10 @@ onMounted(() => {
 }
 
 .filter-select {
-  padding: 5px 8px;
+  padding: 6px 10px;
   border: 1px solid #d1d5db;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 0.8125rem;
   min-width: 80px;
   background: white;
   cursor: pointer;
@@ -800,15 +845,15 @@ onMounted(() => {
 
 .search-input {
   flex: 1;
-  padding: 5px 8px;
+  padding: 6px 10px;
   border: 1px solid #d1d5db;
   border-radius: 4px 0 0 4px;
-  font-size: 12px;
+  font-size: 0.8125rem;
   min-width: 120px;
 }
 
 .search-button {
-  padding: 5px 10px;
+  padding: 6px 10px;
   background: #3b82f6;
   color: white;
   border: none;
@@ -816,7 +861,7 @@ onMounted(() => {
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   transition: background-color 0.2s;
 }
 
@@ -825,12 +870,12 @@ onMounted(() => {
 }
 
 .btn-register {
-  padding: 5px 10px;
+  padding: 6px 12px;
   background: #10b981;
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -929,26 +974,29 @@ onMounted(() => {
 
 /* .action-buttons, .btn-edit, .btn-delete는 admin-buttons.css에서 제공 */
 
-.pagination-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.pagination-info {
+/* 건수 표시 (테이블 상단) */
+.table-info-bar {
+  padding: 8px 16px;
   color: #6b7280;
   font-size: 13px;
 }
 
-/* Pagination 컴포넌트의 기본 margin/padding을 pagination-section 내부에서 제거 */
+.pagination-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0;
+  border-top: none;
+  background: transparent;
+}
+
+/* Pagination 컴포넌트의 기본 margin/padding 제거 */
 .pagination-section :deep(.pagination) {
   margin-top: 0;
   padding: 0;
 }
 
-/* .modal-overlay, .modal-content, .modal-header, .modal-close, .modal-body는 admin-modals.css에서 제공 */
+/* .modal-overlay, .modal-content, .modal-header, .modal-close, .modal-body, .modal-footer는 admin-modals.css에서 제공 */
 
 /* .form-group, .form-input, .form-textarea, .form-select는 admin-common.css에서 제공 */
 

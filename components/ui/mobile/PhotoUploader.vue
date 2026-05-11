@@ -7,16 +7,18 @@
         :key="index"
         class="photo-item"
       >
-        <img :src="photo.preview" :alt="`사진 ${index + 1}`">
+        <img :src="photo.preview || '/images/common/logo.png'" :alt="`사진 ${index + 1}`">
         <button
           class="btn-remove"
-          @click="removePhoto(index)"
           type="button"
           title="삭제"
+          @click="removePhoto(index)"
         >
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
-        <div class="photo-number">{{ index + 1 }}</div>
+        <div class="photo-number">
+          {{ index + 1 }}
+        </div>
       </div>
 
       <!-- 사진 추가 버튼 -->
@@ -25,7 +27,7 @@
         class="photo-item add-photo"
         @click="triggerFileInput"
       >
-        <i class="fas fa-camera"></i>
+        <i class="fas fa-images" />
         <span>사진 추가</span>
         <span class="photo-count">{{ photos.length }}/{{ maxPhotos }}</span>
       </div>
@@ -35,15 +37,15 @@
         v-if="isCompressing"
         class="photo-item compressing"
       >
-        <i class="fas fa-spinner fa-spin"></i>
+        <i class="fas fa-spinner fa-spin" />
         <span>처리 중...</span>
       </div>
     </div>
 
     <!-- 안내 문구 -->
     <div class="photo-guide">
-      <i class="fas fa-info-circle"></i>
-      <span>사진을 탭하여 {{ maxPhotos }}장까지 촬영할 수 있습니다</span>
+      <i class="fas fa-info-circle" />
+      <span>사진을 탭하여 촬영하거나 앨범에서 최대 {{ maxPhotos }}장까지 선택할 수 있습니다</span>
     </div>
 
     <!-- 숨겨진 파일 입력 -->
@@ -51,10 +53,9 @@
       ref="fileInputRef"
       type="file"
       accept="image/*"
-      capture="environment"
       multiple
-      @change="handleFileSelect"
       style="display: none"
+      @change="handleFileSelect"
     >
   </div>
 </template>
@@ -62,18 +63,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { compressImageIfNeeded } from '~/utils/image-compress'
+import { deliveryService } from '~/services/delivery.service'
 
 interface Props {
   maxPhotos?: number
+  token?: string // 서버 임시 업로드용 토큰
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  maxPhotos: 5
+  maxPhotos: 5,
+  token: ''
 })
 
 interface Photo {
   file: File
   preview: string
+  tempPhotoId: string // 서버 임시 사진 ID
 }
 
 // State
@@ -91,12 +96,12 @@ const handleFileSelect = async (e: Event) => {
   const input = e.target as HTMLInputElement
   const files = input.files
 
-  if (!files || files.length === 0) return
+  if (!files || files.length === 0) { return }
 
   const remainingSlots = props.maxPhotos - photos.value.length
   const filesToAdd = Array.from(files).slice(0, remainingSlots)
 
-  // 압축 중 표시
+  // 처리 중 표시 (압축 + 업로드 완료까지)
   isCompressing.value = true
 
   // 서버 업로드 최대 크기 (10MB - 서버 제한 고려)
@@ -116,31 +121,31 @@ const handleFileSelect = async (e: Event) => {
           maxWidth: 1920,
           maxHeight: 1440,
           quality: 0.75,
-          maxSizeBytes: 1 * 1024 * 1024  // 1MB 초과 시 압축
+          maxSizeBytes: 1 * 1024 * 1024
         })
 
         console.log(`[사진 처리] 1차 압축 결과: ${file.name} → ${(processedFile.size / 1024 / 1024).toFixed(2)}MB`)
 
-        // 1차 압축 후에도 크기가 크면 2차 압축 (50% 품질, 해상도 축소)
+        // 1차 압축 후에도 크기가 크면 2차 압축
         if (processedFile.size > maxUploadSize) {
           console.log(`[사진 처리] 2차 압축 시도: ${file.name}`)
           processedFile = await compressImageIfNeeded(file, {
             maxWidth: 1280,
             maxHeight: 960,
             quality: 0.5,
-            maxSizeBytes: 0  // 무조건 압축
+            maxSizeBytes: 0
           })
           console.log(`[사진 처리] 2차 압축 결과: ${file.name} → ${(processedFile.size / 1024 / 1024).toFixed(2)}MB`)
         }
 
-        // 2차 압축 후에도 크기가 크면 3차 압축 (30% 품질)
+        // 2차 압축 후에도 크기가 크면 3차 압축
         if (processedFile.size > maxUploadSize) {
           console.log(`[사진 처리] 3차 압축 시도: ${file.name}`)
           processedFile = await compressImageIfNeeded(file, {
             maxWidth: 1024,
             maxHeight: 768,
             quality: 0.3,
-            maxSizeBytes: 0  // 무조건 압축
+            maxSizeBytes: 0
           })
           console.log(`[사진 처리] 3차 압축 결과: ${file.name} → ${(processedFile.size / 1024 / 1024).toFixed(2)}MB`)
         }
@@ -154,9 +159,24 @@ const handleFileSelect = async (e: Event) => {
         // 미리보기 생성
         const preview = await createPreview(processedFile)
 
+        // 서버 임시 폴더에 즉시 업로드
+        let tempPhotoId = ''
+        if (props.token) {
+          try {
+            const result = await deliveryService.uploadTempPhoto(props.token, processedFile)
+            tempPhotoId = result.tempPhotoId
+            console.log(`[사진 처리] 서버 업로드 완료: tempPhotoId=${tempPhotoId}`)
+          } catch (uploadError) {
+            console.error('서버 임시 업로드 실패:', uploadError)
+            alert(`사진 업로드에 실패했습니다: ${uploadError instanceof Error ? uploadError.message : '알 수 없는 오류'}`)
+            continue
+          }
+        }
+
         photos.value.push({
           file: processedFile,
-          preview
+          preview,
+          tempPhotoId
         })
 
         console.log(`[사진 처리] 완료: ${file.name} (원본: ${(file.size / 1024 / 1024).toFixed(2)}MB → 압축: ${(processedFile.size / 1024 / 1024).toFixed(2)}MB)`)
@@ -196,17 +216,62 @@ const createPreview = (file: File): Promise<string> => {
   })
 }
 
-// 사진 삭제
-const removePhoto = (index: number) => {
+// 사진 삭제 (UI + 서버 temp 파일도 즉시 삭제)
+const removePhoto = async (index: number) => {
   const confirmed = confirm('이 사진을 삭제하시겠습니까?')
-  if (confirmed) {
-    photos.value.splice(index, 1)
+  if (!confirmed) { return }
+
+  const photo = photos.value[index]
+
+  // 서버에 업로드된 사진이면 서버에서도 삭제
+  if (photo.tempPhotoId && props.token) {
+    try {
+      await deliveryService.deleteTempPhoto(props.token, photo.tempPhotoId)
+      console.log(`[사진 삭제] 서버 temp 파일 삭제 완료: tempPhotoId=${photo.tempPhotoId}`)
+    } catch (err) {
+      console.error('서버 사진 삭제 실패:', err)
+      // 서버 삭제 실패해도 로컬에서는 제거
+    }
+  }
+
+  photos.value.splice(index, 1)
+}
+
+// 서버 임시 사진 목록 복원 (페이지 재진입 시)
+const loadExistingTempPhotos = async () => {
+  if (!props.token) { return }
+  try {
+    const result = await deliveryService.getTempPhotos(props.token)
+    if (result.photos && result.photos.length > 0) {
+      for (const item of result.photos) {
+        // 서버 스트리밍 URL로 미리보기 복원
+        const previewUrl = deliveryService.getTempPhotoUrl(props.token, item.tempPhotoId)
+        photos.value.push({
+          file: new File([], item.fileName), // 빈 File (서버에 이미 있음)
+          preview: previewUrl,
+          tempPhotoId: item.tempPhotoId
+        })
+      }
+      console.log(`[사진 복원] 기존 임시 사진 ${result.photos.length}장 복원됨`)
+    }
+  } catch (err) {
+    console.error('기존 임시 사진 로드 실패:', err)
   }
 }
 
-// 사진 파일 가져오기 (외부에서 호출)
+// 사진 파일 가져오기 (하위 호환 - 기존 플로우용)
 const getPhotos = (): File[] => {
   return photos.value.map(p => p.file)
+}
+
+// 업로드 완료된 사진 수 (temp 업로드 완료된 것)
+const getUploadedCount = (): number => {
+  return photos.value.filter(p => p.tempPhotoId).length
+}
+
+// 모든 사진이 업로드 완료되었는지
+const hasAllUploaded = (): boolean => {
+  return photos.value.length > 0 && photos.value.every(p => p.tempPhotoId)
 }
 
 // 사진 초기화 (외부에서 호출)
@@ -217,7 +282,10 @@ const clearPhotos = () => {
 // Expose
 defineExpose({
   getPhotos,
-  clearPhotos
+  clearPhotos,
+  getUploadedCount,
+  hasAllUploaded,
+  loadExistingTempPhotos
 })
 </script>
 

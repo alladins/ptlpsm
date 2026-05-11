@@ -4,24 +4,24 @@
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h3>
-            <i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>
+            <i class="fas fa-exclamation-triangle" style="color: #f59e0b;" />
             재고 부족 현황
           </h3>
           <button class="modal-close" @click="$emit('close')">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
         <div class="modal-body">
           <!-- 안내 메시지 -->
           <div class="shortage-message">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             <span>{{ message }}</span>
           </div>
 
           <!-- OEM 제조사 정보 -->
           <div v-if="oemCompanyName" class="oem-info">
-            <i class="fas fa-industry"></i>
+            <i class="fas fa-industry" />
             <span>제조사: <strong>{{ oemCompanyName }}</strong></span>
           </div>
 
@@ -31,11 +31,21 @@
               <thead>
                 <tr>
                   <th>품목명</th>
-                  <th class="text-right">필요수량</th>
-                  <th class="text-right">생산수량</th>
-                  <th class="text-right">기출고</th>
-                  <th class="text-right">재고수량</th>
-                  <th class="text-right">부족수량</th>
+                  <th class="text-right">
+                    필요수량
+                  </th>
+                  <th class="text-right">
+                    생산수량
+                  </th>
+                  <th class="text-right">
+                    기출고
+                  </th>
+                  <th class="text-right">
+                    재고수량
+                  </th>
+                  <th class="text-right">
+                    부족수량
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -45,13 +55,21 @@
                   :class="{ 'row-shortage': !item.sufficient }"
                 >
                   <td>{{ item.skuName || item.skuId }}</td>
-                  <td class="text-right">{{ formatNumber(item.requiredQuantity) }}</td>
-                  <td class="text-right">{{ formatNumber(item.totalProducedQuantity) }}</td>
-                  <td class="text-right">{{ formatNumber(item.totalDispatchedQuantity) }}</td>
-                  <td class="text-right">{{ formatNumber(item.inventoryQuantity) }}</td>
+                  <td class="text-right">
+                    {{ formatNumber(item.requiredQuantity) }}
+                  </td>
+                  <td class="text-right">
+                    {{ formatNumber(item.totalProducedQuantity) }}
+                  </td>
+                  <td class="text-right">
+                    {{ formatNumber(item.totalDispatchedQuantity) }}
+                  </td>
+                  <td class="text-right">
+                    {{ formatNumber(item.inventoryQuantity) }}
+                  </td>
                   <td class="text-right">
                     <span v-if="item.shortageQuantity >= 0" class="badge-sufficient">
-                      <i class="fas fa-check"></i> 충족
+                      <i class="fas fa-check" /> 충족
                     </span>
                     <span v-else class="badge-shortage">
                       {{ formatNumber(item.shortageQuantity) }}
@@ -64,14 +82,14 @@
 
           <!-- 미입고 발주 안내 (ISSUED/IN_PRODUCTION 상태 PO가 있는 경우) -->
           <div v-if="hasPendingOrders" class="pending-order-info">
-            <i class="fas fa-truck-loading"></i>
+            <i class="fas fa-truck-loading" />
             <span>미입고 발주수량이 포함되어 있습니다. (발주 진행 중인 물량이 입고되면 재고에 반영됩니다)</span>
           </div>
         </div>
 
         <div class="modal-footer">
           <button class="btn-close" @click="$emit('close')">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
             닫기
           </button>
         </div>
@@ -95,7 +113,7 @@ const props = defineProps<Props>()
 defineEmits<{ close: [] }>()
 
 const formatNumber = (value: number): string => {
-  if (value == null) return '0'
+  if (value == null) { return '0' }
   return value.toLocaleString('ko-KR')
 }
 

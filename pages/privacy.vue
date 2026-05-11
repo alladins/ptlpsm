@@ -4,7 +4,7 @@
       <h1 style="font-size: 2rem; font-weight: bold; margin-bottom: 2rem; color: #1f2937; text-align: center;">
         개인정보처리방침
       </h1>
-      
+
       <div style="background-color: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
         <p style="color: #6b7280; margin-bottom: 2rem; font-size: 0.875rem;">
           최종 수정일: 2024년 1월 1일

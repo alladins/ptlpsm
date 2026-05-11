@@ -1,13 +1,13 @@
 <template>
   <div class="message-template-detail-page">
-    <PageHeader title="메시지 템플릿 상세" description="메시지 템플릿 정보를 확인합니다">
+    <PageHeader title="메시지 템플릿 상세" icon="default" icon-color="blue" description="메시지 템플릿 정보를 확인합니다">
       <template #actions>
         <button class="btn-secondary" @click="goToList">
-          <i class="ri-arrow-left-line"></i>
+          <i class="ri-arrow-left-line" />
           목록으로
         </button>
         <button class="btn-primary" @click="goToEdit">
-          <i class="ri-edit-line"></i>
+          <i class="ri-edit-line" />
           수정
         </button>
       </template>
@@ -15,16 +15,16 @@
 
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-state">
-      <i class="ri-loader-4-line animate-spin"></i>
+      <i class="ri-loader-4-line animate-spin" />
       데이터를 불러오는 중...
     </div>
 
     <!-- 에러 상태 -->
     <div v-else-if="error" class="error-state">
-      <i class="ri-error-warning-line"></i>
+      <i class="ri-error-warning-line" />
       {{ error }}
       <button class="btn-secondary" @click="loadTemplate">
-        <i class="ri-refresh-line"></i>
+        <i class="ri-refresh-line" />
         다시 시도
       </button>
     </div>
@@ -33,7 +33,9 @@
     <div v-else-if="template" class="detail-content">
       <!-- 기본 정보 -->
       <div class="info-section">
-        <h3 class="section-title">기본 정보</h3>
+        <h3 class="section-title">
+          기본 정보
+        </h3>
         <div class="info-grid">
           <div class="info-item">
             <label>템플릿 코드</label>
@@ -44,7 +46,9 @@
 
           <div class="info-item">
             <label>템플릿명</label>
-            <div class="value">{{ template.templateName }}</div>
+            <div class="value">
+              {{ template.templateName }}
+            </div>
           </div>
 
           <div class="info-item">
@@ -60,7 +64,7 @@
             <label>사용 여부</label>
             <div class="value">
               <span :class="['status-badge', template.useYn === 'Y' ? 'active' : 'inactive']">
-                <i :class="template.useYn === 'Y' ? 'ri-check-line' : 'ri-close-line'"></i>
+                <i :class="template.useYn === 'Y' ? 'ri-check-line' : 'ri-close-line'" />
                 {{ template.useYn === 'Y' ? '사용' : '미사용' }}
               </span>
             </div>
@@ -68,18 +72,24 @@
 
           <div v-if="template.description" class="info-item full-width">
             <label>설명</label>
-            <div class="value">{{ template.description }}</div>
+            <div class="value">
+              {{ template.description }}
+            </div>
           </div>
         </div>
       </div>
 
       <!-- 메시지 내용 -->
       <div class="info-section">
-        <h3 class="section-title">메시지 내용</h3>
+        <h3 class="section-title">
+          메시지 내용
+        </h3>
 
         <div v-if="template.subject" class="info-item">
           <label>제목</label>
-          <div class="value subject">{{ template.subject }}</div>
+          <div class="value subject">
+            {{ template.subject }}
+          </div>
         </div>
 
         <div class="info-item">
@@ -87,13 +97,15 @@
             내용
             <span class="char-count">({{ template.content?.length || 0 }}자)</span>
           </label>
-          <div class="value content">{{ template.content || '' }}</div>
+          <div class="value content">
+            {{ template.content || '' }}
+          </div>
         </div>
 
         <!-- 미리보기 -->
         <div class="message-preview">
           <div class="preview-header">
-            <i class="ri-smartphone-line"></i>
+            <i class="ri-smartphone-line" />
             미리보기
           </div>
           <div class="preview-content">
@@ -109,21 +121,29 @@
 
       <!-- 시스템 정보 -->
       <div class="info-section">
-        <h3 class="section-title">시스템 정보</h3>
+        <h3 class="section-title">
+          시스템 정보
+        </h3>
         <div class="info-grid">
           <div class="info-item">
             <label>템플릿 ID</label>
-            <div class="value">{{ template.templateId }}</div>
+            <div class="value">
+              {{ template.templateId }}
+            </div>
           </div>
 
           <div class="info-item">
             <label>등록일시</label>
-            <div class="value">{{ formatDateTime(template.createdAt) }}</div>
+            <div class="value">
+              {{ formatDateTime(template.createdAt) }}
+            </div>
           </div>
 
           <div class="info-item">
             <label>등록자</label>
-            <div class="value">{{ template.createdBy || '-' }}</div>
+            <div class="value">
+              {{ template.createdBy || '-' }}
+            </div>
           </div>
 
           <div class="info-item">
@@ -135,7 +155,9 @@
 
           <div class="info-item">
             <label>수정자</label>
-            <div class="value">{{ template.updatedBy || '-' }}</div>
+            <div class="value">
+              {{ template.updatedBy || '-' }}
+            </div>
           </div>
         </div>
       </div>
@@ -143,7 +165,7 @@
       <!-- 액션 버튼 -->
       <div class="action-section">
         <button class="btn-danger" @click="handleDelete">
-          <i class="ri-delete-bin-line"></i>
+          <i class="ri-delete-bin-line" />
           삭제
         </button>
       </div>
@@ -193,14 +215,13 @@ const loadTemplate = async () => {
 }
 
 const handleDelete = async () => {
-  if (!template.value) return
+  if (!template.value) { return }
 
   if (
     !confirm(
       `"${template.value.templateName}" 템플릿을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`
     )
-  )
-    return
+  ) { return }
 
   try {
     await deleteMessageTemplate(template.value.templateId)
@@ -218,7 +239,7 @@ const goToList = () => {
 }
 
 const goToEdit = () => {
-  if (!template.value) return
+  if (!template.value) { return }
   router.push(`/admin/basic-info/message-templates/edit/${template.value.templateId}`)
 }
 

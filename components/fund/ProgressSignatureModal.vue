@@ -3,11 +3,11 @@
     <div class="modal-container">
       <div class="modal-header">
         <h3>
-          <i class="fas fa-paper-plane"></i>
+          <i class="fas fa-paper-plane" />
           기성청구 서명 URL 발송
         </h3>
         <button class="btn-close" @click="$emit('close')">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
@@ -43,14 +43,18 @@
                 class="form-select"
                 :disabled="loading"
               >
-                <option value="">{{ loading ? '로딩 중...' : '선택하세요' }}</option>
+                <option value="">
+                  {{ loading ? '로딩 중...' : '선택하세요' }}
+                </option>
                 <option
                   v-for="manager in siteManagerList"
                   :key="manager.userId"
                   :value="manager.userId"
                 >
                   {{ manager.userName }} ({{ manager.phone }})
-                  <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
+                  <template v-if="manager.companyName">
+                    - {{ manager.companyName }}
+                  </template>
                 </option>
               </select>
             </div>
@@ -63,14 +67,18 @@
                 class="form-select"
                 :disabled="loading"
               >
-                <option value="">{{ loading ? '로딩 중...' : '선택하세요' }}</option>
+                <option value="">
+                  {{ loading ? '로딩 중...' : '선택하세요' }}
+                </option>
                 <option
                   v-for="inspector in inspectorList"
                   :key="inspector.userId"
                   :value="inspector.userId"
                 >
                   {{ inspector.userName }} ({{ inspector.phone }})
-                  <template v-if="inspector.companyName"> - {{ inspector.companyName }}</template>
+                  <template v-if="inspector.companyName">
+                    - {{ inspector.companyName }}
+                  </template>
                 </option>
               </select>
             </div>
@@ -83,11 +91,11 @@
             <label>발송 대상 ({{ selectedCount }}명)</label>
             <div class="selected-recipients">
               <div v-if="selectedManagerInfo" class="recipient-badge contractor">
-                <i class="fas fa-user-tie"></i>
+                <i class="fas fa-user-tie" />
                 <span>현장소장: {{ selectedManagerInfo.userName }}</span>
               </div>
               <div v-if="selectedInspectorInfo" class="recipient-badge supervisor">
-                <i class="fas fa-user-check"></i>
+                <i class="fas fa-user-check" />
                 <span>현장감리원: {{ selectedInspectorInfo.userName }}</span>
               </div>
             </div>
@@ -96,13 +104,15 @@
           <!-- 미리보기 -->
           <div class="message-preview">
             <h4>
-              <i class="fas fa-eye"></i>
+              <i class="fas fa-eye" />
               발송될 메시지 미리보기
             </h4>
 
             <!-- 현장소장 메시지 -->
             <div v-if="selectedManagerInfo" class="preview-content">
-              <div class="preview-label">현장소장용</div>
+              <div class="preview-label">
+                현장소장용
+              </div>
               <p><strong>[LP LEADPOWER 기성청구]</strong></p>
               <p>{{ selectedManagerInfo.userName }}님, 안녕하세요.</p>
               <p>
@@ -113,13 +123,19 @@
               <p>■ 사업명: {{ claimData.projectName }}</p>
               <p>■ 청구금액: {{ formatCurrency(claimData.totalAmount) }}</p>
               <p>아래 링크를 클릭하여 서명해 주시기 바랍니다.</p>
-              <p class="preview-link">[서명 URL이 여기에 표시됩니다]</p>
-              <p class="preview-note">* 링크는 발송 후 1일간 유효합니다.</p>
+              <p class="preview-link">
+                [서명 URL이 여기에 표시됩니다]
+              </p>
+              <p class="preview-note">
+                * 링크는 발송 후 1일간 유효합니다.
+              </p>
             </div>
 
             <!-- 현장감리원 메시지 -->
             <div v-if="selectedInspectorInfo" class="preview-content" :class="{ 'mt-3': selectedManagerInfo }">
-              <div class="preview-label">현장감리원용</div>
+              <div class="preview-label">
+                현장감리원용
+              </div>
               <p><strong>[LP LEADPOWER 기성청구]</strong></p>
               <p>{{ selectedInspectorInfo.userName }}님, 안녕하세요.</p>
               <p>
@@ -130,29 +146,33 @@
               <p>■ 사업명: {{ claimData.projectName }}</p>
               <p>■ 청구금액: {{ formatCurrency(claimData.totalAmount) }}</p>
               <p>아래 링크를 클릭하여 서명해 주시기 바랍니다.</p>
-              <p class="preview-link">[서명 URL이 여기에 표시됩니다]</p>
-              <p class="preview-note">* 링크는 발송 후 1일간 유효합니다.</p>
+              <p class="preview-link">
+                [서명 URL이 여기에 표시됩니다]
+              </p>
+              <p class="preview-note">
+                * 링크는 발송 후 1일간 유효합니다.
+              </p>
             </div>
           </div>
         </div>
 
         <!-- 안내 메시지 -->
         <div class="info-notice">
-          <i class="fas fa-info-circle"></i>
+          <i class="fas fa-info-circle" />
           <span>현장소장과 감리원 모두 서명이 완료되면 PDF가 자동 생성됩니다.</span>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="$emit('close')" :disabled="sending">
+        <button class="btn-cancel" :disabled="sending" @click="$emit('close')">
           취소
         </button>
         <button
           class="btn-send"
-          @click="handleSend"
           :disabled="!canSend || sending"
+          @click="handleSend"
         >
-          <i class="fas" :class="sending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+          <i class="fas" :class="sending ? 'fa-spinner fa-spin' : 'fa-paper-plane'" />
           {{ sending ? '발송 중...' : sendButtonText }}
         </button>
       </div>
@@ -189,20 +209,20 @@ const inspectorList = ref<UserByRole[]>([])
 
 // 선택된 담당자 정보
 const selectedManagerInfo = computed(() => {
-  if (!selectedSiteManagerId.value) return null
+  if (!selectedSiteManagerId.value) { return null }
   return siteManagerList.value.find(m => m.userId === selectedSiteManagerId.value) || null
 })
 
 const selectedInspectorInfo = computed(() => {
-  if (!selectedInspectorId.value) return null
+  if (!selectedInspectorId.value) { return null }
   return inspectorList.value.find(i => i.userId === selectedInspectorId.value) || null
 })
 
 // 선택된 인원 수
 const selectedCount = computed(() => {
   let count = 0
-  if (selectedManagerInfo.value) count++
-  if (selectedInspectorInfo.value) count++
+  if (selectedManagerInfo.value) { count++ }
+  if (selectedInspectorInfo.value) { count++ }
   return count
 })
 
@@ -213,8 +233,8 @@ const canSend = computed(() => {
 
 // 발송 버튼 텍스트
 const sendButtonText = computed(() => {
-  if (selectedCount.value === 0) return 'URL 발송'
-  if (selectedCount.value === 1) return 'URL 발송'
+  if (selectedCount.value === 0) { return 'URL 발송' }
+  if (selectedCount.value === 1) { return 'URL 발송' }
   return `URL 발송 (${selectedCount.value}명)`
 })
 
@@ -236,8 +256,8 @@ onMounted(async () => {
   }
 })
 
-async function handleSend() {
-  if (!canSend.value) return
+async function handleSend () {
+  if (!canSend.value) { return }
 
   sending.value = true
 

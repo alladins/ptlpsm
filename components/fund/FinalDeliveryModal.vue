@@ -4,14 +4,14 @@
       <div class="modal-header">
         <h3>납품완료 처리</h3>
         <button class="modal-close" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
       <div class="modal-body">
         <!-- 로딩 상태 -->
         <div v-if="isLoading" class="loading-container">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <span>데이터를 불러오는 중...</span>
         </div>
 
@@ -24,7 +24,7 @@
             </div>
 
             <div v-if="!deliveryDone || !deliveryDone.items || deliveryDone.items.length === 0" class="empty-message">
-              <i class="fas fa-inbox"></i>
+              <i class="fas fa-inbox" />
               <p>납품완료계 데이터가 없습니다.</p>
               <span>납품확인이 완료된 출하가 있어야 납품완료 처리가 가능합니다.</span>
             </div>
@@ -33,29 +33,55 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th class="col-no">순번</th>
-                    <th class="col-item">품목명</th>
-                    <th class="col-spec">규격</th>
-                    <th class="col-unit">단위</th>
-                    <th class="col-qty">납품수량</th>
-                    <th class="col-amount">금액</th>
+                    <th class="col-no">
+                      순번
+                    </th>
+                    <th class="col-item">
+                      품목명
+                    </th>
+                    <th class="col-spec">
+                      규격
+                    </th>
+                    <th class="col-unit">
+                      단위
+                    </th>
+                    <th class="col-qty">
+                      납품수량
+                    </th>
+                    <th class="col-amount">
+                      금액
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="item in deliveryDone.items" :key="item.itemId">
-                    <td class="text-center">{{ item.sequenceNumber }}</td>
+                    <td class="text-center">
+                      {{ item.sequenceNumber }}
+                    </td>
                     <td>{{ item.itemName }}</td>
                     <td>{{ item.specification || '-' }}</td>
-                    <td class="text-center">{{ item.unit }}</td>
-                    <td class="text-right">{{ formatNumber(item.deliveredQuantity) }}</td>
-                    <td class="text-right">{{ formatCurrency(item.totalAmount) }}</td>
+                    <td class="text-center">
+                      {{ item.unit }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatNumber(item.deliveredQuantity) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatCurrency(item.totalAmount) }}
+                    </td>
                   </tr>
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colspan="4" class="text-right"><strong>합계</strong></td>
-                    <td class="text-right"><strong>{{ formatNumber(totalQuantity) }}</strong></td>
-                    <td class="text-right"><strong>{{ formatCurrency(totalAmount) }}</strong></td>
+                    <td colspan="4" class="text-right">
+                      <strong>합계</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatNumber(totalQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatCurrency(totalAmount) }}</strong>
+                    </td>
                   </tr>
                 </tfoot>
               </table>
@@ -72,7 +98,7 @@
 
           <!-- 정보 안내 -->
           <div class="info-box">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             <div class="info-content">
               <strong>납품완료 처리 안내</strong>
               <p>선택한 대상자에게 납품완료확인서 서명 URL이 발송됩니다. 양쪽 서명이 완료되면 납품완료가 자동 처리됩니다.</p>
@@ -91,14 +117,18 @@
                   class="form-select"
                   :disabled="isLoadingUsers"
                 >
-                  <option value="">{{ isLoadingUsers ? '로딩 중...' : '선택하세요' }}</option>
+                  <option value="">
+                    {{ isLoadingUsers ? '로딩 중...' : '선택하세요' }}
+                  </option>
                   <option
                     v-for="manager in siteManagerList"
                     :key="manager.userId"
                     :value="manager.userId"
                   >
                     {{ manager.userName }} ({{ manager.phone }})
-                    <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
+                    <template v-if="manager.companyName">
+                      - {{ manager.companyName }}
+                    </template>
                   </option>
                 </select>
               </div>
@@ -111,19 +141,25 @@
                   class="form-select"
                   :disabled="isLoadingUsers"
                 >
-                  <option value="">{{ isLoadingUsers ? '로딩 중...' : '선택하세요' }}</option>
+                  <option value="">
+                    {{ isLoadingUsers ? '로딩 중...' : '선택하세요' }}
+                  </option>
                   <option
                     v-for="inspector in inspectorList"
                     :key="inspector.userId"
                     :value="inspector.userId"
                   >
                     {{ inspector.userName }} ({{ inspector.phone }})
-                    <template v-if="inspector.companyName"> - {{ inspector.companyName }}</template>
+                    <template v-if="inspector.companyName">
+                      - {{ inspector.companyName }}
+                    </template>
                   </option>
                 </select>
               </div>
             </div>
-            <p class="help-text">최소 1명 이상 선택해야 합니다.</p>
+            <p class="help-text">
+              최소 1명 이상 선택해야 합니다.
+            </p>
           </div>
 
           <!-- 비고 입력 -->
@@ -134,13 +170,13 @@
               class="form-textarea"
               placeholder="비고 입력 (선택)"
               rows="2"
-            ></textarea>
+            />
           </div>
 
           <!-- 최종 확인 -->
           <div class="confirm-section">
             <label class="checkbox-label">
-              <input type="checkbox" v-model="confirmFinalDelivery">
+              <input v-model="confirmFinalDelivery" type="checkbox">
               <span>위 내용을 확인하였으며, 납품완료 처리를 진행합니다.</span>
             </label>
           </div>
@@ -149,16 +185,16 @@
 
       <div class="modal-footer">
         <button class="btn-secondary" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
           취소
         </button>
         <button
           class="btn-primary"
-          @click="submitFinalDelivery"
           :disabled="!isValid || isSubmitting"
+          @click="submitFinalDelivery"
         >
-          <i v-if="isSubmitting" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-check-double"></i>
+          <i v-if="isSubmitting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-check-double" />
           납품완료 처리
         </button>
       </div>
@@ -207,23 +243,23 @@ const deliveryDone = ref<DeliveryDone | null>(null)
 
 // 선택된 담당자 정보
 const selectedManagerInfo = computed(() => {
-  if (!selectedSiteManagerId.value) return null
+  if (!selectedSiteManagerId.value) { return null }
   return siteManagerList.value.find(m => m.userId === selectedSiteManagerId.value) || null
 })
 
 const selectedInspectorInfo = computed(() => {
-  if (!selectedInspectorId.value) return null
+  if (!selectedInspectorId.value) { return null }
   return inspectorList.value.find(i => i.userId === selectedInspectorId.value) || null
 })
 
 // 합계 계산
 const totalQuantity = computed(() => {
-  if (!deliveryDone.value?.items) return 0
+  if (!deliveryDone.value?.items) { return 0 }
   return deliveryDone.value.items.reduce((sum, item) => sum + (item.deliveredQuantity || 0), 0)
 })
 
 const totalAmount = computed(() => {
-  if (!deliveryDone.value?.items) return 0
+  if (!deliveryDone.value?.items) { return 0 }
   return deliveryDone.value.items.reduce((sum, item) => sum + (item.totalAmount || 0), 0)
 })
 
@@ -253,7 +289,7 @@ const closeModal = () => {
 }
 
 const loadData = async () => {
-  if (!props.orderId) return
+  if (!props.orderId) { return }
 
   isLoading.value = true
 
@@ -261,7 +297,6 @@ const loadData = async () => {
     // 납품완료계 데이터 로드
     const result = await getDeliveryDoneByOrderId(props.orderId)
     deliveryDone.value = result
-
   } catch (error) {
     console.error('데이터 로드 실패:', error)
     alert('데이터를 불러오는데 실패했습니다.')
@@ -285,7 +320,7 @@ const loadUsers = async () => {
 }
 
 const submitFinalDelivery = async () => {
-  if (!isValid.value || isSubmitting.value || !deliveryDone.value) return
+  if (!isValid.value || isSubmitting.value || !deliveryDone.value) { return }
 
   // 추가 확인
   if (!confirm('납품완료 처리를 진행하시겠습니까?\n\n선택한 대상자에게 납품완료확인서 서명 URL이 발송됩니다.')) {

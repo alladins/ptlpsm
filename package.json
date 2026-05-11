@@ -10,6 +10,7 @@
     "generate:dev": "set NODE_OPTIONS=--max-old-space-size=4096 && cross-env NODE_ENV=development NUXT_STATIC=true nuxt generate --dotenv .env.development",
     "generate:prod": "set NODE_OPTIONS=--max-old-space-size=4096 && cross-env NODE_ENV=production NUXT_STATIC=true nuxt generate --dotenv .env.production",
     "lint": "eslint --ext .js,.vue --ignore-path .gitignore .",
+    "lint:auth": "node scripts/check-auth-headers.mjs",
     "preview": "nuxt preview"
   },
   "imports": {
@@ -23,7 +24,6 @@
     "#imports": "./.nuxt/imports"
   },
   "dependencies": {
-    "@ckeditor/ckeditor5-build-classic": "^44.3.0",
     "@fortawesome/fontawesome-free": "^6.7.2",
     "@nuxt/image": "^1.8.1",
     "@pinia/nuxt": "^0.4.11",
@@ -35,16 +35,11 @@
     "aos": "^2.3.4",
     "axios": "^1.7.9",
     "chart.js": "^4.5.1",
-    "date-fns": "^2.30.0",
-    "exceljs": "^4.4.0",
-    "lucide-vue-next": "^0.263.0",
     "nuxt": "^3.15.4",
     "pinia": "^2.1.6",
-    "swiper": "^11.2.5",
     "ua-parser-js": "^2.0.3",
     "vue": "^3.3.4",
-    "vue-router": "^4.2.4",
-    "xlsx": "^0.18.5"
+    "vue-router": "^4.2.4"
   },
   "devDependencies": {
     "@nuxtjs/eslint-config-typescript": "^12.1.0",

@@ -8,18 +8,18 @@
       icon-color="purple"
     >
       <template #actions>
-        <button class="btn-action" @click="handleSearch" :disabled="loading">
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-search"></i>
+        <button class="btn-action" :disabled="loading" @click="handleSearch">
+          <i v-if="loading" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-search" />
           검색
         </button>
         <button
           v-if="showCreateButton"
           class="btn-action btn-primary"
-          @click="goToRegister"
           :title="!canWrite ? '권한이 없습니다' : ''"
+          @click="goToRegister"
         >
-          <i class="fas fa-plus"></i>
+          <i class="fas fa-plus" />
           등록
         </button>
       </template>
@@ -30,7 +30,7 @@
       <div class="stats-cards">
         <div class="stat-card">
           <div class="stat-icon stat-icon--purple">
-            <i class="fas fa-file-contract"></i>
+            <i class="fas fa-file-contract" />
           </div>
           <div class="stat-content">
             <h3>총 납품요구</h3>
@@ -39,7 +39,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon stat-icon--pink">
-            <i class="fas fa-calendar-check"></i>
+            <i class="fas fa-calendar-check" />
           </div>
           <div class="stat-content">
             <h3>금월 납품요구</h3>
@@ -48,7 +48,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon stat-icon--blue">
-            <i class="fas fa-won-sign"></i>
+            <i class="fas fa-won-sign" />
           </div>
           <div class="stat-content">
             <h3>총 납품요구금액</h3>
@@ -57,7 +57,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon stat-icon--orange">
-            <i class="fas fa-calculator"></i>
+            <i class="fas fa-calculator" />
           </div>
           <div class="stat-content">
             <h3>총 예상 원가금액</h3>
@@ -72,21 +72,21 @@
           <!-- 납품요구일자 -->
           <div class="search-item">
             <label>납품요구일자:</label>
-            <input type="date" v-model="searchForm.startDate" class="date-input">
+            <input v-model="searchForm.startDate" type="date" class="date-input">
             <span class="separator">~</span>
-            <input type="date" v-model="searchForm.endDate" class="date-input">
+            <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
           <!-- 수요기관 -->
           <div class="search-item">
             <label>수요기관:</label>
-            <input type="text" v-model="searchForm.client" placeholder="수요기관명" class="text-input" @keyup.enter="handleSearch">
+            <input v-model="searchForm.client" type="text" placeholder="수요기관명" class="text-input" @keyup.enter="handleSearch">
           </div>
 
           <!-- 검색어 -->
           <div class="search-item search-keyword">
             <label>검색어:</label>
-            <input type="text" v-model="searchForm.keyword" placeholder="프로젝트명, 담당자명" class="keyword-input" @keyup.enter="handleSearch">
+            <input v-model="searchForm.keyword" type="text" placeholder="프로젝트명, 담당자명" class="keyword-input" @keyup.enter="handleSearch">
           </div>
         </div>
       </div>
@@ -99,17 +99,23 @@
             <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
-            <select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="10">10개씩</option>
-              <option :value="20">20개씩</option>
-              <option :value="50">50개씩</option>
+            <select v-model="pageSize" class="page-size-select" @change="handlePageSizeChange">
+              <option :value="10">
+                10개씩
+              </option>
+              <option :value="20">
+                20개씩
+              </option>
+              <option :value="50">
+                50개씩
+              </option>
             </select>
           </div>
         </div>
 
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <p>데이터를 불러오는 중...</p>
         </div>
 
@@ -118,16 +124,36 @@
           <table class="data-table tree-table">
             <thead>
               <tr>
-                <th style="width: 40px;">No</th>
-                <th style="width: 150px;">납품요구번호</th>
-                <th style="width: 100px;">납품요구일자</th>
-                <th style="width: 120px;">수요기관</th>
-                <th style="width: 50px;">담당자</th>
-                <th style="min-width: 200px;">사업명</th>
-                <th style="width: 60px;">상태</th>
-                <th style="width: 80px;">건설사</th>
-                <th style="width: 100px;">총계약금액</th>
-                <th style="width: 95px;">등록일자</th>
+                <th style="width: 40px;">
+                  No
+                </th>
+                <th style="width: 150px;">
+                  납품요구번호
+                </th>
+                <th style="width: 100px;">
+                  납품요구일자
+                </th>
+                <th style="width: 120px;">
+                  수요기관
+                </th>
+                <th style="width: 50px;">
+                  담당자
+                </th>
+                <th style="min-width: 200px;">
+                  사업명
+                </th>
+                <th style="width: 60px;">
+                  상태
+                </th>
+                <th style="width: 80px;">
+                  건설사
+                </th>
+                <th style="width: 100px;">
+                  총계약금액
+                </th>
+                <th style="width: 95px;">
+                  등록일자
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -137,7 +163,9 @@
                   class="table-row tree-parent-row"
                   :class="{ 'has-children': group.children.length > 0 }"
                 >
-                  <td @click="editItem(group.baseOrder.orderId)">{{ getDisplayIndex(groupIndex) }}</td>
+                  <td @click="editItem(group.baseOrder.orderId)">
+                    {{ getDisplayIndex(groupIndex) }}
+                  </td>
                   <td class="delivery-request-cell" @click="editItem(group.baseOrder.orderId)">
                     <div class="tree-toggle-wrapper">
                       <!-- 확장/축소 버튼 (하위 계약이 있을 때만 표시) -->
@@ -146,9 +174,9 @@
                         class="tree-toggle-btn"
                         @click.stop="toggleExpand(group.baseDeliveryRequestNo)"
                       >
-                        <i :class="expandedGroups.has(group.baseDeliveryRequestNo) ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"></i>
+                        <i :class="expandedGroups.has(group.baseDeliveryRequestNo) ? 'fas fa-chevron-down' : 'fas fa-chevron-right'" />
                       </button>
-                      <span v-else class="tree-toggle-placeholder"></span>
+                      <span v-else class="tree-toggle-placeholder" />
                       <span class="delivery-request-no">{{ group.baseOrder.deliveryRequestNo }}</span>
                       <!-- 하위 계약 개수 배지 -->
                       <span v-if="group.children.length > 0" class="children-count-badge">
@@ -156,10 +184,18 @@
                       </span>
                     </div>
                   </td>
-                  <td @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.deliveryRequestDate }}</td>
-                  <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.client }}</td>
-                  <td @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.clientManagerName }}</td>
-                  <td class="project-name-cell text-left" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.projectName }}</td>
+                  <td @click="editItem(group.baseOrder.orderId)">
+                    {{ group.baseOrder.deliveryRequestDate }}
+                  </td>
+                  <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">
+                    {{ group.baseOrder.client }}
+                  </td>
+                  <td @click="editItem(group.baseOrder.orderId)">
+                    {{ group.baseOrder.clientManagerName }}
+                  </td>
+                  <td class="project-name-cell text-left" @click="editItem(group.baseOrder.orderId)">
+                    {{ group.baseOrder.projectName }}
+                  </td>
                   <td @click="editItem(group.baseOrder.orderId)">
                     <span
                       class="status-badge"
@@ -168,9 +204,15 @@
                       {{ getStatusLabel(group.baseOrder.status) }}
                     </span>
                   </td>
-                  <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">{{ group.baseOrder.builderCompanyName || '-' }}</td>
-                  <td class="text-right" @click="editItem(group.baseOrder.orderId)">{{ formatNumber(group.baseOrder.itemTotalAmount) }}</td>
-                  <td @click="editItem(group.baseOrder.orderId)">{{ formatDate(group.baseOrder.createdAt) }}</td>
+                  <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">
+                    {{ group.baseOrder.builderCompanyName || '-' }}
+                  </td>
+                  <td class="text-right" @click="editItem(group.baseOrder.orderId)">
+                    {{ formatNumber(group.baseOrder.itemTotalAmount) }}
+                  </td>
+                  <td @click="editItem(group.baseOrder.orderId)">
+                    {{ formatDate(group.baseOrder.createdAt) }}
+                  </td>
                 </tr>
 
                 <!-- 변경/별도 계약 행들 (하위) -->
@@ -180,10 +222,12 @@
                     :key="child.orderId"
                     class="table-row tree-child-row"
                   >
-                    <td class="child-index" @click="editItem(child.orderId)">{{ groupIndex + 1 }}-{{ childIndex + 1 }}</td>
+                    <td class="child-index" @click="editItem(child.orderId)">
+                      {{ groupIndex + 1 }}-{{ childIndex + 1 }}
+                    </td>
                     <td class="delivery-request-cell" @click="editItem(child.orderId)">
                       <div class="tree-child-indicator">
-                        <span class="tree-line"></span>
+                        <span class="tree-line" />
                         <span
                           class="contract-type-badge"
                           :class="getContractTypeClass(child.contractType)"
@@ -193,10 +237,18 @@
                         <span class="delivery-request-no child">{{ child.deliveryRequestNo }}</span>
                       </div>
                     </td>
-                    <td @click="editItem(child.orderId)">{{ child.deliveryRequestDate }}</td>
-                    <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">{{ child.client }}</td>
-                    <td @click="editItem(child.orderId)">{{ child.clientManagerName }}</td>
-                    <td class="project-name-cell text-left" @click="editItem(child.orderId)">{{ child.projectName }}</td>
+                    <td @click="editItem(child.orderId)">
+                      {{ child.deliveryRequestDate }}
+                    </td>
+                    <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">
+                      {{ child.client }}
+                    </td>
+                    <td @click="editItem(child.orderId)">
+                      {{ child.clientManagerName }}
+                    </td>
+                    <td class="project-name-cell text-left" @click="editItem(child.orderId)">
+                      {{ child.projectName }}
+                    </td>
                     <td @click="editItem(child.orderId)">
                       <span
                         class="status-badge"
@@ -205,9 +257,15 @@
                         {{ getStatusLabel(child.status) }}
                       </span>
                     </td>
-                    <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">{{ child.builderCompanyName || '-' }}</td>
-                    <td class="text-right" @click="editItem(child.orderId)">{{ formatNumber(child.itemTotalAmount) }}</td>
-                    <td @click="editItem(child.orderId)">{{ formatDate(child.createdAt) }}</td>
+                    <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">
+                      {{ child.builderCompanyName || '-' }}
+                    </td>
+                    <td class="text-right" @click="editItem(child.orderId)">
+                      {{ formatNumber(child.itemTotalAmount) }}
+                    </td>
+                    <td @click="editItem(child.orderId)">
+                      {{ formatDate(child.createdAt) }}
+                    </td>
                   </tr>
                 </template>
               </template>
@@ -216,7 +274,7 @@
 
           <!-- 데이터가 없을 때 - 리팩토링: admin-common.css 스타일 사용 -->
           <div v-if="orderData.length === 0" class="no-data-message">
-            <i class="fas fa-shopping-cart"></i>
+            <i class="fas fa-shopping-cart" />
             <p>등록된 발주 정보가 없습니다.</p>
           </div>
         </div>
@@ -231,7 +289,6 @@
         />
       </div>
     </div>
-
   </div>
 </template>
 
@@ -239,20 +296,19 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { orderService } from '~/services/order.service'
-import { fundService } from '~/services/fund.service'
+import { getCommissionPeriods } from '~/services/commission.service'
 import type { OrderDetailResponse, ContractType } from '~/types/order'
-import type { FundStatistics } from '~/types/fund'
 import { CONTRACT_TYPE_LABELS } from '~/types/order'
 // 리팩토링: 공통 모듈 import
 import { formatNumber } from '~/utils/format'
+import { useDataTable } from '~/composables/useDataTable'
+import { usePermission, usePermissionButtons } from '~/composables/usePermission'
 
 // createdAt은 ISO timestamp이므로 날짜만 추출
 const formatDate = (dateStr?: string): string => {
-  if (!dateStr) return '-'
-  return dateStr.substring(0, 10)  // "2025-12-29T10:30:00" → "2025-12-29"
+  if (!dateStr) { return '-' }
+  return dateStr.substring(0, 10) // "2025-12-29T10:30:00" → "2025-12-29"
 }
-import { useDataTable } from '~/composables/useDataTable'
-import { usePermission, usePermissionButtons } from '~/composables/usePermission'
 
 definePageMeta({
   layout: 'admin',
@@ -267,7 +323,7 @@ const { canWrite, canEdit, canDelete } = usePermission()
 const { showCreateButton, showEditButton, showDeleteButton } = usePermissionButtons()
 
 // 자금 통계 데이터
-const fundStats = ref<FundStatistics | null>(null)
+const orderSummary = ref<{ totalAmount: number }>({ totalAmount: 0 })
 const loadingStats = ref(false)
 
 // 오늘 날짜 (로컬 시간 기준)
@@ -299,7 +355,10 @@ const getOneMonthLater = () => {
   return `${year}-${month}-${day}`
 }
 
-// 검색 폼 데이터 (납품요구일자 기본값: 과거 6개월 ~ 미래 1개월)
+// ★ 정책: 대시보드(admin/index.vue)와 동일하게 "활성 정산기간"을 기본 기간으로 사용한다.
+//   두 페이지의 건수·합계 비교 시 항상 같은 집합을 조회하기 위함.
+//   활성 정산기간 조회 실패 시에만 과거 6개월 ~ 미래 1개월 fallback 사용.
+// 검색 폼 데이터 (납품요구일자 기본값은 onMounted에서 정산기간 로드 후 세팅)
 const searchForm = ref({
   startDate: getSixMonthsAgo(),
   endDate: getOneMonthLater(),
@@ -308,6 +367,30 @@ const searchForm = ref({
   sort: 'createdAt,desc'
 })
 
+// 오늘 날짜(YYYY-MM-DD) — 정산기간 endDate가 오늘을 넘어가면 오늘로 cap
+const clampEndToToday = (dateStr: string): string => {
+  const today = getTodayDate()
+  return dateStr > today ? today : dateStr
+}
+
+// 대시보드와 동일한 기본 기간 적용: 활성 정산기간(startDate ~ endDate, endDate는 today로 cap)
+const applyDefaultDateRangeFromActivePeriod = async () => {
+  try {
+    const periods: any[] = await getCommissionPeriods()
+    if (!Array.isArray(periods) || periods.length === 0) { return }
+    const active = periods.find((p: any) => p.isActive) || periods[0]
+    if (!active) { return }
+    const startMonth = String(active.startMonth).padStart(2, '0')
+    const endMonth = String(active.endMonth).padStart(2, '0')
+    const endDay = new Date(active.endYear, active.endMonth, 0).getDate()
+    const startDate = `${active.startYear}-${startMonth}-01`
+    const endDate = clampEndToToday(`${active.endYear}-${endMonth}-${String(endDay).padStart(2, '0')}`)
+    searchForm.value.startDate = startDate
+    searchForm.value.endDate = endDate
+  } catch (error) {
+    console.warn('활성 정산기간 로드 실패 — 기본값(6개월 전 ~ 1개월 후) 유지:', error)
+  }
+}
 
 // 리팩토링: useDataTable composable 사용으로 페이지네이션 로직 통합
 const {
@@ -342,14 +425,14 @@ const {
   initialSort: 'createdAt,desc'
 })
 
-// 통계 계산: 총 납품요구금액 (자금 통계 API에서 가져옴)
+// 통계 계산: 총 납품요구금액 (검색 조건 연동)
 const calculatedTotalAmount = computed(() => {
-  return fundStats.value?.totalContractAmount || 0
+  return orderSummary.value?.totalAmount || 0
 })
 
-// 통계 계산: 총 예상 원가금액 (자금 통계 API에서 가져옴)
+// 통계 계산: 총 예상 원가금액 (후속 작업 예정)
 const totalEstimatedCost = computed(() => {
-  return fundStats.value?.totalOemExpected || 0
+  return 0
 })
 
 // 통계 계산: 금월 납품요구 건수
@@ -358,23 +441,25 @@ const calculatedMonthlyCount = computed(() => {
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
 
-  return orderData.value.filter(order => {
+  return orderData.value.filter((order) => {
     const orderDate = new Date(order.deliveryRequestDate)
     return orderDate.getFullYear() === currentYear &&
            orderDate.getMonth() === currentMonth
   }).length
 })
 
-// 자금 통계 로드
-const loadFundStatistics = async () => {
+// 납품요구 금액 합계 로드 (검색 조건 연동)
+const loadOrderSummary = async () => {
   try {
     loadingStats.value = true
-    fundStats.value = await fundService.getStatistics({
-      periodType: 'MONTHS',
-      months: 6
+    orderSummary.value = await orderService.getOrderSummary({
+      startDate: searchForm.value.startDate,
+      endDate: searchForm.value.endDate,
+      client: searchForm.value.client,
+      keyword: searchForm.value.keyword
     })
   } catch (error) {
-    console.error('자금 통계 조회 실패:', error)
+    console.error('납품요구 금액 합계 조회 실패:', error)
   } finally {
     loadingStats.value = false
   }
@@ -383,10 +468,11 @@ const loadFundStatistics = async () => {
 // 검색 기능
 const handleSearch = () => {
   search()
+  loadOrderSummary()
 }
 
-// 검색 초기화
-const handleReset = () => {
+// 검색 초기화 — 기본 기간은 활성 정산기간(대시보드와 동일). 로드 실패 시 과거 6개월~미래 1개월.
+const handleReset = async () => {
   searchForm.value = {
     startDate: getSixMonthsAgo(),
     endDate: getOneMonthLater(),
@@ -394,6 +480,7 @@ const handleReset = () => {
     keyword: '',
     sort: 'createdAt,desc'
   }
+  await applyDefaultDateRangeFromActivePeriod()
   reset()
 }
 
@@ -433,7 +520,7 @@ const expandedGroups = ref<Set<string>>(new Set())
  * 예: "35-24-3-41787-01" → "35-24-3-41787"
  */
 const getBaseDeliveryRequestNo = (deliveryRequestNo: string): string => {
-  if (!deliveryRequestNo) return ''
+  if (!deliveryRequestNo) { return '' }
   // 마지막 -XX 부분 제거
   const parts = deliveryRequestNo.split('-')
   if (parts.length > 1) {
@@ -457,12 +544,12 @@ interface OrderGroup {
 }
 
 const groupedOrderData = computed<OrderGroup[]>(() => {
-  if (!orderData.value || orderData.value.length === 0) return []
+  if (!orderData.value || orderData.value.length === 0) { return [] }
 
   // 기준 번호별로 그룹화
   const groupMap = new Map<string, { base: OrderDetailResponse | null; children: OrderDetailResponse[] }>()
 
-  orderData.value.forEach(order => {
+  orderData.value.forEach((order) => {
     const baseNo = getBaseDeliveryRequestNo(order.deliveryRequestNo)
 
     if (!groupMap.has(baseNo)) {
@@ -531,7 +618,7 @@ const getDisplayIndex = (groupIndex: number): number => {
  * 계약유형에 따른 CSS 클래스 반환
  */
 const getContractTypeClass = (contractType?: ContractType): string => {
-  if (!contractType) return ''
+  if (!contractType) { return '' }
   switch (contractType) {
     case 'ORIGINAL':
       return 'contract-type-original'
@@ -548,7 +635,7 @@ const getContractTypeClass = (contractType?: ContractType): string => {
  * 계약유형 한글 표시 반환
  */
 const getContractTypeLabel = (contractType?: ContractType): string => {
-  if (!contractType) return '-'
+  if (!contractType) { return '-' }
   return CONTRACT_TYPE_LABELS[contractType] || contractType
 }
 
@@ -558,7 +645,7 @@ const getContractTypeLabel = (contractType?: ContractType): string => {
  * 주문 상태에 따른 CSS 클래스 반환
  */
 const getStatusClass = (status?: string): string => {
-  if (!status) return 'status-pending'
+  if (!status) { return 'status-pending' }
   switch (status) {
     case 'PENDING':
       return 'status-pending'
@@ -577,7 +664,7 @@ const getStatusClass = (status?: string): string => {
  * 주문 상태 한글 표시 반환
  */
 const getStatusLabel = (status?: string): string => {
-  if (!status) return '대기'
+  if (!status) { return '대기' }
   switch (status) {
     case 'PENDING':
       return '대기'
@@ -593,9 +680,12 @@ const getStatusLabel = (status?: string): string => {
 }
 
 // 컴포넌트 마운트 시 데이터 로드
-onMounted(() => {
-  // 자금 통계 로드
-  loadFundStatistics()
+onMounted(async () => {
+  // ★ 기본 기간을 대시보드와 동일한 활성 정산기간으로 맞춘다 (검색·합계 실행 전에 설정)
+  await applyDefaultDateRangeFromActivePeriod()
+
+  // 납품요구 금액 합계 로드
+  loadOrderSummary()
 
   // URL 쿼리에서 페이지 번호 복원 (상세 페이지에서 돌아올 때)
   const pageFromQuery = route.query.page || route.query.returnPage

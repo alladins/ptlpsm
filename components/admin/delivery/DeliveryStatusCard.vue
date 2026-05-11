@@ -11,8 +11,8 @@
       </div>
 
       <!-- 진행중 정보 -->
-      <div class="compact-in-progress" v-if="inProgress > 0">
-        <i class="fas fa-truck-loading"></i>
+      <div v-if="inProgress > 0" class="compact-in-progress">
+        <i class="fas fa-truck-loading" />
         <span>{{ formatQuantity(inProgress) }} {{ unit }}</span>
       </div>
 
@@ -22,12 +22,12 @@
           class="progress-segment completed"
           :style="{ width: `${completedPercent}%` }"
           :title="`납품완료: ${formatQuantity(completed)} ${unit} (${completedPercent.toFixed(1)}%)`"
-        ></div>
+        />
         <div
           class="progress-segment in-progress"
           :style="{ width: `${inProgressPercent}%` }"
           :title="`진행중: ${formatQuantity(inProgress)} ${unit} (${inProgressPercent.toFixed(1)}%)`"
-        ></div>
+        />
       </div>
     </div>
   </div>
@@ -55,14 +55,14 @@
           class="progress-segment completed"
           :style="{ width: `${completedPercent}%` }"
           :title="`납품완료: ${formatQuantity(completed)} ${unit} (${completedPercent.toFixed(1)}%)`"
-        ></div>
+        />
 
         <!-- 진행중 (주황색) -->
         <div
           class="progress-segment in-progress"
           :style="{ width: `${inProgressPercent}%` }"
           :title="`진행중: ${formatQuantity(inProgress)} ${unit} (${inProgressPercent.toFixed(1)}%)`"
-        ></div>
+        />
 
         <!-- 미진행 (회색) - 자동으로 남은 공간 채움 -->
       </div>
@@ -71,17 +71,17 @@
     <!-- 상세 정보 -->
     <div class="status-details">
       <div class="status-item completed">
-        <i class="fas fa-check-circle"></i>
+        <i class="fas fa-check-circle" />
         <span>납품완료</span>
         <span class="status-value">{{ formatQuantity(completed) }} {{ unit }}</span>
       </div>
       <div class="status-item in-progress">
-        <i class="fas fa-truck-loading"></i>
+        <i class="fas fa-truck-loading" />
         <span>진행중</span>
         <span class="status-value">{{ formatQuantity(inProgress) }} {{ unit }}</span>
       </div>
       <div class="status-item pending">
-        <i class="fas fa-clock"></i>
+        <i class="fas fa-clock" />
         <span>미진행</span>
         <span class="status-value">{{ formatQuantity(pending) }} {{ unit }}</span>
       </div>
@@ -95,12 +95,12 @@ import { formatQuantity } from '~/utils/format'
 import { getDeliveryRateColor } from '~/utils/delivery'
 
 interface Props {
-  total: number          // 전체 발주 수량
-  completed: number      // 납품완료 수량
-  inProgress: number     // 진행중 수량
-  unit: string           // 단위
-  rate: number           // 납품율
-  compact?: boolean      // 컴팩트 모드 (인라인 디스플레이용)
+  total: number // 전체 발주 수량
+  completed: number // 납품완료 수량
+  inProgress: number // 진행중 수량
+  unit: string // 단위
+  rate: number // 납품율
+  compact?: boolean // 컴팩트 모드 (인라인 디스플레이용)
 }
 
 const props = withDefaults(defineProps<Props>(), {

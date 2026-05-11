@@ -107,6 +107,26 @@ export async function getDeliveryDoneDetail(
 }
 
 /**
+ * 납품완료 문서 HTML 미리보기를 fetch하여 Blob URL 반환
+ * 인증 헤더가 필요하므로 iframe에 직접 URL을 사용할 수 없어 fetch+blob 패턴 사용
+ */
+export async function fetchHtmlPreview(
+  deliveryDoneId: number,
+  docType: 'confirmation' | 'completion' | 'photo-sheet'
+): Promise<string> {
+  const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/html/${docType}`
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+  if (!response.ok) {
+    throw new Error(`HTML 미리보기 로드 실패: ${response.statusText}`)
+  }
+  const blob = await response.blob()
+  return URL.createObjectURL(blob)
+}
+
+/**
  * 주문 ID로 납품완료계 상태 조회
  * 기성청구 버튼 활성화/비활성화 판단용
  */

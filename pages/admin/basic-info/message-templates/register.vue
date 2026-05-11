@@ -1,9 +1,9 @@
 <template>
   <div class="message-template-register-page">
-    <PageHeader title="메시지 템플릿 등록" description="새로운 메시지 템플릿을 등록합니다">
+    <PageHeader title="메시지 템플릿 등록" icon="default" icon-color="blue" description="새로운 메시지 템플릿을 등록합니다">
       <template #actions>
         <button class="btn-secondary" @click="goToList">
-          <i class="ri-arrow-left-line"></i>
+          <i class="ri-arrow-left-line" />
           목록으로
         </button>
       </template>

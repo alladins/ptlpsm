@@ -17,15 +17,11 @@ export default defineNuxtConfig({
     '@/assets/css/admin-forms.css',
     '@/assets/css/admin-search.css',
     '@/assets/css/admin-tables.css',
+    '@/assets/css/admin-modals.css', // 모달 공통 스타일
     '@/assets/css/admin-edit-register.css', // 등록/수정 페이지 공통 스타일
     '@/assets/css/admin-detail.css', // 상세/확인 페이지 공통 스타일
     '@/assets/css/admin-receipts.css',
     '@/assets/css/mobile-delivery.css', // 모바일 배송 확인 페이지 스타일
-    'swiper/css',
-    'swiper/css/pagination',
-    'swiper/css/navigation',
-    'swiper/css/autoplay',
-    'swiper/css/effect-fade',
     'aos/dist/aos.css'
   ],
 
@@ -157,6 +153,7 @@ export default defineNuxtConfig({
       crawlLinks: true,
       routes: [
         '/',
+        '/blocked',
         '/system/iso9001',
         '/system/iso14001',
         '/system/iso45001',
@@ -265,6 +262,9 @@ export default defineNuxtConfig({
     '/404': {
       prerender: true
     },
+    '/blocked': {
+      prerender: true
+    },
     '/_nuxt/**': {
       headers: {
         'cache-control': 'public, max-age=31536000, immutable',
@@ -332,14 +332,13 @@ export default defineNuxtConfig({
   // 빌드 최적화 설정
   build: {
     transpile: [
-      'swiper',
       'aos'
     ]
   },
 
   vite: {
     optimizeDeps: {
-      include: ['swiper', 'swiper/vue', 'aos'],
+      include: ['aos'],
       exclude: []
     },
     build: {

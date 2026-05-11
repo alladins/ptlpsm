@@ -1,24 +1,30 @@
 <template>
-    <div>
-      <div class="page-header" :style="headerStyle">
-        <div class="container mx-auto">
-          <div class="header-content">
-            <div class="title-wrapper">
-              <div class="page-category">{{ currentPageType }}</div>
-              <h1 class="text-3xl font-bold">{{ title }}</h1>
-              <p v-if="description">{{ description }}</p>
+  <div>
+    <div class="page-header" :style="headerStyle">
+      <div class="container mx-auto">
+        <div class="header-content">
+          <div class="title-wrapper">
+            <div class="page-category">
+              {{ currentPageType }}
             </div>
+            <h1 class="text-3xl font-bold">
+              {{ title }}
+            </h1>
+            <p v-if="description">
+              {{ description }}
+            </p>
           </div>
         </div>
       </div>
-      <div class="container mx-auto">
-        <div class="page-content px-4 py-8">
-          <slot></slot>
-        </div>
+    </div>
+    <div class="container mx-auto">
+      <div class="page-content px-4 py-8">
+        <slot />
       </div>
     </div>
+  </div>
 </template>
-  
+
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from '#imports'
@@ -36,7 +42,7 @@ const route = useRoute()
 const currentPageType = computed(() => {
   const pathSegments = route.path.split('/')
   const mainSegment = pathSegments[1] // 첫 번째 경로 세그먼트
-  
+
   switch (mainSegment) {
     case 'about':
       return 'ABOUT'
@@ -58,20 +64,20 @@ const currentPageType = computed(() => {
 })
 
 const backgroundImages = {
-  'ABOUT': '/images/common/bg_company.png',
-  'SYSTEM': '/images/common/bg_system.png',
-  'PRODUCT': '/images/common/bg_product.png',
-  'MANAGEMENT': '/images/common/bg_management.png',
+  ABOUT: '/images/common/bg_company.png',
+  SYSTEM: '/images/common/bg_system.png',
+  PRODUCT: '/images/common/bg_product.png',
+  MANAGEMENT: '/images/common/bg_management.png',
   'POLICY FUND': '/images/common/bg_inquiry.png',
-  'INQUIRY': '/images/common/bg_company.png',
-  'HOME': '/images/common/bg_company.png'
+  INQUIRY: '/images/common/bg_company.png',
+  HOME: '/images/common/bg_company.png'
 }
 
 const headerStyle = computed(() => ({
   backgroundImage: `url(${backgroundImages[currentPageType.value as keyof typeof backgroundImages]})`
 }))
 </script>
-  
+
 <script lang="ts">
 export default {
   name: 'PageTemplate'
@@ -133,4 +139,4 @@ export default {
 .page-content {
   background: #fff;
 }
-</style>  
+</style>

@@ -1,20 +1,19 @@
 <template>
   <div class="menu-auth-page">
-    <PageHeader
-      title="메뉴권한관리"
-      description="사용자 역할별 메뉴 접근 권한을 관리합니다."
-    >
-      <template #actions>
-        <button class="btn-primary" @click="handleSave" :disabled="!hasChanges || saving">
-          <i class="fas fa-save"></i>
+    <div class="page-header-compact">
+      <h1>메뉴권한관리</h1>
+      <span class="page-description">사용자 역할별 메뉴 접근 권한을 관리합니다.</span>
+      <div class="header-actions-right">
+        <button class="btn-primary" :disabled="!hasChanges || saving" @click="handleSave">
+          <i class="fas fa-save" />
           {{ saving ? '저장 중...' : '권한 저장' }}
         </button>
-        <button class="btn-secondary" @click="handleReset" :disabled="!hasChanges">
-          <i class="fas fa-undo"></i>
+        <button class="btn-secondary" :disabled="!hasChanges" @click="handleReset">
+          <i class="fas fa-undo" />
           초기화
         </button>
-      </template>
-    </PageHeader>
+      </div>
+    </div>
 
     <div class="content-wrapper">
       <!-- 역할 선택 및 일괄 설정 -->
@@ -30,11 +29,11 @@
 
         <div v-if="selectedRoleCode" class="bulk-actions">
           <button class="btn-success-sm" @click="setAllPermissions('Y')">
-            <i class="fas fa-check-double"></i>
+            <i class="fas fa-check-double" />
             전체 허용
           </button>
           <button class="btn-danger-sm" @click="setAllPermissions('N')">
-            <i class="fas fa-ban"></i>
+            <i class="fas fa-ban" />
             전체 차단
           </button>
         </div>
@@ -42,7 +41,7 @@
 
       <!-- 로딩 상태 -->
       <div v-if="loading" class="loading-state">
-        <i class="fas fa-spinner fa-spin"></i>
+        <i class="fas fa-spinner fa-spin" />
         <span>데이터를 불러오는 중...</span>
       </div>
 
@@ -51,12 +50,24 @@
         <table class="permission-table">
           <thead>
             <tr>
-              <th class="col-menu">메뉴명</th>
-              <th class="col-auth">조회</th>
-              <th class="col-auth">등록</th>
-              <th class="col-auth">수정</th>
-              <th class="col-auth">삭제</th>
-              <th class="col-action">일괄설정</th>
+              <th class="col-menu">
+                메뉴명
+              </th>
+              <th class="col-auth">
+                조회
+              </th>
+              <th class="col-auth">
+                등록
+              </th>
+              <th class="col-auth">
+                수정
+              </th>
+              <th class="col-auth">
+                삭제
+              </th>
+              <th class="col-action">
+                일괄설정
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -64,7 +75,7 @@
               <tr :class="{ 'parent-menu': menu.level === 1, 'child-menu': menu.level === 2 }">
                 <td class="col-menu">
                   <span :style="{ paddingLeft: (menu.level - 1) * 24 + 'px' }">
-                    <i :class="menu.menuIcon" class="menu-icon"></i>
+                    <i :class="menu.menuIcon" class="menu-icon" />
                     {{ menu.menuName }}
                   </span>
                 </td>
@@ -78,8 +89,8 @@
                       :checked="getCheckboxState(menu.menuId, 'readAuth') === 'checked'"
                       :indeterminate="getCheckboxState(menu.menuId, 'readAuth') === 'indeterminate'"
                       @change="togglePermissionWithHierarchy(menu.menuId, 'readAuth')"
-                    />
-                    <span class="checkmark"></span>
+                    >
+                    <span class="checkmark" />
                   </label>
                 </td>
                 <td class="col-auth">
@@ -92,8 +103,8 @@
                       :checked="getCheckboxState(menu.menuId, 'writeAuth') === 'checked'"
                       :indeterminate="getCheckboxState(menu.menuId, 'writeAuth') === 'indeterminate'"
                       @change="togglePermissionWithHierarchy(menu.menuId, 'writeAuth')"
-                    />
-                    <span class="checkmark"></span>
+                    >
+                    <span class="checkmark" />
                   </label>
                 </td>
                 <td class="col-auth">
@@ -106,8 +117,8 @@
                       :checked="getCheckboxState(menu.menuId, 'editAuth') === 'checked'"
                       :indeterminate="getCheckboxState(menu.menuId, 'editAuth') === 'indeterminate'"
                       @change="togglePermissionWithHierarchy(menu.menuId, 'editAuth')"
-                    />
-                    <span class="checkmark"></span>
+                    >
+                    <span class="checkmark" />
                   </label>
                 </td>
                 <td class="col-auth">
@@ -120,16 +131,16 @@
                       :checked="getCheckboxState(menu.menuId, 'deleteAuth') === 'checked'"
                       :indeterminate="getCheckboxState(menu.menuId, 'deleteAuth') === 'indeterminate'"
                       @change="togglePermissionWithHierarchy(menu.menuId, 'deleteAuth')"
-                    />
-                    <span class="checkmark"></span>
+                    >
+                    <span class="checkmark" />
                   </label>
                 </td>
                 <td class="col-action">
-                  <button class="btn-allow-sm" @click="setMenuAllPermissionsWithHierarchy(menu.menuId, 'Y')" title="전체 허용">
-                    <i class="fas fa-check"></i>
+                  <button class="btn-allow-sm" title="전체 허용" @click="setMenuAllPermissionsWithHierarchy(menu.menuId, 'Y')">
+                    <i class="fas fa-check" />
                   </button>
-                  <button class="btn-deny-sm" @click="setMenuAllPermissionsWithHierarchy(menu.menuId, 'N')" title="전체 차단">
-                    <i class="fas fa-times"></i>
+                  <button class="btn-deny-sm" title="전체 차단" @click="setMenuAllPermissionsWithHierarchy(menu.menuId, 'N')">
+                    <i class="fas fa-times" />
                   </button>
                 </td>
               </tr>
@@ -140,7 +151,7 @@
 
       <!-- 변경 사항 안내 -->
       <div v-if="hasChanges" class="changes-notice">
-        <i class="fas fa-exclamation-triangle"></i>
+        <i class="fas fa-exclamation-triangle" />
         <span>변경된 내용이 있습니다. 저장 버튼을 클릭하여 적용하세요.</span>
       </div>
     </div>
@@ -201,14 +212,14 @@ interface FlatMenuItem {
   menuIcon: string
   level: number
   parentMenuId?: number
-  hasChildren: boolean  // 자식 메뉴 여부
-  childMenuIds: number[]  // 자식 메뉴 ID 목록
+  hasChildren: boolean // 자식 메뉴 여부
+  childMenuIds: number[] // 자식 메뉴 ID 목록
 }
 
 const flatMenuList = computed<FlatMenuItem[]>(() => {
   const result: FlatMenuItem[] = []
 
-  function getChildIds(menuList: Menu[]): number[] {
+  function getChildIds (menuList: Menu[]): number[] {
     const ids: number[] = []
     for (const menu of menuList) {
       ids.push(menu.menuId)
@@ -219,10 +230,10 @@ const flatMenuList = computed<FlatMenuItem[]>(() => {
     return ids
   }
 
-  function flatten(menuList: Menu[], level: number = 1) {
+  function flatten (menuList: Menu[], level: number = 1) {
     for (const menu of menuList) {
       // 시스템관리 메뉴 영역 제외 (SYSTEM_ADMIN 전용)
-      if (menu.menuCode === 'SYSTEM') continue
+      if (menu.menuCode === 'SYSTEM') { continue }
 
       const hasChildren = !!(menu.children && menu.children.length > 0)
       const childMenuIds = hasChildren ? getChildIds(menu.children!) : []
@@ -250,11 +261,11 @@ const flatMenuList = computed<FlatMenuItem[]>(() => {
 
 // 변경 사항 여부
 const hasChanges = computed(() => {
-  if (permissions.value.size !== originalPermissions.value.size) return true
+  if (permissions.value.size !== originalPermissions.value.size) { return true }
 
   for (const [menuId, perm] of permissions.value) {
     const original = originalPermissions.value.get(menuId)
-    if (!original) return true
+    if (!original) { return true }
 
     if (
       perm.readAuth !== original.readAuth ||
@@ -276,7 +287,7 @@ const hasChanges = computed(() => {
 /**
  * 역할 목록 로드
  */
-async function loadRoles() {
+async function loadRoles () {
   try {
     roles.value = await roleService.getAllRoles()
   } catch (error) {
@@ -288,7 +299,7 @@ async function loadRoles() {
 /**
  * 메뉴 목록 로드
  */
-async function loadMenus() {
+async function loadMenus () {
   try {
     menus.value = await menuService.getAllMenus()
   } catch (error) {
@@ -300,7 +311,7 @@ async function loadMenus() {
 /**
  * 역할 변경 시 권한 데이터 로드
  */
-async function handleRoleChange() {
+async function handleRoleChange () {
   if (!selectedRoleCode.value) {
     permissions.value.clear()
     originalPermissions.value.clear()
@@ -346,7 +357,7 @@ async function handleRoleChange() {
 /**
  * 기본 권한 초기화 (Mock)
  */
-function initializeDefaultPermissions() {
+function initializeDefaultPermissions () {
   const isFullAccess = ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(selectedRoleCode.value)
 
   for (const menu of flatMenuList.value) {
@@ -354,7 +365,7 @@ function initializeDefaultPermissions() {
       menuId: menu.menuId,
       menuCode: menu.menuCode,
       menuName: menu.menuName,
-      readAuth: isFullAccess ? 'Y' : 'Y',  // 기본 조회 허용
+      readAuth: isFullAccess ? 'Y' : 'Y', // 기본 조회 허용
       writeAuth: isFullAccess ? 'Y' : 'N',
       editAuth: isFullAccess ? 'Y' : 'N',
       deleteAuth: isFullAccess ? 'Y' : 'N'
@@ -367,7 +378,7 @@ function initializeDefaultPermissions() {
 /**
  * 권한 값 조회
  */
-function getPermission(menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>): 'Y' | 'N' {
+function getPermission (menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>): 'Y' | 'N' {
   const perm = permissions.value.get(menuId)
   return perm ? perm[authType] : 'N'
 }
@@ -375,7 +386,7 @@ function getPermission(menuId: number, authType: keyof Pick<RolePermission, 'rea
 /**
  * 권한 토글 (기존 - 단일 메뉴만)
  */
-function togglePermission(menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>) {
+function togglePermission (menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>) {
   const perm = permissions.value.get(menuId)
   if (perm) {
     perm[authType] = perm[authType] === 'Y' ? 'N' : 'Y'
@@ -385,7 +396,7 @@ function togglePermission(menuId: number, authType: keyof Pick<RolePermission, '
 /**
  * 특정 메뉴의 모든 권한 설정 (기존 - 단일 메뉴만)
  */
-function setMenuAllPermissions(menuId: number, value: 'Y' | 'N') {
+function setMenuAllPermissions (menuId: number, value: 'Y' | 'N') {
   const perm = permissions.value.get(menuId)
   if (perm) {
     perm.readAuth = value
@@ -398,7 +409,7 @@ function setMenuAllPermissions(menuId: number, value: 'Y' | 'N') {
 /**
  * 메뉴의 부모 메뉴 ID 찾기
  */
-function findParentMenuId(menuId: number): number | undefined {
+function findParentMenuId (menuId: number): number | undefined {
   const menu = flatMenuList.value.find(m => m.menuId === menuId)
   return menu?.parentMenuId
 }
@@ -406,7 +417,7 @@ function findParentMenuId(menuId: number): number | undefined {
 /**
  * 메뉴의 자식 메뉴 ID 목록 가져오기
  */
-function getChildMenuIds(menuId: number): number[] {
+function getChildMenuIds (menuId: number): number[] {
   const menu = flatMenuList.value.find(m => m.menuId === menuId)
   return menu?.childMenuIds || []
 }
@@ -414,12 +425,12 @@ function getChildMenuIds(menuId: number): number[] {
 /**
  * 부모 메뉴의 체크 상태 업데이트 (자식 상태 기반)
  */
-function updateParentState(parentMenuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>) {
+function updateParentState (parentMenuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>) {
   const parentMenu = flatMenuList.value.find(m => m.menuId === parentMenuId)
-  if (!parentMenu || !parentMenu.hasChildren) return
+  if (!parentMenu || !parentMenu.hasChildren) { return }
 
   const childIds = parentMenu.childMenuIds
-  const checkedCount = childIds.filter(childId => {
+  const checkedCount = childIds.filter((childId) => {
     const perm = permissions.value.get(childId)
     return perm && perm[authType] === 'Y'
   }).length
@@ -435,12 +446,12 @@ function updateParentState(parentMenuId: number, authType: keyof Pick<RolePermis
 /**
  * 체크박스 상태 계산 (checked, unchecked, indeterminate)
  */
-function getCheckboxState(menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>): 'checked' | 'unchecked' | 'indeterminate' {
+function getCheckboxState (menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>): 'checked' | 'unchecked' | 'indeterminate' {
   const menu = flatMenuList.value.find(m => m.menuId === menuId)
-  if (!menu) return 'unchecked'
+  if (!menu) { return 'unchecked' }
 
   const perm = permissions.value.get(menuId)
-  if (!perm) return 'unchecked'
+  if (!perm) { return 'unchecked' }
 
   // 자식이 없는 메뉴는 단순 체크/언체크
   if (!menu.hasChildren) {
@@ -449,7 +460,7 @@ function getCheckboxState(menuId: number, authType: keyof Pick<RolePermission, '
 
   // 자식이 있는 메뉴는 자식 상태 확인
   const childIds = menu.childMenuIds
-  const checkedCount = childIds.filter(childId => {
+  const checkedCount = childIds.filter((childId) => {
     const childPerm = permissions.value.get(childId)
     return childPerm && childPerm[authType] === 'Y'
   }).length
@@ -469,9 +480,9 @@ function getCheckboxState(menuId: number, authType: keyof Pick<RolePermission, '
  * - 부모 메뉴 체크 시: 모든 자식 메뉴 체크
  * - 자식 메뉴 변경 시: 부모 메뉴 상태 업데이트 (all/some/none)
  */
-function togglePermissionWithHierarchy(menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>) {
+function togglePermissionWithHierarchy (menuId: number, authType: keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>) {
   const menu = flatMenuList.value.find(m => m.menuId === menuId)
-  if (!menu) return
+  if (!menu) { return }
 
   const currentState = getCheckboxState(menuId, authType)
   // indeterminate 또는 unchecked 상태에서 클릭하면 checked로, checked에서 클릭하면 unchecked로
@@ -502,9 +513,9 @@ function togglePermissionWithHierarchy(menuId: number, authType: keyof Pick<Role
 /**
  * 특정 메뉴의 모든 권한 설정 (계층 구조 반영)
  */
-function setMenuAllPermissionsWithHierarchy(menuId: number, value: 'Y' | 'N') {
+function setMenuAllPermissionsWithHierarchy (menuId: number, value: 'Y' | 'N') {
   const menu = flatMenuList.value.find(m => m.menuId === menuId)
-  if (!menu) return
+  if (!menu) { return }
 
   const authTypes: Array<keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>> = ['readAuth', 'writeAuth', 'editAuth', 'deleteAuth']
 
@@ -539,7 +550,7 @@ function setMenuAllPermissionsWithHierarchy(menuId: number, value: 'Y' | 'N') {
 /**
  * 전체 메뉴 권한 일괄 설정
  */
-function setAllPermissions(value: 'Y' | 'N') {
+function setAllPermissions (value: 'Y' | 'N') {
   for (const [, perm] of permissions.value) {
     perm.readAuth = value
     perm.writeAuth = value
@@ -551,8 +562,8 @@ function setAllPermissions(value: 'Y' | 'N') {
 /**
  * 변경 사항 초기화
  */
-function handleReset() {
-  if (!confirm('변경 사항을 모두 취소하시겠습니까?')) return
+function handleReset () {
+  if (!confirm('변경 사항을 모두 취소하시겠습니까?')) { return }
 
   permissions.value.clear()
   for (const [menuId, perm] of originalPermissions.value) {
@@ -563,7 +574,7 @@ function handleReset() {
 /**
  * 선택된 역할의 표시 이름 조회
  */
-function getSelectedRoleName(): string {
+function getSelectedRoleName (): string {
   const role = roles.value.find(r => r.roleCode === selectedRoleCode.value)
   return role?.roleName || selectedRoleCode.value
 }
@@ -573,7 +584,7 @@ function getSelectedRoleName(): string {
  *
  * 권한 변경 시 해당 역할의 모든 사용자가 자동 로그아웃됨을 경고
  */
-async function handleSave() {
+async function handleSave () {
   if (!selectedRoleCode.value) {
     alert('역할을 선택해주세요.')
     return
@@ -588,10 +599,10 @@ async function handleSave() {
   const roleName = getSelectedRoleName()
   const confirmMessage =
     `[${roleName}] 역할의 권한을 변경하시겠습니까?\n\n` +
-    `주의: 권한이 변경되면 해당 역할의 모든 사용자가\n` +
-    `자동 로그아웃되며, 재로그인 시 새 권한이 적용됩니다.`
+    '주의: 권한이 변경되면 해당 역할의 모든 사용자가\n' +
+    '자동 로그아웃되며, 재로그인 시 새 권한이 적용됩니다.'
 
-  if (!confirm(confirmMessage)) return
+  if (!confirm(confirmMessage)) { return }
 
   saving.value = true
 
@@ -647,7 +658,7 @@ onMounted(async () => {
 @import '@/assets/css/admin-buttons.css';
 
 .menu-auth-page {
-  padding: 1.5rem;
+  padding: 0;
 }
 
 .content-wrapper {

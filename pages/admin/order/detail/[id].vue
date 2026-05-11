@@ -3,11 +3,13 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       title="납품요구 상세"
+      icon="order"
+      icon-color="purple"
       description="납품요구 정보를 조회합니다."
     >
       <template #actions>
         <button class="btn-action btn-secondary" @click="goBack">
-          <i class="fas fa-list"></i>
+          <i class="fas fa-list" />
           목록
         </button>
       </template>
@@ -22,7 +24,7 @@
         <!-- 1. 계약 정보 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-file-alt"></i>
+            <i class="fas fa-file-alt" />
             <span>계약 정보</span>
           </div>
           <div class="info-grid grid-5">
@@ -43,7 +45,7 @@
             </FormField>
           </div>
           <div class="info-group-header">
-            <i class="fas fa-file-contract"></i>
+            <i class="fas fa-file-contract" />
             <span>계약 상세</span>
           </div>
           <div class="info-grid grid-4">
@@ -62,7 +64,7 @@
         <!-- 2. 수요기관 정보 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-building"></i>
+            <i class="fas fa-building" />
             <span>수요기관 정보</span>
           </div>
           <div class="info-grid grid-4">
@@ -93,7 +95,7 @@
         <!-- 3. 기타 정보 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-clipboard-list"></i>
+            <i class="fas fa-clipboard-list" />
             <span>기타 정보</span>
           </div>
           <div class="info-grid grid-4">
@@ -115,23 +117,19 @@
         <!-- 4. 금액 정보 -->
         <div class="info-group amount-group">
           <div class="info-group-header">
-            <i class="fas fa-won-sign"></i>
+            <i class="fas fa-won-sign" />
             <span>금액 정보</span>
           </div>
+          <!-- ★ 정책: 총 계약금액 = 품대계(item_total_amount). 고객 실수금 = 매출 기준.
+               수수료는 참고용으로만 표기하며 합계 계산에 포함하지 않는다. -->
           <div class="amount-display">
-            <div class="amount-item">
-              <label>품목총액</label>
-              <span>{{ formatCurrency(orderData.itemTotalAmount) }}</span>
-            </div>
-            <span class="amount-operator">+</span>
-            <div class="amount-item">
-              <label>수수료</label>
-              <span>{{ formatCurrency(orderData.commission) }}</span>
-            </div>
-            <span class="amount-operator">=</span>
             <div class="amount-item total">
               <label>총 계약금액</label>
-              <span>{{ formatCurrency(orderData.totalAmount) }}</span>
+              <span>{{ formatCurrency(orderData.itemTotalAmount) }}</span>
+            </div>
+            <div class="amount-item" style="font-size: 0.85em; color: #888;">
+              <label>수수료 (참고)</label>
+              <span>{{ formatCurrency(orderData.commission) }}</span>
             </div>
           </div>
         </div>
@@ -145,7 +143,9 @@
               <tr>
                 <th>순번</th>
                 <th>품명</th>
-                <th class="col-spec">규격</th>
+                <th class="col-spec">
+                  규격
+                </th>
                 <th>단위</th>
                 <th>단가</th>
                 <th>수량</th>
@@ -157,16 +157,26 @@
             </thead>
             <tbody>
               <tr v-if="items.length === 0">
-                <td colspan="10" class="empty-row">등록된 납품 품목이 없습니다.</td>
+                <td colspan="10" class="empty-row">
+                  등록된 납품 품목이 없습니다.
+                </td>
               </tr>
               <tr v-for="(item, index) in items" :key="index">
-                <td class="text-center">{{ index + 1 }}</td>
+                <td class="text-center">
+                  {{ index + 1 }}
+                </td>
                 <td><input :value="item.productName" type="text" readonly></td>
                 <td><input :value="item.specification" type="text" readonly></td>
                 <td><input :value="item.unit" type="text" readonly></td>
-                <td class="text-right"><input :value="formatNumber(item.unitPrice)" type="text" readonly class="text-right"></td>
-                <td class="text-right"><input :value="item.quantity" type="text" readonly class="text-right"></td>
-                <td class="text-right"><input :value="formatNumber(item.unitPrice * item.quantity)" type="text" readonly class="text-right"></td>
+                <td class="text-right">
+                  <input :value="formatNumber(item.unitPrice)" type="text" readonly class="text-right">
+                </td>
+                <td class="text-right">
+                  <input :value="item.quantity" type="text" readonly class="text-right">
+                </td>
+                <td class="text-right">
+                  <input :value="formatNumber(item.unitPrice * item.quantity)" type="text" readonly class="text-right">
+                </td>
                 <td><input :value="item.deliveryLocation || '-'" type="text" readonly></td>
                 <td><input :value="item.deliveryDeadline || '-'" type="text" readonly></td>
                 <td><input :value="item.deliveryTerms || '-'" type="text" readonly></td>
@@ -220,13 +230,13 @@ const totalQuantity = computed(() => {
 
 // 규격에서 두께(mm) 숫자를 추출하여 정렬에 사용
 const extractSpecThickness = (specification: string): number => {
-  if (!specification) return 9999
+  if (!specification) { return 9999 }
   // "NNN×NNN×NNNmm" 또는 "NNN*NNN*NNNmm" 패턴에서 마지막 숫자(두께) 추출
   const dimMatch = specification.match(/(\d+)\s*[×x*]\s*(\d+)\s*[×x*]\s*(\d+)\s*mm/i)
-  if (dimMatch) return parseInt(dimMatch[3], 10)
+  if (dimMatch) { return parseInt(dimMatch[3], 10) }
   // "NNNmm" 패턴에서 숫자 추출
   const mmMatch = specification.match(/(\d+)\s*mm/i)
-  if (mmMatch) return parseInt(mmMatch[1], 10)
+  if (mmMatch) { return parseInt(mmMatch[1], 10) }
   return 9999
 }
 

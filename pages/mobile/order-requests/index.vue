@@ -4,23 +4,23 @@
     <div class="mobile-header">
       <h1>내 주문 요청</h1>
       <button class="btn-new" @click="goToNewRequest">
-        <i class="fas fa-plus"></i>
+        <i class="fas fa-plus" />
         신규
       </button>
     </div>
 
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-container">
-      <i class="fas fa-spinner fa-spin"></i>
+      <i class="fas fa-spinner fa-spin" />
       <p>요청 목록을 불러오는 중...</p>
     </div>
 
     <!-- 빈 상태 -->
     <div v-else-if="requests.length === 0" class="empty-state">
-      <i class="fas fa-inbox"></i>
+      <i class="fas fa-inbox" />
       <p>등록된 주문 요청이 없습니다.</p>
       <button class="btn-primary" @click="goToNewRequest">
-        <i class="fas fa-plus"></i>
+        <i class="fas fa-plus" />
         새 요청 등록하기
       </button>
     </div>
@@ -38,7 +38,7 @@
           <span class="request-date">{{ formatDate(request.requestDate) }}</span>
           <div class="status-badges">
             <span v-if="request.isUrgent" class="urgent-badge">
-              <i class="fas fa-exclamation-circle"></i>
+              <i class="fas fa-exclamation-circle" />
               긴급
             </span>
             <span class="status-badge" :class="getStatusClass(request.status)">
@@ -49,14 +49,16 @@
 
         <!-- 카드 내용 -->
         <div class="card-body">
-          <h3 class="site-name">{{ request.siteName }}</h3>
+          <h3 class="site-name">
+            {{ request.siteName }}
+          </h3>
           <div class="card-info">
             <div class="info-item">
-              <i class="fas fa-box"></i>
+              <i class="fas fa-box" />
               <span>품목 {{ request.itemCount }}건</span>
             </div>
             <div class="info-item">
-              <i class="fas fa-calendar"></i>
+              <i class="fas fa-calendar" />
               <span>희망일: {{ formatDate(request.desiredDeliveryDate) }}</span>
             </div>
           </div>
@@ -65,22 +67,22 @@
         <!-- 카드 푸터 -->
         <div class="card-footer">
           <span v-if="request.status === 'APPROVED'" class="linked-order">
-            <i class="fas fa-link"></i>
+            <i class="fas fa-link" />
             {{ request.linkedDeliveryRequestNo || '연결됨' }}
           </span>
           <span v-else-if="request.status === 'REJECTED'" class="reject-reason">
-            <i class="fas fa-times-circle"></i>
+            <i class="fas fa-times-circle" />
             {{ request.rejectReason || '반려됨' }}
           </span>
-          <i class="fas fa-chevron-right card-arrow"></i>
+          <i class="fas fa-chevron-right card-arrow" />
         </div>
       </div>
     </div>
 
     <!-- 더보기 버튼 -->
     <div v-if="hasMore" class="load-more">
-      <button class="btn-load-more" @click="loadMore" :disabled="loadingMore">
-        <i v-if="loadingMore" class="fas fa-spinner fa-spin"></i>
+      <button class="btn-load-more" :disabled="loadingMore" @click="loadMore">
+        <i v-if="loadingMore" class="fas fa-spinner fa-spin" />
         <span v-else>더보기</span>
       </button>
     </div>
@@ -148,7 +150,7 @@ const goToDetail = (requestId: number) => {
 }
 
 const getStatusClass = (status?: MobileOrderStatus): string => {
-  if (!status) return ''
+  if (!status) { return '' }
   switch (status) {
     case 'PENDING':
       return 'status-pending'
@@ -162,7 +164,7 @@ const getStatusClass = (status?: MobileOrderStatus): string => {
 }
 
 const getStatusLabel = (status?: MobileOrderStatus): string => {
-  if (!status) return '-'
+  if (!status) { return '-' }
   const labels: Record<MobileOrderStatus, string> = {
     PENDING: '대기',
     REQUESTED: '접수',

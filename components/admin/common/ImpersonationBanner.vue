@@ -2,7 +2,7 @@
   <div class="impersonation-banner">
     <div class="banner-content">
       <div class="banner-icon">
-        <i class="fas fa-user-secret"></i>
+        <i class="fas fa-user-secret" />
       </div>
       <div class="banner-text">
         <span class="banner-label">대리 로그인 중</span>
@@ -15,8 +15,8 @@
           (원래 계정: {{ authStore.originalUser?.userName }})
         </span>
       </div>
-      <button class="btn-revert" @click="handleRevert" :disabled="loading">
-        <i class="fas fa-sign-out-alt"></i>
+      <button class="btn-revert" :disabled="loading" @click="handleRevert">
+        <i class="fas fa-sign-out-alt" />
         <span v-if="loading">복귀 중...</span>
         <span v-else>원래 계정으로 복귀</span>
       </button>
@@ -36,21 +36,21 @@ const authStore = useAuthStore()
 const loading = ref(false)
 
 // 역할 라벨 변환
-function getRoleLabel(role: string | undefined | null): string {
+function getRoleLabel (role: string | undefined | null): string {
   const roleMap: Record<string, string> = {
-    'SYSTEM_ADMIN': '시스템관리자',
-    'LEADPOWER_MANAGER': '리드파워 담당자',
-    'OEM_MANAGER': 'OEM 담당자',
-    'SITE_MANAGER': '시공사 담당자',
-    'SITE_INSPECTOR': '시공사 감리원',
-    'SALES_MANAGER': '영업 담당자',
-    'DELIVERY_DRIVER': '운송기사',
-    'READ_ONLY': '조회 전용'
+    SYSTEM_ADMIN: '시스템관리자',
+    LEADPOWER_MANAGER: '리드파워 담당자',
+    OEM_MANAGER: 'OEM 담당자',
+    SITE_MANAGER: '시공사 담당자',
+    SITE_INSPECTOR: '시공사 감리원',
+    SALES_MANAGER: '영업 담당자',
+    DELIVERY_DRIVER: '운송기사',
+    READ_ONLY: '조회 전용'
   }
   return roleMap[role || ''] || role || '알 수 없음'
 }
 
-async function handleRevert() {
+async function handleRevert () {
   loading.value = true
   emit('revert')
 }

@@ -17,6 +17,7 @@ export interface OrderSearchRequest {
   endDate?: string
   contractId?: string
   client?: string
+  projectName?: string  // 사업명 (프로젝트명) — 발주 선택 모달 검색용
   keyword?: string  // 검색어 (프로젝트명, 담당자명 등)
   salesId?: number
   page?: number
@@ -38,6 +39,7 @@ export const orderService = {
       if (params.endDate) queryParams.append('endDate', params.endDate)
       if (params.contractId) queryParams.append('contractId', params.contractId)
       if (params.client) queryParams.append('client', params.client)
+      if (params.projectName) queryParams.append('projectName', params.projectName)
       if (params.keyword) queryParams.append('keyword', params.keyword)
       if (params.salesId) queryParams.append('salesId', params.salesId.toString())
       if (params.shippableOnly) queryParams.append('shippableOnly', 'true')
@@ -90,6 +92,36 @@ export const orderService = {
         size: 10,
         number: 0
       }
+    }
+  },
+
+  /**
+   * 납품요구 금액 합계 조회 (검색 조건 연동)
+   */
+  async getOrderSummary(params: OrderSearchRequest = {}): Promise<{ totalAmount: number }> {
+    try {
+      const queryParams = new URLSearchParams()
+      if (params.startDate) queryParams.append('startDate', params.startDate)
+      if (params.endDate) queryParams.append('endDate', params.endDate)
+      if (params.client) queryParams.append('client', params.client)
+      if (params.projectName) queryParams.append('projectName', params.projectName)
+      if (params.keyword) queryParams.append('keyword', params.keyword)
+      if (params.salesId) queryParams.append('salesId', params.salesId.toString())
+
+      const url = `${ORDER_ENDPOINTS.summary()}?${queryParams.toString()}`
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('❌ [getOrderSummary] 납품요구 금액 합계 조회 실패:', error)
+      return { totalAmount: 0 }
     }
   },
 

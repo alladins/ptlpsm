@@ -2,6 +2,8 @@
   <div class="statistics-oem">
     <PageHeader
       title="OEM 제조사별 통계"
+      icon="chart"
+      icon-color="blue"
       description="OEM 제조사별 월별 제조원가, 지급액, 미지급액(잔금)을 확인합니다."
     />
 
@@ -12,20 +14,20 @@
           class="year-btn"
           @click="changeYear(-1)"
         >
-          <i class="fas fa-chevron-left"></i>
+          <i class="fas fa-chevron-left" />
         </button>
         <span class="current-year">{{ selectedYear }}년</span>
         <button
           class="year-btn"
           @click="changeYear(1)"
         >
-          <i class="fas fa-chevron-right"></i>
+          <i class="fas fa-chevron-right" />
         </button>
       </div>
 
       <!-- 로딩 -->
       <div v-if="loading" class="loading-container">
-        <i class="fas fa-spinner fa-spin"></i>
+        <i class="fas fa-spinner fa-spin" />
         <p>데이터를 불러오는 중...</p>
       </div>
 
@@ -34,37 +36,43 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon icon-cost">
-              <i class="fas fa-industry"></i>
+              <i class="fas fa-industry" />
             </div>
             <div class="stat-content">
               <h3>총 제조원가</h3>
-              <p class="stat-number">{{ formatCurrency(statistics.summary.totalManufacturingCost) }}</p>
+              <p class="stat-number">
+                {{ formatCurrency(statistics.summary.totalManufacturingCost) }}
+              </p>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-paid">
-              <i class="fas fa-credit-card"></i>
+              <i class="fas fa-credit-card" />
             </div>
             <div class="stat-content">
               <h3>총 지급액</h3>
-              <p class="stat-number text-success">{{ formatCurrency(statistics.summary.totalPaidAmount) }}</p>
+              <p class="stat-number text-success">
+                {{ formatCurrency(statistics.summary.totalPaidAmount) }}
+              </p>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-unpaid">
-              <i class="fas fa-wallet"></i>
+              <i class="fas fa-wallet" />
             </div>
             <div class="stat-content">
               <h3>총 미지급액</h3>
-              <p class="stat-number text-danger">{{ formatCurrency(statistics.summary.totalUnpaidAmount || 0) }}</p>
+              <p class="stat-number text-danger">
+                {{ formatCurrency(statistics.summary.totalUnpaidAmount || 0) }}
+              </p>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-rate">
-              <i class="fas fa-percentage"></i>
+              <i class="fas fa-percentage" />
             </div>
             <div class="stat-content">
               <h3>전체 지급률</h3>
@@ -79,7 +87,7 @@
 
         <!-- OEM별 연간 합계 테이블 -->
         <div class="table-section">
-          <h2><i class="fas fa-building"></i> OEM 제조사별 연간 합계</h2>
+          <h2><i class="fas fa-building" /> OEM 제조사별 연간 합계</h2>
           <div class="table-container">
             <table class="data-table">
               <thead>
@@ -87,23 +95,43 @@
                   <th>No</th>
                   <th>제조사</th>
                   <th>출하건수</th>
-                  <th class="text-right">총 제조원가</th>
-                  <th class="text-right">총 지급액</th>
-                  <th class="text-right">총 미지급액</th>
-                  <th class="text-center">지급률</th>
+                  <th class="text-right">
+                    총 제조원가
+                  </th>
+                  <th class="text-right">
+                    총 지급액
+                  </th>
+                  <th class="text-right">
+                    총 미지급액
+                  </th>
+                  <th class="text-center">
+                    지급률
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="!statistics.oemSummary || statistics.oemSummary.length === 0">
-                  <td colspan="7" class="no-data">데이터가 없습니다</td>
+                  <td colspan="7" class="no-data">
+                    데이터가 없습니다
+                  </td>
                 </tr>
                 <tr v-for="(item, index) in statistics.oemSummary" :key="item.oemId">
-                  <td class="text-center">{{ index + 1 }}</td>
+                  <td class="text-center">
+                    {{ index + 1 }}
+                  </td>
                   <td>{{ item.oemName }}</td>
-                  <td class="text-center">{{ item.shipmentCount }}건</td>
-                  <td class="text-right">{{ formatCurrency(item.totalManufacturingCost) }}</td>
-                  <td class="text-right text-success">{{ formatCurrency(item.totalPaidAmount) }}</td>
-                  <td class="text-right text-danger">{{ formatCurrency(item.totalUnpaidAmount) }}</td>
+                  <td class="text-center">
+                    {{ item.shipmentCount }}건
+                  </td>
+                  <td class="text-right">
+                    {{ formatCurrency(item.totalManufacturingCost) }}
+                  </td>
+                  <td class="text-right text-success">
+                    {{ formatCurrency(item.totalPaidAmount) }}
+                  </td>
+                  <td class="text-right text-danger">
+                    {{ formatCurrency(item.totalUnpaidAmount) }}
+                  </td>
                   <td class="text-center">
                     <span class="rate-badge" :class="getPaymentRateClass(item.paymentRate)">
                       {{ item.paymentRate.toFixed(1) }}%
@@ -113,11 +141,21 @@
               </tbody>
               <tfoot v-if="statistics.oemSummary && statistics.oemSummary.length > 0">
                 <tr class="total-row">
-                  <td colspan="2" class="text-center"><strong>합계</strong></td>
-                  <td class="text-center"><strong>{{ getTotalShipmentCount() }}건</strong></td>
-                  <td class="text-right"><strong>{{ formatCurrency(statistics.summary.totalManufacturingCost) }}</strong></td>
-                  <td class="text-right text-success"><strong>{{ formatCurrency(statistics.summary.totalPaidAmount) }}</strong></td>
-                  <td class="text-right text-danger"><strong>{{ formatCurrency(statistics.summary.totalUnpaidAmount || 0) }}</strong></td>
+                  <td colspan="2" class="text-center">
+                    <strong>합계</strong>
+                  </td>
+                  <td class="text-center">
+                    <strong>{{ getTotalShipmentCount() }}건</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ formatCurrency(statistics.summary.totalManufacturingCost) }}</strong>
+                  </td>
+                  <td class="text-right text-success">
+                    <strong>{{ formatCurrency(statistics.summary.totalPaidAmount) }}</strong>
+                  </td>
+                  <td class="text-right text-danger">
+                    <strong>{{ formatCurrency(statistics.summary.totalUnpaidAmount || 0) }}</strong>
+                  </td>
                   <td class="text-center">
                     <span class="rate-badge" :class="getPaymentRateClass(statistics.summary.paymentRate || 0)">
                       <strong>{{ (statistics.summary.paymentRate || 0).toFixed(1) }}%</strong>
@@ -131,29 +169,49 @@
 
         <!-- 월별 상세 테이블 -->
         <div class="table-section">
-          <h2><i class="fas fa-calendar-alt"></i> OEM 제조사별 월별 상세</h2>
+          <h2><i class="fas fa-calendar-alt" /> OEM 제조사별 월별 상세</h2>
           <div class="table-container">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th style="width: 100px;">월</th>
+                  <th style="width: 100px;">
+                    월
+                  </th>
                   <th>제조사</th>
-                  <th class="text-right">제조원가</th>
-                  <th class="text-right">지급액</th>
-                  <th class="text-right">미지급액</th>
-                  <th class="text-center" style="width: 100px;">지급률</th>
+                  <th class="text-right">
+                    제조원가
+                  </th>
+                  <th class="text-right">
+                    지급액
+                  </th>
+                  <th class="text-right">
+                    미지급액
+                  </th>
+                  <th class="text-center" style="width: 100px;">
+                    지급률
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="!statistics.monthlyData || statistics.monthlyData.length === 0">
-                  <td colspan="6" class="no-data">데이터가 없습니다</td>
+                  <td colspan="6" class="no-data">
+                    데이터가 없습니다
+                  </td>
                 </tr>
                 <tr v-for="item in statistics.monthlyData" :key="`${item.oemId}-${item.month}`">
-                  <td class="text-center">{{ formatMonth(item.month) }}</td>
+                  <td class="text-center">
+                    {{ formatMonth(item.month) }}
+                  </td>
                   <td>{{ item.oemName }}</td>
-                  <td class="text-right">{{ formatCurrency(item.manufacturingCost) }}</td>
-                  <td class="text-right text-success">{{ formatCurrency(item.paidAmount) }}</td>
-                  <td class="text-right text-danger">{{ formatCurrency(item.unpaidAmount || 0) }}</td>
+                  <td class="text-right">
+                    {{ formatCurrency(item.manufacturingCost) }}
+                  </td>
+                  <td class="text-right text-success">
+                    {{ formatCurrency(item.paidAmount) }}
+                  </td>
+                  <td class="text-right text-danger">
+                    {{ formatCurrency(item.unpaidAmount || 0) }}
+                  </td>
                   <td class="text-center">
                     <span class="rate-badge" :class="getPaymentRateClass(item.paymentRate || 0)">
                       {{ (item.paymentRate || 0).toFixed(1) }}%
@@ -200,7 +258,7 @@ const statistics = ref<OemStatisticsResponse>({
 })
 
 // 데이터 로드
-async function loadData() {
+async function loadData () {
   loading.value = true
   try {
     const data = await getOemStatistics(selectedYear.value)
@@ -213,34 +271,34 @@ async function loadData() {
 }
 
 // 연도 변경
-function changeYear(delta: number) {
+function changeYear (delta: number) {
   selectedYear.value += delta
   loadData()
 }
 
 // 총 출하 건수 계산
-function getTotalShipmentCount(): number {
-  if (!statistics.value.oemSummary) return 0
+function getTotalShipmentCount (): number {
+  if (!statistics.value.oemSummary) { return 0 }
   return statistics.value.oemSummary.reduce((sum, item) => sum + (item.shipmentCount || 0), 0)
 }
 
 // 포맷 함수들
-function formatCurrency(value: number): string {
-  if (value === null || value === undefined) return '0원'
+function formatCurrency (value: number): string {
+  if (value === null || value === undefined) { return '0원' }
   return value.toLocaleString('ko-KR') + '원'
 }
 
-function formatMonth(month: string): string {
-  if (!month) return '-'
+function formatMonth (month: string): string {
+  if (!month) { return '-' }
   const parts = month.split('-')
-  if (parts.length < 2) return month
+  if (parts.length < 2) { return month }
   return `${parts[0]}년 ${parseInt(parts[1])}월`
 }
 
-function getPaymentRateClass(rate: number): string {
-  if (rate >= 100) return 'rate-complete'
-  if (rate >= 70) return 'rate-high'
-  if (rate >= 40) return 'rate-medium'
+function getPaymentRateClass (rate: number): string {
+  if (rate >= 100) { return 'rate-complete' }
+  if (rate >= 70) { return 'rate-high' }
+  if (rate >= 40) { return 'rate-medium' }
   return 'rate-low'
 }
 

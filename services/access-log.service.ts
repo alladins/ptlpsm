@@ -13,6 +13,24 @@ import type {
   AccessLogStatistics
 } from '~/types/access-log'
 
+/**
+ * 쿼리스트링 빌더.
+ * `new URL()` 은 base URL 이 절대경로일 때만 동작하는데, 환경에 따라 endpoint 가
+ * 상대경로(예: `/api/admin/access-logs`)인 경우가 있어 `new URL()` 생성자가
+ * "Invalid URL" 로 깨진다. URLSearchParams 로 직접 조립.
+ */
+function appendQuery(endpoint: string, params?: Record<string, unknown>): string {
+  if (!params) return endpoint
+  const search = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') {
+      search.append(k, String(v))
+    }
+  })
+  const qs = search.toString()
+  return qs ? `${endpoint}?${qs}` : endpoint
+}
+
 export const accessLogService = {
   /**
    * 접근로그 목록 조회
@@ -20,17 +38,9 @@ export const accessLogService = {
    * @returns 접근로그 목록 및 페이지 정보
    */
   async getAccessLogs(params?: AccessLogSearchParams): Promise<AccessLogListResponse> {
-    const url = new URL(ACCESS_LOG_ENDPOINTS.list())
+    const url = appendQuery(ACCESS_LOG_ENDPOINTS.list(), params as Record<string, unknown>)
 
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          url.searchParams.append(key, String(value))
-        }
-      })
-    }
-
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: 'GET',
       headers: getAuthHeaders(),
       credentials: 'include'
@@ -74,17 +84,9 @@ export const accessLogService = {
    * @returns Blob 데이터
    */
   async exportExcel(params?: AccessLogSearchParams): Promise<Blob> {
-    const url = new URL(ACCESS_LOG_ENDPOINTS.exportExcel())
+    const url = appendQuery(ACCESS_LOG_ENDPOINTS.exportExcel(), params as Record<string, unknown>)
 
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          url.searchParams.append(key, String(value))
-        }
-      })
-    }
-
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: 'GET',
       credentials: 'include'
     })

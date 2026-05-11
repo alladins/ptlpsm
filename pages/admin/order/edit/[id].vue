@@ -9,7 +9,7 @@
     >
       <template #actions>
         <button class="btn-action btn-secondary" @click="goBack">
-          <i class="fas fa-list"></i>
+          <i class="fas fa-list" />
           목록
         </button>
       </template>
@@ -28,7 +28,7 @@
           :class="{ active: activeTab === tab.id }"
           @click="activeTab = tab.id"
         >
-          <i :class="tab.icon"></i>
+          <i :class="tab.icon" />
           <span>{{ tab.label }}</span>
           <span v-if="tab.badge" class="tab-badge">{{ tab.badge }}</span>
         </button>
@@ -36,219 +36,247 @@
 
       <!-- 기본정보 탭 -->
       <div v-show="activeTab === 'info'" class="tab-content">
-      <!-- 분할납품요구서 정보 -->
-      <FormSection title="분할납품요구서 정보">
-        <!-- 1. 계약 정보 -->
-        <div class="info-group">
-          <div class="info-group-header">
-            <i class="fas fa-file-alt"></i>
-            <span>계약 정보</span>
+        <!-- 분할납품요구서 정보 -->
+        <FormSection title="분할납품요구서 정보">
+          <!-- 1. 계약 정보 -->
+          <div class="info-group">
+            <div class="info-group-header">
+              <i class="fas fa-file-alt" />
+              <span>계약 정보</span>
+            </div>
+            <div class="info-grid grid-5">
+              <FormField label="계약번호">
+                <input type="text" :value="orderData?.contractId || '-'" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="계약일자">
+                <input type="text" :value="orderData?.contractDate || '-'" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="선고지번호">
+                <input type="text" :value="orderData?.preNotificationNo || '-'" class="form-input-xs" readonly>
+              </FormField>
+              <FormField label="납품요구번호">
+                <input type="text" :value="orderData?.deliveryRequestNo || '-'" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="납품요구일자">
+                <input type="text" :value="orderData?.deliveryRequestDate || '-'" class="form-input-sm" readonly>
+              </FormField>
+            </div>
+            <div class="info-grid grid-5">
+              <FormField label="주문상태">
+                <span class="status-badge" :class="getOrderStatusClass(orderData?.status)">
+                  {{ getOrderStatusLabel(orderData?.status) }}
+                </span>
+              </FormField>
+            </div>
+            <div class="info-group-header">
+              <i class="fas fa-file-contract" />
+              <span>계약 상세</span>
+            </div>
+            <div class="info-grid grid-4">
+              <FormField label="나라장터번호">
+                <input type="text" :value="orderData?.naraJangteoNo || '-'" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="지급방법">
+                <input type="text" :value="orderData?.paymentMethod || '-'" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="사업명" grid-2>
+                <input type="text" :value="orderData?.projectName || '-'" class="form-input-md" style="width: 370px" readonly>
+              </FormField>
+            </div>
           </div>
-          <div class="info-grid grid-5">
-            <FormField label="계약번호">
-              <input type="text" :value="orderData?.contractId || '-'" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="계약일자">
-              <input type="text" :value="orderData?.contractDate || '-'" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="선고지번호">
-              <input type="text" :value="orderData?.preNotificationNo || '-'" class="form-input-xs" readonly>
-            </FormField>
-            <FormField label="납품요구번호">
-              <input type="text" :value="orderData?.deliveryRequestNo || '-'" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="납품요구일자">
-              <input type="text" :value="orderData?.deliveryRequestDate || '-'" class="form-input-sm" readonly>
-            </FormField>
-          </div>
-          <div class="info-grid grid-5">
-            <FormField label="주문상태">
-              <span class="status-badge" :class="getOrderStatusClass(orderData?.status)">
-                {{ getOrderStatusLabel(orderData?.status) }}
-              </span>
-            </FormField>
-          </div>
-          <div class="info-group-header">
-            <i class="fas fa-file-contract"></i>
-            <span>계약 상세</span>
-          </div>
-          <div class="info-grid grid-4">
-            <FormField label="나라장터번호">
-              <input type="text" :value="orderData?.naraJangteoNo || '-'" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="지급방법">
-              <input type="text" :value="orderData?.paymentMethod || '-'" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="사업명" grid-2>
-              <input type="text" :value="orderData?.projectName || '-'" class="form-input-md" style="width: 370px" readonly>
-            </FormField>
-          </div>
-        </div>
 
-        <!-- 2. 수요기관 정보 -->
-        <div class="info-group">
-          <div class="info-group-header">
-            <i class="fas fa-building"></i>
-            <span>수요기관 정보</span>
+          <!-- 2. 수요기관 정보 -->
+          <div class="info-group">
+            <div class="info-group-header">
+              <i class="fas fa-building" />
+              <span>수요기관 정보</span>
+            </div>
+            <div class="info-grid grid-4">
+              <FormField label="수요기관명">
+                <input type="text" :value="orderData?.client || '-'" class="form-input-md" readonly>
+              </FormField>
+              <FormField label="기관번호">
+                <input type="text" :value="orderData?.clientNo || '-'" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="우편번호">
+                <input type="text" :value="orderData?.clientPostalCode || '-'" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="주소" full-width>
+                <input type="text" :value="orderData?.clientAddress || '-'" class="form-input-lg" readonly>
+              </FormField>
+              <FormField label="전화번호">
+                <input type="text" :value="orderData?.clientPhoneNumber || '-'" class="form-input" readonly>
+              </FormField>
+              <FormField label="팩스번호">
+                <input type="text" :value="orderData?.clientFaxNumber || '-'" class="form-input" readonly>
+              </FormField>
+              <FormField label="담당자">
+                <input type="text" :value="orderData?.clientManagerName || '-'" class="form-input" readonly>
+              </FormField>
+            </div>
           </div>
-          <div class="info-grid grid-4">
-            <FormField label="수요기관명">
-              <input type="text" :value="orderData?.client || '-'" class="form-input-md" readonly>
-            </FormField>
-            <FormField label="기관번호">
-              <input type="text" :value="orderData?.clientNo || '-'" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="우편번호">
-              <input type="text" :value="orderData?.clientPostalCode || '-'" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="주소" full-width>
-              <input type="text" :value="orderData?.clientAddress || '-'" class="form-input-lg" readonly>
-            </FormField>
-            <FormField label="전화번호">
-              <input type="text" :value="orderData?.clientPhoneNumber || '-'" class="form-input" readonly>
-            </FormField>
-            <FormField label="팩스번호">
-              <input type="text" :value="orderData?.clientFaxNumber || '-'" class="form-input" readonly>
-            </FormField>
-            <FormField label="담당자">
-              <input type="text" :value="orderData?.clientManagerName || '-'" class="form-input" readonly>
-            </FormField>
-          </div>
-        </div>
 
-        <!-- 3. 기타 정보 -->
-        <div class="info-group">
-          <div class="info-group-header">
-            <i class="fas fa-clipboard-list"></i>
-            <span>기타 정보</span>
-          </div>
-          <!-- 건설사 선택 (OEM 제조사는 출하 등록 시 선택) -->
-          <div class="info-grid grid-4">
-            <FormField label="건설사">
-              <select
-                v-model="formData.builderCompanyId"
-                @change="handleBuilderChange"
-                class="form-input-sm"
-              >
-                <option :value="null">선택하세요</option>
-                <option
-                  v-for="company in companies"
-                  :key="company.id"
-                  :value="company.id"
+          <!-- 3. 기타 정보 -->
+          <div class="info-group">
+            <div class="info-group-header">
+              <i class="fas fa-clipboard-list" />
+              <span>기타 정보</span>
+            </div>
+            <!-- 건설사 선택 (OEM 제조사는 출하 등록 시 선택) -->
+            <div class="info-grid grid-4">
+              <FormField label="건설사">
+                <select
+                  v-model="formData.builderCompanyId"
+                  class="form-input-sm"
+                  @change="handleBuilderChange"
                 >
-                  {{ company.companyName }}
-                </option>
-              </select>
-            </FormField>
+                  <option :value="null">
+                    선택하세요
+                  </option>
+                  <option
+                    v-for="company in companies"
+                    :key="company.id"
+                    :value="company.id"
+                  >
+                    {{ company.companyName }}
+                  </option>
+                </select>
+              </FormField>
+            </div>
+            <!-- 기존 필드들 (readonly) -->
+            <div class="info-grid grid-4">
+              <FormField label="분할납품">
+                <input type="text" :value="orderData?.partialDelivery || '-'" class="form-input-xs" readonly>
+              </FormField>
+              <FormField label="하자담보책임기간">
+                <input type="text" :value="orderData?.warrantyPeriod || '-'" class="form-input-xs" readonly>
+              </FormField>
+              <FormField label="검사기관">
+                <input type="text" :value="orderData?.inspectionAgency || '-'" class="form-input-md" readonly>
+              </FormField>
+              <FormField label="인수기관">
+                <input type="text" :value="orderData?.acceptanceAgency || '-'" class="form-input-md" readonly>
+              </FormField>
+            </div>
           </div>
-          <!-- 기존 필드들 (readonly) -->
-          <div class="info-grid grid-4">
-            <FormField label="분할납품">
-              <input type="text" :value="orderData?.partialDelivery || '-'" class="form-input-xs" readonly>
-            </FormField>
-            <FormField label="하자담보책임기간">
-              <input type="text" :value="orderData?.warrantyPeriod || '-'" class="form-input-xs" readonly>
-            </FormField>
-            <FormField label="검사기관">
-              <input type="text" :value="orderData?.inspectionAgency || '-'" class="form-input-md" readonly>
-            </FormField>
-            <FormField label="인수기관">
-              <input type="text" :value="orderData?.acceptanceAgency || '-'" class="form-input-md" readonly>
-            </FormField>
-          </div>
-        </div>
 
-        <!-- 4. 금액 정보 -->
-        <div class="info-group amount-group">
-          <div class="info-group-header">
-            <i class="fas fa-won-sign"></i>
-            <span>금액 정보</span>
+          <!-- 4. 금액 정보 -->
+          <div class="info-group amount-group">
+            <div class="info-group-header">
+              <i class="fas fa-won-sign" />
+              <span>금액 정보</span>
+            </div>
+            <!-- ★ 정책: 총 계약금액 = 품대계(item_total_amount). 고객 실수금 = 매출 기준.
+               수수료는 참고용으로만 표기하며 합계 계산에 포함하지 않는다. -->
+            <div class="amount-display">
+              <div class="amount-item total">
+                <label>총 계약금액</label>
+                <span>{{ formatCurrency(orderData?.itemTotalAmount || 0) }}</span>
+              </div>
+              <div class="amount-item" style="font-size: 0.85em; color: #888;">
+                <label>수수료 (참고)</label>
+                <span>{{ formatCurrency(orderData?.commission || 0) }}</span>
+              </div>
+            </div>
           </div>
-          <div class="amount-display">
-            <div class="amount-item">
-              <label>품목총액</label>
+        </FormSection>
+
+        <!-- 납품 목록 -->
+        <FormSection title="납품 목록" style="margin-top: -20px">
+          <div class="table-wrapper">
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th class="col-no">
+                    순번
+                  </th>
+                  <th class="col-name">
+                    품명
+                  </th>
+                  <th class="col-spec">
+                    규격
+                  </th>
+                  <th class="col-unit">
+                    단위
+                  </th>
+                  <th class="col-price">
+                    단가
+                  </th>
+                  <th class="col-qty">
+                    수량
+                  </th>
+                  <th class="col-amount">
+                    금액
+                  </th>
+                  <th class="col-location">
+                    납품장소
+                  </th>
+                  <th class="col-deadline">
+                    납품기한
+                  </th>
+                  <th class="col-terms">
+                    납품조건
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="items.length === 0">
+                  <td colspan="10" class="empty-row">
+                    등록된 납품 품목이 없습니다.
+                  </td>
+                </tr>
+                <tr v-for="(item, index) in items" :key="index">
+                  <td class="text-center">
+                    {{ index + 1 }}
+                  </td>
+                  <td><input :value="item.productName" type="text" readonly class="input-w80 text-center"></td>
+                  <td><input :value="item.specification" type="text" readonly></td>
+                  <td><input :value="item.unit" type="text" readonly class="input-w66 text-center"></td>
+                  <td class="text-right">
+                    <input :value="formatNumber(item.unitPrice)" type="text" readonly class="input-w66 text-right">
+                  </td>
+                  <td class="text-right">
+                    <input :value="item.quantity" type="text" readonly class="input-w66 text-right">
+                  </td>
+                  <td class="text-right">
+                    <input :value="formatNumber(item.unitPrice * item.quantity)" type="text" readonly class="input-w66 text-right">
+                  </td>
+                  <td><input :value="item.deliveryLocation || '-'" type="text" readonly class="input-w75 text-center"></td>
+                  <td><input :value="item.deliveryDeadline || '-'" type="text" readonly class="input-w66 text-center"></td>
+                  <td><input :value="item.deliveryTerms || '-'" type="text" readonly class="input-w66 text-center"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 합계 정보 -->
+          <div class="summary-info">
+            <div class="summary-item">
+              <label>수량합계:</label>
+              <span>{{ formatNumber(totalQuantity) }}</span>
+            </div>
+            <div class="summary-item">
+              <label>품목총액:</label>
               <span>{{ formatCurrency(orderData?.itemTotalAmount || 0) }}</span>
             </div>
-            <span class="amount-operator">+</span>
-            <div class="amount-item">
-              <label>수수료</label>
-              <span>{{ formatCurrency(orderData?.commission || 0) }}</span>
-            </div>
-            <span class="amount-operator">=</span>
-            <div class="amount-item total">
-              <label>총 계약금액</label>
-              <span>{{ formatCurrency(orderData?.totalAmount || 0) }}</span>
-            </div>
           </div>
-        </div>
-      </FormSection>
+        </FormSection>
 
-      <!-- 납품 목록 -->
-      <FormSection title="납품 목록" style="margin-top: -20px">
-        <div class="table-wrapper">
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th class="col-no">순번</th>
-                <th class="col-name">품명</th>
-                <th class="col-spec">규격</th>
-                <th class="col-unit">단위</th>
-                <th class="col-price">단가</th>
-                <th class="col-qty">수량</th>
-                <th class="col-amount">금액</th>
-                <th class="col-location">납품장소</th>
-                <th class="col-deadline">납품기한</th>
-                <th class="col-terms">납품조건</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="items.length === 0">
-                <td colspan="10" class="empty-row">등록된 납품 품목이 없습니다.</td>
-              </tr>
-              <tr v-for="(item, index) in items" :key="index">
-                <td class="text-center">{{ index + 1 }}</td>
-                <td><input :value="item.productName" type="text" readonly class="input-w80 text-center"></td>
-                <td><input :value="item.specification" type="text" readonly></td>
-                <td><input :value="item.unit" type="text" readonly class="input-w66 text-center"></td>
-                <td class="text-right"><input :value="formatNumber(item.unitPrice)" type="text" readonly class="input-w66 text-right"></td>
-                <td class="text-right"><input :value="item.quantity" type="text" readonly class="input-w66 text-right"></td>
-                <td class="text-right"><input :value="formatNumber(item.unitPrice * item.quantity)" type="text" readonly class="input-w66 text-right"></td>
-                <td><input :value="item.deliveryLocation || '-'" type="text" readonly class="input-w75 text-center"></td>
-                <td><input :value="item.deliveryDeadline || '-'" type="text" readonly class="input-w66 text-center"></td>
-                <td><input :value="item.deliveryTerms || '-'" type="text" readonly class="input-w66 text-center"></td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- 저장 버튼 -->
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" @click="goBack">
+            취소
+          </button>
+          <button
+            type="button"
+            class="btn-primary"
+            :disabled="submitting || !canEdit || !hasBuilderChanged"
+            :title="!canEdit ? '수정 권한이 없습니다' : !hasBuilderChanged ? '변경된 내용이 없습니다' : ''"
+            @click="handleSave"
+          >
+            {{ submitting ? '저장 중...' : '저장' }}
+          </button>
         </div>
-
-        <!-- 합계 정보 -->
-        <div class="summary-info">
-          <div class="summary-item">
-            <label>수량합계:</label>
-            <span>{{ formatNumber(totalQuantity) }}</span>
-          </div>
-          <div class="summary-item">
-            <label>품목총액:</label>
-            <span>{{ formatCurrency(orderData?.itemTotalAmount || 0) }}</span>
-          </div>
-        </div>
-      </FormSection>
-
-      <!-- 저장 버튼 -->
-      <div class="form-actions">
-        <button type="button" @click="goBack" class="btn-secondary">
-          취소
-        </button>
-        <button
-          type="button"
-          @click="handleSave"
-          class="btn-primary"
-          :disabled="submitting || !canEdit || !hasBuilderChanged"
-          :title="!canEdit ? '수정 권한이 없습니다' : !hasBuilderChanged ? '변경된 내용이 없습니다' : ''"
-        >
-          {{ submitting ? '저장 중...' : '저장' }}
-        </button>
-      </div>
       </div>
 
       <!-- 기성/납품확인 탭 -->
@@ -257,7 +285,7 @@
           <!-- 진행 현황 -->
           <div class="progress-summary">
             <div class="progress-info">
-              <i class="fas fa-tasks"></i>
+              <i class="fas fa-tasks" />
               <span>진행 현황: </span>
               <strong>{{ baselineProgress.confirmed }}/{{ baselineProgress.total }} 확정</strong>
             </div>
@@ -270,7 +298,9 @@
                 <tr>
                   <th>차수</th>
                   <th>청구일</th>
-                  <th class="col-amount">청구금액</th>
+                  <th class="col-amount">
+                    청구금액
+                  </th>
                   <th>서명상태</th>
                   <th>수금일</th>
                   <th>상태</th>
@@ -280,15 +310,19 @@
               </thead>
               <tbody>
                 <tr v-if="progressPayments.length === 0">
-                  <td colspan="8" class="no-data">기성금 이력이 없습니다.</td>
+                  <td colspan="8" class="no-data">
+                    기성금 이력이 없습니다.
+                  </td>
                 </tr>
-                <tr v-else v-for="payment in progressPayments" :key="payment.requestId || payment.paymentId">
+                <tr v-for="payment in progressPayments" v-else :key="payment.requestId || payment.paymentId">
                   <!-- 차수 -->
                   <td>{{ payment.paymentSeq }}차</td>
                   <!-- 청구일 -->
                   <td>{{ payment.requestDate }}</td>
                   <!-- 청구금액 -->
-                  <td class="text-right">{{ formatCurrency(payment.requestAmount) }}</td>
+                  <td class="text-right">
+                    {{ formatCurrency(payment.requestAmount) }}
+                  </td>
                   <!-- 서명상태 -->
                   <td>
                     <span class="signature-status" :class="getSignatureStatusClass(payment.signatureStatus)">
@@ -307,27 +341,27 @@
                   <td>
                     <div v-if="!isSignatureCompleted(payment.signatureStatus)" class="pdf-actions">
                       <span class="signature-pending-badge">
-                        <i class="fas fa-clock"></i>
+                        <i class="fas fa-clock" />
                         서명 대기중
                       </span>
                     </div>
                     <div v-else class="pdf-actions">
                       <button
                         class="btn-pdf-sm"
-                        @click="viewConfirmationPdf(payment.baselineId)"
                         :disabled="!payment.baselineId"
                         title="납품확인서"
+                        @click="viewConfirmationPdf(payment.baselineId)"
                       >
-                        <i class="fas fa-file-pdf"></i>
+                        <i class="fas fa-file-pdf" />
                         납품확인서
                       </button>
                       <button
                         class="btn-pdf-sm btn-pdf-photo"
-                        @click="viewPhotoSheetPdf(payment.baselineId)"
                         :disabled="!payment.baselineId"
                         title="사진대지"
+                        @click="viewPhotoSheetPdf(payment.baselineId)"
                       >
-                        <i class="fas fa-images"></i>
+                        <i class="fas fa-images" />
                         사진대지
                       </button>
                     </div>
@@ -337,14 +371,14 @@
                     <button
                       v-if="payment.status === 'APPROVED'"
                       class="btn-collection-confirm"
-                      @click="openCollectionConfirmModal(payment)"
                       title="수금 확인"
+                      @click="openCollectionConfirmModal(payment)"
                     >
-                      <i class="fas fa-check-circle"></i>
+                      <i class="fas fa-check-circle" />
                       수금확인
                     </button>
                     <span v-else-if="payment.status === 'PAID'" class="collection-completed">
-                      <i class="fas fa-check"></i>
+                      <i class="fas fa-check" />
                       완료
                     </span>
                     <span v-else class="collection-pending">-</span>
@@ -363,38 +397,54 @@
           <div class="fund-summary-cards">
             <div class="fund-card">
               <div class="fund-card-icon" style="background: #dbeafe; color: #1d4ed8;">
-                <i class="fas fa-file-invoice-dollar"></i>
+                <i class="fas fa-file-invoice-dollar" />
               </div>
               <div class="fund-card-content">
-                <div class="fund-card-label">계약금액</div>
-                <div class="fund-card-value">{{ formatCurrency(fundSummary.totalContractAmount) }}</div>
+                <div class="fund-card-label">
+                  계약금액
+                </div>
+                <div class="fund-card-value">
+                  {{ formatCurrency(fundSummary.totalContractAmount) }}
+                </div>
               </div>
             </div>
             <div class="fund-card">
               <div class="fund-card-icon" style="background: #fef3c7; color: #d97706;">
-                <i class="fas fa-hand-holding-usd"></i>
+                <i class="fas fa-hand-holding-usd" />
               </div>
               <div class="fund-card-content">
-                <div class="fund-card-label">선급금</div>
-                <div class="fund-card-value">{{ formatCurrency(fundSummary.advancePaymentAmount) }}</div>
+                <div class="fund-card-label">
+                  선급금
+                </div>
+                <div class="fund-card-value">
+                  {{ formatCurrency(fundSummary.advancePaymentAmount) }}
+                </div>
               </div>
             </div>
             <div class="fund-card">
               <div class="fund-card-icon" style="background: #dcfce7; color: #16a34a;">
-                <i class="fas fa-coins"></i>
+                <i class="fas fa-coins" />
               </div>
               <div class="fund-card-content">
-                <div class="fund-card-label">기성금 누계</div>
-                <div class="fund-card-value">{{ formatCurrency(fundSummary.progressPaymentTotal) }}</div>
+                <div class="fund-card-label">
+                  기성금 누계
+                </div>
+                <div class="fund-card-value">
+                  {{ formatCurrency(fundSummary.progressPaymentTotal) }}
+                </div>
               </div>
             </div>
             <div class="fund-card">
               <div class="fund-card-icon" style="background: #fee2e2; color: #dc2626;">
-                <i class="fas fa-wallet"></i>
+                <i class="fas fa-wallet" />
               </div>
               <div class="fund-card-content">
-                <div class="fund-card-label">잔금</div>
-                <div class="fund-card-value">{{ formatCurrency(fundSummary.remainingBalance) }}</div>
+                <div class="fund-card-label">
+                  잔금
+                </div>
+                <div class="fund-card-value">
+                  {{ formatCurrency(fundSummary.remainingBalance) }}
+                </div>
               </div>
             </div>
           </div>
@@ -402,7 +452,7 @@
           <!-- 자금 관리 상세 바로가기 -->
           <div class="fund-actions">
             <button class="btn-primary" @click="goToFundDetail">
-              <i class="fas fa-external-link-alt"></i>
+              <i class="fas fa-external-link-alt" />
               자금 관리 상세보기
             </button>
           </div>
@@ -495,9 +545,9 @@ const companies = ref<CompanyInfoResponse[]>([])
 
 // 수정 가능한 폼 데이터 (OEM 제조사는 출하 등록 시 선택)
 const formData = ref({
-  siteManagerId: null as number | null,     // deprecated
-  builderCompanyId: null as number | null,  // 건설사 ID
-  builderCompany: ''                        // 건설사명
+  siteManagerId: null as number | null, // deprecated
+  builderCompanyId: null as number | null, // 건설사 ID
+  builderCompany: '' // 건설사명
 })
 
 // 초기 건설사 ID (변경 감지용)
@@ -546,13 +596,13 @@ const totalQuantity = computed(() => {
 
 // 규격에서 두께(mm) 숫자를 추출하여 정렬에 사용
 const extractSpecThickness = (specification: string): number => {
-  if (!specification) return 9999
+  if (!specification) { return 9999 }
   // "NNN×NNN×NNNmm" 또는 "NNN*NNN*NNNmm" 패턴에서 마지막 숫자(두께) 추출
   const dimMatch = specification.match(/(\d+)\s*[×x*]\s*(\d+)\s*[×x*]\s*(\d+)\s*mm/i)
-  if (dimMatch) return parseInt(dimMatch[3], 10)
+  if (dimMatch) { return parseInt(dimMatch[3], 10) }
   // "NNNmm" 패턴에서 숫자 추출
   const mmMatch = specification.match(/(\d+)\s*mm/i)
-  if (mmMatch) return parseInt(mmMatch[1], 10)
+  if (mmMatch) { return parseInt(mmMatch[1], 10) }
   return 9999
 }
 
@@ -565,9 +615,9 @@ const loadData = async () => {
 
     // 품목 데이터 변환 (서버 응답 필드명에 맞게 매핑)
     const mappedItems = data.items.map((item: any) => ({
-      productName: item.productName || item.itemNm,  // 서버: productName
+      productName: item.productName || item.itemNm, // 서버: productName
       specification: item.specification,
-      unit: item.unit || item.unitCd,                // 서버: unit
+      unit: item.unit || item.unitCd, // 서버: unit
       unitPrice: item.unitPrice,
       quantity: item.quantity,
       deliveryLocation: item.deliveryLocation,
@@ -584,7 +634,7 @@ const loadData = async () => {
     if (data.builderCompanyId) {
       formData.value.builderCompanyId = data.builderCompanyId
       formData.value.builderCompany = data.builderCompanyName || ''
-      initialBuilderCompanyId.value = data.builderCompanyId  // 초기값 저장
+      initialBuilderCompanyId.value = data.builderCompanyId // 초기값 저장
     }
     // 레거시 siteManagerId 호환
     if (data.siteManagerId && !data.builderCompanyId) {
@@ -615,7 +665,7 @@ const handleBuilderChange = () => {
 
 // 저장
 const handleSave = async () => {
-  if (submitting.value) return
+  if (submitting.value) { return }
 
   // OEM 제조사 선택은 선택사항 (출하 등록 시 선택)
   // 필수 검사 제거됨
@@ -701,7 +751,7 @@ const goBack = () => {
 // 기성금 데이터 로드 (자금관리와 동일한 API 사용)
 const loadProgressPayments = async () => {
   try {
-    if (!fundSummary.value.fundId) return
+    if (!fundSummary.value.fundId) { return }
     const response = await fundService.getPayments(fundSummary.value.fundId)
     progressPayments.value = response.content || []
   } catch (error) {
@@ -734,7 +784,7 @@ const loadFundSummary = async () => {
 
 // 주문 상태 헬퍼 함수
 const getOrderStatusClass = (status?: string): string => {
-  if (!status) return 'status-pending'
+  if (!status) { return 'status-pending' }
   switch (status) {
     case 'PENDING':
       return 'status-pending'
@@ -750,7 +800,7 @@ const getOrderStatusClass = (status?: string): string => {
 }
 
 const getOrderStatusLabel = (status?: string): string => {
-  if (!status) return '대기'
+  if (!status) { return '대기' }
   switch (status) {
     case 'PENDING':
       return '대기'

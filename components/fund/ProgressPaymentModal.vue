@@ -12,29 +12,29 @@
       <div class="modal-header">
         <h3>기성 청구</h3>
         <button class="modal-close" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
       <div class="modal-body">
         <!-- 로딩 상태 -->
         <div v-if="baselineStore.loading" class="loading-container">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <span>데이터를 불러오는 중...</span>
         </div>
 
         <template v-else>
           <!-- 이전 차수 정보 -->
-          <div class="previous-info" v-if="previousBaseline">
+          <div v-if="previousBaseline" class="previous-info">
             <div class="info-badge">
-              <i class="fas fa-info-circle"></i>
+              <i class="fas fa-info-circle" />
               <span>이전 차수: {{ previousBaseline.displayName }} ({{ previousBaseline.baselineDate }})</span>
             </div>
           </div>
 
           <!-- 청구 가능 출하 없음 -->
           <div v-if="!hasAvailableShipments" class="empty-state">
-            <i class="fas fa-inbox"></i>
+            <i class="fas fa-inbox" />
             <p>청구 가능한 출하가 없습니다.</p>
             <span class="empty-hint">납품확인(인수증 서명)이 완료된 출하만 기성 청구할 수 있습니다.</span>
           </div>
@@ -43,7 +43,7 @@
           <div v-else class="table-section">
             <!-- 선택 제한 경고 -->
             <div v-if="hasSelectionLimit" class="selection-warning">
-              <i class="fas fa-exclamation-triangle"></i>
+              <i class="fas fa-exclamation-triangle" />
               <span>마지막 출하는 납품완료계로 처리해야 합니다. 최대 <strong>{{ maxSelectableCount }}건</strong>까지 선택 가능합니다.</span>
             </div>
             <div class="table-header">
@@ -88,17 +88,27 @@
                     <td>{{ shipment.shipmentId }}</td>
                     <td>{{ formatDate(shipment.shipmentDate) }}</td>
                     <td>{{ shipment.itemSummary || '-' }}</td>
-                    <td class="text-right">{{ formatNumber(shipment.totalQuantity) }}</td>
-                    <td class="text-right amount">{{ formatCurrency(shipment.totalAmount) }}</td>
+                    <td class="text-right">
+                      {{ formatNumber(shipment.totalQuantity) }}
+                    </td>
+                    <td class="text-right amount">
+                      {{ formatCurrency(shipment.totalAmount) }}
+                    </td>
                     <td>{{ formatDateTime(shipment.deliveryCompletedAt) }}</td>
                   </tr>
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colspan="4" class="text-right"><strong>선택 합계</strong></td>
-                    <td class="text-right"><strong>{{ formatNumber(selectedTotalQuantity) }}</strong></td>
-                    <td class="text-right amount"><strong>{{ formatCurrency(selectedTotalAmount) }}</strong></td>
-                    <td></td>
+                    <td colspan="4" class="text-right">
+                      <strong>선택 합계</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatNumber(selectedTotalQuantity) }}</strong>
+                    </td>
+                    <td class="text-right amount">
+                      <strong>{{ formatCurrency(selectedTotalAmount) }}</strong>
+                    </td>
+                    <td />
                   </tr>
                 </tfoot>
               </table>
@@ -109,7 +119,9 @@
           <div v-if="hasAvailableShipments" class="calculation-result">
             <!-- 청구 금액 계산 섹션 -->
             <div class="result-section">
-              <div class="result-section-header">청구 금액 계산</div>
+              <div class="result-section-header">
+                청구 금액 계산
+              </div>
               <div class="result-row">
                 <label>선택한 출하 수</label>
                 <span class="count">{{ selectedShipmentIds.length }}건</span>
@@ -122,7 +134,9 @@
 
             <!-- 선급금 차감 계산 섹션 -->
             <div v-if="hasAdvancePayment" class="result-section deduction-section">
-              <div class="result-section-header">선급금 차감 계산</div>
+              <div class="result-section-header">
+                선급금 차감 계산
+              </div>
               <div class="result-row">
                 <label>선급금 비율</label>
                 <span class="rate">{{ advancePaymentRate }}%</span>
@@ -161,12 +175,12 @@
               class="form-textarea"
               placeholder="기성 청구 관련 메모를 입력하세요"
               rows="2"
-            ></textarea>
+            />
           </div>
 
           <!-- 유효성 검사 메시지 -->
           <div v-if="validationError" class="validation-error">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="fas fa-exclamation-circle" />
             <span>{{ validationError }}</span>
           </div>
         </template>
@@ -174,16 +188,16 @@
 
       <div class="modal-footer">
         <button class="btn-secondary" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
           취소
         </button>
         <button
           class="btn-primary"
-          @click="submitClaim"
           :disabled="!isValid || isSubmitting || !hasAvailableShipments"
+          @click="submitClaim"
         >
-          <i v-if="isSubmitting" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-paper-plane"></i>
+          <i v-if="isSubmitting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-paper-plane" />
           기성 청구
         </button>
       </div>
@@ -193,12 +207,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import ProgressSignatureModal from './ProgressSignatureModal.vue'
 import { formatCurrency, formatNumber, formatDate, formatDateTime } from '~/utils/format'
 import { useBaselineStore } from '~/stores/baseline'
 import { useFundStore } from '~/stores/fund'
 import type { BaselineListItem, AvailableShipment } from '~/types/baseline'
 import type { ProgressClaimData } from '~/types/fund'
-import ProgressSignatureModal from './ProgressSignatureModal.vue'
 
 // Props
 interface Props {
@@ -278,7 +292,7 @@ const toggleShipment = (shipmentId: number) => {
   const index = selectedShipmentIds.value.indexOf(shipmentId)
   if (index === -1) {
     // 최대 선택 수 초과 방지
-    if (isMaxSelected.value) return
+    if (isMaxSelected.value) { return }
     selectedShipmentIds.value.push(shipmentId)
   } else {
     selectedShipmentIds.value.splice(index, 1)
@@ -331,7 +345,7 @@ const advanceUnsettledBalance = computed(() => {
 
 /** 선급금 차감액 = MIN(청구금액 × 선급금율, 미정산잔액) */
 const advanceDeductionAmount = computed(() => {
-  if (!hasAdvancePayment.value) return 0
+  if (!hasAdvancePayment.value) { return 0 }
   const calculated = Math.floor(selectedTotalAmount.value * (advancePaymentRate.value / 100))
   return Math.min(calculated, advanceUnsettledBalance.value)
 })
@@ -365,7 +379,7 @@ const closeModal = () => {
 }
 
 const loadData = async () => {
-  if (!props.orderId) return
+  if (!props.orderId) { return }
 
   // 초기화
   selectedShipmentIds.value = []
@@ -386,7 +400,7 @@ const loadData = async () => {
 }
 
 const submitClaim = async () => {
-  if (!isValid.value || isSubmitting.value) return
+  if (!isValid.value || isSubmitting.value) { return }
 
   // API 호출 없이 데이터만 전달하여 서명 발송 모달 표시
   // 실제 API 호출은 ProgressSignatureModal에서 통합 API로 처리
@@ -395,7 +409,7 @@ const submitClaim = async () => {
     shipmentIds: selectedShipmentIds.value,
     remarks: remarks.value || undefined,
     deliveryRequestNo: fundStore.detail?.deliveryRequestNo || '',
-    demandOrganization: fundStore.detail?.client || '',  // client가 수요기관
+    demandOrganization: fundStore.detail?.client || '', // client가 수요기관
     projectName: fundStore.detail?.projectName || fundStore.detail?.siteName || '',
     totalAmount: selectedTotalAmount.value,
     // 선급금 차감 관련 데이터

@@ -14,7 +14,7 @@
             class="btn-action"
             @click="enterEditMode"
           >
-            <i class="fas fa-edit"></i>
+            <i class="fas fa-edit" />
             수정
           </button>
           <button
@@ -22,16 +22,16 @@
             class="btn-action btn-secondary"
             @click="cancelEditMode"
           >
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
             수정 취소
           </button>
           <button
             v-if="isEditMode"
             class="btn-action btn-primary"
-            @click="handleSaveEdit"
             :disabled="submitting"
+            @click="handleSaveEdit"
           >
-            <i class="fas fa-save"></i>
+            <i class="fas fa-save" />
             {{ submitting ? '저장 중...' : '저장' }}
           </button>
           <button
@@ -39,17 +39,26 @@
             class="btn-action btn-delete"
             @click="handleDelete"
           >
-            <i class="fas fa-trash"></i>
+            <i class="fas fa-trash" />
             삭제
           </button>
           <button
-            v-if="!isEditMode && poDetail.status === 'DRAFT'"
+            v-if="!isEditMode && poDetail.status === 'DRAFT' && !isLeadpowerPo"
             class="btn-action btn-primary"
-            @click="handleIssue"
             :disabled="submitting"
+            @click="handleIssue"
           >
-            <i class="fas fa-paper-plane"></i>
+            <i class="fas fa-paper-plane" />
             발행
+          </button>
+          <button
+            v-if="!isEditMode && poDetail.status === 'DRAFT' && isLeadpowerPo"
+            class="btn-action btn-success"
+            :disabled="submitting"
+            @click="handleDirectStockIn"
+          >
+            <i class="fas fa-arrow-down" />
+            바로 입고
           </button>
         </template>
 
@@ -57,18 +66,18 @@
         <template v-if="poDetail && poDetail.status === 'ISSUED' && !isEditMode">
           <button
             class="btn-action btn-accept"
-            @click="handleAccept"
             :disabled="submitting"
+            @click="handleAccept"
           >
-            <i class="fas fa-check-circle"></i>
+            <i class="fas fa-check-circle" />
             접수
           </button>
           <button
             class="btn-action btn-delete"
-            @click="handleDelete"
             :disabled="submitting"
+            @click="handleDelete"
           >
-            <i class="fas fa-trash"></i>
+            <i class="fas fa-trash" />
             삭제
           </button>
         </template>
@@ -77,10 +86,10 @@
         <template v-if="poDetail && poDetail.status === 'ACCEPTED'">
           <button
             class="btn-action btn-reject"
-            @click="openRejectModal"
             :disabled="submitting"
+            @click="openRejectModal"
           >
-            <i class="fas fa-ban"></i>
+            <i class="fas fa-ban" />
             반려
           </button>
         </template>
@@ -91,7 +100,7 @@
             class="btn-action btn-delete"
             @click="handleDelete"
           >
-            <i class="fas fa-trash"></i>
+            <i class="fas fa-trash" />
             삭제
           </button>
         </template>
@@ -103,7 +112,7 @@
             class="btn-action btn-primary"
             @click="enterProduceMode"
           >
-            <i class="fas fa-check-circle"></i>
+            <i class="fas fa-check-circle" />
             생산완료 체크
           </button>
           <button
@@ -111,16 +120,16 @@
             class="btn-action btn-secondary"
             @click="cancelProduceMode"
           >
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
             취소
           </button>
           <button
             v-if="isProduceMode"
             class="btn-action btn-primary"
-            @click="handleProduceComplete"
             :disabled="submitting"
+            @click="handleProduceComplete"
           >
-            <i class="fas fa-save"></i>
+            <i class="fas fa-save" />
             {{ submitting ? '처리 중...' : '생산완료 저장' }}
           </button>
         </template>
@@ -129,16 +138,16 @@
         <button
           v-if="poDetail && poDetail.pdfPath && poDetail.status !== 'DRAFT'"
           class="btn-action"
-          @click="handleDownloadPdf"
           :disabled="pdfDownloading"
+          @click="handleDownloadPdf"
         >
-          <i :class="pdfDownloading ? 'fas fa-spinner fa-spin' : 'fas fa-file-pdf'"></i>
+          <i :class="pdfDownloading ? 'fas fa-spinner fa-spin' : 'fas fa-file-pdf'" />
           {{ pdfDownloading ? '다운로드 중...' : '발주서 PDF' }}
         </button>
 
         <!-- 공통: 목록 버튼 -->
         <button class="btn-action btn-secondary" @click="goToList">
-          <i class="fas fa-list"></i>
+          <i class="fas fa-list" />
           목록
         </button>
       </template>
@@ -172,7 +181,9 @@
               class="form-select"
               :disabled="loadingOemCompanies"
             >
-              <option :value="null">{{ loadingOemCompanies ? '로딩 중...' : '선택하세요' }}</option>
+              <option :value="null">
+                {{ loadingOemCompanies ? '로딩 중...' : '선택하세요' }}
+              </option>
               <option
                 v-for="company in oemCompanies"
                 :key="company.id"
@@ -194,8 +205,8 @@
           <FormField label="발주일자">
             <input
               v-if="isEditMode"
-              type="date"
               v-model="editForm.orderDate"
+              type="date"
               class="form-input-sm text-center"
             >
             <input
@@ -211,8 +222,8 @@
           <FormField label="납기 예정일">
             <input
               v-if="isEditMode"
-              type="date"
               v-model="editForm.expectedCompletionDate"
+              type="date"
               class="form-input-sm text-center"
             >
             <input
@@ -250,7 +261,7 @@
               class="form-textarea"
               rows="2"
               placeholder="비고 사항을 입력하세요"
-            ></textarea>
+            />
             <input
               v-else
               type="text"
@@ -290,7 +301,7 @@
         <div class="items-section-wrapper">
           <div class="items-section-header">
             <div class="header-left">
-              <i class="fas fa-box"></i>
+              <i class="fas fa-box" />
               <span>품목 정보</span>
             </div>
             <!-- 수정 모드에서만 품목 추가 가능 -->
@@ -300,7 +311,7 @@
               class="btn-add-item"
               @click="openSkuSelector"
             >
-              <i class="fas fa-plus"></i>
+              <i class="fas fa-plus" />
               품목 추가
             </button>
           </div>
@@ -309,55 +320,111 @@
             <table class="items-table">
               <thead>
                 <tr>
-                  <th style="width: 40px">NO</th>
-                  <th style="width: 80px">SKU ID</th>
-                  <th style="width: 100px">SKU 품명</th>
-                  <th style="width: 100px">품목명</th>
-                  <th style="width: 70px" class="text-right">출하수량<br><small>(m²)</small></th>
-                  <th style="width: 75px" class="text-right">추가수량<br><small>(m²)</small></th>
-                  <th style="width: 70px" class="text-right">합계<br><small>(m²)</small></th>
-                  <th style="width: 80px" class="text-right">단가<br><small>(원)</small></th>
-                  <th style="width: 100px" class="text-right">금액<br><small>(원)</small></th>
-                  <th style="width: 100px" class="text-right">생산완료<br><small>(m²)</small></th>
-                  <th style="width: 70px" class="text-center">생산율</th>
-                  <th style="width: 80px" class="text-right">입고수량<br><small>(m²)</small></th>
-                  <th style="width: 70px" class="text-center">비고<br><small>(매)</small></th>
-                  <th v-if="isEditMode" style="width: 50px">삭제</th>
+                  <th style="width: 40px">
+                    NO
+                  </th>
+                  <th style="width: 80px">
+                    SKU ID
+                  </th>
+                  <th style="width: 100px">
+                    SKU 품명
+                  </th>
+                  <th style="width: 100px">
+                    품목명
+                  </th>
+                  <th style="width: 70px" class="text-right">
+                    출하수량<br><small>(m²)</small>
+                  </th>
+                  <th style="width: 75px" class="text-right">
+                    조정수량<br><small>(m²)</small>
+                  </th>
+                  <th style="width: 70px" class="text-right">
+                    합계<br><small>(m²)</small>
+                  </th>
+                  <th style="width: 80px" class="text-right">
+                    단가<br><small>(원)</small>
+                  </th>
+                  <th style="width: 100px" class="text-right">
+                    금액<br><small>(원)</small>
+                  </th>
+                  <th style="width: 100px" class="text-right">
+                    생산완료<br><small>(m²)</small>
+                  </th>
+                  <th style="width: 70px" class="text-center">
+                    생산율
+                  </th>
+                  <th style="width: 80px" class="text-right">
+                    입고수량<br><small>(m²)</small>
+                  </th>
+                  <th style="width: 70px" class="text-center">
+                    비고<br><small>(매)</small>
+                  </th>
+                  <th v-if="isEditMode" style="width: 50px">
+                    삭제
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 <!-- 조회 모드 -->
                 <template v-if="!isEditMode && !isProduceMode">
                   <tr v-if="poDetail.items.length === 0">
-                    <td colspan="13" class="empty-message">품목 정보가 없습니다.</td>
+                    <td colspan="13" class="empty-message">
+                      품목 정보가 없습니다.
+                    </td>
                   </tr>
                   <tr v-for="(item, index) in poDetail.items" :key="item.poiId">
-                    <td class="text-center">{{ index + 1 }}</td>
-                    <td class="text-center">{{ item.skuId }}</td>
+                    <td class="text-center">
+                      {{ index + 1 }}
+                    </td>
+                    <td class="text-center">
+                      {{ item.skuId }}
+                    </td>
                     <td>{{ item.skuName }}</td>
                     <td>{{ item.itemName || '-' }}</td>
-                    <td class="text-right">{{ (item.shipmentQuantity || 0) > 0 ? formatQuantity(item.shipmentQuantity) : '-' }}</td>
-                    <td class="text-right">{{ formatQuantity((item.quantity || 0) - (item.shipmentQuantity || 0)) }}</td>
-                    <td class="text-right"><strong>{{ formatQuantity(item.quantity) }}</strong></td>
-                    <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
-                    <td class="text-right">{{ formatCurrency(item.amount) }}</td>
-                    <td class="text-right">{{ formatQuantity(item.producedQuantity) }}</td>
+                    <td class="text-right">
+                      {{ (item.shipmentQuantity || 0) > 0 ? formatQuantity(item.shipmentQuantity) : '-' }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatQuantity((item.quantity || 0) - (item.shipmentQuantity || 0)) }}
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(item.quantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      {{ formatNumber(item.unitPrice) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatCurrency(item.amount) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.producedQuantity) }}
+                    </td>
                     <td class="text-center" :class="getProductionRateClass(item.producedQuantity, item.quantity)">
                       {{ getProductionRate(item.producedQuantity, item.quantity) }}
                     </td>
-                    <td class="text-right">{{ formatQuantity(item.stockedQuantity) }}</td>
-                    <td class="text-center">{{ item.quantity > 0 ? formatQuantity(Math.round(item.quantity / 2)) + ' 매' : '-' }}</td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.stockedQuantity) }}
+                    </td>
+                    <td class="text-center">
+                      {{ item.quantity > 0 ? formatQuantity(Math.round(item.quantity / 2)) + ' 매' : '-' }}
+                    </td>
                   </tr>
                 </template>
 
                 <!-- 수정 모드 -->
                 <template v-if="isEditMode">
                   <tr v-if="editForm.items.length === 0">
-                    <td colspan="14" class="empty-message">품목을 추가하세요.</td>
+                    <td colspan="14" class="empty-message">
+                      품목을 추가하세요.
+                    </td>
                   </tr>
                   <tr v-for="(item, index) in editForm.items" :key="item.skuId">
-                    <td class="text-center">{{ index + 1 }}</td>
-                    <td class="text-center">{{ item.skuId }}</td>
+                    <td class="text-center">
+                      {{ index + 1 }}
+                    </td>
+                    <td class="text-center">
+                      {{ item.skuId }}
+                    </td>
                     <td>{{ item.skuName }}</td>
                     <td>{{ item.itemName || '-' }}</td>
                     <td class="text-right">
@@ -367,31 +434,41 @@
                       <input
                         type="number"
                         :value="(item.quantity || 0) - (item.shipmentQuantity || 0)"
-                        @input="item.quantity = (item.shipmentQuantity || 0) + Math.max(0, Number(($event.target as HTMLInputElement).value) || 0)"
                         :min="0"
                         step="1"
                         class="table-input text-right input-w75"
-                      />
+                        @input="item.quantity = (item.shipmentQuantity || 0) + Math.max(0, Number(($event.target as HTMLInputElement).value) || 0)"
+                      >
                     </td>
                     <td class="text-right">
                       <strong>{{ formatQuantity(item.quantity) }}</strong>
                     </td>
-                    <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
-                    <td class="text-right">{{ formatCurrency((item.quantity || 0) * (item.unitPrice || 0)) }}</td>
-                    <td class="text-right">{{ formatQuantity(item.producedQuantity || 0) }}</td>
+                    <td class="text-right">
+                      {{ formatNumber(item.unitPrice) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatCurrency((item.quantity || 0) * (item.unitPrice || 0)) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.producedQuantity || 0) }}
+                    </td>
                     <td class="text-center" :class="getProductionRateClass(item.producedQuantity, item.quantity)">
                       {{ getProductionRate(item.producedQuantity, item.quantity) }}
                     </td>
-                    <td class="text-right">{{ formatQuantity(item.stockedQuantity || 0) }}</td>
-                    <td class="text-center">{{ (item.quantity || 0) > 0 ? formatQuantity(Math.round((item.quantity || 0) / 2)) + ' 매' : '-' }}</td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.stockedQuantity || 0) }}
+                    </td>
+                    <td class="text-center">
+                      {{ (item.quantity || 0) > 0 ? formatQuantity(Math.round((item.quantity || 0) / 2)) + ' 매' : '-' }}
+                    </td>
                     <td class="text-center">
                       <button
                         type="button"
                         class="btn-remove"
-                        @click="removeEditItem(index)"
                         title="삭제"
+                        @click="removeEditItem(index)"
                       >
-                        <i class="fas fa-trash-alt"></i>
+                        <i class="fas fa-trash-alt" />
                       </button>
                     </td>
                   </tr>
@@ -400,60 +477,96 @@
                 <!-- 생산완료 체크 모드 -->
                 <template v-if="isProduceMode">
                   <tr v-for="(item, index) in produceItems" :key="item.poiId">
-                    <td class="text-center">{{ index + 1 }}</td>
-                    <td class="text-center">{{ item.skuId }}</td>
+                    <td class="text-center">
+                      {{ index + 1 }}
+                    </td>
+                    <td class="text-center">
+                      {{ item.skuId }}
+                    </td>
                     <td>{{ item.skuName }}</td>
                     <td>{{ item.itemName || '-' }}</td>
-                    <td class="text-right">{{ (item.shipmentQuantity || 0) > 0 ? formatQuantity(item.shipmentQuantity) : '-' }}</td>
-                    <td class="text-right">{{ formatQuantity((item.quantity || 0) - (item.shipmentQuantity || 0)) }}</td>
-                    <td class="text-right"><strong>{{ formatQuantity(item.quantity) }}</strong></td>
-                    <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
-                    <td class="text-right">{{ formatCurrency(item.amount) }}</td>
+                    <td class="text-right">
+                      {{ (item.shipmentQuantity || 0) > 0 ? formatQuantity(item.shipmentQuantity) : '-' }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatQuantity((item.quantity || 0) - (item.shipmentQuantity || 0)) }}
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(item.quantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      {{ formatNumber(item.unitPrice) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatCurrency(item.amount) }}
+                    </td>
                     <td class="text-right produce-col">
                       <div class="produce-input-wrapper">
                         <button
                           type="button"
                           class="btn-fill-quantity"
-                          @click="item.newProducedQuantity = item.quantity"
                           title="발주수량으로 채우기"
                           :disabled="item.newProducedQuantity === item.quantity"
-                        >&#9654;</button>
+                          @click="item.newProducedQuantity = item.quantity"
+                        >
+                          &#9654;
+                        </button>
                         <input
-                          type="number"
                           v-model.number="item.newProducedQuantity"
+                          type="number"
                           :min="0"
                           :max="item.quantity"
                           step="1"
                           class="table-input text-right"
                           style="width: 80px"
-                        />
+                        >
                         <span class="produce-current">/ {{ formatQuantity(item.quantity) }}</span>
                       </div>
                     </td>
                     <td class="text-center" :class="getProductionRateClass(item.newProducedQuantity, item.quantity)">
                       {{ getProductionRate(item.newProducedQuantity, item.quantity) }}
                     </td>
-                    <td class="text-right">{{ formatQuantity(item.stockedQuantity) }}</td>
-                    <td class="text-center">{{ item.quantity > 0 ? formatQuantity(Math.round(item.quantity / 2)) + ' 매' : '-' }}</td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.stockedQuantity) }}
+                    </td>
+                    <td class="text-center">
+                      {{ item.quantity > 0 ? formatQuantity(Math.round(item.quantity / 2)) + ' 매' : '-' }}
+                    </td>
                   </tr>
                 </template>
               </tbody>
               <tfoot v-if="poDetail.items.length > 0 && !isEditMode && !isProduceMode">
                 <tr>
-                  <td colspan="6" class="text-right"><strong>합계</strong></td>
-                  <td class="text-right"><strong>{{ formatQuantity(poDetail.totalQuantity) }}</strong></td>
-                  <td class="text-right"><strong>총 금액</strong></td>
-                  <td class="text-right"><strong>{{ formatCurrency(poDetail.totalAmount) }}</strong></td>
-                  <td colspan="4"></td>
+                  <td colspan="6" class="text-right">
+                    <strong>합계</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ formatQuantity(poDetail.totalQuantity) }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>총 금액</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ formatCurrency(poDetail.totalAmount) }}</strong>
+                  </td>
+                  <td colspan="4" />
                 </tr>
               </tfoot>
               <tfoot v-if="isEditMode && editForm.items.length > 0">
                 <tr>
-                  <td colspan="6" class="text-right"><strong>합계</strong></td>
-                  <td class="text-right"><strong>{{ formatQuantity(editTotalQuantity) }}</strong></td>
-                  <td class="text-right"><strong>총 금액</strong></td>
-                  <td class="text-right"><strong>{{ formatCurrency(editTotalAmount) }}</strong></td>
-                  <td colspan="5"></td>
+                  <td colspan="6" class="text-right">
+                    <strong>합계</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ formatQuantity(editTotalQuantity) }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>총 금액</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ formatCurrency(editTotalAmount) }}</strong>
+                  </td>
+                  <td colspan="5" />
                 </tr>
               </tfoot>
             </table>
@@ -469,7 +582,7 @@
           <!-- 헤더 -->
           <div class="production-section-header">
             <div class="header-left">
-              <i class="fas fa-industry"></i>
+              <i class="fas fa-industry" />
               <span>생산 현황</span>
             </div>
           </div>
@@ -493,7 +606,7 @@
                   'progress-high': productionProgressPercent >= 70 && productionProgressPercent < 100,
                   'progress-complete': productionProgressPercent >= 100
                 }"
-              ></div>
+              />
             </div>
           </div>
         </div>
@@ -507,23 +620,25 @@
           <div class="modal-header">
             <h3>발주서 반려</h3>
             <button class="modal-close" @click="closeRejectModal">
-              <i class="fas fa-times"></i>
+              <i class="fas fa-times" />
             </button>
           </div>
           <div class="modal-body">
             <!-- 반려 영향 분석 결과 -->
             <div v-if="rejectImpactLoading" class="reject-impact-loading">
-              <i class="fas fa-spinner fa-spin"></i> 영향 분석 중...
+              <i class="fas fa-spinner fa-spin" /> 영향 분석 중...
             </div>
             <div v-else-if="rejectImpact && rejectImpact.affectedShipments.length > 0" class="reject-impact-warning">
               <div class="impact-header">
-                <i class="fas fa-exclamation-triangle"></i>
+                <i class="fas fa-exclamation-triangle" />
                 <span>이 발주서를 반려하면 다음 출하에 영향을 줍니다:</span>
               </div>
 
               <!-- 직접 연결된 출하 -->
               <template v-if="rejectImpact.affectedShipments.filter(s => s.directlyLinked).length > 0">
-                <div class="impact-section-label">직접 연결된 출하</div>
+                <div class="impact-section-label">
+                  직접 연결된 출하
+                </div>
                 <ul class="impact-list">
                   <li v-for="shipment in rejectImpact.affectedShipments.filter(s => s.directlyLinked)" :key="shipment.shipmentId">
                     <span class="shipment-no">{{ shipment.shipmentNo }}</span>
@@ -542,7 +657,9 @@
 
               <!-- 간접 영향 출하 (같은 OEM + SKU) -->
               <template v-if="rejectImpact.affectedShipments.filter(s => !s.directlyLinked).length > 0">
-                <div class="impact-section-label indirect">같은 OEM/품목의 영향받는 출하</div>
+                <div class="impact-section-label indirect">
+                  같은 OEM/품목의 영향받는 출하
+                </div>
                 <ul class="impact-list">
                   <li v-for="shipment in rejectImpact.affectedShipments.filter(s => !s.directlyLinked)" :key="shipment.shipmentId">
                     <span class="shipment-no">{{ shipment.shipmentNo }}</span>
@@ -569,18 +686,82 @@
                 rows="4"
                 placeholder="반려 사유를 입력하세요"
                 maxlength="500"
-              ></textarea>
-              <div class="char-count">{{ rejectReason.length }} / 500</div>
+              />
+              <div class="char-count">
+                {{ rejectReason.length }} / 500
+              </div>
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn-action btn-secondary" @click="closeRejectModal">취소</button>
+            <button class="btn-action btn-secondary" @click="closeRejectModal">
+              취소
+            </button>
             <button
               class="btn-action btn-reject"
-              @click="handleReject"
               :disabled="submitting || !rejectReason.trim()"
+              @click="handleReject"
             >
               {{ submitting ? '처리 중...' : '반려' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 본사 바로 입고 확인 모달 (PO 56 사고 재발 방지 가드) -->
+    <Teleport to="body">
+      <div v-if="showDirectStockInModal" class="modal-overlay" @click.self="closeDirectStockInModal">
+        <div class="modal-content direct-stockin-modal">
+          <div class="modal-header warning">
+            <h3>
+              <i class="fas fa-exclamation-triangle" />
+              본사 바로 입고 확인
+            </h3>
+            <button class="modal-close" @click="closeDirectStockInModal">
+              <i class="fas fa-times" />
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="warning-banner">
+              선택된 제조사는 <b>본사(리드파워)</b>로 다음과 같이 처리되니 주의 바랍니다.
+            </div>
+
+            <dl class="po-summary">
+              <dt>발주서 번호</dt>
+              <dd>{{ poDetail?.poNo }}</dd>
+              <dt>OEM 회사</dt>
+              <dd>{{ poDetail?.oemCompanyName }}</dd>
+              <dt>품목 수 / 총 수량</dt>
+              <dd>{{ poDetail?.items?.length || 0 }}건 / {{ formatQuantity(poDetail?.totalQuantity) }}</dd>
+              <dt>총 금액</dt>
+              <dd>{{ formatCurrency(poDetail?.totalAmount) }}</dd>
+            </dl>
+
+            <div class="impact-section">
+              <h4>이 작업은 다음을 한 번에 처리합니다:</h4>
+              <ol>
+                <li>모든 품목이 <b>본사 창고에 즉시 입고</b>됩니다</li>
+                <li>발주서 상태 → <b>STOCKED (입고완료)</b></li>
+                <li>각 품목의 생산완료/입고 수량 자동 동기화</li>
+                <li>본사 입고 알림 생성</li>
+              </ol>
+            </div>
+
+            <div class="impact-summary danger">
+              ⛔ 처리 후에는 <b>수정·삭제·반려가 불가</b>하며, 되돌리려면 DB 직접 정리가 필요합니다.
+              외부 OEM 발주라면 "취소" 후 "발행" 버튼으로 정상 절차를 진행하세요.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-action btn-secondary" @click="closeDirectStockInModal">
+              취소
+            </button>
+            <button
+              class="btn-action btn-danger"
+              :disabled="submitting"
+              @click="confirmDirectStockIn"
+            >
+              {{ submitting ? '처리 중...' : '입고 처리' }}
             </button>
           </div>
         </div>
@@ -711,7 +892,7 @@ const getStatusBadgeClass = (status: PurchaseOrderStatus): string => {
 
 // 날짜+시간 포맷
 const formatDateTime = (dateStr: string | null): string => {
-  if (!dateStr) return '-'
+  if (!dateStr) { return '-' }
   try {
     const d = new Date(dateStr)
     return d.toLocaleString('ko-KR', {
@@ -752,7 +933,7 @@ const loadDetail = async () => {
 
 // 수정 모드 진입
 const enterEditMode = () => {
-  if (!poDetail.value) return
+  if (!poDetail.value) { return }
 
   editForm.value = {
     oemCompanyId: poDetail.value.oemCompanyId,
@@ -791,7 +972,7 @@ const cancelEditMode = () => {
 
 // OEM 제조사 목록 로드
 const loadOemCompanies = async () => {
-  if (oemCompanies.value.length > 0) return
+  if (oemCompanies.value.length > 0) { return }
   loadingOemCompanies.value = true
   try {
     oemCompanies.value = await companyService.getManufacturers()
@@ -820,7 +1001,7 @@ const loadOemCosts = async (oemCompanyId: number) => {
 
 // 수정 모드에서 OEM 제조사 변경 시 원가 재조회
 watch(() => editForm.value.oemCompanyId, async (newOemId) => {
-  if (!isEditMode.value || !newOemId) return
+  if (!isEditMode.value || !newOemId) { return }
   await loadOemCosts(newOemId)
 
   // 이미 추가된 품목의 단가를 OEM 원가로 갱신
@@ -880,7 +1061,7 @@ const handleSaveEdit = async () => {
     newErrors.oemCompanyId = 'OEM 제조사를 선택하세요.'
   }
   errors.value = newErrors
-  if (Object.keys(newErrors).length > 0) return
+  if (Object.keys(newErrors).length > 0) { return }
 
   if (editForm.value.items.length === 0) {
     alert('품목을 최소 1개 이상 추가하세요.')
@@ -934,7 +1115,7 @@ const handleDelete = async () => {
     console.error('삭제 영향 분석 실패:', error)
   }
 
-  if (!confirm(confirmMsg)) return
+  if (!confirm(confirmMsg)) { return }
 
   submitting.value = true
   try {
@@ -951,7 +1132,7 @@ const handleDelete = async () => {
 
 // 발주서 발행
 const handleIssue = async () => {
-  if (!confirm('발주서를 발행하시겠습니까? 발행 후에는 품목 수정이 제한됩니다.')) return
+  if (!confirm('발주서를 발행하시겠습니까? 발행 후에는 품목 수정이 제한됩니다.')) { return }
 
   submitting.value = true
   try {
@@ -966,9 +1147,43 @@ const handleIssue = async () => {
   }
 }
 
+// 본사(LEADPOWER) 발주 여부
+const isLeadpowerPo = computed(() => {
+  if (!poDetail.value) { return false }
+  // companyType이 응답에 포함되어 있으면 사용, 아니면 oem_company_name으로 판별
+  return (poDetail.value as any).companyType === 'LEADPOWER'
+})
+
+// 본사 바로 입고 — 확인 모달 상태
+const showDirectStockInModal = ref(false)
+
+const handleDirectStockIn = () => {
+  // 강한 경고 모달을 띄워 사용자 인지 가드 강화 (PO 56 사고 재발 방지)
+  showDirectStockInModal.value = true
+}
+
+const closeDirectStockInModal = () => {
+  showDirectStockInModal.value = false
+}
+
+const confirmDirectStockIn = async () => {
+  submitting.value = true
+  try {
+    await purchaseOrderService.directStockIn(poId.value)
+    showDirectStockInModal.value = false
+    alert('본사 재고 입고가 완료되었습니다.')
+    await loadDetail()
+  } catch (error: any) {
+    console.error('본사 바로 입고 실패:', error)
+    alert(error.message || '본사 바로 입고에 실패했습니다.')
+  } finally {
+    submitting.value = false
+  }
+}
+
 // 발주서 접수
 const handleAccept = async () => {
-  if (!confirm('발주서를 접수하시겠습니까?')) return
+  if (!confirm('발주서를 접수하시겠습니까?')) { return }
 
   submitting.value = true
   try {
@@ -1030,7 +1245,7 @@ const handleReject = async () => {
 
 // 생산완료 체크 모드 진입
 const enterProduceMode = () => {
-  if (!poDetail.value) return
+  if (!poDetail.value) { return }
 
   produceItems.value = poDetail.value.items.map(item => ({
     ...item,
@@ -1096,30 +1311,30 @@ const handleProduceComplete = async () => {
 
 // 전체 생산완료 수량 합계
 const totalProduced = computed(() => {
-  if (!poDetail.value) return 0
+  if (!poDetail.value) { return 0 }
   return poDetail.value.items.reduce((sum, item) => sum + (item.producedQuantity || 0), 0)
 })
 
 // 전체 생산 진행률 (%)
 const productionProgressPercent = computed(() => {
-  if (!poDetail.value || poDetail.value.totalQuantity === 0) return 0
+  if (!poDetail.value || poDetail.value.totalQuantity === 0) { return 0 }
   const percent = (totalProduced.value / poDetail.value.totalQuantity) * 100
   return Math.round(percent * 10) / 10
 })
 
 // 품목별 생산율 텍스트
 const getProductionRate = (produced: number | null, quantity: number | null): string => {
-  if (!quantity || quantity === 0) return '-'
+  if (!quantity || quantity === 0) { return '-' }
   const rate = ((produced || 0) / quantity) * 100
   return rate.toFixed(1) + '%'
 }
 
 // 품목별 생산율 CSS 클래스
 const getProductionRateClass = (produced: number | null, quantity: number | null): string => {
-  if (!quantity || quantity === 0) return ''
+  if (!quantity || quantity === 0) { return '' }
   const rate = ((produced || 0) / quantity) * 100
-  if (rate >= 100) return 'rate-complete'
-  if (rate > 0) return 'rate-progress'
+  if (rate >= 100) { return 'rate-complete' }
+  if (rate > 0) { return 'rate-progress' }
   return 'rate-zero'
 }
 
@@ -1668,6 +1883,113 @@ onMounted(() => {
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid #e5e7eb;
+}
+
+/* === 본사 바로 입고 확인 모달 (PO 56 사고 재발 방지 가드) === */
+.modal-content.direct-stockin-modal {
+  max-width: 560px;
+  width: 92%;
+}
+
+.modal-header.warning {
+  background: #fef3c7;
+  border-bottom: 2px solid #f59e0b;
+}
+
+.modal-header.warning h3 {
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-header.warning h3 i {
+  color: #f59e0b;
+}
+
+.direct-stockin-modal .warning-banner {
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  color: #92400e;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.direct-stockin-modal .po-summary {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.5rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+}
+
+.direct-stockin-modal .po-summary dt {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.direct-stockin-modal .po-summary dd {
+  color: #1f2937;
+  font-weight: 600;
+  margin: 0;
+}
+
+.direct-stockin-modal .impact-section {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.direct-stockin-modal .impact-section h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.direct-stockin-modal .impact-section ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #1f2937;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.direct-stockin-modal .impact-summary.danger {
+  background: #fef2f2;
+  border-left: 4px solid #dc2626;
+  color: #991b1b;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.direct-stockin-modal .btn-action.btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid #dc2626;
+}
+
+.direct-stockin-modal .btn-action.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.direct-stockin-modal .btn-action.btn-danger:disabled {
+  background: #fca5a5;
+  border-color: #fca5a5;
+  cursor: not-allowed;
 }
 
 /* 품목 테이블 헤더 단위 표시 */

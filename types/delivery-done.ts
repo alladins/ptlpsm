@@ -36,6 +36,8 @@ export interface DeliveryDoneItem {
   orderedQuantity: number
   deliveredQuantity: number
   remainingQuantity: number
+  additionalQuantity?: number    // 추가수량
+  isAdditional?: boolean         // 추가 품목 여부 (true: 발주에 없던 신규 추가 품목)
   remarks?: string | null
   isComplete: boolean
   itemClassificationNumber: string | null

@@ -15,30 +15,30 @@
       @mousemove="draw"
       @mouseup="stopDrawing"
       @mouseleave="stopDrawing"
-    ></canvas>
+    />
 
-    <div class="signature-status" v-if="isSaved">
-      <i class="fas fa-check-circle"></i>
+    <div v-if="isSaved" class="signature-status">
+      <i class="fas fa-check-circle" />
       서명이 저장되었습니다
     </div>
 
     <div class="signature-actions">
       <button
         class="btn-clear"
-        @click="clearSignature"
         :disabled="isSaved"
         type="button"
+        @click="clearSignature"
       >
-        <i class="fas fa-eraser"></i>
+        <i class="fas fa-eraser" />
         지우기
       </button>
       <button
         class="btn-save"
-        @click="saveSignature"
         :disabled="!hasDrawing || isSaved"
         type="button"
+        @click="saveSignature"
       >
-        <i class="fas fa-save"></i>
+        <i class="fas fa-save" />
         {{ isSaved ? '저장됨' : '서명 저장' }}
       </button>
     </div>
@@ -64,12 +64,12 @@ let lastY = 0
 
 // 캔버스 초기화
 onMounted(() => {
-  if (!canvasRef.value) return
+  if (!canvasRef.value) { return }
 
   const canvas = canvasRef.value
   ctx = canvas.getContext('2d')
 
-  if (!ctx) return
+  if (!ctx) { return }
 
   // 캔버스 크기 설정 (레티나 디스플레이 대응)
   const dpr = window.devicePixelRatio || 1
@@ -81,7 +81,7 @@ onMounted(() => {
   ctx.scale(dpr, dpr)
 
   // 스타일 설정
-  ctx.lineWidth = 4  // 2배 증가 (2 → 4)
+  ctx.lineWidth = 4 // 2배 증가 (2 → 4)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   ctx.strokeStyle = '#000000'
@@ -92,7 +92,7 @@ onMounted(() => {
 
 // 좌표 가져오기 (터치/마우스 통합)
 const getPosition = (e: TouchEvent | MouseEvent): { x: number; y: number } => {
-  if (!canvasRef.value) return { x: 0, y: 0 }
+  if (!canvasRef.value) { return { x: 0, y: 0 } }
 
   const rect = canvasRef.value.getBoundingClientRect()
 
@@ -113,7 +113,7 @@ const getPosition = (e: TouchEvent | MouseEvent): { x: number; y: number } => {
 
 // 그리기 시작
 const startDrawing = (e: TouchEvent | MouseEvent) => {
-  if (!ctx || isSaved.value) return
+  if (!ctx || isSaved.value) { return }
 
   // 서명 중 페이지 스크롤 방지
   document.body.style.overflow = 'hidden'
@@ -131,7 +131,7 @@ const startDrawing = (e: TouchEvent | MouseEvent) => {
 
 // 그리기
 const draw = (e: TouchEvent | MouseEvent) => {
-  if (!isDrawing.value || !ctx || isSaved.value) return
+  if (!isDrawing.value || !ctx || isSaved.value) { return }
 
   const pos = getPosition(e)
 
@@ -144,7 +144,7 @@ const draw = (e: TouchEvent | MouseEvent) => {
 
 // 그리기 종료
 const stopDrawing = () => {
-  if (!ctx) return
+  if (!ctx) { return }
 
   // 페이지 스크롤 복원
   document.body.style.overflow = ''
@@ -155,12 +155,12 @@ const stopDrawing = () => {
 
 // 서명 지우기
 const clearSignature = () => {
-  if (!ctx || !canvasRef.value) return
+  if (!ctx || !canvasRef.value) { return }
 
   // 저장된 서명 삭제 시 확인
   if (isSaved.value) {
     const confirmed = confirm('저장된 서명을 삭제하고 다시 작성하시겠습니까?')
-    if (!confirmed) return
+    if (!confirmed) { return }
   }
 
   const canvas = canvasRef.value
@@ -174,7 +174,7 @@ const clearSignature = () => {
 
 // 서명 저장
 const saveSignature = async () => {
-  if (!canvasRef.value || !hasDrawing.value) return
+  if (!canvasRef.value || !hasDrawing.value) { return }
 
   try {
     const blob = await new Promise<Blob>((resolve, reject) => {

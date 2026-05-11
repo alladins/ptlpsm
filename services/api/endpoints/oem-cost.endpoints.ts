@@ -56,7 +56,7 @@ export const OEM_COST_ENDPOINTS = {
   // 변경 이력 조회 (특정 SKU + OEM 조합)
   history: (skuId: string, oemCompanyId: number) => {
     const baseUrl = getApiBaseUrl()
-    return `${baseUrl}/admin/oem-costs/sku/${skuId}/oem/${oemCompanyId}/history`
+    return `${baseUrl}/admin/oem-costs/history?skuId=${encodeURIComponent(skuId)}&oemCompanyId=${oemCompanyId}&size=100`
   },
 
   // 전체 변경 이력

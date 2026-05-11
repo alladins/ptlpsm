@@ -4,7 +4,7 @@
       <div class="popup-header">
         <h2>품목 선택</h2>
         <button class="popup-close" @click="close">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
@@ -13,18 +13,18 @@
         <div class="search-section">
           <div class="search-input-group">
             <input
-              type="text"
               v-model="searchKeyword"
+              type="text"
               class="search-input"
               placeholder="품목코드, 품목명, SKU 정보, 품목유형으로 검색"
               @keyup.enter="search"
             >
             <button class="btn-primary" @click="search">
-              <i class="fas fa-search"></i>
+              <i class="fas fa-search" />
               검색
             </button>
             <button class="btn-secondary" @click="close">
-              <i class="fas fa-times"></i>
+              <i class="fas fa-times" />
               닫기
             </button>
           </div>
@@ -56,7 +56,9 @@
                   <td>{{ sku.skuNm }}</td>
                   <td>{{ formatSpecification(item, sku) }}</td>
                   <td>{{ item.unitCd }}</td>
-                  <td class="text-right">{{ formatNumber(sku.unitPrice) }}</td>
+                  <td class="text-right">
+                    {{ formatNumber(sku.unitPrice) }}
+                  </td>
                   <td>
                     <button class="btn-success" @click="selectSku(item, sku)">
                       선택
@@ -70,15 +72,15 @@
 
         <!-- 페이징 -->
         <div class="pagination">
-          <button 
-            :disabled="currentPage === 1" 
+          <button
+            :disabled="currentPage === 1"
             @click="changePage(currentPage - 1)"
           >
             이전
           </button>
           <span>{{ currentPage }} / {{ totalPages }}</span>
-          <button 
-            :disabled="currentPage === totalPages" 
+          <button
+            :disabled="currentPage === totalPages"
             @click="changePage(currentPage + 1)"
           >
             다음
@@ -109,7 +111,6 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const items = ref<Item[]>([])
 
-
 // 검색
 const search = async () => {
   currentPage.value = 1
@@ -127,10 +128,10 @@ const loadItems = async () => {
   try {
     const response = await itemService.searchItems({
       keyword: searchKeyword.value,
-      page: currentPage.value - 1,  // UI는 1-indexed, API는 0-indexed
+      page: currentPage.value - 1, // UI는 1-indexed, API는 0-indexed
       size: 10
     })
-    
+
     items.value = response.content
     totalPages.value = response.totalPages
   } catch (error) {
@@ -146,10 +147,10 @@ const formatSpecification = (item: Item, sku?: ItemSku): string => {
   const width = sku?.width || item.width
   const height = sku?.height || item.height
   const thickness = sku?.thickness || item.thickness
-  
-  if (width) dimensions.push(width)
-  if (height) dimensions.push(height)
-  if (thickness) dimensions.push(thickness)
+
+  if (width) { dimensions.push(width) }
+  if (height) { dimensions.push(height) }
+  if (thickness) { dimensions.push(thickness) }
   return dimensions.length > 0 ? dimensions.join('*') : '-'
 }
 

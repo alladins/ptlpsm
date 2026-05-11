@@ -2,6 +2,8 @@
   <div class="statistics-baseline">
     <PageHeader
       title="기성통계"
+      icon="chart"
+      icon-color="blue"
       description="차수별 기성금 현황을 확인합니다."
     />
 
@@ -12,7 +14,9 @@
           <div class="search-item">
             <label>조회연도</label>
             <select v-model="searchParams.year" class="form-select">
-              <option :value="undefined">전체</option>
+              <option :value="undefined">
+                전체
+              </option>
               <option v-for="year in availableYears" :key="year" :value="year">
                 {{ year }}년
               </option>
@@ -22,16 +26,24 @@
           <div class="search-item">
             <label>상태</label>
             <select v-model="searchParams.status" class="form-select">
-              <option value="">전체</option>
-              <option value="REQUESTED">요청</option>
-              <option value="APPROVED">승인</option>
-              <option value="PAID">지급완료</option>
+              <option value="">
+                전체
+              </option>
+              <option value="REQUESTED">
+                요청
+              </option>
+              <option value="APPROVED">
+                승인
+              </option>
+              <option value="PAID">
+                지급완료
+              </option>
             </select>
           </div>
 
           <div class="search-buttons">
             <button class="btn-primary" @click="handleSearch">
-              <i class="fas fa-search"></i>
+              <i class="fas fa-search" />
               조회
             </button>
           </div>
@@ -40,13 +52,13 @@
 
       <!-- 로딩 상태 -->
       <div v-if="loading" class="loading-state">
-        <i class="fas fa-spinner fa-spin"></i>
+        <i class="fas fa-spinner fa-spin" />
         데이터를 불러오는 중...
       </div>
 
       <!-- 에러 상태 -->
       <div v-else-if="error" class="error-state">
-        <i class="fas fa-exclamation-triangle"></i>
+        <i class="fas fa-exclamation-triangle" />
         {{ error }}
       </div>
 
@@ -56,41 +68,49 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon icon-count">
-              <i class="fas fa-list-ol"></i>
+              <i class="fas fa-list-ol" />
             </div>
             <div class="stat-content">
               <h3>총 건수</h3>
-              <p class="stat-number">{{ formatNumber(statistics.summary.totalCount) }}건</p>
+              <p class="stat-number">
+                {{ formatNumber(statistics.summary.totalCount) }}건
+              </p>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-amount">
-              <i class="fas fa-won-sign"></i>
+              <i class="fas fa-won-sign" />
             </div>
             <div class="stat-content">
               <h3>총 기성금액</h3>
-              <p class="stat-number">{{ formatCompactCurrency(statistics.summary.totalAmount) }}</p>
+              <p class="stat-number">
+                {{ formatCompactCurrency(statistics.summary.totalAmount) }}
+              </p>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-average">
-              <i class="fas fa-chart-line"></i>
+              <i class="fas fa-chart-line" />
             </div>
             <div class="stat-content">
               <h3>평균 기성금액</h3>
-              <p class="stat-number">{{ formatCompactCurrency(statistics.summary.averageAmount) }}</p>
+              <p class="stat-number">
+                {{ formatCompactCurrency(statistics.summary.averageAmount) }}
+              </p>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-sequence">
-              <i class="fas fa-layer-group"></i>
+              <i class="fas fa-layer-group" />
             </div>
             <div class="stat-content">
               <h3>최대 차수</h3>
-              <p class="stat-number">{{ statistics.summary.maxSequence }}차</p>
+              <p class="stat-number">
+                {{ statistics.summary.maxSequence }}차
+              </p>
             </div>
           </div>
         </div>
@@ -98,7 +118,7 @@
         <!-- 기성 목록 테이블 -->
         <div class="table-section">
           <h2>
-            <i class="fas fa-table"></i>
+            <i class="fas fa-table" />
             차수별 기성금 현황
           </h2>
           <div class="table-container">
@@ -117,21 +137,33 @@
               </thead>
               <tbody>
                 <tr v-if="statistics.items.length === 0">
-                  <td colspan="8" class="empty-cell">데이터가 없습니다</td>
+                  <td colspan="8" class="empty-cell">
+                    데이터가 없습니다
+                  </td>
                 </tr>
                 <tr v-for="item in statistics.items" :key="`${item.orderId}-${item.sequence}`">
-                  <td class="text-center">{{ item.sequence }}차</td>
+                  <td class="text-center">
+                    {{ item.sequence }}차
+                  </td>
                   <td>{{ item.deliveryRequestNo }}</td>
                   <td>{{ item.client }}</td>
-                  <td class="project-name">{{ item.projectName }}</td>
-                  <td class="text-right">{{ formatCurrency(item.amount) }}</td>
+                  <td class="project-name">
+                    {{ item.projectName }}
+                  </td>
+                  <td class="text-right">
+                    {{ formatCurrency(item.amount) }}
+                  </td>
                   <td>
                     <span :class="['status-badge', getStatusClass(item.status)]">
                       {{ getStatusLabel(item.status) }}
                     </span>
                   </td>
-                  <td class="text-center">{{ item.approvedDate || '-' }}</td>
-                  <td class="text-center">{{ formatDate(item.createdAt) }}</td>
+                  <td class="text-center">
+                    {{ item.approvedDate || '-' }}
+                  </td>
+                  <td class="text-center">
+                    {{ formatDate(item.createdAt) }}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -161,7 +193,7 @@ const error = ref<string | null>(null)
 
 // 사용 가능한 연도 목록 (최근 5년)
 const availableYears = ref<number[]>([])
-function generateAvailableYears() {
+function generateAvailableYears () {
   const currentYear = new Date().getFullYear()
   const years: number[] = []
   for (let i = 0; i < 5; i++) {
@@ -188,7 +220,7 @@ const statistics = ref<BaselineStatisticsResponse>({
 })
 
 // 데이터 조회
-async function loadStatistics() {
+async function loadStatistics () {
   loading.value = true
   error.value = null
 
@@ -207,7 +239,7 @@ async function loadStatistics() {
 }
 
 // Mock 데이터 (백엔드 연동 전 테스트용)
-function loadMockData() {
+function loadMockData () {
   statistics.value = {
     summary: {
       totalCount: 15,
@@ -277,20 +309,20 @@ function loadMockData() {
 }
 
 // 검색
-function handleSearch() {
+function handleSearch () {
   loadStatistics()
 }
 
 // 포맷 함수들
-function formatNumber(value: number): string {
+function formatNumber (value: number): string {
   return value.toLocaleString('ko-KR')
 }
 
-function formatCurrency(value: number): string {
+function formatCurrency (value: number): string {
   return value.toLocaleString('ko-KR') + '원'
 }
 
-function formatCompactCurrency(value: number): string {
+function formatCompactCurrency (value: number): string {
   if (value >= 100000000) {
     return (value / 100000000).toFixed(1) + '억원'
   }
@@ -303,13 +335,13 @@ function formatCompactCurrency(value: number): string {
   return value.toLocaleString('ko-KR') + '원'
 }
 
-function formatDate(dateString: string): string {
-  if (!dateString) return '-'
+function formatDate (dateString: string): string {
+  if (!dateString) { return '-' }
   return dateString.split('T')[0]
 }
 
 // 상태 관련
-function getStatusClass(status: string): string {
+function getStatusClass (status: string): string {
   const classMap: Record<string, string> = {
     REQUESTED: 'requested',
     APPROVED: 'approved',
@@ -318,7 +350,7 @@ function getStatusClass(status: string): string {
   return classMap[status] || ''
 }
 
-function getStatusLabel(status: string): string {
+function getStatusLabel (status: string): string {
   const labelMap: Record<string, string> = {
     REQUESTED: '요청',
     APPROVED: '승인',

@@ -1,18 +1,18 @@
 <template>
-  <header 
+  <header
     style="position: fixed; width: 100%; transition: all 0.3s ease; z-index: 50; background-color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); color: #1f2937;"
   >
     <div style="max-width: 1200px; margin: 0 auto; padding: 0 1rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
         <NuxtLink to="/" style="flex-shrink: 0;">
-          <img 
-            src="/images/common/logo.png" 
-            alt="PTPLPSM 출하관리 시스템" 
-            width="100" 
-            height="50" 
+          <img
+            src="/images/common/logo.png"
+            alt="PTPLPSM 출하관리 시스템"
+            width="100"
+            height="50"
             style="height: auto; width: 100px; transition: all 0.3s ease; object-fit: contain;"
             loading="eager"
-          />
+          >
         </NuxtLink>
 
         <nav class="hidden md:flex space-x-1">
@@ -25,13 +25,13 @@
               :to="item.href"
               class="px-6 py-8 transition-colors duration-200 menu-link"
               :class="[
-                isScrolled ? 'text-gray-800 hover:text-primary' : 
+                isScrolled ? 'text-gray-800 hover:text-primary' :
                 (route.path === '/' ? 'text-white hover:text-gray-200' : 'text-gray-800 hover:text-primary')
               ]"
             >
               {{ item.title }}
             </NuxtLink>
-            
+
             <div
               v-if="item.submenu"
               class="submenu absolute left-0 top-full w-48 bg-white shadow-lg rounded-b-lg py-2 z-[200] border border-gray-200"
@@ -49,7 +49,7 @@
         </nav>
 
         <div style="display: flex; align-items: center; gap: 1rem;">
-          <!--button 
+          <!--button
             style="display: none; width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; color: #1f2937; border: 2px solid #1f2937; background: transparent; cursor: pointer;"
             @click="isAllMenuOpen = !isAllMenuOpen"
           >
@@ -59,25 +59,25 @@
             </svg>
           </button>
 
-          <button 
+          <button
             style="width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; background-color: #f3f4f6; color: #374151; border: none; cursor: pointer;"
             @click="isMobileMenuOpen = !isMobileMenuOpen"
           >
             <span class="sr-only">메뉴 열기</span>
-            <svg 
-              v-if="!isMobileMenuOpen" 
-              class="h-5 w-5" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              v-if="!isMobileMenuOpen"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
-            <svg 
-              v-else 
-              class="h-5 w-5" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              v-else
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -87,8 +87,8 @@
       </div>
 
       <!-- PC 사이트맵 -->
-      <!--div 
-        v-show="isAllMenuOpen" 
+      <!--div
+        v-show="isAllMenuOpen"
         class="fixed inset-0 bg-black bg-opacity-50 z-[998]"
         @click.self="isAllMenuOpen = false"
       >
@@ -107,7 +107,7 @@
               </div>
             </div>
           </div>
-          <button 
+          <button
             class="absolute top-4 right-4 text-white"
             @click="isAllMenuOpen = false"
           >
@@ -119,15 +119,17 @@
       </div>
 
       <!-- 모바일 메뉴 -->
-      <div  
-        v-show="isMobileMenuOpen" 
+      <div
+        v-show="isMobileMenuOpen"
         class="mobile-menu-wrapper fixed inset-0 bg-black bg-opacity-50 z-[999] md:hidden"
       >
         <div class="mobile-menu-nav bg-primary h-full w-4/5 max-w-sm overflow-y-auto">
           <div class="inner p-6">
             <div class="menu-grid">
               <div v-for="(item, index) in computedMenuItems" :key="index" class="menu-column mb-6">
-                <h3 class="text-xl font-bold text-white mb-3">{{ item.title }}</h3>
+                <h3 class="text-xl font-bold text-white mb-3">
+                  {{ item.title }}
+                </h3>
                 <ul v-if="item.submenu" class="space-y-2">
                   <li v-for="(subitem, subindex) in item.submenu" :key="subindex">
                     <NuxtLink :to="subitem.href" class="submenu-link text-gray-200 hover:text-white block py-1" @click="isMobileMenuOpen = false">
@@ -138,7 +140,7 @@
               </div>
             </div>
           </div>
-          <button 
+          <button
             class="absolute top-4 right-4 text-white"
             @click="isMobileMenuOpen = false"
           >
@@ -154,8 +156,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRoute } from '#imports'
-import { useHead } from '#imports'
+import { useRoute, useHead } from '#imports'
 
 // Google 태그는 nuxt.config.ts에서 전역으로 설정됨
 
@@ -205,7 +206,7 @@ const menuItems = [
   //     { title: '창업자금', href: '/inquiry/quote' },
   // //    { title: '자주하는 질문', href: '/inquiry/faq' }
   //   ]
-  // },  
+  // },
   // {
   //   title: 'ISO 및 제품 인증',
   //   href: '/system/iso9001',
@@ -213,7 +214,7 @@ const menuItems = [
   //     { title: 'ISO 9001', href: '/system/iso9001' },
   //     { title: 'ISO 14001', href: '/system/iso14001' },
   //     { title: 'ISO 45001', href: '/system/iso45001' },
-  // //    { title: '기타인증', href: '/system/etc_ceti' },      
+  // //    { title: '기타인증', href: '/system/etc_ceti' },
   // //  { title: '인증절차', href: '/system/cert_process' },
   //     { title: 'KS 인증', href: '/product/ks' },
   //     { title: 'KC 인증', href: '/product/kc' },
@@ -247,7 +248,7 @@ const menuItems = [
   // //    { title: '창업 컨설팅', href: '/policy-funds/estacomp-consulting' }
   //   ]
   // }
-  //{
+  // {
   //  title: '커뮤니티',
   //  href: '/community/notice',
   //  submenu: [
@@ -453,4 +454,3 @@ header {
   }
 }
 </style>
-

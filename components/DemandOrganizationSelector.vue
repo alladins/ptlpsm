@@ -9,17 +9,17 @@
         readonly
         class="form-input-base"
         :class="{ 'error': error }"
-      />
+      >
       <button
         type="button"
-        @click="openModal"
         class="btn-select"
+        @click="openModal"
       >
-        <i class="fas fa-search"></i>
+        <i class="fas fa-search" />
         선택
       </button>
     </div>
-    
+
     <!-- 선택된 수요기관 표시 -->
     <div v-if="selectedOrganization" class="selected-info">
       <div class="info-item">
@@ -37,8 +37,8 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3>수요기관 선택</h3>
-          <button type="button" @click="closeModal" class="modal-close">
-            <i class="fas fa-times"></i>
+          <button type="button" class="modal-close" @click="closeModal">
+            <i class="fas fa-times" />
           </button>
         </div>
 
@@ -47,35 +47,40 @@
           <div class="search-section">
             <div class="search-input-group">
               <input
-                type="text"
                 v-model="searchKeyword"
+                type="text"
                 placeholder="기관코드, 기관명으로 검색"
                 class="form-input-base"
                 @keyup.enter="searchOrganizations"
-              />
+              >
               <button
                 type="button"
-                @click="searchOrganizations"
                 class="btn-primary"
+                @click="searchOrganizations"
               >
-                <i class="fas fa-search"></i>
+                <i class="fas fa-search" />
                 검색
               </button>
             </div>
           </div>
 
+          <!-- 총 건수 -->
+          <div v-if="!loading && organizations.length > 0" class="total-count">
+            총 <strong>{{ totalElements.toLocaleString() }}</strong>건
+          </div>
+
           <!-- 수요기관 목록 -->
           <div class="organization-list">
             <div v-if="loading" class="loading">
-              <i class="fas fa-spinner fa-spin"></i>
+              <i class="fas fa-spinner fa-spin" />
               <span>검색 중...</span>
             </div>
-            
+
             <div v-else-if="organizations.length === 0" class="no-data">
-              <i class="fas fa-search"></i>
+              <i class="fas fa-search" />
               <span>검색 결과가 없습니다.</span>
             </div>
-            
+
             <div v-else class="list-container">
               <div
                 v-for="org in organizations"
@@ -85,52 +90,41 @@
                 @click="selectOrganization(org)"
               >
                 <div class="org-info">
-                  <div class="org-code">{{ org.dminsttCd }}</div>
-                  <div class="org-name">{{ org.dminsttNm }}</div>
-                  <div class="org-address">{{ org.adrs }} {{ org.dtlAdrs }}</div>
+                  <div class="org-main">
+                    <span v-if="org.naraJangteoNo" class="org-field"><span class="org-label">나라장터코드:</span> {{ org.naraJangteoNo }}</span>
+                    <span class="org-field"><span class="org-label">기관코드:</span> {{ org.dminsttCd }}</span>
+                    <span class="org-field"><span class="org-label">기관명:</span> {{ org.dminsttNm }}</span>
+                  </div>
+                  <div v-if="org.adrs" class="org-sub">
+                    <span class="org-field"><span class="org-label">주소:</span> {{ org.adrs }} {{ org.dtlAdrs }}</span>
+                  </div>
                 </div>
                 <div v-if="isSelected(org)" class="selected-icon">
-                  <i class="fas fa-check-circle"></i>
+                  <i class="fas fa-check-circle" />
                 </div>
               </div>
             </div>
           </div>
 
           <!-- 페이징 -->
-          <div v-if="totalPages > 1" class="pagination">
-            <button
-              type="button"
-              @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 0"
-              class="btn-page"
-            >
-              이전
-            </button>
-            
-            <span class="page-info">
-              {{ currentPage + 1 }} / {{ totalPages }}
-            </span>
-            
-            <button
-              type="button"
-              @click="changePage(currentPage + 1)"
-              :disabled="currentPage >= totalPages - 1"
-              class="btn-page"
-            >
-              다음
-            </button>
-          </div>
+          <Pagination
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :disabled="loading"
+            :display-count="4"
+            @change="changePage"
+          />
         </div>
 
         <div class="modal-footer">
-          <button type="button" @click="closeModal" class="btn-secondary">
+          <button type="button" class="btn-secondary" @click="closeModal">
             취소
           </button>
           <button
             type="button"
-            @click="confirmSelection"
             :disabled="!tempSelectedOrganization"
             class="btn-primary"
+            @click="confirmSelection"
           >
             선택
           </button>
@@ -166,6 +160,7 @@ const selectedOrganization = ref<DemandOrganization | null>(null)
 const tempSelectedOrganization = ref<DemandOrganization | null>(null)
 const currentPage = ref(0)
 const totalPages = ref(0)
+const totalElements = ref(0)
 
 // 선택된 기관명 계산
 const selectedOrganizationName = computed(() => {
@@ -192,15 +187,18 @@ const searchOrganizations = async () => {
   try {
     loading.value = true
     currentPage.value = 0
-    
+
     const response = await demandOrganizationService.searchDemandOrganizations({
       searchKeyword: searchKeyword.value,
       page: currentPage.value,
-      size: 10
+      size: 10,
+      sortBy: 'naraJangteoNo',
+      sortDirection: 'asc'
     })
-    
+
     organizations.value = response.content
     totalPages.value = response.totalPages
+    totalElements.value = response.totalElements
   } catch (error) {
     console.error('수요기관 검색 실패:', error)
     alert('수요기관 검색에 실패했습니다.')
@@ -211,18 +209,20 @@ const searchOrganizations = async () => {
 
 // 페이지 변경
 const changePage = async (page: number) => {
-  if (page < 0 || page >= totalPages.value) return
-  
+  if (page < 0 || page >= totalPages.value) { return }
+
   try {
     loading.value = true
     currentPage.value = page
-    
+
     const response = await demandOrganizationService.searchDemandOrganizations({
       searchKeyword: searchKeyword.value,
       page: currentPage.value,
-      size: 10
+      size: 10,
+      sortBy: 'naraJangteoNo',
+      sortDirection: 'asc'
     })
-    
+
     organizations.value = response.content
   } catch (error) {
     console.error('페이지 변경 실패:', error)
@@ -266,7 +266,7 @@ const loadInitialData = async () => {
         page: 0,
         size: 1
       })
-      
+
       if (response.content.length > 0) {
         const org = response.content[0]
         if (org.dminsttCd === props.modelValue) {
@@ -365,7 +365,7 @@ watch(() => props.modelValue, loadInitialData, { immediate: true })
   border-radius: 0.5rem;
   width: 90%;
   max-width: 800px;
-  max-height: 80vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
 }
@@ -418,6 +418,12 @@ watch(() => props.modelValue, loadInitialData, { immediate: true })
 
 .search-input-group input {
   flex: 1;
+}
+
+.total-count {
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  color: #374151;
 }
 
 .organization-list {
@@ -476,23 +482,38 @@ watch(() => props.modelValue, loadInitialData, { immediate: true })
 
 .org-info {
   flex: 1;
+  min-width: 0;
 }
 
-.org-code {
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 0.25rem;
+.org-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.org-name {
+.org-sub {
+  margin-top: 3px;
+}
+
+.org-field {
   font-size: 0.875rem;
-  color: #374151;
-  margin-bottom: 0.25rem;
+  color: #1f2937;
 }
 
-.org-address {
-  font-size: 0.75rem;
+.org-label {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  margin-right: 2px;
+}
+
+.org-sub .org-field {
+  font-size: 0.8125rem;
   color: #6b7280;
+}
+
+.org-sub .org-label {
+  color: #9ca3af;
 }
 
 .selected-icon {
@@ -500,39 +521,6 @@ watch(() => props.modelValue, loadInitialData, { immediate: true })
   font-size: 1.5rem;
   margin-left: 1rem;
   flex-shrink: 0;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.btn-page {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-page:hover:not(:disabled) {
-  background: #e5e7eb;
-}
-
-.btn-page:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-info {
-  font-size: 0.875rem;
-  color: #6b7280;
 }
 
 .modal-footer {
@@ -586,15 +574,15 @@ watch(() => props.modelValue, loadInitialData, { immediate: true })
     width: 95%;
     margin: 1rem;
   }
-  
+
   .search-input-group {
     flex-direction: column;
   }
-  
+
   .modal-footer {
     flex-direction: column;
   }
-  
+
   .btn-primary,
   .btn-secondary {
     width: 100%;

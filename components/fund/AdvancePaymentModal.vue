@@ -4,14 +4,14 @@
       <div class="modal-header">
         <h3>선급금 신청</h3>
         <button class="modal-close" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
       <div class="modal-body">
         <!-- 로딩 상태 -->
         <div v-if="isLoading" class="loading-container">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <span>데이터를 불러오는 중...</span>
         </div>
 
@@ -26,14 +26,14 @@
               <label>선급금 비율</label>
               <div class="rate-input-group">
                 <input
-                  type="number"
                   v-model.number="advanceRate"
-                  @input="onRateChange"
+                  type="number"
                   class="rate-input"
                   min="0"
                   max="100"
                   step="1"
-                />
+                  @input="onRateChange"
+                >
                 <span class="rate-unit">%</span>
               </div>
             </div>
@@ -64,7 +64,7 @@
                     class="btn-pdf-view-sm"
                     @click="viewExistingAdvancePdf(advance.advanceId, 'APPLICATION')"
                   >
-                    <i class="fas fa-file-pdf"></i>
+                    <i class="fas fa-file-pdf" />
                     문서 보기
                   </button>
                 </div>
@@ -81,12 +81,12 @@
                 <label class="required">신청 금액</label>
                 <div class="input-with-unit">
                   <input
-                    type="text"
                     v-model="formattedRequestAmount"
-                    @input="onAmountInput"
+                    type="text"
                     class="form-input"
                     placeholder="신청 금액 입력"
-                  />
+                    @input="onAmountInput"
+                  >
                   <span class="unit">원</span>
                 </div>
                 <div class="field-hint">
@@ -97,10 +97,10 @@
               <div class="form-field">
                 <label class="required">신청일</label>
                 <input
-                  type="date"
                   v-model="form.requestDate"
+                  type="date"
                   class="form-input"
-                />
+                >
               </div>
             </div>
 
@@ -111,19 +111,19 @@
                 class="form-textarea"
                 placeholder="비고 입력 (선택)"
                 rows="2"
-              ></textarea>
+              />
             </div>
           </div>
 
           <!-- PDF 문서 안내 -->
           <div class="documents-notice">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             <span>선급금 신청 완료 시 5종의 PDF 문서가 자동 생성됩니다. 생성된 문서는 선급금 탭에서 확인할 수 있습니다.</span>
           </div>
 
           <!-- 유효성 검사 메시지 -->
           <div v-if="validationError" class="validation-error">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="fas fa-exclamation-circle" />
             <span>{{ validationError }}</span>
           </div>
         </template>
@@ -131,16 +131,16 @@
 
       <div class="modal-footer">
         <button class="btn-secondary" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
           취소
         </button>
         <button
           class="btn-primary"
-          @click="submitAdvanceRequest"
           :disabled="!isValid || isSubmitting"
+          @click="submitAdvanceRequest"
         >
-          <i v-if="isSubmitting" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-paper-plane"></i>
+          <i v-if="isSubmitting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-paper-plane" />
           선급금 신청
         </button>
       </div>
@@ -152,27 +152,29 @@
     <div class="modal modal-small" @click.stop>
       <div class="modal-header success-header">
         <h3>
-          <i class="fas fa-check-circle"></i>
+          <i class="fas fa-check-circle" />
           선급금 신청 완료
         </h3>
         <button class="modal-close" @click="closeResultModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
       <div class="modal-body">
         <div class="result-message">
           <div class="result-icon">
-            <i class="fas fa-check-circle"></i>
+            <i class="fas fa-check-circle" />
           </div>
           <p>선급금 신청이 완료되었습니다.</p>
-          <p class="sub-message">생성된 PDF 문서는 선급금 탭에서 확인하실 수 있습니다.</p>
+          <p class="sub-message">
+            생성된 PDF 문서는 선급금 탭에서 확인하실 수 있습니다.
+          </p>
         </div>
       </div>
 
       <div class="modal-footer">
         <button class="btn-primary" @click="closeResultModal">
-          <i class="fas fa-check"></i>
+          <i class="fas fa-check" />
           확인
         </button>
       </div>
@@ -291,8 +293,8 @@ const onAmountInput = (event: Event) => {
 
 const onRateChange = () => {
   // 비율 범위 제한 (0~100)
-  if (advanceRate.value < 0) advanceRate.value = 0
-  if (advanceRate.value > 100) advanceRate.value = 100
+  if (advanceRate.value < 0) { advanceRate.value = 0 }
+  if (advanceRate.value > 100) { advanceRate.value = 100 }
 
   // 신청 금액을 예상 선급금액으로 자동 업데이트
   form.requestAmount = expectedAdvanceAmount.value
@@ -300,7 +302,7 @@ const onRateChange = () => {
 }
 
 const loadData = async () => {
-  if (!props.fundId) return
+  if (!props.fundId) { return }
 
   isLoading.value = true
 
@@ -316,7 +318,6 @@ const loadData = async () => {
 
     // 기존 선급금 이력 조회
     existingAdvances.value = await fundService.getAdvances(props.fundId)
-
   } catch (error) {
     console.error('데이터 로드 실패:', error)
     alert('데이터를 불러오는데 실패했습니다.')
@@ -326,7 +327,7 @@ const loadData = async () => {
 }
 
 const submitAdvanceRequest = async () => {
-  if (!isValid.value || isSubmitting.value) return
+  if (!isValid.value || isSubmitting.value) { return }
 
   isSubmitting.value = true
 

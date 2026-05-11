@@ -4,8 +4,12 @@
     <div class="page-header">
       <div class="header-content">
         <div>
-          <h1 class="page-title">운송장 관리</h1>
-          <p class="page-description">운송장 정보를 확인하고 인수증을 처리합니다.</p>
+          <h1 class="page-title">
+            운송장 관리
+          </h1>
+          <p class="page-description">
+            운송장 정보를 확인하고 인수증을 처리합니다.
+          </p>
         </div>
       </div>
     </div>
@@ -16,19 +20,19 @@
         <div class="info-grid">
           <div class="info-item">
             <label>수요기관</label>
-            <input type="text" v-model="transportInfo.clientName" class="form-input disabled" readonly>
+            <input v-model="transportInfo.clientName" type="text" class="form-input disabled" readonly>
           </div>
           <div class="info-item">
             <label>현장담당자연락처</label>
-            <input type="tel" v-model="transportInfo.managerContact" class="form-input disabled" readonly>
+            <input v-model="transportInfo.managerContact" type="tel" class="form-input disabled" readonly>
           </div>
           <div class="info-item">
             <label>납품장소</label>
-            <input type="text" v-model="transportInfo.deliveryLocation" class="form-input disabled" readonly>
+            <input v-model="transportInfo.deliveryLocation" type="text" class="form-input disabled" readonly>
           </div>
           <div class="info-item">
             <label>하차시간</label>
-            <input type="text" v-model="transportInfo.unloadingTime" class="form-input disabled" readonly>
+            <input v-model="transportInfo.unloadingTime" type="text" class="form-input disabled" readonly>
           </div>
         </div>
       </div>
@@ -40,7 +44,7 @@
           <div class="action-card" :class="{ 'completed': isSignatureCompleted }">
             <div class="action-content" @click="handleSignature">
               <div class="action-icon">
-                <i class="fas fa-signature"></i>
+                <i class="fas fa-signature" />
               </div>
               <div class="action-text">
                 <h3>{{ isSignatureCompleted ? '인수증 사인 완료' : '인수증 사인' }}</h3>
@@ -48,7 +52,9 @@
               </div>
             </div>
             <div v-if="isSignatureCompleted" class="action-retry">
-              <button class="btn-retry" @click="retrySignature">재시도</button>
+              <button class="btn-retry" @click="retrySignature">
+                재시도
+              </button>
             </div>
           </div>
 
@@ -56,7 +62,7 @@
           <div class="action-card" :class="{ 'completed': isPhotoCompleted }">
             <div class="action-content" @click="handlePhotoUpload">
               <div class="action-icon">
-                <i class="fas fa-camera"></i>
+                <i class="fas fa-camera" />
               </div>
               <div class="action-text">
                 <h3>{{ isPhotoCompleted ? '사진등록 완료' : '사진등록' }}</h3>
@@ -64,7 +70,9 @@
               </div>
             </div>
             <div v-if="isPhotoCompleted" class="action-retry">
-              <button class="btn-retry" @click="retryPhotoUpload">재시도</button>
+              <button class="btn-retry" @click="retryPhotoUpload">
+                재시도
+              </button>
             </div>
           </div>
         </div>
@@ -77,7 +85,7 @@
           <div v-for="(photo, index) in uploadedPhotos" :key="index" class="photo-item">
             <img :src="photo.url" :alt="`사진 ${index + 1}`" class="photo-image">
             <button class="photo-remove" @click="removePhoto(index)">
-              <i class="fas fa-times"></i>
+              <i class="fas fa-times" />
             </button>
           </div>
         </div>
@@ -85,11 +93,11 @@
 
       <!-- 운송 종료 버튼 -->
       <div class="bottom-actions">
-        <button 
-          class="btn-transport-end" 
+        <button
+          class="btn-transport-end"
           :class="{ 'disabled': !canCompleteTransport }"
-          @click="completeTransport"
           :disabled="!canCompleteTransport"
+          @click="completeTransport"
         >
           운송 종료
         </button>
@@ -101,20 +109,26 @@
       <div class="popup-content receipt-preview" @click.stop>
         <div class="popup-header">
           <h3>인수증 미리보기</h3>
-          <button @click="closeReceiptPreview" class="popup-close">
-            <i class="fas fa-times"></i>
+          <button class="popup-close" @click="closeReceiptPreview">
+            <i class="fas fa-times" />
           </button>
         </div>
-        
+
         <div class="popup-body">
           <div class="receipt-content">
             <!-- 인수증 내용 -->
             <div class="receipt-header">
               <div class="company-info">
-                <div class="receipt-logo">LP</div>
-                <div class="company-name">LEADPOWER</div>
+                <div class="receipt-logo">
+                  LP
+                </div>
+                <div class="company-name">
+                  LEADPOWER
+                </div>
               </div>
-              <div class="receipt-title">인   수   증</div>
+              <div class="receipt-title">
+                인   수   증
+              </div>
               <div class="receipt-info">
                 <div>공급/운반자 보관용</div>
                 <div>{{ currentDate }}</div>
@@ -125,24 +139,44 @@
               <table class="receipt-table">
                 <tbody>
                   <tr>
-                    <td class="label">거래처명</td>
-                    <td class="value">{{ transportInfo.clientName }}</td>
+                    <td class="label">
+                      거래처명
+                    </td>
+                    <td class="value">
+                      {{ transportInfo.clientName }}
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label">납품장소</td>
-                    <td class="value">{{ transportInfo.deliveryLocation }}</td>
+                    <td class="label">
+                      납품장소
+                    </td>
+                    <td class="value">
+                      {{ transportInfo.deliveryLocation }}
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label">현장담당자</td>
-                    <td class="value">{{ transportInfo.managerContact }}</td>
+                    <td class="label">
+                      현장담당자
+                    </td>
+                    <td class="value">
+                      {{ transportInfo.managerContact }}
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label">하차</td>
-                    <td class="value">{{ transportInfo.unloadingTime }}</td>
+                    <td class="label">
+                      하차
+                    </td>
+                    <td class="value">
+                      {{ transportInfo.unloadingTime }}
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label">비고</td>
-                    <td class="value">★상차완료 후 현장담당자에게 통화 필수</td>
+                    <td class="label">
+                      비고
+                    </td>
+                    <td class="value">
+                      ★상차완료 후 현장담당자에게 통화 필수
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -176,7 +210,9 @@
             </div>
 
             <div class="receipt-signature">
-              <div class="signature-label">물품 인수자</div>
+              <div class="signature-label">
+                물품 인수자
+              </div>
               <div class="signature-box">
                 <span v-if="signatureData.recipientName">{{ signatureData.recipientName }}</span>
                 <span v-else class="signature-placeholder">(인)</span>
@@ -188,10 +224,14 @@
             </div>
           </div>
         </div>
-        
+
         <div class="popup-footer">
-          <button class="btn-secondary" @click="closeReceiptPreview">취소</button>
-          <button class="btn-primary" @click="proceedToSignature">사인 진행</button>
+          <button class="btn-secondary" @click="closeReceiptPreview">
+            취소
+          </button>
+          <button class="btn-primary" @click="proceedToSignature">
+            사인 진행
+          </button>
         </div>
       </div>
     </div>
@@ -201,28 +241,28 @@
       <div class="popup-content signature-popup" @click.stop>
         <div class="popup-header">
           <h3>인수자 정보 및 사인</h3>
-          <button @click="closeSignaturePopup" class="popup-close">
-            <i class="fas fa-times"></i>
+          <button class="popup-close" @click="closeSignaturePopup">
+            <i class="fas fa-times" />
           </button>
         </div>
-        
+
         <div class="popup-body">
           <div class="signature-form">
             <div class="form-group">
               <label>인수자</label>
-              <input 
-                type="text" 
-                v-model="signatureData.recipientName" 
-                class="form-input" 
+              <input
+                v-model="signatureData.recipientName"
+                type="text"
+                class="form-input"
                 placeholder="인수자명을 입력하세요"
               >
             </div>
-            
+
             <div class="form-group">
               <label>사인</label>
               <div class="signature-pad">
-                <canvas 
-                  ref="signatureCanvas" 
+                <canvas
+                  ref="signatureCanvas"
                   class="signature-canvas"
                   @mousedown="startDrawing"
                   @mousemove="draw"
@@ -230,18 +270,24 @@
                   @touchstart="startDrawing"
                   @touchmove="draw"
                   @touchend="stopDrawing"
-                ></canvas>
+                />
                 <div class="signature-controls">
-                  <button class="btn-clear" @click="clearSignature">지우기</button>
+                  <button class="btn-clear" @click="clearSignature">
+                    지우기
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        
+
         <div class="popup-footer">
-          <button class="btn-secondary" @click="closeSignaturePopup">취소</button>
-          <button class="btn-primary" @click="saveSignature" :disabled="!canSaveSignature">저장</button>
+          <button class="btn-secondary" @click="closeSignaturePopup">
+            취소
+          </button>
+          <button class="btn-primary" :disabled="!canSaveSignature" @click="saveSignature">
+            저장
+          </button>
         </div>
       </div>
     </div>
@@ -253,20 +299,22 @@
           <h2>감사합니다.</h2>
         </div>
         <div class="popup-footer">
-          <button class="btn-primary" @click="closeThankYouPopup">닫기</button>
+          <button class="btn-primary" @click="closeThankYouPopup">
+            닫기
+          </button>
         </div>
       </div>
     </div>
 
     <!-- 파일 업로드 input (숨김) -->
-    <input 
-      ref="fileInput" 
-      type="file" 
-      multiple 
-      accept="image/*" 
+    <input
+      ref="fileInput"
+      type="file"
+      multiple
+      accept="image/*"
       capture="environment"
-      @change="handleFileSelect"
       style="display: none"
+      @change="handleFileSelect"
     >
   </div>
 </template>
@@ -366,12 +414,12 @@ const startDrawing = (event: MouseEvent | TouchEvent) => {
 
 // 사인 그리기
 const draw = (event: MouseEvent | TouchEvent) => {
-  if (!isDrawing.value || !signatureCanvas.value) return
+  if (!isDrawing.value || !signatureCanvas.value) { return }
 
   event.preventDefault()
   const canvas = signatureCanvas.value
   const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  if (!ctx) { return }
 
   const rect = canvas.getBoundingClientRect()
   let clientX, clientY
@@ -400,7 +448,7 @@ const draw = (event: MouseEvent | TouchEvent) => {
 // 사인 그리기 중지
 const stopDrawing = () => {
   isDrawing.value = false
-  
+
   // 사인 이미지 저장
   if (signatureCanvas.value) {
     const ctx = signatureCanvas.value.getContext('2d')
@@ -413,8 +461,8 @@ const stopDrawing = () => {
 
 // 사인 지우기
 const clearSignature = () => {
-  if (!signatureCanvas.value) return
-  
+  if (!signatureCanvas.value) { return }
+
   const ctx = signatureCanvas.value.getContext('2d')
   if (ctx) {
     ctx.clearRect(0, 0, signatureCanvas.value.width, signatureCanvas.value.height)
@@ -441,21 +489,21 @@ const handlePhotoUpload = () => {
 const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement
   const files = target.files
-  
+
   if (files) {
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file) => {
       if (file.type.startsWith('image/')) {
         const url = URL.createObjectURL(file)
         uploadedPhotos.value.push({ url, file })
       }
     })
-    
+
     // 최소 2장 이상이면 완료 상태로 변경
     if (uploadedPhotos.value.length >= 2) {
       isPhotoCompleted.value = true
     }
   }
-  
+
   // 파일 input 초기화
   target.value = ''
 }
@@ -463,7 +511,7 @@ const handleFileSelect = (event: Event) => {
 // 사진 제거
 const removePhoto = (index: number) => {
   uploadedPhotos.value.splice(index, 1)
-  
+
   // 2장 미만이면 완료 상태 해제
   if (uploadedPhotos.value.length < 2) {
     isPhotoCompleted.value = false

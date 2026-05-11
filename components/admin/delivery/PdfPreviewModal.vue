@@ -5,11 +5,11 @@
         <!-- 모달 헤더 -->
         <div class="modal-header">
           <h3>
-            <i class="fas fa-file-pdf"></i>
+            <i class="fas fa-file-pdf" />
             납품 인수증 PDF
           </h3>
           <button class="btn-close" @click="$emit('close')">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
@@ -17,16 +17,16 @@
         <div class="modal-body">
           <!-- 로딩 중 -->
           <div v-if="loading" class="loading-state">
-            <i class="fas fa-spinner fa-spin"></i>
+            <i class="fas fa-spinner fa-spin" />
             <span>PDF 로딩 중...</span>
           </div>
 
           <!-- 에러 -->
           <div v-else-if="error" class="error-state">
-            <i class="fas fa-exclamation-triangle"></i>
+            <i class="fas fa-exclamation-triangle" />
             <span>PDF 로드에 실패했습니다</span>
-            <button @click="loadPdf" class="btn-retry">
-              <i class="fas fa-redo"></i>
+            <button class="btn-retry" @click="loadPdf">
+              <i class="fas fa-redo" />
               다시 시도
             </button>
           </div>
@@ -38,18 +38,18 @@
               class="pdf-iframe"
               frameborder="0"
               title="PDF 미리보기"
-            ></iframe>
+            />
           </div>
         </div>
 
         <!-- 모달 푸터 -->
         <div class="modal-footer">
-          <button @click="downloadPdf" class="btn-download" :disabled="!pdfBlobUrl">
-            <i class="fas fa-download"></i>
+          <button class="btn-download" :disabled="!pdfBlobUrl" @click="downloadPdf">
+            <i class="fas fa-download" />
             PDF 다운로드
           </button>
-          <button @click="$emit('close')" class="btn-close-bottom">
-            <i class="fas fa-times"></i>
+          <button class="btn-close-bottom" @click="$emit('close')">
+            <i class="fas fa-times" />
             닫기
           </button>
         </div>
@@ -126,7 +126,7 @@ const loadPdf = async () => {
  * PDF 다운로드
  */
 const downloadPdf = () => {
-  if (!pdfBlobUrl.value) return
+  if (!pdfBlobUrl.value) { return }
 
   const link = document.createElement('a')
   link.href = pdfBlobUrl.value

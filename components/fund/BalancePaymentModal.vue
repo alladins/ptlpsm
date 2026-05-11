@@ -4,21 +4,21 @@
       <div class="modal-header">
         <h3>잔금 신청</h3>
         <button class="modal-close" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
       <div class="modal-body">
         <!-- 로딩 상태 -->
         <div v-if="isLoading" class="loading-container">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <span>데이터를 불러오는 중...</span>
         </div>
 
         <template v-else>
           <!-- 기존 잔금 신청이 있는 경우 -->
           <div v-if="balanceInfo?.request" class="existing-request-box">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             <div class="existing-content">
               <strong>이미 잔금 신청이 진행 중입니다</strong>
               <p>
@@ -35,11 +35,11 @@
             <div class="radio-group">
               <label class="radio-label">
                 <input
-                  type="radio"
                   v-model="calculationBasis"
+                  type="radio"
                   value="REQUESTED"
                   name="basis"
-                />
+                >
                 <span class="radio-text">
                   <strong>신청 기준</strong>
                   <small>선급금 및 기성금 신청 금액 기준으로 계산</small>
@@ -47,11 +47,11 @@
               </label>
               <label class="radio-label">
                 <input
-                  type="radio"
                   v-model="calculationBasis"
+                  type="radio"
                   value="PAID"
                   name="basis"
-                />
+                >
                 <span class="radio-text">
                   <strong>입금 기준</strong>
                   <small>실제 입금된 금액 기준으로 계산</small>
@@ -106,7 +106,7 @@
             <!-- 미정산 선급금 차감 안내 -->
             <div v-if="unsettledAdvanceBalance > 0" class="unsettled-advance-notice">
               <div class="notice-header">
-                <i class="fas fa-exclamation-triangle"></i>
+                <i class="fas fa-exclamation-triangle" />
                 <span>미정산 선급금 잔액: {{ formatCurrency(unsettledAdvanceBalance) }}</span>
               </div>
               <p class="notice-text">
@@ -138,12 +138,12 @@
                 <label class="required">신청 금액</label>
                 <div class="input-with-unit">
                   <input
-                    type="text"
                     v-model="formattedRequestAmount"
-                    @input="onAmountInput"
+                    type="text"
                     class="form-input"
                     placeholder="신청 금액 입력"
-                  />
+                    @input="onAmountInput"
+                  >
                   <span class="unit">원</span>
                 </div>
                 <div class="field-hint">
@@ -160,10 +160,10 @@
               <div class="form-field">
                 <label class="required">신청일</label>
                 <input
-                  type="date"
                   v-model="form.requestDate"
+                  type="date"
                   class="form-input"
-                />
+                >
               </div>
             </div>
 
@@ -174,13 +174,13 @@
                 class="form-textarea"
                 placeholder="비고 입력 (선택)"
                 rows="2"
-              ></textarea>
+              />
             </div>
           </div>
 
           <!-- 경고 메시지 -->
           <div v-if="amountMismatchWarning" class="warning-box">
-            <i class="fas fa-exclamation-triangle"></i>
+            <i class="fas fa-exclamation-triangle" />
             <div class="warning-content">
               <strong>신청 금액과 계산된 잔금이 다릅니다</strong>
               <p>계산된 잔금: {{ formatCurrency(calculatedBalance) }}, 입력한 금액: {{ formatCurrency(form.requestAmount) }}</p>
@@ -189,7 +189,7 @@
 
           <!-- 유효성 검사 메시지 -->
           <div v-if="validationError" class="validation-error">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="fas fa-exclamation-circle" />
             <span>{{ validationError }}</span>
           </div>
         </template>
@@ -197,16 +197,16 @@
 
       <div class="modal-footer">
         <button class="btn-secondary" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
           취소
         </button>
         <button
           class="btn-primary"
-          @click="submitBalanceRequest"
           :disabled="!isValid || isSubmitting || !!balanceInfo?.request"
+          @click="submitBalanceRequest"
         >
-          <i v-if="isSubmitting" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-paper-plane"></i>
+          <i v-if="isSubmitting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-paper-plane" />
           잔금 신청
         </button>
       </div>
@@ -260,7 +260,7 @@ const formattedRequestAmount = ref('')
 
 // 현재 선급금 (기준에 따라)
 const currentAdvanceAmount = computed(() => {
-  if (!balanceInfo.value) return 0
+  if (!balanceInfo.value) { return 0 }
   return calculationBasis.value === 'REQUESTED'
     ? balanceInfo.value.advanceRequested
     : balanceInfo.value.advancePaid
@@ -268,7 +268,7 @@ const currentAdvanceAmount = computed(() => {
 
 // 현재 기성금 누계 (기준에 따라)
 const currentProgressAmount = computed(() => {
-  if (!balanceInfo.value) return 0
+  if (!balanceInfo.value) { return 0 }
   return calculationBasis.value === 'REQUESTED'
     ? balanceInfo.value.progressRequested
     : balanceInfo.value.progressPaid
@@ -276,7 +276,7 @@ const currentProgressAmount = computed(() => {
 
 // 계산된 잔금
 const calculatedBalance = computed(() => {
-  if (!balanceInfo.value) return 0
+  if (!balanceInfo.value) { return 0 }
   return calculationBasis.value === 'REQUESTED'
     ? balanceInfo.value.balanceByRequested
     : balanceInfo.value.balanceByPaid
@@ -352,7 +352,7 @@ const setCalculatedAmount = () => {
 }
 
 const loadData = async () => {
-  if (!props.fundId) return
+  if (!props.fundId) { return }
 
   isLoading.value = true
 
@@ -365,7 +365,6 @@ const loadData = async () => {
       form.requestAmount = balanceInfo.value.balanceByRequested
       formattedRequestAmount.value = formatNumber(form.requestAmount)
     }
-
   } catch (error) {
     console.error('데이터 로드 실패:', error)
     alert('데이터를 불러오는데 실패했습니다.')
@@ -375,7 +374,7 @@ const loadData = async () => {
 }
 
 const submitBalanceRequest = async () => {
-  if (!isValid.value || isSubmitting.value) return
+  if (!isValid.value || isSubmitting.value) { return }
 
   // 금액 불일치 시 확인
   if (amountMismatchWarning.value) {

@@ -277,6 +277,47 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+/* ========== 아이콘 전용 버튼 (테이블 내 컴팩트 액션) ========== */
+
+.btn-icon.btn-edit,
+.btn-icon.btn-delete,
+.btn-icon.btn-view {
+  padding: 4px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: white;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.btn-icon.btn-edit {
+  color: #2563eb;
+}
+
+.btn-icon.btn-delete {
+  color: #dc2626;
+}
+
+.btn-icon.btn-view {
+  color: #6b7280;
+}
+
+.btn-icon.btn-edit:hover:not(:disabled),
+.btn-icon.btn-delete:hover:not(:disabled),
+.btn-icon.btn-view:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-icon.btn-delete:hover:not(:disabled) {
+  background-color: #fef2f2;
+}
+
+.btn-icon.btn-edit:hover:not(:disabled) {
+  background-color: #eff6ff;
+}
+
 /* ========== Compact 버튼 (PageHeader용) - 소형 액션 버튼 ========== */
 
 .btn-action {
@@ -970,4 +1011,31 @@
   pointer-events: none;
   transform: none !important;
   box-shadow: none !important;
+}
+
+/* ========== 엑셀 다운로드 버튼 ========== */
+
+.btn-excel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-excel:hover {
+  background: #059669;
+}
+
+.btn-excel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

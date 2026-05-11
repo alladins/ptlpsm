@@ -1,11 +1,10 @@
 <template>
   <div class="commission-rates">
-    <!-- 페이지 헤더 -->
-    <PageHeader
-      title="커미션율 설정"
-      description="연간 매출 구간별 커미션율을 설정합니다."
-    >
-      <template #actions>
+    <!-- 페이지 헤더 - 컴팩트 -->
+    <div class="page-header-compact">
+      <h1>커미션율 설정</h1>
+      <span class="page-description">연간 매출 구간별 6주체 배분 비율을 설정합니다.</span>
+      <div class="header-actions-right">
         <div class="year-selector">
           <label class="year-label">조회 연도</label>
           <select v-model="selectedYear" class="form-select-year" @change="loadRateConfig">
@@ -14,22 +13,22 @@
             </option>
           </select>
         </div>
-      </template>
-    </PageHeader>
+      </div>
+    </div>
 
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-container">
-      <i class="fas fa-spinner fa-spin"></i>
+      <i class="fas fa-spinner fa-spin" />
       <p>커미션율 설정을 불러오는 중...</p>
     </div>
 
     <div v-else class="content-section">
       <!-- 안내 메시지 -->
       <div class="info-banner">
-        <i class="fas fa-info-circle"></i>
+        <i class="fas fa-info-circle" />
         <div class="info-content">
           <strong>커미션율 설정 안내</strong>
-          <p>연간 매출 금액에 따라 차등 커미션율이 적용됩니다. 구간은 하한 금액 기준으로 정렬되며, 해당 구간의 매출 달성 시 설정된 커미션율이 적용됩니다.</p>
+          <p>연간 매출 금액에 따라 6주체(OEM, CEO, 에코암스, 영업, 인증관리, 유지보수) 배분 비율을 설정합니다. CEO, 영업, 인증관리, 유지보수, OEM 비율을 입력하면 에코암스 비율이 자동 계산됩니다. 합계는 반드시 100%여야 합니다.</p>
         </div>
       </div>
 
@@ -37,11 +36,11 @@
       <div class="rate-table-section">
         <div class="section-header">
           <h3 class="section-title">
-            <i class="fas fa-percentage"></i>
+            <i class="fas fa-percentage" />
             {{ selectedYear }}년 커미션율 구간
           </h3>
           <button class="btn-add-tier" @click="addTier">
-            <i class="fas fa-plus"></i>
+            <i class="fas fa-plus" />
             구간 추가
           </button>
         </div>
@@ -50,30 +49,55 @@
           <table class="rate-table">
             <thead>
               <tr>
-                <th class="col-order">순서</th>
-                <th class="col-name">구간명</th>
-                <th class="col-min">매출 하한 (원)</th>
-                <th class="col-max">매출 상한 (원)</th>
-                <th class="col-rate">커미션율 (%)</th>
-                <th class="col-remarks">비고</th>
-                <th class="col-actions">관리</th>
+                <th class="col-order">
+                  순서
+                </th>
+                <th class="col-name">
+                  구간명
+                </th>
+                <th class="col-range">
+                  매출 범위
+                </th>
+                <th class="col-rate-input">
+                  CEO (%)
+                </th>
+                <th class="col-rate-auto">
+                  에코암스 (%) <span class="auto-badge">자동</span>
+                </th>
+                <th class="col-rate-input">
+                  영업 (%)
+                </th>
+                <th class="col-rate-input">
+                  인증관리 (%)
+                </th>
+                <th class="col-rate-input">
+                  유지보수 (%)
+                </th>
+                <th class="col-rate-input">
+                  OEM (%)
+                </th>
+                <th class="col-actions">
+                  관리
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="tiers.length === 0">
-                <td colspan="7" class="no-data">
-                  <i class="fas fa-inbox"></i>
+                <td colspan="10" class="no-data">
+                  <i class="fas fa-inbox" />
                   <p>설정된 커미션율 구간이 없습니다.</p>
                   <button class="btn-add-first" @click="addTier">
-                    <i class="fas fa-plus"></i>
+                    <i class="fas fa-plus" />
                     첫 번째 구간 추가
                   </button>
                 </td>
               </tr>
-              <tr v-else v-for="(tier, index) in tiers" :key="index" :class="{ editing: editingIndex === index }">
+              <tr v-for="(tier, index) in tiers" v-else :key="index" :class="{ editing: editingIndex === index }">
+                <!-- 순서 -->
                 <td class="col-order">
                   <span class="tier-badge">{{ index + 1 }}</span>
                 </td>
+                <!-- 구간명 -->
                 <td class="col-name">
                   <input
                     v-if="editingIndex === index"
@@ -81,83 +105,151 @@
                     type="text"
                     class="form-input"
                     placeholder="예: 1구간"
-                  />
+                  >
                   <span v-else>{{ tier.tierName }}</span>
                 </td>
-                <td class="col-min">
-                  <input
-                    v-if="editingIndex === index"
-                    v-model.number="editForm.minAmount"
-                    type="number"
-                    class="form-input text-right"
-                    placeholder="0"
-                    min="0"
-                  />
-                  <span v-else class="amount">{{ formatCurrency(tier.minAmount) }}</span>
-                </td>
-                <td class="col-max">
-                  <div v-if="editingIndex === index" class="max-amount-input">
-                    <input
-                      v-model.number="editForm.maxAmount"
-                      type="number"
-                      class="form-input text-right"
-                      placeholder="무제한"
-                      min="0"
-                      :disabled="editForm.isUnlimited"
-                    />
+                <!-- 매출 범위 -->
+                <td class="col-range">
+                  <div v-if="editingIndex === index" class="range-edit">
+                    <div class="range-inputs">
+                      <input
+                        v-model.number="editForm.minAmount"
+                        type="number"
+                        class="form-input text-right range-input"
+                        placeholder="0"
+                        min="0"
+                      >
+                      <span class="range-separator">~</span>
+                      <input
+                        v-if="!editForm.isUnlimited"
+                        v-model.number="editForm.maxAmount"
+                        type="number"
+                        class="form-input text-right range-input"
+                        placeholder="상한"
+                        min="0"
+                      >
+                      <span v-else class="unlimited-text">무제한</span>
+                    </div>
                     <label class="unlimited-check">
                       <input
-                        type="checkbox"
                         v-model="editForm.isUnlimited"
+                        type="checkbox"
                         @change="handleUnlimitedChange"
-                      />
+                      >
                       무제한
                     </label>
                   </div>
-                  <span v-else class="amount">
-                    {{ tier.maxAmount ? formatCurrency(tier.maxAmount) : '무제한' }}
+                  <span v-else class="range-display">
+                    {{ formatAmountBillion(tier.minAmount) }} ~ {{ tier.maxAmount ? formatAmountBillion(tier.maxAmount) : '무제한' }}
                   </span>
                 </td>
-                <td class="col-rate">
+                <!-- CEO 비율 -->
+                <td class="col-rate-input">
                   <div v-if="editingIndex === index" class="rate-input-group">
                     <input
-                      v-model.number="editForm.commissionRate"
+                      v-model.number="editForm.ceoRate"
                       type="number"
-                      class="form-input text-right"
-                      placeholder="0"
+                      class="form-input text-right rate-field"
                       min="0"
                       max="100"
                       step="0.1"
-                    />
+                    >
                     <span class="rate-suffix">%</span>
                   </div>
-                  <span v-else class="rate-value">{{ tier.commissionRate }}%</span>
+                  <span v-else class="rate-value">{{ tier.ceoRate }}%</span>
                 </td>
-                <td class="col-remarks">
-                  <input
-                    v-if="editingIndex === index"
-                    v-model="editForm.remarks"
-                    type="text"
-                    class="form-input"
-                    placeholder="비고"
-                  />
-                  <span v-else class="remarks">{{ tier.remarks || '-' }}</span>
+                <!-- 에코암스 비율 (자동계산) -->
+                <td class="col-rate-auto">
+                  <div v-if="editingIndex === index" class="oem-rate-display">
+                    <span
+                      class="oem-rate-value"
+                      :class="{ 'rate-warning': computedEcoarmsRate < 0, 'rate-error': computedEcoarmsRate < 0 }"
+                    >
+                      {{ computedEcoarmsRate.toFixed(1) }}%
+                    </span>
+                    <span v-if="computedEcoarmsRate < 0" class="rate-total-warning">
+                      <i class="fas fa-exclamation-triangle" />
+                      비율 초과
+                    </span>
+                  </div>
+                  <span v-else class="oem-rate-readonly">{{ tier.ecoarmsRate }}%</span>
                 </td>
+                <!-- 영업 비율 -->
+                <td class="col-rate-input">
+                  <div v-if="editingIndex === index" class="rate-input-group">
+                    <input
+                      v-model.number="editForm.salesRate"
+                      type="number"
+                      class="form-input text-right rate-field"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                    >
+                    <span class="rate-suffix">%</span>
+                  </div>
+                  <span v-else class="rate-value">{{ tier.salesRate }}%</span>
+                </td>
+                <!-- 인증관리 비율 -->
+                <td class="col-rate-input">
+                  <div v-if="editingIndex === index" class="rate-input-group">
+                    <input
+                      v-model.number="editForm.certificationRate"
+                      type="number"
+                      class="form-input text-right rate-field"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                    >
+                    <span class="rate-suffix">%</span>
+                  </div>
+                  <span v-else class="rate-value">{{ tier.certificationRate }}%</span>
+                </td>
+                <!-- 유지보수 비율 -->
+                <td class="col-rate-input">
+                  <div v-if="editingIndex === index" class="rate-input-group">
+                    <input
+                      v-model.number="editForm.maintenanceRate"
+                      type="number"
+                      class="form-input text-right rate-field"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                    >
+                    <span class="rate-suffix">%</span>
+                  </div>
+                  <span v-else class="rate-value">{{ tier.maintenanceRate }}%</span>
+                </td>
+                <!-- OEM 비율 (수동입력) -->
+                <td class="col-rate-input">
+                  <div v-if="editingIndex === index" class="rate-input-group">
+                    <input
+                      v-model.number="editForm.oemRate"
+                      type="number"
+                      class="form-input text-right rate-field"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                    >
+                    <span class="rate-suffix">%</span>
+                  </div>
+                  <span v-else class="rate-value">{{ tier.oemRate }}%</span>
+                </td>
+                <!-- 관리 버튼 -->
                 <td class="col-actions">
                   <div v-if="editingIndex === index" class="action-buttons">
-                    <button class="btn-icon save" @click="saveTier(index)" title="저장">
-                      <i class="fas fa-check"></i>
+                    <button class="btn-icon save" title="저장" :disabled="rateTotal !== 100" @click="saveTier(index)">
+                      <i class="fas fa-check" />
                     </button>
-                    <button class="btn-icon cancel" @click="cancelEdit" title="취소">
-                      <i class="fas fa-times"></i>
+                    <button class="btn-icon cancel" title="취소" @click="cancelEdit">
+                      <i class="fas fa-times" />
                     </button>
                   </div>
                   <div v-else class="action-buttons">
-                    <button class="btn-icon edit" @click="startEdit(index)" title="수정">
-                      <i class="fas fa-pen"></i>
+                    <button class="btn-icon edit" title="수정" @click="startEdit(index)">
+                      <i class="fas fa-pen" />
                     </button>
-                    <button class="btn-icon delete" @click="deleteTier(index)" title="삭제">
-                      <i class="fas fa-trash"></i>
+                    <button class="btn-icon delete" title="삭제" @click="deleteTier(index)">
+                      <i class="fas fa-trash" />
                     </button>
                   </div>
                 </td>
@@ -169,36 +261,20 @@
         <!-- 저장 버튼 영역 -->
         <div v-if="tiers.length > 0" class="save-section">
           <div class="save-info">
-            <i class="fas fa-exclamation-triangle"></i>
+            <i class="fas fa-exclamation-triangle" />
             변경사항은 "저장" 버튼을 클릭해야 서버에 반영됩니다.
           </div>
-          <button class="btn-save" @click="saveAllChanges" :disabled="saving">
-            <i v-if="saving" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-save"></i>
-            {{ saving ? '저장 중...' : '설정 저장' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 기본 커미션율 설정 -->
-      <div class="default-rate-section">
-        <h3 class="section-title">
-          <i class="fas fa-sliders-h"></i>
-          기본 커미션율
-        </h3>
-        <div class="default-rate-form">
-          <p class="description">구간에 해당하지 않는 경우 적용되는 기본 커미션율입니다.</p>
-          <div class="rate-input-wrapper">
-            <input
-              v-model.number="defaultRate"
-              type="number"
-              class="form-input-lg"
-              placeholder="0"
-              min="0"
-              max="100"
-              step="0.1"
-            />
-            <span class="rate-suffix-lg">%</span>
+          <div class="save-buttons">
+            <button class="btn-recalculate" :disabled="recalculating" @click="handleRecalculate">
+              <i v-if="recalculating" class="fas fa-spinner fa-spin" />
+              <i v-else class="fas fa-calculator" />
+              {{ recalculating ? '재계산 중...' : '정산 재계산' }}
+            </button>
+            <button class="btn-save" :disabled="saving" @click="saveAllChanges">
+              <i v-if="saving" class="fas fa-spinner fa-spin" />
+              <i v-else class="fas fa-save" />
+              {{ saving ? '저장 중...' : '설정 저장' }}
+            </button>
           </div>
         </div>
       </div>
@@ -208,136 +284,148 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useCommissionStore } from '~/stores/commission'
-import { formatCurrency } from '~/utils/format'
-import type { CommissionTier, CommissionRateUpdateRequest } from '~/types/commission'
+import * as commissionService from '~/services/commission.service'
+import type { CommissionRateUpdateRequest } from '~/types/commission'
 
 definePageMeta({
   layout: 'admin',
   pageTitle: '커미션율 설정'
 })
 
-const commissionStore = useCommissionStore()
-
 // State
 const loading = ref(true)
 const saving = ref(false)
+const recalculating = ref(false)
 const selectedYear = ref(new Date().getFullYear())
-const tiers = ref<Omit<CommissionTier, 'tierId' | 'year' | 'createdAt' | 'updatedAt'>[]>([])
-const defaultRate = ref(0)
 const editingIndex = ref<number | null>(null)
+
+// 구간 목록 (6주체 비율)
+const tiers = ref<{
+  tierName: string
+  minAmount: number
+  maxAmount: number | null
+  ceoRate: number
+  ecoarmsRate: number
+  salesRate: number
+  certificationRate: number
+  maintenanceRate: number
+  oemRate: number
+}[]>([])
+
+// 편집 폼
 const editForm = ref({
   tierName: '',
   minAmount: 0,
   maxAmount: 0 as number | null,
-  commissionRate: 0,
-  remarks: '',
+  ceoRate: 0,
+  salesRate: 15,
+  certificationRate: 2,
+  maintenanceRate: 3,
+  oemRate: 60,
   isUnlimited: false
 })
 
-// 목업 데이터 사용 여부 (UI 테스트용) - 실제 API 연동으로 변경
-const useMockData = ref(false)
+// 에코암스 자동 계산
+const computedEcoarmsRate = computed(() => {
+  return 100 - editForm.value.ceoRate - editForm.value.salesRate -
+    editForm.value.certificationRate - editForm.value.maintenanceRate - editForm.value.oemRate
+})
 
-// 목업 데이터 정의 - 연간 매출 구간별 커미션율
-const mockTiers: Omit<CommissionTier, 'tierId' | 'year' | 'createdAt' | 'updatedAt'>[] = [
-  {
-    tierOrder: 1,
-    tierName: '1구간',
-    minAmount: 0,
-    maxAmount: 500_000_000,
-    commissionRate: 3.0,
-    remarks: '연간 매출 5억 미만'
-  },
-  {
-    tierOrder: 2,
-    tierName: '2구간',
-    minAmount: 500_000_000,
-    maxAmount: 2_000_000_000,
-    commissionRate: 4.0,
-    remarks: '연간 매출 5억~20억'
-  },
-  {
-    tierOrder: 3,
-    tierName: '3구간',
-    minAmount: 2_000_000_000,
-    maxAmount: 3_000_000_000,
-    commissionRate: 5.0,
-    remarks: '연간 매출 20억~30억'
-  },
-  {
-    tierOrder: 4,
-    tierName: '4구간',
-    minAmount: 3_000_000_000,
-    maxAmount: 5_000_000_000,
-    commissionRate: 6.0,
-    remarks: '연간 매출 30억~50억'
-  },
-  {
-    tierOrder: 5,
-    tierName: '5구간',
-    minAmount: 5_000_000_000,
-    maxAmount: null,
-    commissionRate: 7.0,
-    remarks: '연간 매출 50억 이상 (최고 구간)'
-  }
-]
-const mockDefaultRate = 2.5
+// 합계 검증
+const rateTotal = computed(() => {
+  return editForm.value.ceoRate + editForm.value.salesRate +
+    editForm.value.certificationRate + editForm.value.maintenanceRate +
+    editForm.value.oemRate + computedEcoarmsRate.value
+})
 
-// Computed
+// 연도 목록
 const availableYears = computed(() => {
   const currentYear = new Date().getFullYear()
   return Array.from({ length: 5 }, (_, i) => currentYear + 1 - i)
 })
 
-// Methods
+/**
+ * 금액을 억 단위로 포맷
+ * 예: 0 → '0', 5000000000 → '50억', 15000000000 → '150억'
+ */
+const formatAmountBillion = (amount: number): string => {
+  if (amount === 0) { return '0' }
+  const billion = amount / 100_000_000 // 억 단위
+  if (billion >= 1) {
+    // 정수면 소수점 없이, 아니면 소수점 1자리
+    return Number.isInteger(billion) ? `${billion}억` : `${billion.toFixed(1)}억`
+  }
+  // 1억 미만이면 만 단위로 표시
+  const man = amount / 10_000
+  return `${man.toLocaleString()}만`
+}
+
+/**
+ * 커미션율 설정 조회
+ */
 const loadRateConfig = async () => {
   loading.value = true
   try {
-    // 목업 데이터 모드
-    if (useMockData.value) {
-      // 목업 데이터로 초기화
-      tiers.value = [...mockTiers]
-      defaultRate.value = mockDefaultRate
+    const response = await commissionService.getCommissionRates(selectedYear.value)
+    // 백엔드가 배열(List<CommissionRateConfigResponse>)을 직접 반환하는 경우
+    if (Array.isArray(response)) {
+      tiers.value = response.map((r: any) => ({
+        tierName: r.tierName,
+        minAmount: r.minAmount,
+        maxAmount: r.maxAmount,
+        ceoRate: r.ceoRate ?? 0,
+        ecoarmsRate: r.ecoarmsRate ?? 0,
+        salesRate: r.salesRate ?? 0,
+        certificationRate: r.certificationRate ?? 2,
+        maintenanceRate: r.maintenanceRate ?? 3,
+        oemRate: r.oemRate ?? 0
+      }))
+    } else if (response && response.tiers) {
+      // CommissionRateConfig 형태로 감싸서 오는 경우
+      tiers.value = response.tiers.map((r: any) => ({
+        tierName: r.tierName,
+        minAmount: r.minAmount,
+        maxAmount: r.maxAmount,
+        ceoRate: r.ceoRate ?? 0,
+        ecoarmsRate: r.ecoarmsRate ?? 0,
+        salesRate: r.salesRate ?? 0,
+        certificationRate: r.certificationRate ?? 2,
+        maintenanceRate: r.maintenanceRate ?? 3,
+        oemRate: r.oemRate ?? 0
+      }))
     } else {
-      // 실제 API 호출
-      await commissionStore.fetchRateConfig(selectedYear.value)
-      const config = commissionStore.rateConfig
-      if (config) {
-        tiers.value = config.tiers.map(tier => ({
-          tierOrder: tier.tierOrder,
-          tierName: tier.tierName,
-          minAmount: tier.minAmount,
-          maxAmount: tier.maxAmount,
-          commissionRate: tier.commissionRate,
-          remarks: tier.remarks
-        }))
-        defaultRate.value = config.defaultRate || 0
-      } else {
-        tiers.value = []
-        defaultRate.value = 0
-      }
+      tiers.value = []
     }
   } catch (error) {
     console.error('커미션율 조회 실패:', error)
+    tiers.value = []
   } finally {
     loading.value = false
   }
 }
 
+/**
+ * 구간 추가
+ */
 const addTier = () => {
   const newOrder = tiers.value.length + 1
-  const newTier = {
-    tierOrder: newOrder,
+  tiers.value.push({
     tierName: `${newOrder}구간`,
     minAmount: 0,
-    maxAmount: null as number | null,
-    commissionRate: 0,
-    remarks: ''
-  }
-  tiers.value.push(newTier)
+    maxAmount: null,
+    ceoRate: 0,
+    salesRate: 15,
+    certificationRate: 2,
+    maintenanceRate: 3,
+    oemRate: 60,
+    ecoarmsRate: 20
+  })
   startEdit(tiers.value.length - 1)
 }
 
+/**
+ * 편집 시작
+ */
 const startEdit = (index: number) => {
   editingIndex.value = index
   const tier = tiers.value[index]
@@ -345,51 +433,78 @@ const startEdit = (index: number) => {
     tierName: tier.tierName,
     minAmount: tier.minAmount,
     maxAmount: tier.maxAmount,
-    commissionRate: tier.commissionRate,
-    remarks: tier.remarks || '',
+    ceoRate: tier.ceoRate,
+    salesRate: tier.salesRate,
+    certificationRate: tier.certificationRate,
+    maintenanceRate: tier.maintenanceRate,
+    oemRate: tier.oemRate,
     isUnlimited: tier.maxAmount === null
   }
 }
 
+/**
+ * 구간 저장
+ */
 const saveTier = (index: number) => {
+  // 합계 100% 검증
+  if (rateTotal.value !== 100) {
+    alert('CEO + 영업 + 인증관리 + 유지보수 + OEM + 에코암스 합계가 100%여야 합니다.')
+    return
+  }
+  if (computedEcoarmsRate.value < 0) {
+    alert('에코암스 비율이 음수입니다. 다른 비율을 조정해주세요.')
+    return
+  }
+
   tiers.value[index] = {
-    tierOrder: index + 1,
     tierName: editForm.value.tierName,
     minAmount: editForm.value.minAmount,
     maxAmount: editForm.value.isUnlimited ? null : editForm.value.maxAmount,
-    commissionRate: editForm.value.commissionRate,
-    remarks: editForm.value.remarks
+    ceoRate: editForm.value.ceoRate,
+    ecoarmsRate: computedEcoarmsRate.value,
+    salesRate: editForm.value.salesRate,
+    certificationRate: editForm.value.certificationRate,
+    maintenanceRate: editForm.value.maintenanceRate,
+    oemRate: editForm.value.oemRate
   }
   editingIndex.value = null
 }
 
+/**
+ * 편집 취소
+ */
 const cancelEdit = () => {
-  // 새로 추가된 빈 항목인 경우 삭제
   if (editingIndex.value !== null) {
     const tier = tiers.value[editingIndex.value]
-    if (!tier.tierName && tier.minAmount === 0 && tier.commissionRate === 0) {
+    // 새로 추가된 빈 항목인 경우 삭제
+    if (!tier.tierName || (tier.ceoRate === 0 && tier.salesRate === 15 && tier.certificationRate === 2 && tier.maintenanceRate === 3 && tier.oemRate === 60 && tier.minAmount === 0)) {
       tiers.value.splice(editingIndex.value, 1)
     }
   }
   editingIndex.value = null
 }
 
+/**
+ * 구간 삭제
+ */
 const deleteTier = (index: number) => {
   if (confirm(`"${tiers.value[index].tierName}" 구간을 삭제하시겠습니까?`)) {
     tiers.value.splice(index, 1)
-    // 순서 재정렬
-    tiers.value.forEach((tier, i) => {
-      tier.tierOrder = i + 1
-    })
   }
 }
 
+/**
+ * 무제한 체크 핸들러
+ */
 const handleUnlimitedChange = () => {
   if (editForm.value.isUnlimited) {
     editForm.value.maxAmount = null
   }
 }
 
+/**
+ * 전체 설정 저장
+ */
 const saveAllChanges = async () => {
   if (editingIndex.value !== null) {
     alert('편집 중인 항목을 먼저 저장하거나 취소해주세요.')
@@ -400,16 +515,49 @@ const saveAllChanges = async () => {
   try {
     const request: CommissionRateUpdateRequest = {
       year: selectedYear.value,
-      tiers: tiers.value,
-      defaultRate: defaultRate.value
+      tiers: tiers.value.map((tier, index) => ({
+        tierOrder: index + 1,
+        tierName: tier.tierName,
+        minAmount: tier.minAmount,
+        maxAmount: tier.maxAmount,
+        oemRate: tier.oemRate,
+        ceoRate: tier.ceoRate,
+        ecoarmsRate: tier.ecoarmsRate,
+        salesRate: tier.salesRate,
+        certificationRate: tier.certificationRate,
+        maintenanceRate: tier.maintenanceRate
+      }))
     }
-    await commissionStore.saveRateConfig(selectedYear.value, request)
+    await commissionService.saveCommissionRates(selectedYear.value, request)
     alert('커미션율 설정이 저장되었습니다.')
+    // 저장 후 새로고침
+    await loadRateConfig()
   } catch (error) {
     console.error('커미션율 저장 실패:', error)
     alert('저장에 실패했습니다. 다시 시도해주세요.')
   } finally {
     saving.value = false
+  }
+}
+
+/**
+ * 정산이력 일괄 재계산
+ */
+const handleRecalculate = async () => {
+  if (!confirm(
+    `${selectedYear.value}년도 정산이력을 현재 비율로 재계산하시겠습니까?\n\n` +
+    '기존 정산이력의 각 주체별 금액이 현재 설정된 비율로 다시 계산됩니다.'
+  )) { return }
+
+  recalculating.value = true
+  try {
+    const result = await commissionService.recalculateSettlements(selectedYear.value)
+    alert(result.message || `${selectedYear.value}년도 정산이력이 재계산되었습니다.`)
+  } catch (error) {
+    console.error('정산 재계산 실패:', error)
+    alert('재계산에 실패했습니다. 다시 시도해주세요.')
+  } finally {
+    recalculating.value = false
   }
 }
 
@@ -568,7 +716,7 @@ onMounted(() => {
 }
 
 .rate-table th {
-  padding: 0.875rem 1rem;
+  padding: 0.875rem 0.75rem;
   text-align: center;
   background: #f9fafb;
   font-weight: 600;
@@ -579,7 +727,7 @@ onMounted(() => {
 }
 
 .rate-table td {
-  padding: 0.875rem 1rem;
+  padding: 0.875rem 0.75rem;
   text-align: center;
   border-bottom: 1px solid #f3f4f6;
   font-size: 0.875rem;
@@ -594,13 +742,26 @@ onMounted(() => {
   background: #f9fafb;
 }
 
-.col-order { width: 70px; }
-.col-name { width: 120px; }
-.col-min { width: 180px; }
-.col-max { width: 200px; }
-.col-rate { width: 120px; }
-.col-remarks { width: auto; }
-.col-actions { width: 100px; }
+/* 컬럼 너비 */
+.col-order { width: 60px; }
+.col-name { width: 100px; }
+.col-range { width: 180px; }
+.col-rate-input { width: 110px; }
+.col-rate-auto { width: 130px; }
+.col-actions { width: 90px; }
+
+/* 자동 뱃지 */
+.auto-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.625rem;
+  font-weight: 700;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-left: 2px;
+}
 
 /* 순서 뱃지 */
 .tier-badge {
@@ -616,22 +777,132 @@ onMounted(() => {
   border-radius: 50%;
 }
 
-/* 금액 및 커미션율 표시 */
-.amount {
+/* 매출 범위 표시 */
+.range-display {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 500;
   color: #1f2937;
+  font-size: 0.8125rem;
 }
 
+/* 매출 범위 편집 */
+.range-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.range-input {
+  width: 70px !important;
+  padding: 0.375rem 0.5rem !important;
+  font-size: 0.8125rem !important;
+}
+
+.range-separator {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.unlimited-text {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.unlimited-check {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.unlimited-check input {
+  cursor: pointer;
+}
+
+/* 비율 값 표시 */
 .rate-value {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: #059669;
 }
 
-.remarks {
+/* 커미션율 입력 그룹 */
+.rate-input-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.rate-field {
+  width: 70px !important;
+  padding: 0.375rem 0.5rem !important;
+  font-size: 0.875rem !important;
+}
+
+.rate-suffix {
+  font-weight: 600;
   color: #6b7280;
   font-size: 0.8125rem;
+}
+
+/* OEM 자동 계산 표시 */
+.oem-rate-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.oem-rate-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  padding: 0.25rem 0.75rem;
+  background: #eff6ff;
+  border-radius: 6px;
+}
+
+.oem-rate-value.rate-warning {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.oem-rate-value.rate-error {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.rate-total-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.rate-total-warning i {
+  font-size: 0.625rem;
+}
+
+.oem-rate-readonly {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  padding: 0.25rem 0.5rem;
+  background: #eff6ff;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 /* 입력 폼 */
@@ -652,42 +923,6 @@ onMounted(() => {
 
 .form-input.text-right {
   text-align: right;
-}
-
-/* 상한 금액 입력 */
-.max-amount-input {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.unlimited-check {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-  cursor: pointer;
-}
-
-.unlimited-check input {
-  cursor: pointer;
-}
-
-/* 커미션율 입력 그룹 */
-.rate-input-group {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.rate-input-group .form-input {
-  width: 70px;
-}
-
-.rate-suffix {
-  font-weight: 600;
-  color: #6b7280;
 }
 
 /* 액션 버튼 */
@@ -735,8 +970,13 @@ onMounted(() => {
   color: white;
 }
 
-.btn-icon.save:hover {
+.btn-icon.save:hover:not(:disabled) {
   background: #059669;
+}
+
+.btn-icon.save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-icon.cancel {
@@ -832,60 +1072,35 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-/* 기본 커미션율 섹션 */
-.default-rate-section {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.default-rate-section .section-title {
-  margin-bottom: 1rem;
-}
-
-.default-rate-form {
+.save-buttons {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  background: #f9fafb;
-  border-radius: 8px;
+  gap: 0.75rem;
 }
 
-.default-rate-form .description {
-  margin: 0;
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.rate-input-wrapper {
+.btn-recalculate {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.form-input-lg {
-  width: 100px;
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  color: white;
+  border: none;
   border-radius: 8px;
-  font-size: 1.125rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  text-align: right;
-  transition: border-color 0.2s;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.form-input-lg:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.btn-recalculate:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
-.rate-suffix-lg {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #6b7280;
+.btn-recalculate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 반응형 */
@@ -902,14 +1117,6 @@ onMounted(() => {
 
   .btn-save {
     justify-content: center;
-  }
-}
-
-@media (max-width: 768px) {
-  .default-rate-form {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
   }
 }
 </style>

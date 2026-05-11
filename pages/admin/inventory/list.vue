@@ -8,13 +8,13 @@
       icon-color="green"
     >
       <template #actions>
-        <button class="btn-action" @click="handleSearch" :disabled="loading">
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-search"></i>
+        <button class="btn-action" :disabled="loading" @click="handleSearch">
+          <i v-if="loading" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-search" />
           검색
         </button>
         <button v-if="!isOemManager" class="btn-action btn-primary" @click="openTransferModal">
-          <i class="fas fa-exchange-alt"></i>
+          <i class="fas fa-exchange-alt" />
           창고간 이동
         </button>
       </template>
@@ -27,14 +27,14 @@
           :class="['tab-btn', { active: activeTab === 'inventory' }]"
           @click="switchTab('inventory')"
         >
-          <i class="fas fa-boxes"></i>
+          <i class="fas fa-boxes" />
           재고 현황
         </button>
         <button
           :class="['tab-btn', { active: activeTab === 'transactions' }]"
           @click="switchTab('transactions')"
         >
-          <i class="fas fa-history"></i>
+          <i class="fas fa-history" />
           입출고 이력
         </button>
       </div>
@@ -47,7 +47,9 @@
             <div class="search-item">
               <label>창고:</label>
               <select v-model="inventoryFilter.warehouseId" class="status-select" @change="handleSearch">
-                <option :value="null">전체</option>
+                <option :value="null">
+                  전체
+                </option>
                 <option
                   v-for="wh in warehouseList"
                   :key="wh.warehouseId"
@@ -60,7 +62,9 @@
             <div class="search-item">
               <label>제조사:</label>
               <select v-model="inventoryFilter.oemCompanyId" class="status-select" @change="handleSearch">
-                <option :value="null">전체</option>
+                <option :value="null">
+                  전체
+                </option>
                 <option
                   v-for="company in oemCompanyList"
                   :key="company.companyId"
@@ -73,8 +77,8 @@
             <div class="search-item">
               <label>검색어:</label>
               <input
-                type="text"
                 v-model="inventoryFilter.keyword"
+                type="text"
                 placeholder="품목코드, 품목명"
                 class="text-input"
                 @keyup.enter="handleSearch"
@@ -93,13 +97,13 @@
 
           <!-- 로딩 -->
           <div v-if="loading" class="loading-message">
-            <i class="fas fa-spinner fa-spin"></i>
+            <i class="fas fa-spinner fa-spin" />
             <p>데이터를 불러오는 중...</p>
           </div>
 
           <!-- 데이터 없음 -->
           <div v-else-if="skuGroups.length === 0" class="no-data-message">
-            <i class="fas fa-box-open"></i>
+            <i class="fas fa-box-open" />
             <p>재고 데이터가 없습니다.</p>
           </div>
 
@@ -108,16 +112,36 @@
             <table class="data-table inventory-grouped-table">
               <thead>
                 <tr>
-                  <th style="width: 40px;">NO</th>
-                  <th style="width: 110px;">품목코드</th>
-                  <th style="width: 160px;">SKU 품명</th>
-                  <th style="width: 100px;" class="text-right">입고대기</th>
-                  <th style="width: 100px;" class="text-right">누적입고량</th>
-                  <th style="width: 100px;" class="text-right">누적출고량</th>
-                  <th style="width: 110px;" class="text-right">현 재고량</th>
-                  <th style="width: 80px;" class="text-right">수량(매)</th>
-                  <th style="width: 130px;">최종 갱신일</th>
-                  <th style="width: 60px;" class="text-center">OEM</th>
+                  <th style="width: 40px;">
+                    NO
+                  </th>
+                  <th style="width: 110px;">
+                    품목코드
+                  </th>
+                  <th style="width: 160px;">
+                    SKU 품명
+                  </th>
+                  <th style="width: 100px;" class="text-right">
+                    입고대기
+                  </th>
+                  <th style="width: 100px;" class="text-right">
+                    누적입고량
+                  </th>
+                  <th style="width: 100px;" class="text-right">
+                    누적출고량
+                  </th>
+                  <th style="width: 110px;" class="text-right">
+                    현 재고량
+                  </th>
+                  <th style="width: 80px;" class="text-right">
+                    수량(매)
+                  </th>
+                  <th style="width: 130px;">
+                    최종 갱신일
+                  </th>
+                  <th style="width: 60px;" class="text-center">
+                    OEM
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -127,22 +151,38 @@
                     :class="['sku-group-row', { 'sku-group-expanded': expandedSkuIds[group.skuId], 'zero-stock-row': group.totalQuantity === 0 }]"
                     @click="toggleGroup(group.skuId)"
                   >
-                    <td class="text-center row-no">{{ index + 1 }}</td>
-                    <td class="sku-code">{{ group.skuId }}</td>
+                    <td class="text-center row-no">
+                      {{ index + 1 }}
+                    </td>
+                    <td class="sku-code">
+                      {{ group.skuId }}
+                    </td>
                     <td class="text-left sku-name-cell">
                       <span class="sku-main-name">{{ group.skuName }}</span>
                       <span class="sku-sub-name">{{ group.itemName }}</span>
                     </td>
-                    <td class="text-right pending-inbound-qty">{{ group.pendingInbound > 0 ? group.pendingInbound.toLocaleString() : '-' }} <span v-if="group.pendingInbound > 0" class="qty-unit-inline">m²</span></td>
-                    <td class="text-right inbound-qty">{{ group.totalInbound > 0 ? group.totalInbound.toLocaleString() : '-' }} <span v-if="group.totalInbound > 0" class="qty-unit-inline">m²</span></td>
-                    <td class="text-right outbound-qty">{{ group.totalOutbound > 0 ? group.totalOutbound.toLocaleString() : '-' }} <span v-if="group.totalOutbound > 0" class="qty-unit-inline">m²</span></td>
-                    <td class="text-right total-quantity">{{ group.totalQuantity.toLocaleString() }} <span class="qty-unit-inline">m²</span></td>
-                    <td class="text-right sheet-count">{{ group.totalQuantity > 0 ? Math.round(group.totalQuantity / 2).toLocaleString() + ' 매' : '-' }}</td>
-                    <td class="date-cell">{{ formatDateTime(group.lastUpdated) }}</td>
+                    <td class="text-right pending-inbound-qty">
+                      {{ group.pendingInbound > 0 ? group.pendingInbound.toLocaleString() : '-' }} <span v-if="group.pendingInbound > 0" class="qty-unit-inline">m²</span>
+                    </td>
+                    <td class="text-right inbound-qty">
+                      {{ group.totalInbound > 0 ? group.totalInbound.toLocaleString() : '-' }} <span v-if="group.totalInbound > 0" class="qty-unit-inline">m²</span>
+                    </td>
+                    <td class="text-right outbound-qty">
+                      {{ group.totalOutbound > 0 ? group.totalOutbound.toLocaleString() : '-' }} <span v-if="group.totalOutbound > 0" class="qty-unit-inline">m²</span>
+                    </td>
+                    <td class="text-right total-quantity">
+                      {{ group.totalQuantity.toLocaleString() }} <span class="qty-unit-inline">m²</span>
+                    </td>
+                    <td class="text-right sheet-count">
+                      {{ group.totalQuantity > 0 ? Math.round(group.totalQuantity / 2).toLocaleString() + ' 매' : '-' }}
+                    </td>
+                    <td class="date-cell">
+                      {{ formatDateTime(group.lastUpdated) }}
+                    </td>
                     <td class="expand-cell">
                       <span class="expand-hint" :title="'OEM ' + group.details.length + '사'">
                         <span class="oem-count-badge">{{ group.details.length }}사</span>
-                        <i :class="['fas fa-chevron-down expand-icon', { expanded: expandedSkuIds[group.skuId] }]"></i>
+                        <i :class="['fas fa-chevron-down expand-icon', { expanded: expandedSkuIds[group.skuId] }]" />
                       </span>
                     </td>
                   </tr>
@@ -156,9 +196,11 @@
                           class="detail-card"
                           :class="{ 'zero-stock-card': (detail.quantity || 0) === 0 }"
                         >
-                          <div class="card-oem">{{ detail.oemCompanyName || '-' }}</div>
+                          <div class="card-oem">
+                            {{ detail.oemCompanyName || '-' }}
+                          </div>
                           <div class="card-warehouse">
-                            <i class="fas fa-warehouse"></i>
+                            <i class="fas fa-warehouse" />
                             {{ detail.warehouseName }}
                           </div>
                           <div class="card-quantity">
@@ -168,7 +210,9 @@
                           <div class="card-sheets">
                             {{ detail.quantity > 0 ? Math.round(detail.quantity / 2).toLocaleString() + ' 매' : '-' }}
                           </div>
-                          <div class="card-date">{{ formatDateTime(detail.lastUpdated) }}</div>
+                          <div class="card-date">
+                            {{ formatDateTime(detail.lastUpdated) }}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -177,13 +221,25 @@
               </tbody>
               <tfoot v-if="skuGroups.length > 0">
                 <tr class="total-row">
-                  <td colspan="3" class="text-right"><strong>합계</strong></td>
-                  <td class="text-right"><strong>{{ grandTotalPendingInbound > 0 ? grandTotalPendingInbound.toLocaleString() + ' m²' : '-' }}</strong></td>
-                  <td class="text-right"><strong>{{ grandTotalInbound > 0 ? grandTotalInbound.toLocaleString() + ' m²' : '-' }}</strong></td>
-                  <td class="text-right"><strong>{{ grandTotalOutbound > 0 ? grandTotalOutbound.toLocaleString() + ' m²' : '-' }}</strong></td>
-                  <td class="text-right"><strong>{{ grandTotal.toLocaleString() }} m²</strong></td>
-                  <td class="text-right"><strong>{{ grandTotal > 0 ? Math.round(grandTotal / 2).toLocaleString() + ' 매' : '-' }}</strong></td>
-                  <td colspan="2"></td>
+                  <td colspan="3" class="text-right">
+                    <strong>합계</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ grandTotalPendingInbound > 0 ? grandTotalPendingInbound.toLocaleString() + ' m²' : '-' }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ grandTotalInbound > 0 ? grandTotalInbound.toLocaleString() + ' m²' : '-' }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ grandTotalOutbound > 0 ? grandTotalOutbound.toLocaleString() + ' m²' : '-' }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ grandTotal.toLocaleString() }} m²</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ grandTotal > 0 ? Math.round(grandTotal / 2).toLocaleString() + ' 매' : '-' }}</strong>
+                  </td>
+                  <td colspan="2" />
                 </tr>
               </tfoot>
             </table>
@@ -198,14 +254,16 @@
           <div class="search-row-single">
             <div class="search-item">
               <label>기간:</label>
-              <input type="date" v-model="txFilter.startDate" class="date-input">
+              <input v-model="txFilter.startDate" type="date" class="date-input">
               <span class="separator">~</span>
-              <input type="date" v-model="txFilter.endDate" class="date-input">
+              <input v-model="txFilter.endDate" type="date" class="date-input">
             </div>
             <div class="search-item">
               <label>창고:</label>
               <select v-model="txFilter.warehouseId" class="status-select">
-                <option :value="null">전체</option>
+                <option :value="null">
+                  전체
+                </option>
                 <option
                   v-for="wh in warehouseList"
                   :key="wh.warehouseId"
@@ -218,18 +276,28 @@
             <div class="search-item">
               <label>유형:</label>
               <select v-model="txFilter.transactionType" class="status-select">
-                <option value="">전체</option>
-                <option value="INBOUND">입고</option>
-                <option value="OUTBOUND">출고</option>
-                <option value="TRANSFER_IN">이동입고</option>
-                <option value="TRANSFER_OUT">이동출고</option>
+                <option value="">
+                  전체
+                </option>
+                <option value="INBOUND">
+                  입고
+                </option>
+                <option value="OUTBOUND">
+                  출고
+                </option>
+                <option value="TRANSFER_IN">
+                  이동입고
+                </option>
+                <option value="TRANSFER_OUT">
+                  이동출고
+                </option>
               </select>
             </div>
             <div class="search-item">
               <label>검색어:</label>
               <input
-                type="text"
                 v-model="txFilter.skuId"
+                type="text"
                 placeholder="품목코드(SKU)"
                 class="text-input"
                 @keyup.enter="handleTxSearch"
@@ -245,28 +313,34 @@
               <span>총 {{ txTotalElements }}개 중 {{ txStartIndex }}-{{ txEndIndex }}개 표시</span>
             </div>
             <div class="table-actions">
-              <button class="btn-action" @click="handleTxSearch" :disabled="txLoading">
-                <i v-if="txLoading" class="fas fa-spinner fa-spin"></i>
-                <i v-else class="fas fa-search"></i>
+              <button class="btn-action" :disabled="txLoading" @click="handleTxSearch">
+                <i v-if="txLoading" class="fas fa-spinner fa-spin" />
+                <i v-else class="fas fa-search" />
                 검색
               </button>
-              <select v-model="txPageSize" @change="handleTxPageSizeChange" class="page-size-select">
-                <option :value="10">10개씩</option>
-                <option :value="20">20개씩</option>
-                <option :value="50">50개씩</option>
+              <select v-model="txPageSize" class="page-size-select" @change="handleTxPageSizeChange">
+                <option :value="10">
+                  10개씩
+                </option>
+                <option :value="20">
+                  20개씩
+                </option>
+                <option :value="50">
+                  50개씩
+                </option>
               </select>
             </div>
           </div>
 
           <!-- 로딩 -->
           <div v-if="txLoading" class="loading-message">
-            <i class="fas fa-spinner fa-spin"></i>
+            <i class="fas fa-spinner fa-spin" />
             <p>데이터를 불러오는 중...</p>
           </div>
 
           <!-- 데이터 없음 -->
           <div v-else-if="txItems.length === 0" class="no-data-message">
-            <i class="fas fa-clipboard-list"></i>
+            <i class="fas fa-clipboard-list" />
             <p>입출고 이력이 없습니다.</p>
           </div>
 
@@ -295,17 +369,25 @@
                 >
                   <td>{{ txStartIndex + index }}</td>
                   <td>{{ formatDateTime(tx.transactionDate) }}</td>
-                  <td class="text-left">{{ tx.warehouseName }}</td>
+                  <td class="text-left">
+                    {{ tx.warehouseName }}
+                  </td>
                   <td>{{ tx.skuId }}</td>
-                  <td class="text-left">{{ tx.skuName || '-' }}</td>
+                  <td class="text-left">
+                    {{ tx.skuName || '-' }}
+                  </td>
                   <td>
                     <span :class="['tx-type-badge', getTxTypeBadgeClass(tx.transactionType)]">
                       {{ getTxTypeLabel(tx.transactionType) }}
                     </span>
                   </td>
-                  <td class="text-right">{{ tx.quantity.toLocaleString() }} ㎡</td>
+                  <td class="text-right">
+                    {{ tx.quantity.toLocaleString() }} ㎡
+                  </td>
                   <td>{{ tx.referenceType ? `${tx.referenceType}#${tx.referenceId}` : '-' }}</td>
-                  <td class="text-left">{{ tx.remarks || '-' }}</td>
+                  <td class="text-left">
+                    {{ tx.remarks || '-' }}
+                  </td>
                   <td>{{ tx.createdBy || '-' }}</td>
                 </tr>
               </tbody>
@@ -331,92 +413,148 @@
           <div class="modal-header">
             <h3>창고간 이동</h3>
             <button class="modal-close" @click="closeTransferModal">
-              <i class="fas fa-times"></i>
+              <i class="fas fa-times" />
             </button>
           </div>
           <div class="modal-body">
-            <div class="form-group">
-              <label class="form-label required">출발 창고</label>
-              <select v-model="transferForm.fromWarehouseId" class="form-input" @change="onFromWarehouseChange">
-                <option :value="0" disabled>창고를 선택하세요</option>
-                <option
-                  v-for="wh in warehouseList"
-                  :key="wh.warehouseId"
-                  :value="wh.warehouseId"
-                >
-                  {{ wh.warehouseName }}
-                </option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label required">도착 창고</label>
-              <select v-model="transferForm.toWarehouseId" class="form-input">
-                <option :value="0" disabled>창고를 선택하세요</option>
-                <option
-                  v-for="wh in warehouseList.filter(w => w.warehouseId !== transferForm.fromWarehouseId)"
-                  :key="wh.warehouseId"
-                  :value="wh.warehouseId"
-                >
-                  {{ wh.warehouseName }}
-                </option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label required">품목코드(SKU)</label>
-              <div v-if="loadingWarehouseSkus" class="sku-loading">
-                <i class="fas fa-spinner fa-spin"></i> 품목 로딩 중...
+            <div class="transfer-warehouse-row">
+              <div class="form-group">
+                <label class="form-label required">출발 창고</label>
+                <select v-model="transferForm.fromWarehouseId" class="form-input" @change="onFromWarehouseChange">
+                  <option :value="0" disabled>
+                    창고를 선택하세요
+                  </option>
+                  <option
+                    v-for="wh in warehouseList"
+                    :key="wh.warehouseId"
+                    :value="wh.warehouseId"
+                  >
+                    {{ wh.warehouseName }}
+                  </option>
+                </select>
               </div>
-              <select
-                v-else
-                v-model="transferForm.skuId"
-                class="form-input"
-                :disabled="!transferForm.fromWarehouseId"
-                @change="onSkuChange"
-              >
-                <option value="" disabled>
-                  {{ transferForm.fromWarehouseId ? '품목을 선택하세요' : '출발 창고를 먼저 선택하세요' }}
-                </option>
-                <option
-                  v-for="item in warehouseSkuList"
-                  :key="item.skuId"
-                  :value="item.skuId"
-                >
-                  {{ item.skuId }} - {{ item.skuName }} (재고: {{ item.quantity }}{{ (item as any).unit || 'm²' }})
-                </option>
-              </select>
-              <span v-if="selectedSkuStock > 0" class="sku-stock-info">
-                현재 재고: <strong>{{ selectedSkuStock.toLocaleString() }}</strong> m²
-              </span>
+              <div class="form-group">
+                <label class="form-label required">도착 창고</label>
+                <select v-model="transferForm.toWarehouseId" class="form-input">
+                  <option :value="0" disabled>
+                    창고를 선택하세요
+                  </option>
+                  <option
+                    v-for="wh in warehouseList.filter(w => w.warehouseId !== transferForm.fromWarehouseId)"
+                    :key="wh.warehouseId"
+                    :value="wh.warehouseId"
+                  >
+                    {{ wh.warehouseName }}
+                  </option>
+                </select>
+              </div>
             </div>
+
+            <!-- 품목 테이블 (다중 이동) -->
             <div class="form-group">
-              <label class="form-label required">이동 수량(m²)</label>
-              <input
-                type="number"
-                v-model.number="transferForm.quantity"
-                class="form-input"
-                placeholder="짝수만 입력"
-                min="2"
-                step="2"
-                :max="selectedSkuStock || undefined"
-              >
-              <span v-if="transferForm.quantity > 0 && transferForm.quantity % 2 !== 0" class="form-error">
-                짝수만 입력 가능합니다 (m² 단위)
+              <label class="form-label required">이동 품목</label>
+              <div v-if="loadingWarehouseSkus" class="sku-loading">
+                <i class="fas fa-spinner fa-spin" /> 품목 로딩 중...
+              </div>
+              <div v-else-if="!transferForm.fromWarehouseId" class="sku-loading">
+                출발 창고를 먼저 선택하세요
+              </div>
+              <div v-else-if="transferableItems.length === 0" class="sku-loading">
+                해당 창고에 재고가 있는 품목이 없습니다.
+              </div>
+              <table v-else class="transfer-items-table">
+                <thead>
+                  <tr>
+                    <th style="width: 30px">
+                      NO
+                    </th>
+                    <th style="width: 80px">
+                      SKU ID
+                    </th>
+                    <th style="width: 120px">
+                      SKU 품명
+                    </th>
+                    <th style="width: 80px" class="text-right">
+                      현재재고
+                    </th>
+                    <th style="width: 36px" />
+                    <th style="width: 90px" class="text-right">
+                      이동수량
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, idx) in transferableItems" :key="item.skuId">
+                    <td class="text-center">
+                      {{ idx + 1 }}
+                    </td>
+                    <td class="text-center">
+                      {{ item.skuId }}
+                    </td>
+                    <td>{{ item.skuName }}</td>
+                    <td class="text-right">
+                      {{ item.quantity.toLocaleString() }} m²
+                    </td>
+                    <td class="text-center">
+                      <button
+                        type="button"
+                        class="btn-fill-all"
+                        title="전체 수량 이동"
+                        @click="item.transferQuantity = item.quantity"
+                      >
+                        ▶
+                      </button>
+                    </td>
+                    <td class="text-right">
+                      <input
+                        v-model.number="item.transferQuantity"
+                        type="number"
+                        class="table-input text-right"
+                        style="width: 75px"
+                        min="0"
+                        step="2"
+                        :max="item.quantity"
+                        placeholder="0"
+                      >
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="3" class="text-center">
+                      <strong>합계</strong>
+                    </td>
+                    <td class="text-right">
+                      -
+                    </td>
+                    <td />
+                    <td class="text-right">
+                      <strong>{{ totalTransferQuantity.toLocaleString() }} m²</strong>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+              <span v-if="hasOddQuantity" class="form-error">
+                이동 수량은 짝수만 입력 가능합니다 (m² 단위)
               </span>
             </div>
+
             <div class="form-group">
               <label class="form-label">비고</label>
               <input
-                type="text"
                 v-model="transferForm.remarks"
+                type="text"
                 class="form-input"
                 placeholder="비고 사항"
               >
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn-cancel" @click="closeTransferModal">취소</button>
-            <button class="btn-submit" @click="handleTransfer" :disabled="transferring">
-              <i v-if="transferring" class="fas fa-spinner fa-spin"></i>
+            <button class="btn-cancel" @click="closeTransferModal">
+              취소
+            </button>
+            <button class="btn-submit" :disabled="transferring" @click="handleTransfer">
+              <i v-if="transferring" class="fas fa-spinner fa-spin" />
               이동 처리
             </button>
           </div>
@@ -474,7 +612,7 @@ const {
   endIndex: inventoryEndIndex,
   changePage: inventoryChangePage,
   changePageSize: inventoryChangePageSize,
-  search: inventorySearch,
+  search: inventorySearch
 } = useDataTable<InventoryItem>({
   fetchFunction: async (params) => {
     const response = await inventoryService.getInventoryList({
@@ -516,7 +654,7 @@ const loadSkuSummary = async () => {
 // OEM 제조사 목록 (창고 목록에서 고유 추출)
 const oemCompanyList = computed(() => {
   const map = new Map<number, string>()
-  warehouseList.value.forEach(wh => {
+  warehouseList.value.forEach((wh) => {
     if (wh.companyId && wh.companyName) {
       map.set(wh.companyId, wh.companyName)
     }
@@ -545,9 +683,9 @@ interface SkuGroup {
   skuName: string
   itemName: string
   totalQuantity: number
-  pendingInbound: number   // 입고대기 = 발주수량 - 생산완료(INBOUND)
-  totalInbound: number     // 입고 = INBOUND + TRANSFER_IN
-  totalOutbound: number    // 출고 = OUTBOUND + TRANSFER_OUT
+  pendingInbound: number // 입고대기 = 발주수량 - 생산완료(INBOUND)
+  totalInbound: number // 입고 = INBOUND + TRANSFER_IN
+  totalOutbound: number // 출고 = OUTBOUND + TRANSFER_OUT
   lastUpdated: string
   details: InventoryItem[]
 }
@@ -555,7 +693,7 @@ interface SkuGroup {
 const skuGroups = computed<SkuGroup[]>(() => {
   const groupMap = new Map<string, SkuGroup>()
 
-  inventoryItems.value.forEach(item => {
+  inventoryItems.value.forEach((item) => {
     const key = item.skuId
     if (!groupMap.has(key)) {
       groupMap.set(key, {
@@ -613,7 +751,7 @@ const skuGroups = computed<SkuGroup[]>(() => {
             warehouseId: 0,
             warehouseName: summary.oemWarehouseName || '(입고대기)',
             oemCompanyName: summary.oemCompanyName,
-            skuId: skuId,
+            skuId,
             skuName: summary.skuName || skuId,
             itemName: summary.itemName || '-',
             quantity: 0,
@@ -621,7 +759,7 @@ const skuGroups = computed<SkuGroup[]>(() => {
           })
         }
         groupMap.set(skuId, {
-          skuId: skuId,
+          skuId,
           skuName: summary.skuName || skuId,
           itemName: summary.itemName || '-',
           totalQuantity: 0,
@@ -709,7 +847,7 @@ const {
   endIndex: txEndIndex,
   changePage: txChangePage,
   changePageSize: txChangePageSize,
-  search: txSearch,
+  search: txSearch
 } = useDataTable<InventoryTransaction>({
   fetchFunction: async (params) => {
     const response = await inventoryService.getTransactionList({
@@ -772,30 +910,34 @@ const switchTab = (tab: 'inventory' | 'transactions') => {
 const showTransferModal = ref(false)
 const transferring = ref(false)
 const loadingWarehouseSkus = ref(false)
-const warehouseSkuList = ref<InventoryItem[]>([])
 
-const transferForm = ref<TransferRequest>({
+// 이동 가능 품목 (각 행에 transferQuantity 추가)
+interface TransferableItem extends InventoryItem {
+  transferQuantity: number
+}
+const transferableItems = ref<TransferableItem[]>([])
+
+const transferForm = ref({
   fromWarehouseId: 0,
   toWarehouseId: 0,
-  skuId: '',
-  quantity: 0,
   remarks: ''
 })
 
-/** 선택된 SKU의 현재 재고수량 */
-const selectedSkuStock = computed(() => {
-  if (!transferForm.value.skuId) return 0
-  const found = warehouseSkuList.value.find(i => i.skuId === transferForm.value.skuId)
-  return found?.quantity || 0
+/** 이동수량 합계 */
+const totalTransferQuantity = computed(() => {
+  return transferableItems.value.reduce((sum, item) => sum + (item.transferQuantity || 0), 0)
+})
+
+/** 홀수 수량 존재 여부 */
+const hasOddQuantity = computed(() => {
+  return transferableItems.value.some(item => item.transferQuantity > 0 && item.transferQuantity % 2 !== 0)
 })
 
 /** 출발 창고 변경 시 해당 창고 재고 SKU 목록 로드 */
 const onFromWarehouseChange = async () => {
-  transferForm.value.skuId = ''
-  transferForm.value.quantity = 0
-  warehouseSkuList.value = []
+  transferableItems.value = []
 
-  if (!transferForm.value.fromWarehouseId) return
+  if (!transferForm.value.fromWarehouseId) { return }
 
   loadingWarehouseSkus.value = true
   try {
@@ -804,30 +946,21 @@ const onFromWarehouseChange = async () => {
       page: 0,
       size: 9999
     })
-    // 재고 0 초과인 품목만 표시
-    warehouseSkuList.value = (response.content || []).filter((item: InventoryItem) => item.quantity > 0)
+    // 재고 > 0인 품목에 transferQuantity 추가
+    transferableItems.value = (response.content || [])
+      .filter((item: InventoryItem) => item.quantity > 0)
+      .map((item: InventoryItem) => ({ ...item, transferQuantity: 0 }))
   } catch (error) {
     console.error('창고 품목 로드 실패:', error)
-    warehouseSkuList.value = []
+    transferableItems.value = []
   } finally {
     loadingWarehouseSkus.value = false
   }
 }
 
-/** SKU 선택 변경 시 수량 초기화 */
-const onSkuChange = () => {
-  transferForm.value.quantity = 0
-}
-
 const openTransferModal = () => {
-  transferForm.value = {
-    fromWarehouseId: 0,
-    toWarehouseId: 0,
-    skuId: '',
-    quantity: 0,
-    remarks: ''
-  }
-  warehouseSkuList.value = []
+  transferForm.value = { fromWarehouseId: 0, toWarehouseId: 0, remarks: '' }
+  transferableItems.value = []
   showTransferModal.value = true
 }
 
@@ -849,23 +982,40 @@ const handleTransfer = async () => {
     alert('출발 창고와 도착 창고가 같을 수 없습니다.')
     return
   }
-  if (!transferForm.value.skuId) {
-    alert('품목코드(SKU)를 선택해주세요.')
+
+  // 이동할 품목 필터 (수량 > 0)
+  const itemsToTransfer = transferableItems.value
+    .filter(item => item.transferQuantity > 0)
+    .map(item => ({ skuId: item.skuId, quantity: item.transferQuantity }))
+
+  if (itemsToTransfer.length === 0) {
+    alert('이동할 품목의 수량을 입력해주세요.')
     return
   }
-  if (!transferForm.value.quantity || transferForm.value.quantity <= 0) {
-    alert('이동 수량을 올바르게 입력해주세요.')
+
+  // 짝수 검증
+  const oddItem = transferableItems.value.find(item => item.transferQuantity > 0 && item.transferQuantity % 2 !== 0)
+  if (oddItem) {
+    alert(`이동 수량은 짝수만 입력 가능합니다: ${oddItem.skuName}`)
     return
   }
-  if (transferForm.value.quantity % 2 !== 0) {
-    alert('이동 수량은 짝수만 입력 가능합니다. (m² 단위)')
+
+  // 재고 초과 검증
+  const overItem = transferableItems.value.find(item => item.transferQuantity > item.quantity)
+  if (overItem) {
+    alert(`재고를 초과할 수 없습니다: ${overItem.skuName} (재고: ${overItem.quantity}, 입력: ${overItem.transferQuantity})`)
     return
   }
 
   transferring.value = true
   try {
-    await inventoryService.processTransfer(transferForm.value)
-    alert('창고간 이동이 완료되었습니다.')
+    await inventoryService.processTransfer({
+      fromWarehouseId: transferForm.value.fromWarehouseId,
+      toWarehouseId: transferForm.value.toWarehouseId,
+      remarks: transferForm.value.remarks,
+      items: itemsToTransfer
+    })
+    alert(`${itemsToTransfer.length}개 품목의 창고간 이동이 완료되었습니다.`)
     closeTransferModal()
     // 데이터 새로고침
     await inventorySearch()
@@ -986,7 +1136,7 @@ onMounted(async () => {
 .modal-content {
   background: white;
   border-radius: 12px;
-  width: 520px;
+  width: 680px;
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
@@ -1107,6 +1257,49 @@ onMounted(async () => {
 }
 
 /* SKU 로딩/재고 표시 */
+.transfer-warehouse-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.transfer-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+.transfer-items-table th,
+.transfer-items-table td {
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+}
+.transfer-items-table th {
+  background: #f9fafb;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #374151;
+}
+.transfer-items-table tfoot td {
+  background: #f0f9ff;
+  font-weight: 600;
+}
+.btn-fill-all {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  border-radius: 4px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-fill-all:hover {
+  background: #0ea5e9;
+  color: white;
+}
 .sku-loading {
   padding: 8px 12px;
   color: #6b7280;

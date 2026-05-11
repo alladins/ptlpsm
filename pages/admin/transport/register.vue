@@ -3,25 +3,26 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       title="운송장 등록"
+      icon="transport"
+      icon-color="orange"
       description="운송장 정보를 등록합니다."
     >
       <template #actions>
         <button class="btn-secondary" @click="goBack">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
           취소
         </button>
         <button
           class="btn-primary"
-          @click="handleSubmit"
           :disabled="submitting || !canWrite || inventoryChecking"
           :title="saveButtonDisabledReason"
+          @click="handleSubmit"
         >
-          <i class="fas fa-save"></i>
+          <i class="fas fa-save" />
           {{ inventoryChecking ? '재고 확인 중...' : submitting ? '저장 중...' : '저장' }}
         </button>
       </template>
     </PageHeader>
-
     <div class="content-section">
       <!-- 운송장 정보 입력 폼 -->
       <FormSection title="운송장 정보">
@@ -31,288 +32,290 @@
           <div class="left-column">
             <!-- 1. 출하 정보 -->
             <div class="info-group">
-          <div class="info-group-header">
-            <i class="fas fa-shipping-fast"></i>
-            <span>출하 정보</span>
-          </div>
-          <div class="info-grid grid-2">
-            <FormField label="출하NO" required :error="errors.shipmentNo">
-              <div class="search-group">
-                <input
-                  type="text"
-                  v-model="formData.shipmentNo"
-                  class="form-input-md"
-                  placeholder="출하NO를 선택하세요"
-                  readonly
-                >
-                <button type="button" class="btn-search" @click="searchShipment">
-                  <i class="fas fa-search"></i>
-                  조회
+              <div class="info-group-header">
+                <i class="fas fa-shipping-fast" />
+                <span>출하 정보</span>
+              </div>
+              <div class="info-grid grid-2">
+                <FormField label="출하NO" required :error="errors.shipmentNo">
+                  <div class="search-group">
+                    <input
+                      v-model="formData.shipmentNo"
+                      type="text"
+                      class="form-input-md"
+                      placeholder="출하NO를 선택하세요"
+                      readonly
+                    >
+                    <button type="button" class="btn-search" @click="searchShipment">
+                      <i class="fas fa-search" />
+                      조회
+                    </button>
+                  </div>
+                </FormField>
+                <FormField label="사업명">
+                  <input
+                    v-model="formData.projectName"
+                    type="text"
+                    class="form-input-xl"
+                    placeholder="-"
+                    readonly
+                  >
+                </FormField>
+                <FormField label="납품요구번호">
+                  <input
+                    v-model="formData.deliveryRequestNo"
+                    type="text"
+                    class="form-input-md"
+                    placeholder="-"
+                    readonly
+                  >
+                </FormField>
+                <FormField label="수요기관">
+                  <input
+                    v-model="formData.clientName"
+                    type="text"
+                    class="form-input-xl"
+                    placeholder="-"
+                    readonly
+                  >
+                </FormField>
+              </div>
+            </div>
+
+            <!-- 재고 현황 알림 -->
+            <div v-if="inventoryStatus && !inventoryStatus.canDispatch" class="inventory-warning">
+              <div class="warning-header">
+                <i class="fas fa-exclamation-triangle" />
+                <span>재고 부족 - 운송 등록 불가</span>
+                <button class="btn-refresh" :disabled="inventoryChecking" @click="checkInventory(Number(formData.shipmentId))">
+                  <i class="fas fa-sync-alt" :class="{ 'fa-spin': inventoryChecking }" />
+                  재확인
                 </button>
               </div>
-            </FormField>
-            <FormField label="사업명">
-              <input
-                type="text"
-                v-model="formData.projectName"
-                class="form-input-xl"
-                placeholder="-"
-                readonly
-              >
-            </FormField>
-            <FormField label="납품요구번호">
-              <input
-                type="text"
-                v-model="formData.deliveryRequestNo"
-                class="form-input-md"
-                placeholder="-"
-                readonly
-              >
-            </FormField>
-            <FormField label="수요기관">
-              <input
-                type="text"
-                v-model="formData.clientName"
-                class="form-input-xl"
-                placeholder="-"
-                readonly
-              >
-            </FormField>
-          </div>
-        </div>
+              <div class="warning-items">
+                <div v-for="item in inventoryStatus.items.filter(i => !i.sufficient)" :key="item.skuId" class="warning-item">
+                  <span class="sku-name">{{ item.skuName || item.skuId }}</span>
+                  <span class="shortage">필요: {{ item.requiredQuantity }} / 재고: {{ item.inventoryQuantity }} (부족: {{ item.shortageQuantity }})</span>
+                </div>
+              </div>
+            </div>
+            <div v-if="inventoryStatus && inventoryStatus.canDispatch" class="inventory-info">
+              <i class="fas fa-info-circle" />
+              <span>발주수량 확인 완료 (실제 재고는 저장 시 최종 확인됩니다)</span>
+            </div>
 
-        <!-- 재고 현황 알림 -->
-        <div v-if="inventoryStatus && !inventoryStatus.canDispatch" class="inventory-warning">
-          <div class="warning-header">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span>재고 부족 - 운송 등록 불가</span>
-            <button class="btn-refresh" @click="checkInventory(Number(formData.shipmentId))" :disabled="inventoryChecking">
-              <i class="fas fa-sync-alt" :class="{ 'fa-spin': inventoryChecking }"></i>
-              재확인
-            </button>
-          </div>
-          <div class="warning-items">
-            <div v-for="item in inventoryStatus.items.filter(i => !i.sufficient)" :key="item.skuId" class="warning-item">
-              <span class="sku-name">{{ item.skuName || item.skuId }}</span>
-              <span class="shortage">필요: {{ item.requiredQuantity }} / 재고: {{ item.inventoryQuantity }} (부족: {{ item.shortageQuantity }})</span>
+            <!-- 2. 현장 담당자 정보 (출하에서 가져온 정보 - 읽기전용) -->
+            <div class="info-group">
+              <div class="info-group-header">
+                <i class="fas fa-user-hard-hat" />
+                <span>현장 담당자 정보</span>
+                <span class="readonly-badge">출하 정보에서 자동 입력</span>
+              </div>
+              <div class="info-grid grid-2">
+                <FormField label="현장소장">
+                  <input
+                    v-model="formData.siteManagerName"
+                    type="text"
+                    class="form-input-md readonly-field"
+                    placeholder="출하 선택 시 자동 입력"
+                    readonly
+                  >
+                </FormField>
+                <FormField label="건설사">
+                  <input
+                    v-model="formData.constructionCompany"
+                    type="text"
+                    class="form-input-md readonly-field"
+                    placeholder="출하 선택 시 자동 입력"
+                    readonly
+                  >
+                </FormField>
+                <FormField label="인수자명">
+                  <input
+                    v-model="formData.receiverName"
+                    type="text"
+                    class="form-input-md readonly-field"
+                    placeholder="출하 선택 시 자동 입력"
+                    readonly
+                  >
+                </FormField>
+                <FormField label="인수자 연락처">
+                  <input
+                    v-model="formData.receiverPhone"
+                    type="tel"
+                    class="form-input-md readonly-field"
+                    placeholder="출하 선택 시 자동 입력"
+                    readonly
+                  >
+                </FormField>
+              </div>
+            </div>
+
+            <!-- 3. 기타 정보 -->
+            <div class="info-group">
+              <div class="info-group-header">
+                <i class="fas fa-info-circle" />
+                <span>기타 정보</span>
+              </div>
+              <div class="info-grid grid-1">
+                <FormField label="배송 메모" full-width>
+                  <input
+                    v-model="formData.deliveryMemo"
+                    type="text"
+                    class="form-input-lg"
+                    placeholder="배송 관련 메모를 입력하세요"
+                  >
+                </FormField>
+              </div>
             </div>
           </div>
-        </div>
-        <div v-if="inventoryStatus && inventoryStatus.canDispatch" class="inventory-info">
-          <i class="fas fa-info-circle"></i>
-          <span>발주수량 확인 완료 (실제 재고는 저장 시 최종 확인됩니다)</span>
-        </div>
 
-        <!-- 2. 현장 담당자 정보 (출하에서 가져온 정보 - 읽기전용) -->
-        <div class="info-group">
-          <div class="info-group-header">
-            <i class="fas fa-user-hard-hat"></i>
-            <span>현장 담당자 정보</span>
-            <span class="readonly-badge">출하 정보에서 자동 입력</span>
-          </div>
-          <div class="info-grid grid-2">
-            <FormField label="현장소장">
-              <input
-                type="text"
-                v-model="formData.siteManagerName"
-                class="form-input-md readonly-field"
-                placeholder="출하 선택 시 자동 입력"
-                readonly
-              >
-            </FormField>
-            <FormField label="건설사">
-              <input
-                type="text"
-                v-model="formData.constructionCompany"
-                class="form-input-md readonly-field"
-                placeholder="출하 선택 시 자동 입력"
-                readonly
-              >
-            </FormField>
-            <FormField label="인수자명">
-              <input
-                type="text"
-                v-model="formData.receiverName"
-                class="form-input-md readonly-field"
-                placeholder="출하 선택 시 자동 입력"
-                readonly
-              >
-            </FormField>
-            <FormField label="인수자 연락처">
-              <input
-                type="tel"
-                v-model="formData.receiverPhone"
-                class="form-input-md readonly-field"
-                placeholder="출하 선택 시 자동 입력"
-                readonly
-              >
-            </FormField>
-          </div>
-        </div>
+          <!-- 우측 컬럼 -->
+          <div class="right-column">
+            <!-- 1. 배송지 정보 (출하에서 가져온 정보 - 읽기전용) -->
+            <div class="info-group">
+              <div class="info-group-header">
+                <i class="fas fa-map-marker-alt" />
+                <span>배송지 정보</span>
+                <span class="readonly-badge">출하 정보에서 자동 입력</span>
+              </div>
+              <div class="info-grid grid-2">
+                <FormField label="우편번호">
+                  <input
+                    v-model="formData.zipcode"
+                    type="text"
+                    class="form-input-sm readonly-field"
+                    placeholder="출하 선택 시 자동 입력"
+                    readonly
+                  >
+                </FormField>
+                <FormField label="배송예정일" required :error="errors.deliveryDate">
+                  <input
+                    v-model="formData.deliveryDate"
+                    type="date"
+                    class="form-input-md"
+                    @change="onDeliveryDateChange"
+                  >
+                </FormField>
+                <FormField label="배송지 주소" full-width>
+                  <input
+                    v-model="formData.deliveryAddress"
+                    type="text"
+                    class="form-input-xl readonly-field"
+                    placeholder="출하 선택 시 자동 입력"
+                    readonly
+                  >
+                </FormField>
+                <FormField label="상세주소" full-width>
+                  <input
+                    v-model="formData.addressDetail"
+                    type="text"
+                    class="form-input-lg readonly-field"
+                    placeholder="출하 선택 시 자동 입력"
+                    readonly
+                  >
+                </FormField>
+              </div>
+            </div>
 
-        <!-- 3. 기타 정보 -->
-        <div class="info-group">
-          <div class="info-group-header">
-            <i class="fas fa-info-circle"></i>
-            <span>기타 정보</span>
+            <!-- 2. 운송 정보 -->
+            <div class="info-group">
+              <div class="info-group-header">
+                <i class="fas fa-truck" />
+                <span>운송 정보</span>
+              </div>
+              <div class="info-grid grid-3">
+                <FormField label="기사명">
+                  <select
+                    v-model="selectedDriverId"
+                    class="form-input-md"
+                    @change="handleDriverChange"
+                  >
+                    <option value="">
+                      기사를 선택하세요
+                    </option>
+                    <option v-for="driver in deliveryDrivers" :key="driver.userId" :value="driver.userId">
+                      {{ driver.userName }} ({{ driver.companyName || '운송사 정보 없음' }})
+                    </option>
+                  </select>
+                </FormField>
+                <FormField label="운송사명">
+                  <input
+                    v-model="formData.carrierName"
+                    type="text"
+                    class="form-input-md"
+                    placeholder="직접 입력 또는 기사 선택 시 자동 입력"
+                  >
+                </FormField>
+                <FormField label="기사 연락처" required :error="errors.driverPhone">
+                  <input
+                    v-model="formData.driverPhone"
+                    type="tel"
+                    class="form-input-md"
+                    placeholder="010-0000-0000"
+                    maxlength="13"
+                    @input="handleDriverPhoneInput"
+                  >
+                </FormField>
+                <FormField label="차량번호">
+                  <input
+                    v-model="formData.vehicleNo"
+                    type="text"
+                    class="form-input-md"
+                    placeholder="차량번호를 입력하세요"
+                  >
+                  <template #hint>
+                    기사 연락처 마지막 4자리를 기준으로 운송장번호가 자동 생성됩니다.
+                  </template>
+                </FormField>
+                <FormField label="배차/출차 시각">
+                  <VueDatePicker
+                    v-model="formData.dispatchAt"
+                    model-type="yyyy-MM-dd'T'HH:mm"
+                    :enable-time-picker="true"
+                    :format="'yyyy-MM-dd HH:mm'"
+                    locale="ko"
+                    time-picker-inline
+                    :action-row="{ showNow: true, showCancel: true, showSelect: true }"
+                    placeholder="날짜와 시간을 선택하세요"
+                    auto-apply
+                    :teleport="true"
+                    :min-date="minDispatchDate"
+                    :clearable="false"
+                    @update:model-value="onDispatchAtChange"
+                  />
+                </FormField>
+                <FormField label="도착 예정 시각">
+                  <VueDatePicker
+                    v-model="formData.expectedArrival"
+                    model-type="yyyy-MM-dd'T'HH:mm"
+                    :enable-time-picker="true"
+                    :format="'yyyy-MM-dd HH:mm'"
+                    locale="ko"
+                    time-picker-inline
+                    :action-row="{ showNow: true, showCancel: true, showSelect: true }"
+                    placeholder="날짜와 시간을 선택하세요"
+                    auto-apply
+                    :teleport="true"
+                    :min-date="minExpectedArrivalDate"
+                    :clearable="false"
+                  />
+                </FormField>
+                <FormField label="운송장번호" full-width>
+                  <input
+                    v-model="formData.trackingNumber"
+                    type="text"
+                    class="form-input-md"
+                    placeholder="자동 생성됨"
+                    readonly
+                    disabled
+                  >
+                </FormField>
+              </div>
+            </div>
           </div>
-          <div class="info-grid grid-1">
-            <FormField label="배송 메모" full-width>
-              <input
-                type="text"
-                v-model="formData.deliveryMemo"
-                class="form-input-lg"
-                placeholder="배송 관련 메모를 입력하세요"
-              >
-            </FormField>
-          </div>
+          <!-- two-column-layout 종료 -->
         </div>
-      </div>
-
-      <!-- 우측 컬럼 -->
-      <div class="right-column">
-        <!-- 1. 배송지 정보 (출하에서 가져온 정보 - 읽기전용) -->
-        <div class="info-group">
-          <div class="info-group-header">
-            <i class="fas fa-map-marker-alt"></i>
-            <span>배송지 정보</span>
-            <span class="readonly-badge">출하 정보에서 자동 입력</span>
-          </div>
-          <div class="info-grid grid-2">
-            <FormField label="우편번호">
-              <input
-                type="text"
-                v-model="formData.zipcode"
-                class="form-input-sm readonly-field"
-                placeholder="출하 선택 시 자동 입력"
-                readonly
-              >
-            </FormField>
-            <FormField label="배송예정일" required :error="errors.deliveryDate">
-              <input
-                type="date"
-                v-model="formData.deliveryDate"
-                class="form-input-md"
-                @change="onDeliveryDateChange"
-              >
-            </FormField>
-            <FormField label="배송지 주소" full-width>
-              <input
-                type="text"
-                v-model="formData.deliveryAddress"
-                class="form-input-xl readonly-field"
-                placeholder="출하 선택 시 자동 입력"
-                readonly
-              >
-            </FormField>
-            <FormField label="상세주소" full-width>
-              <input
-                type="text"
-                v-model="formData.addressDetail"
-                class="form-input-lg readonly-field"
-                placeholder="출하 선택 시 자동 입력"
-                readonly
-              >
-            </FormField>
-          </div>
-        </div>
-
-        <!-- 2. 운송 정보 -->
-        <div class="info-group">
-          <div class="info-group-header">
-            <i class="fas fa-truck"></i>
-            <span>운송 정보</span>
-          </div>
-          <div class="info-grid grid-3">
-            <FormField label="기사명">
-              <select
-                v-model="selectedDriverId"
-                @change="handleDriverChange"
-                class="form-input-md"
-              >
-                <option value="">기사를 선택하세요</option>
-                <option v-for="driver in deliveryDrivers" :key="driver.userId" :value="driver.userId">
-                  {{ driver.userName }} ({{ driver.companyName || '운송사 정보 없음' }})
-                </option>
-              </select>
-            </FormField>
-            <FormField label="운송사명">
-              <input
-                type="text"
-                v-model="formData.carrierName"
-                class="form-input-md"
-                placeholder="직접 입력 또는 기사 선택 시 자동 입력"
-              >
-            </FormField>
-            <FormField label="기사 연락처" required :error="errors.driverPhone">
-              <input
-                type="tel"
-                v-model="formData.driverPhone"
-                @input="handleDriverPhoneInput"
-                class="form-input-md"
-                placeholder="010-0000-0000"
-                maxlength="13"
-              >
-            </FormField>
-            <FormField label="차량번호">
-              <input
-                type="text"
-                v-model="formData.vehicleNo"
-                class="form-input-md"
-                placeholder="차량번호를 입력하세요"
-              >
-              <template #hint>
-                기사 연락처 마지막 4자리를 기준으로 운송장번호가 자동 생성됩니다.
-              </template>
-            </FormField>
-            <FormField label="배차/출차 시각">
-              <VueDatePicker
-                v-model="formData.dispatchAt"
-                model-type="yyyy-MM-dd'T'HH:mm"
-                :enable-time-picker="true"
-                :format="'yyyy-MM-dd HH:mm'"
-                locale="ko"
-                time-picker-inline
-                :action-row="{ showNow: true, showCancel: true, showSelect: true }"
-                placeholder="날짜와 시간을 선택하세요"
-                auto-apply
-                :teleport="true"
-                :min-date="minDispatchDate"
-                :clearable="false"
-                @update:model-value="onDispatchAtChange"
-              />
-            </FormField>
-            <FormField label="도착 예정 시각">
-              <VueDatePicker
-                v-model="formData.expectedArrival"
-                model-type="yyyy-MM-dd'T'HH:mm"
-                :enable-time-picker="true"
-                :format="'yyyy-MM-dd HH:mm'"
-                locale="ko"
-                time-picker-inline
-                :action-row="{ showNow: true, showCancel: true, showSelect: true }"
-                placeholder="날짜와 시간을 선택하세요"
-                auto-apply
-                :teleport="true"
-                :min-date="minExpectedArrivalDate"
-                :clearable="false"
-              />
-            </FormField>
-            <FormField label="운송장번호" full-width>
-              <input
-                type="text"
-                v-model="formData.trackingNumber"
-                class="form-input-md"
-                placeholder="자동 생성됨"
-                readonly
-                disabled
-              >
-            </FormField>
-          </div>
-        </div>
-      </div>
-      <!-- two-column-layout 종료 -->
-    </div>
       </FormSection>
     </div>
 
@@ -361,16 +364,16 @@ const inventoryStatus = ref<InventoryStatusResponse | null>(null)
 const inventoryChecking = ref(false)
 
 const inventoryAvailable = computed(() => {
-  if (!formData.shipmentId) return true
-  if (!inventoryStatus.value) return true
+  if (!formData.shipmentId) { return true }
+  if (!inventoryStatus.value) { return true }
   return inventoryStatus.value.canDispatch
 })
 
 const saveButtonDisabledReason = computed(() => {
-  if (!canWrite.value) return '등록 권한이 없습니다'
-  if (submitting.value) return '저장 중...'
-  if (inventoryChecking.value) return '재고 확인 중...'
-  if (!inventoryAvailable.value) return '재고 부족으로 운송 등록이 불가합니다'
+  if (!canWrite.value) { return '등록 권한이 없습니다' }
+  if (submitting.value) { return '저장 중...' }
+  if (inventoryChecking.value) { return '재고 확인 중...' }
+  if (!inventoryAvailable.value) { return '재고 부족으로 운송 등록이 불가합니다' }
   return ''
 })
 
@@ -388,10 +391,10 @@ const checkInventory = async (shipmentId: number) => {
 }
 
 // 사용자 목록
-const deliveryDrivers = ref<UserByRole[]>([])  // DELIVERY_DRIVER (운송기사)
+const deliveryDrivers = ref<UserByRole[]>([]) // DELIVERY_DRIVER (운송기사)
 
 // 선택된 사용자 ID
-const selectedDriverId = ref<number | ''>('')      // 기사
+const selectedDriverId = ref<number | ''>('') // 기사
 
 // useRegisterForm 사용
 const {
@@ -436,15 +439,15 @@ const {
     zipcode: '',
     deliveryAddress: '',
     addressDetail: '',
-    siteManagerId: null as number | null,  // 출하에서 가져옴
-    siteManagerName: '',                    // 출하에서 가져옴
-    constructionCompany: '',                // 건설사 (출하에서 가져옴)
+    siteManagerId: null as number | null, // 출하에서 가져옴
+    siteManagerName: '', // 출하에서 가져옴
+    constructionCompany: '', // 건설사 (출하에서 가져옴)
     receiverName: '',
     receiverPhone: '',
     carrierName: '',
     driverName: '',
     driverPhone: '',
-    dispatchAt: getDefaultDateTimeString(7, 0),      // 오늘 07:00
+    dispatchAt: getDefaultDateTimeString(7, 0), // 오늘 07:00
     expectedArrival: getDefaultDateTimeString(7, 0), // 오늘 07:00
     deliveryMemo: '',
     status: 'PENDING',
@@ -507,8 +510,8 @@ const onDeliveryDateChange = () => {
     formData.dispatchAt,
     formData.expectedArrival
   )
-  if (result.dispatchAt) formData.dispatchAt = result.dispatchAt
-  if (result.expectedArrival) formData.expectedArrival = result.expectedArrival
+  if (result.dispatchAt) { formData.dispatchAt = result.dispatchAt }
+  if (result.expectedArrival) { formData.expectedArrival = result.expectedArrival }
 }
 
 // 팝업 상태
@@ -574,7 +577,6 @@ onMounted(async () => {
       } catch (error) {
         console.error('출하 상세 조회 실패:', error)
       }
-
     } catch (error) {
       console.error('데이터 파싱 오류:', error)
     }
@@ -732,8 +734,6 @@ const handleSubmit = async () => {
   background: transparent;
   border-radius: 0;
   padding: 0;
-  padding-left: 2rem;
-  padding-bottom: 0;
   margin-top: -1rem;
   margin-bottom: 0;
 }

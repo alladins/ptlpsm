@@ -3,9 +3,9 @@
     <div v-if="isOpen" class="modal-overlay" @click.self="close">
       <div class="modal-container">
         <div class="modal-header">
-          <h3><i class="fas fa-money-bill-wave"></i> OEM 지급 등록</h3>
+          <h3><i class="fas fa-money-bill-wave" /> OEM 지급 등록</h3>
           <button class="modal-close" @click="close">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
@@ -35,7 +35,7 @@
             </div>
 
             <div v-if="loadingPo" class="loading-inline">
-              <i class="fas fa-spinner fa-spin"></i> 발주서 목록을 불러오는 중...
+              <i class="fas fa-spinner fa-spin" /> 발주서 목록을 불러오는 중...
             </div>
             <div v-else-if="purchaseOrders.length === 0" class="no-data-inline">
               등록 가능한 발주서가 없습니다.
@@ -44,12 +44,20 @@
               <table class="po-select-table">
                 <thead>
                   <tr>
-                    <th class="col-check"><input type="checkbox" v-model="selectAllFiltered" @change="toggleSelectAllFiltered" /></th>
+                    <th class="col-check">
+                      <input v-model="selectAllFiltered" type="checkbox" @change="toggleSelectAllFiltered">
+                    </th>
                     <th>발주서번호</th>
                     <th>OEM 제조사</th>
-                    <th class="text-right">발주금액</th>
-                    <th class="text-right">기지급액</th>
-                    <th class="text-right">잔여액</th>
+                    <th class="text-right">
+                      발주금액
+                    </th>
+                    <th class="text-right">
+                      기지급액
+                    </th>
+                    <th class="text-right">
+                      잔여액
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -64,13 +72,19 @@
                         type="checkbox"
                         :checked="selectedPoIds.has(po.poId)"
                         @click.stop="togglePo(po.poId)"
-                      />
+                      >
                     </td>
                     <td>{{ po.poNo }}</td>
                     <td>{{ po.oemCompanyName }}</td>
-                    <td class="text-right">{{ formatCurrency(po.totalAmount) }}</td>
-                    <td class="text-right">{{ formatCurrency(po.paidAmount || 0) }}</td>
-                    <td class="text-right">{{ formatCurrency(po.remainingAmount || 0) }}</td>
+                    <td class="text-right">
+                      {{ formatCurrency(po.totalAmount) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatCurrency(po.paidAmount || 0) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatCurrency(po.remainingAmount || 0) }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -104,12 +118,12 @@
               <div class="form-group">
                 <label>지급금액 <span class="required">*</span></label>
                 <input
-                  type="text"
                   v-model="formattedAmount"
+                  type="text"
                   class="form-input text-right"
                   placeholder="0"
                   @input="handleAmountInput"
-                />
+                >
                 <div v-if="selectedRemainingAmount > 0" class="form-hint">
                   잔여금액: {{ formatCurrency(selectedRemainingAmount) }}
                 </div>
@@ -117,33 +131,35 @@
               <div class="form-group">
                 <label>지급일 <span class="required">*</span></label>
                 <input
-                  type="date"
                   v-model="form.paymentDate"
+                  type="date"
                   class="form-input"
-                />
+                >
               </div>
               <div class="form-group full-width">
                 <label>비고</label>
                 <input
-                  type="text"
                   v-model="form.remarks"
+                  type="text"
                   class="form-input"
                   placeholder="비고 사항을 입력하세요"
-                />
+                >
               </div>
             </div>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button class="btn-cancel" @click="close">취소</button>
+          <button class="btn-cancel" @click="close">
+            취소
+          </button>
           <button
             class="btn-submit"
             :disabled="!isFormValid || submitting"
             @click="handleSubmit"
           >
-            <i v-if="submitting" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-check"></i>
+            <i v-if="submitting" class="fas fa-spinner fa-spin" />
+            <i v-else class="fas fa-check" />
             {{ submitting ? '등록 중...' : '지급 등록' }}
           </button>
         </div>
@@ -202,7 +218,7 @@ const form = ref({
 const formattedAmount = ref('')
 
 // 오늘 날짜
-function getTodayDate(): string {
+function getTodayDate (): string {
   const now = new Date()
   const year = now.getFullYear()
   const month = String(now.getMonth() + 1).padStart(2, '0')
@@ -211,7 +227,7 @@ function getTodayDate(): string {
 }
 
 // 금액 입력 핸들러 (콤마 포맷팅)
-function handleAmountInput(event: Event) {
+function handleAmountInput (event: Event) {
   const target = event.target as HTMLInputElement
   const rawValue = target.value.replace(/[^\d]/g, '')
   const numValue = parseInt(rawValue) || 0
@@ -233,27 +249,27 @@ const oemCompanyList = computed(() => {
 
 // 필터된 발주서 목록
 const filteredPurchaseOrders = computed(() => {
-  if (filterOemCompanyId.value === null) return purchaseOrders.value
+  if (filterOemCompanyId.value === null) { return purchaseOrders.value }
   return purchaseOrders.value.filter(po => po.oemCompanyId === filterOemCompanyId.value)
 })
 
 // 필터 기준 전체 선택 체크박스
 const selectAllFiltered = computed({
-  get() {
+  get () {
     const filtered = filteredPurchaseOrders.value
-    if (filtered.length === 0) return false
+    if (filtered.length === 0) { return false }
     return filtered.every(po => selectedPoIds.value.has(po.poId))
   },
-  set() { /* toggleSelectAllFiltered에서 처리 */ }
+  set () { /* toggleSelectAllFiltered에서 처리 */ }
 })
 
 // OEM 필터 변경
-function setFilterOem(companyId: number | null) {
+function setFilterOem (companyId: number | null) {
   filterOemCompanyId.value = companyId
 }
 
 // 필터된 목록 기준 전체 선택/해제
-function toggleSelectAllFiltered() {
+function toggleSelectAllFiltered () {
   const filtered = filteredPurchaseOrders.value
   const allSelected = filtered.every(po => selectedPoIds.value.has(po.poId))
   if (allSelected) {
@@ -287,7 +303,7 @@ const selectedRemainingAmount = computed(() => {
 })
 
 // 전체 선택/해제
-function toggleSelectAll() {
+function toggleSelectAll () {
   if (selectAll.value) {
     purchaseOrders.value.forEach(po => selectedPoIds.value.add(po.poId))
   } else {
@@ -296,7 +312,7 @@ function toggleSelectAll() {
 }
 
 // 개별 선택/해제
-function togglePo(poId: number) {
+function togglePo (poId: number) {
   if (selectedPoIds.value.has(poId)) {
     selectedPoIds.value.delete(poId)
   } else {
@@ -317,7 +333,7 @@ const isFormValid = computed(() => {
 })
 
 // 발주서 목록 로드 + 지급 현황 합산
-async function loadPurchaseOrders() {
+async function loadPurchaseOrders () {
   loadingPo.value = true
   try {
     // 발주서 목록 조회 (최근 1년)
@@ -371,8 +387,8 @@ async function loadPurchaseOrders() {
 }
 
 // 제출
-async function handleSubmit() {
-  if (!isFormValid.value || submitting.value) return
+async function handleSubmit () {
+  if (!isFormValid.value || submitting.value) { return }
 
   submitting.value = true
   try {
@@ -435,7 +451,7 @@ async function handleSubmit() {
 }
 
 // 닫기
-function close() {
+function close () {
   emit('close')
 }
 
@@ -458,7 +474,7 @@ watch(() => props.isOpen, (open) => {
   }
 })
 
-function resetForm() {
+function resetForm () {
   selectedPoIds.value = new Set()
   selectAll.value = false
   filterOemCompanyId.value = null

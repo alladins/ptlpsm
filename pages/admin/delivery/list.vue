@@ -3,11 +3,13 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       title="납품확인"
+      icon="delivery"
+      icon-color="cyan"
       description="발주별 납품 현황을 트리 구조로 확인합니다."
     >
       <template #actions>
         <button class="btn-action" @click="handleSearch">
-          <i class="fas fa-search"></i>
+          <i class="fas fa-search" />
           검색
         </button>
       </template>
@@ -20,17 +22,17 @@
           <!-- 납품요구일자 -->
           <div class="search-item">
             <label>납품요구일자:</label>
-            <input type="date" v-model="searchForm.startDate" class="date-input">
+            <input v-model="searchForm.startDate" type="date" class="date-input">
             <span class="separator">~</span>
-            <input type="date" v-model="searchForm.endDate" class="date-input">
+            <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
           <!-- 납품요구번호 (NEW) -->
           <div class="search-item">
             <label>납품요구번호:</label>
             <input
-              type="text"
               v-model="searchForm.deliveryRequestNo"
+              type="text"
               placeholder="납품요구번호 검색"
               class="text-input"
               @keyup.enter="handleSearch"
@@ -41,7 +43,9 @@
           <div class="search-item">
             <label>상태:</label>
             <select v-model="searchForm.status" class="condition-select">
-              <option value="">전체</option>
+              <option value="">
+                전체
+              </option>
               <option v-for="option in statusOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
@@ -57,23 +61,29 @@
             <span>총 {{ totalElements }}개 발주 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="tree-actions">
-            <select v-model.number="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="10">10개씩</option>
-              <option :value="20">20개씩</option>
-              <option :value="50">50개씩</option>
+            <select v-model.number="pageSize" class="page-size-select" @change="handlePageSizeChange">
+              <option :value="10">
+                10개씩
+              </option>
+              <option :value="20">
+                20개씩
+              </option>
+              <option :value="50">
+                50개씩
+              </option>
             </select>
           </div>
         </div>
 
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <p>데이터를 불러오는 중...</p>
         </div>
 
         <!-- 데이터가 없을 때 -->
         <div v-else-if="orderList.length === 0" class="no-data-message">
-          <i class="fas fa-clipboard-check"></i>
+          <i class="fas fa-clipboard-check" />
           <p>등록된 발주 정보가 없습니다.</p>
         </div>
 
@@ -182,12 +192,13 @@ const {
       status: searchForm.value.status,
       page: params.page || 0,
       size: params.size || 10,
-      sort: params.sort || 'delivery_request_date,desc'
+      // 기본 정렬: 최종 납품완료 시각 내림차순 (미완료 발주는 맨 뒤)
+      sort: params.sort || 'lastDelivered,desc'
     })
     return response
   },
   initialPageSize: 10,
-  initialSort: 'delivery_request_date,desc'
+  initialSort: 'lastDelivered,desc'
 })
 
 // 상태 필터 변경 시 자동 검색
@@ -243,14 +254,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
+@import '@/assets/css/admin-common.css';
+@import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-tables.css';
+@import '@/assets/css/admin-search.css';
+
 /*
  * Delivery Tree List Page Styles
  * 트리 구조 특화 스타일
  */
-
-.delivery-tree-list {
-  padding: 1.5rem;
-}
 
 .content-section {
   margin-top: 1.5rem;
@@ -342,7 +354,7 @@ onMounted(() => {
 .tree-container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.375rem;
   margin-top: 1rem;
 }
 

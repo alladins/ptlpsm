@@ -9,11 +9,15 @@
               <div class="ccm-success-content">
                 <div class="ccm-success-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </div>
-                <h3 class="ccm-success-title">{{ successTitle }}</h3>
-                <p class="ccm-success-message">{{ getSuccessMessage() }}</p>
+                <h3 class="ccm-success-title">
+                  {{ successTitle }}
+                </h3>
+                <p class="ccm-success-message">
+                  {{ getSuccessMessage() }}
+                </p>
               </div>
             </div>
           </Transition>
@@ -25,12 +29,14 @@
                 <component :is="getPaymentIcon()" />
               </div>
               <div class="ccm-header-text">
-                <h2 class="ccm-modal-title">{{ modalTitle }}</h2>
+                <h2 class="ccm-modal-title">
+                  {{ modalTitle }}
+                </h2>
               </div>
             </div>
-            <button class="ccm-close-button" @click="handleClose" :disabled="isSubmitting">
+            <button class="ccm-close-button" :disabled="isSubmitting" @click="handleClose">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
               </svg>
             </button>
           </div>
@@ -49,7 +55,7 @@
               </div>
               <!-- 기성금 수금 시 선급금 차감 정보 표시 -->
               <template v-if="paymentType === 'progress' && advanceDeductionAmount > 0">
-                <div class="ccm-amount-divider"></div>
+                <div class="ccm-amount-divider" />
                 <div class="ccm-amount-row ccm-deduction">
                   <span class="ccm-amount-label">(-) 선급금 차감액</span>
                   <span class="ccm-amount-value ccm-negative">- {{ formatCurrency(advanceDeductionAmount) }}</span>
@@ -65,7 +71,7 @@
             <div v-if="paymentType === 'progress' && advanceDeductionAmount > 0" class="ccm-settlement-info">
               <div class="ccm-settlement-header">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 6h18M3 12h18M3 18h18"/>
+                  <path d="M3 6h18M3 12h18M3 18h18" />
                 </svg>
                 <span>정산 현황 (수금 확인 후)</span>
               </div>
@@ -87,27 +93,34 @@
             </div>
 
             <!-- Form Fields -->
-            <form @submit.prevent="handleSubmit" class="ccm-form">
+            <form class="ccm-form" @submit.prevent="handleSubmit">
               <!-- 입금일 -->
               <div class="ccm-form-group">
                 <label class="ccm-form-label required">
                   <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
                   입금일
                 </label>
                 <div class="ccm-input-wrapper">
                   <input
-                    type="date"
                     v-model="formData.paymentDate"
+                    type="date"
                     class="ccm-form-input ccm-date-input"
                     :max="today"
                     required
                     :disabled="isSubmitting"
-                  />
+                  >
                 </div>
                 <span v-if="errors.paymentDate" class="ccm-error-message">{{ errors.paymentDate }}</span>
               </div>
@@ -120,24 +133,24 @@
                 </label>
                 <div class="ccm-input-wrapper ccm-amount-wrapper">
                   <input
-                    type="text"
                     v-model="displayAmount"
-                    @input="handleAmountInput"
-                    @focus="handleAmountFocus"
-                    @blur="handleAmountBlur"
+                    type="text"
                     class="ccm-form-input ccm-amount-input"
                     placeholder="0"
                     required
                     :disabled="isSubmitting"
-                  />
+                    @input="handleAmountInput"
+                    @focus="handleAmountFocus"
+                    @blur="handleAmountBlur"
+                  >
                   <span class="ccm-input-suffix">원</span>
                 </div>
                 <div class="ccm-amount-actions">
                   <button
                     type="button"
                     class="ccm-amount-preset-btn ccm-blue"
-                    @click="setFullAmount"
                     :disabled="isSubmitting"
+                    @click="setFullAmount"
                   >
                     전액 입력
                   </button>
@@ -152,20 +165,27 @@
               <div class="ccm-form-group">
                 <label class="ccm-form-label">
                   <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10"/>
+                    <rect
+                      x="1"
+                      y="4"
+                      width="22"
+                      height="16"
+                      rx="2"
+                      ry="2"
+                    />
+                    <line x1="1" y1="10" x2="23" y2="10" />
                   </svg>
                   입금 계좌
                   <span class="ccm-optional-tag">선택</span>
                 </label>
                 <div class="ccm-input-wrapper">
                   <input
-                    type="text"
                     v-model="formData.bankAccount"
+                    type="text"
                     class="ccm-form-input"
                     placeholder="예: 국민은행 123-456-789012"
                     :disabled="isSubmitting"
-                  />
+                  >
                 </div>
               </div>
 
@@ -173,10 +193,10 @@
               <div class="ccm-form-group">
                 <label class="ccm-form-label">
                   <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
                   </svg>
                   비고
                   <span class="ccm-optional-tag">선택</span>
@@ -188,7 +208,7 @@
                     placeholder="추가 메모를 입력하세요"
                     rows="3"
                     :disabled="isSubmitting"
-                  ></textarea>
+                  />
                 </div>
               </div>
             </form>
@@ -199,18 +219,18 @@
             <button
               type="button"
               class="ccm-btn-cancel"
-              @click="handleClose"
               :disabled="isSubmitting"
+              @click="handleClose"
             >
               취소
             </button>
             <button
               type="submit"
               class="ccm-btn-confirm"
-              @click="handleSubmit"
               :disabled="isSubmitting || !isFormValid"
+              @click="handleSubmit"
             >
-              <span v-if="isSubmitting" class="ccm-loading-spinner"></span>
+              <span v-if="isSubmitting" class="ccm-loading-spinner" />
               <span v-else>수금 확인</span>
             </button>
           </div>
@@ -433,7 +453,7 @@ const getSuccessMessage = () => {
 }
 
 const handleSubmit = async () => {
-  if (!validateForm()) return
+  if (!validateForm()) { return }
 
   isSubmitting.value = true
 
@@ -463,7 +483,7 @@ const handleSubmit = async () => {
 }
 
 const handleClose = () => {
-  if (isSubmitting.value) return
+  if (isSubmitting.value) { return }
   resetForm()
   emit('close')
 }

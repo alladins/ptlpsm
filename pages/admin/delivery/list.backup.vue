@@ -7,15 +7,15 @@
     >
       <template #actions>
         <button class="btn-action" @click="search">
-          <i class="fas fa-search"></i>
+          <i class="fas fa-search" />
           검색
         </button>
         <button class="btn-action btn-secondary" @click="reset">
-          <i class="fas fa-undo"></i>
+          <i class="fas fa-undo" />
           초기화
         </button>
         <button class="btn-action btn-primary" @click="goToRegister">
-          <i class="fas fa-plus"></i>
+          <i class="fas fa-plus" />
           등록
         </button>
       </template>
@@ -28,22 +28,36 @@
           <!-- 납품일자 -->
           <div class="search-item">
             <label>납품일자:</label>
-            <input type="date" v-model="searchForm.startDate" class="date-input">
+            <input v-model="searchForm.startDate" type="date" class="date-input">
             <span class="separator">~</span>
-            <input type="date" v-model="searchForm.endDate" class="date-input">
+            <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
           <!-- 상태 -->
           <div class="search-item">
             <label>상태:</label>
             <select v-model="searchForm.status" class="condition-select">
-              <option value="">전체</option>
-              <option value="PENDING">대기</option>
-              <option value="IN_TRANSIT">운송중</option>
-              <option value="ARRIVED">도착</option>
-              <option value="UNLOADING">하차중</option>
-              <option value="COMPLETED">완료</option>
-              <option value="CANCELLED">취소</option>
+              <option value="">
+                전체
+              </option>
+              <option value="PENDING">
+                대기
+              </option>
+              <option value="IN_TRANSIT">
+                운송중
+              </option>
+              <option value="ARRIVED">
+                도착
+              </option>
+              <option value="UNLOADING">
+                하차중
+              </option>
+              <option value="COMPLETED">
+                완료
+              </option>
+              <option value="CANCELLED">
+                취소
+              </option>
             </select>
           </div>
         </div>
@@ -56,23 +70,29 @@
             <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
-            <select v-model.number="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="10">10개씩</option>
-              <option :value="20">20개씩</option>
-              <option :value="50">50개씩</option>
+            <select v-model.number="pageSize" class="page-size-select" @change="handlePageSizeChange">
+              <option :value="10">
+                10개씩
+              </option>
+              <option :value="20">
+                20개씩
+              </option>
+              <option :value="50">
+                50개씩
+              </option>
             </select>
           </div>
         </div>
 
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <p>데이터를 불러오는 중...</p>
         </div>
 
         <!-- 데이터가 없을 때 -->
         <div v-else-if="deliveryList.length === 0" class="no-data-message">
-          <i class="fas fa-clipboard-check"></i>
+          <i class="fas fa-clipboard-check" />
           <p>등록된 납품확인 정보가 없습니다.</p>
         </div>
 
@@ -103,7 +123,7 @@
                 <td>{{ formatDate(item.deliveryDate) }}</td>
                 <td>{{ item.driverName || '-' }}</td>
                 <td>
-                  <i v-if="item.supervisorSignaturePath" class="fas fa-check-circle" style="color: #10b981;"></i>
+                  <i v-if="item.supervisorSignaturePath" class="fas fa-check-circle" style="color: #10b981;" />
                   <span v-else>-</span>
                 </td>
                 <td>
@@ -195,12 +215,12 @@ const {
 // 상태 텍스트 변환
 const getStatusText = (status: string): string => {
   const statusMap: { [key: string]: string } = {
-    'PENDING': '대기',
-    'IN_TRANSIT': '운송중',
-    'ARRIVED': '도착',
-    'UNLOADING': '하차중',
-    'COMPLETED': '완료',
-    'CANCELLED': '취소'
+    PENDING: '대기',
+    IN_TRANSIT: '운송중',
+    ARRIVED: '도착',
+    UNLOADING: '하차중',
+    COMPLETED: '완료',
+    CANCELLED: '취소'
   }
   return statusMap[status] || status
 }
@@ -208,12 +228,12 @@ const getStatusText = (status: string): string => {
 // 상태 클래스
 const getStatusClass = (status: string) => {
   const classMap: { [key: string]: string } = {
-    'PENDING': 'status-waiting',
-    'IN_TRANSIT': 'status-in-transit',
-    'ARRIVED': 'status-arrived',
-    'UNLOADING': 'status-unloading',
-    'COMPLETED': 'status-completed',
-    'CANCELLED': 'status-cancelled'
+    PENDING: 'status-waiting',
+    IN_TRANSIT: 'status-in-transit',
+    ARRIVED: 'status-arrived',
+    UNLOADING: 'status-unloading',
+    COMPLETED: 'status-completed',
+    CANCELLED: 'status-cancelled'
   }
   return classMap[status] || 'status-default'
 }

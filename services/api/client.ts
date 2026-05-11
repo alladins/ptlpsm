@@ -28,6 +28,9 @@ const DEFAULT_TIMEOUT = 30000
  * API 에러 클래스
  */
 export class ApiError extends Error {
+  /** 백엔드 에러 코드 (예: COMMON_999) */
+  public code?: string
+
   constructor(
     public status: number,
     message: string,
@@ -35,6 +38,12 @@ export class ApiError extends Error {
   ) {
     super(message)
     this.name = 'ApiError'
+    if (data && typeof data === 'object') {
+      const d = data as Record<string, unknown>
+      if (typeof d.code === 'string') {
+        this.code = d.code
+      }
+    }
   }
 }
 
@@ -51,16 +60,36 @@ interface ApiClientOptions {
 }
 
 /**
- * 페이지네이션 응답 구조
+ * 페이지네이션 응답 구조 (Spring Data 표준).
+ *
+ * 백엔드는 `Page<T>` 직렬화 시 `number` 필드로 현재 페이지를 보낸다.
+ * 별도의 자체 `PaginationResponse<T> { content, page: PageInfo }` 패턴은
+ * 일부 레거시 도메인(types/common.ts)에 한정되며 본 PageResponse 와 다른 타입.
+ *
+ * 신규 코드는 본 PageResponse 를 사용. UI 표시용으로 1-indexed 변환은 호출처에서 처리.
  */
 export interface PageResponse<T> {
   content: T[]
   totalElements: number
   totalPages: number
   size: number
+  /** 현재 페이지 (0-indexed, Spring 표준). UI 표시 시 +1 변환 필요. */
   number: number
   first: boolean
   last: boolean
+}
+
+/**
+ * 403 응답에서 X-Block-Reason 헤더 확인 후 차단 IP면 /blocked 로 리디렉션.
+ * SPA 환경(process.client)에서만 동작.
+ */
+function handleBlockedIp(response: Response): void {
+  if (response.status === 403 && process.client) {
+    const blockReason = response.headers.get('X-Block-Reason')
+    if (blockReason === 'BLACKLISTED_IP' && typeof window !== 'undefined') {
+      window.location.href = '/blocked'
+    }
+  }
 }
 
 /**
@@ -193,6 +222,7 @@ export const apiClient = {
         timeout
       )
 
+      handleBlockedIp(response)
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new ApiError(
@@ -256,6 +286,7 @@ export const apiClient = {
         timeout
       )
 
+      handleBlockedIp(response)
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new ApiError(
@@ -325,6 +356,7 @@ export const apiClient = {
         timeout
       )
 
+      handleBlockedIp(response)
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new ApiError(
@@ -394,6 +426,7 @@ export const apiClient = {
         timeout
       )
 
+      handleBlockedIp(response)
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new ApiError(
@@ -460,6 +493,7 @@ export const apiClient = {
         timeout
       )
 
+      handleBlockedIp(response)
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new ApiError(
@@ -533,6 +567,7 @@ export const apiClient = {
         timeout
       )
 
+      handleBlockedIp(response)
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new ApiError(

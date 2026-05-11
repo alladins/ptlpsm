@@ -4,7 +4,7 @@
       <div class="popup-header">
         <h2>납품요구번호 조회</h2>
         <button class="popup-close" @click="close">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
@@ -12,22 +12,40 @@
         <!-- 검색 영역 -->
         <div class="search-section">
           <div class="search-input-group">
-            <label>수요기관</label>
-            <input
-              type="text"
-              v-model="searchParams.client"
-              class="form-input"
-              placeholder="수요기관명을 입력하세요"
-              @keyup.enter="search"
-            >
-            <button class="btn-primary" @click="search">
-              <i class="fas fa-search"></i>
-              검색
-            </button>
-            <button class="btn-secondary" @click="close">
-              <i class="fas fa-times"></i>
-              닫기
-            </button>
+            <div class="search-field">
+              <label>수요기관</label>
+              <input
+                v-model="searchParams.client"
+                type="text"
+                class="form-input"
+                placeholder="수요기관명을 입력하세요"
+                @keyup.enter="search"
+              >
+            </div>
+            <div class="search-field">
+              <label>사업명</label>
+              <input
+                v-model="searchParams.projectName"
+                type="text"
+                class="form-input"
+                placeholder="사업명을 입력하세요"
+                @keyup.enter="search"
+              >
+            </div>
+            <div class="search-actions">
+              <button class="btn-primary" @click="search">
+                <i class="fas fa-search" />
+                검색
+              </button>
+              <button class="btn-secondary" @click="resetSearch">
+                <i class="fas fa-redo" />
+                초기화
+              </button>
+              <button class="btn-secondary" @click="close">
+                <i class="fas fa-times" />
+                닫기
+              </button>
+            </div>
           </div>
         </div>
 
@@ -36,19 +54,37 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th class="col-delivery-no">납품요구번호</th>
-                <th class="col-client">수요기관</th>
-                <th class="col-date">납품요구일자</th>
-                <th class="col-project">사업명</th>
-                <th class="col-action">선택</th>
+                <th class="col-delivery-no">
+                  납품요구번호
+                </th>
+                <th class="col-client">
+                  수요기관
+                </th>
+                <th class="col-date">
+                  납품요구일자
+                </th>
+                <th class="col-project">
+                  사업명
+                </th>
+                <th class="col-action">
+                  선택
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="order in orders" :key="order.orderId">
-                <td class="col-delivery-no">{{ order.deliveryRequestNo }}</td>
-                <td class="col-client">{{ order.client }}</td>
-                <td class="col-date">{{ formatDate(order.deliveryRequestDate) }}</td>
-                <td class="col-project" :title="order.projectName">{{ order.projectName }}</td>
+                <td class="col-delivery-no">
+                  {{ order.deliveryRequestNo }}
+                </td>
+                <td class="col-client">
+                  {{ order.client }}
+                </td>
+                <td class="col-date">
+                  {{ formatDate(order.deliveryRequestDate) }}
+                </td>
+                <td class="col-project" :title="order.projectName">
+                  {{ order.projectName }}
+                </td>
                 <td class="col-action">
                   <button class="btn-success" @click="selectOrder(order)">
                     선택
@@ -77,7 +113,7 @@ import { orderService } from '~/services/order.service'
 
 const props = defineProps<{
   show: boolean
-  shippableOnly?: boolean  // 출하 가능한 발주만 조회
+  shippableOnly?: boolean // 출하 가능한 발주만 조회
 }>()
 
 const emit = defineEmits<{
@@ -88,6 +124,7 @@ const emit = defineEmits<{
 // 상태 관리
 const searchParams = ref({
   client: '',
+  projectName: ''
 })
 const currentPage = ref(1)
 const totalPages = ref(1)
@@ -95,6 +132,14 @@ const orders = ref<OrderDetailResponse[]>([])
 
 // 검색
 const search = async () => {
+  currentPage.value = 1
+  await loadOrders()
+}
+
+// 검색 조건 초기화
+const resetSearch = async () => {
+  searchParams.value.client = ''
+  searchParams.value.projectName = ''
   currentPage.value = 1
   await loadOrders()
 }
@@ -110,12 +155,13 @@ const loadOrders = async () => {
   try {
     const response = await orderService.getOrders({
       client: searchParams.value.client,
-      page: currentPage.value - 1,  // UI는 1-indexed, API는 0-indexed
+      projectName: searchParams.value.projectName,
+      page: currentPage.value - 1, // UI는 1-indexed, API는 0-indexed
       size: 10,
       sort: 'createdAt,desc',
       shippableOnly: props.shippableOnly
     })
-    
+
     orders.value = response.content
     totalPages.value = response.totalPages
   } catch (error) {
@@ -127,7 +173,7 @@ const loadOrders = async () => {
 
 // 날짜 포맷팅
 const formatDate = (dateString: string): string => {
-  if (!dateString) return '-'
+  if (!dateString) { return '-' }
   const date = new Date(dateString)
   return date.toLocaleDateString('ko-KR')
 }
@@ -138,10 +184,10 @@ const selectOrder = async (order: OrderDetailResponse) => {
     // 상세 정보 조회
     const detailResponse = await orderService.getOrderDetail(order.orderId)
     console.log('선택된 발주 상세 정보:', detailResponse)
-    
+
     // 부모 컴포넌트로 데이터 전달
     emit('select', detailResponse)
-    
+
     // 팝업 닫기 (약간의 지연을 주어 데이터 전달이 완료된 후 닫히도록 함)
     setTimeout(() => {
       close()
@@ -201,21 +247,48 @@ onMounted(() => {
   border-bottom: none;
 }
 
-/* 검색 입력 그룹 - 가로 한 줄 정렬 */
+/* 검색 입력 그룹 - 가로 한 줄 정렬 (수요기관 + 사업명 동시 검색) */
 .search-input-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.search-input-group label {
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 260px;
+}
+
+.search-field label {
   white-space: nowrap;
   font-weight: 500;
   color: var(--gray-700);
+  min-width: 70px;
 }
 
-.search-input-group .form-input {
+.search-field .form-input {
   flex: 1;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* 좁은 화면에서 검색 액션 버튼이 줄바꿈될 때 정렬 */
+@media (max-width: 900px) {
+  .search-field {
+    flex-basis: 100%;
+  }
+  .search-actions {
+    margin-left: auto;
+  }
 }
 
 /* 행 간격 축소 */

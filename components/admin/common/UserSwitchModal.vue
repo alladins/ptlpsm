@@ -5,30 +5,30 @@
         <!-- 헤더 -->
         <div class="modal-header">
           <h3>
-            <i class="fas fa-user-secret"></i>
+            <i class="fas fa-user-secret" />
             사용자 전환 (대리 로그인)
           </h3>
           <button class="btn-close" @click="handleClose">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
         <!-- 검색 영역 -->
         <div class="search-section">
           <div class="search-input-wrapper">
-            <i class="fas fa-search"></i>
+            <i class="fas fa-search" />
             <input
               ref="searchInput"
               v-model="searchKeyword"
               type="text"
               placeholder="사용자명 또는 ID로 검색"
               @keyup.enter="handleSearch"
-            />
+            >
             <button v-if="searchKeyword" class="btn-clear" @click="clearSearch">
-              <i class="fas fa-times-circle"></i>
+              <i class="fas fa-times-circle" />
             </button>
           </div>
-          <button class="btn-search" @click="handleSearch" :disabled="loading">
+          <button class="btn-search" :disabled="loading" @click="handleSearch">
             검색
           </button>
         </div>
@@ -49,18 +49,20 @@
         <!-- 사용자 목록 -->
         <div class="user-list-container">
           <div v-if="loading" class="loading-state">
-            <i class="fas fa-spinner fa-spin"></i>
+            <i class="fas fa-spinner fa-spin" />
             <span>사용자 목록을 불러오는 중...</span>
           </div>
 
           <div v-else-if="error" class="error-state">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="fas fa-exclamation-circle" />
             <span>{{ error }}</span>
-            <button class="btn-retry" @click="fetchUsers">다시 시도</button>
+            <button class="btn-retry" @click="fetchUsers">
+              다시 시도
+            </button>
           </div>
 
           <div v-else-if="filteredUsers.length === 0" class="empty-state">
-            <i class="fas fa-user-slash"></i>
+            <i class="fas fa-user-slash" />
             <span>검색 결과가 없습니다.</span>
           </div>
 
@@ -73,10 +75,12 @@
               @click="selectUser(user)"
             >
               <div class="user-avatar">
-                <i class="fas fa-user"></i>
+                <i class="fas fa-user" />
               </div>
               <div class="user-info">
-                <div class="user-name">{{ user.userName }}</div>
+                <div class="user-name">
+                  {{ user.userName }}
+                </div>
                 <div class="user-details">
                   <span class="user-id">{{ user.loginId }}</span>
                   <span class="user-role">{{ getRoleLabel(user.role) }}</span>
@@ -84,7 +88,7 @@
                 </div>
               </div>
               <div v-if="selectedUser?.userId === user.userId" class="check-icon">
-                <i class="fas fa-check-circle"></i>
+                <i class="fas fa-check-circle" />
               </div>
             </div>
           </div>
@@ -97,7 +101,7 @@
             :disabled="currentPage === 1"
             @click="changePage(currentPage - 1)"
           >
-            <i class="fas fa-chevron-left"></i>
+            <i class="fas fa-chevron-left" />
           </button>
           <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
           <button
@@ -105,25 +109,27 @@
             :disabled="currentPage === totalPages"
             @click="changePage(currentPage + 1)"
           >
-            <i class="fas fa-chevron-right"></i>
+            <i class="fas fa-chevron-right" />
           </button>
         </div>
 
         <!-- 푸터 -->
         <div class="modal-footer">
-          <div class="selected-info" v-if="selectedUser">
+          <div v-if="selectedUser" class="selected-info">
             <span class="label">선택됨:</span>
             <span class="name">{{ selectedUser.userName }}</span>
             <span class="role">({{ getRoleLabel(selectedUser.role) }})</span>
           </div>
           <div class="btn-group">
-            <button class="btn-cancel" @click="handleClose">취소</button>
+            <button class="btn-cancel" @click="handleClose">
+              취소
+            </button>
             <button
               class="btn-confirm"
               :disabled="!selectedUser || switching"
               @click="handleConfirm"
             >
-              <i v-if="switching" class="fas fa-spinner fa-spin"></i>
+              <i v-if="switching" class="fas fa-spinner fa-spin" />
               <span v-if="switching">전환 중...</span>
               <span v-else>사용자 전환</span>
             </button>
@@ -147,13 +153,13 @@ import { AUTH_ENDPOINTS } from '~/services/api/endpoints'
  * - loginId: 문자열 (로그인용 ID, 기존 userId)
  */
 interface UserItem {
-  userId: number       // PK (숫자, 기존 id)
-  loginId: string      // 로그인 ID (문자열, 기존 userId)
+  userId: number // PK (숫자, 기존 id)
+  loginId: string // 로그인 ID (문자열, 기존 userId)
   userName: string
   email?: string
   role: string
-  companyId?: number | null    // 회사 ID (FK)
-  companyName?: string | null  // 회사명
+  companyId?: number | null // 회사 ID (FK)
+  companyName?: string | null // 회사명
 }
 
 const props = defineProps<{
@@ -193,27 +199,27 @@ const roleFilters = [
 ]
 
 // 역할 라벨 변환
-function getRoleLabel(role: string | undefined | null): string {
+function getRoleLabel (role: string | undefined | null): string {
   const roleMap: Record<string, string> = {
-    'SYSTEM_ADMIN': '시스템관리자',
-    'LEADPOWER_MANAGER': '리드파워 담당자',
-    'OEM_MANAGER': 'OEM 담당자',
-    'SITE_MANAGER': '시공사 담당자',
-    'SITE_INSPECTOR': '시공사 감리원',
-    'SALES_MANAGER': '영업 담당자',
-    'DELIVERY_DRIVER': '운송기사',
-    'READ_ONLY': '조회 전용'
+    SYSTEM_ADMIN: '시스템관리자',
+    LEADPOWER_MANAGER: '리드파워 담당자',
+    OEM_MANAGER: 'OEM 담당자',
+    SITE_MANAGER: '시공사 담당자',
+    SITE_INSPECTOR: '시공사 감리원',
+    SALES_MANAGER: '영업 담당자',
+    DELIVERY_DRIVER: '운송기사',
+    READ_ONLY: '조회 전용'
   }
   return roleMap[role || ''] || role || '알 수 없음'
 }
 
 // 필터링된 사용자 목록
 const filteredUsers = computed(() => {
-  return users.value.filter(user => {
+  return users.value.filter((user) => {
     // 자기 자신 제외
-    if (user.userId === authStore.user?.userId) return false
+    if (user.userId === authStore.user?.userId) { return false }
     // 역할 필터 적용 (selectedRole이 비어있으면 전체 표시)
-    if (selectedRole.value && user.role !== selectedRole.value) return false
+    if (selectedRole.value && user.role !== selectedRole.value) { return false }
     return true
   })
 })
@@ -239,13 +245,13 @@ watch(selectedRole, () => {
 })
 
 // 사용자 목록 조회
-async function fetchUsers() {
+async function fetchUsers () {
   loading.value = true
   error.value = null
 
   try {
     const params = new URLSearchParams({
-      page: (currentPage.value - 1).toString(),  // UI는 1-indexed, API는 0-indexed
+      page: (currentPage.value - 1).toString(), // UI는 1-indexed, API는 0-indexed
       size: pageSize.toString()
     })
 
@@ -261,7 +267,7 @@ async function fetchUsers() {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authStore.accessToken}`
+        Authorization: `Bearer ${authStore.accessToken}`
       }
     })
 
@@ -305,42 +311,42 @@ async function fetchUsers() {
 }
 
 // 검색 실행
-function handleSearch() {
+function handleSearch () {
   currentPage.value = 1
   fetchUsers()
 }
 
 // 검색어 초기화
-function clearSearch() {
+function clearSearch () {
   searchKeyword.value = ''
   currentPage.value = 1
   fetchUsers()
 }
 
 // 역할 선택
-function selectRole(role: string) {
+function selectRole (role: string) {
   selectedRole.value = role
 }
 
 // 사용자 선택
-function selectUser(user: UserItem) {
+function selectUser (user: UserItem) {
   selectedUser.value = user
 }
 
 // 페이지 변경
-function changePage(page: number) {
+function changePage (page: number) {
   currentPage.value = page
   fetchUsers()
 }
 
 // 모달 닫기
-function handleClose() {
+function handleClose () {
   emit('close')
 }
 
 // 사용자 전환 확인
-async function handleConfirm() {
-  if (!selectedUser.value) return
+async function handleConfirm () {
+  if (!selectedUser.value) { return }
 
   switching.value = true
 

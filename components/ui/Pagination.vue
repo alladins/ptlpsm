@@ -1,11 +1,21 @@
 <template>
   <div v-if="totalPages > 0" class="pagination">
+    <!-- 맨 앞 버튼 -->
+    <button
+      :disabled="currentPage === 0 || disabled"
+      class="pagination-btn"
+      aria-label="첫 페이지"
+      @click="$emit('change', 0)"
+    >
+      &laquo;
+    </button>
+
     <!-- 이전 버튼 -->
     <button
       :disabled="currentPage === 0 || disabled"
-      @click="$emit('change', currentPage - 1)"
       class="pagination-btn"
       aria-label="이전 페이지"
+      @click="$emit('change', currentPage - 1)"
     >
       이전
     </button>
@@ -15,11 +25,11 @@
       <button
         v-for="pageNum in visiblePages"
         :key="pageNum"
-        @click="$emit('change', pageNum)"
         :class="['page-number', { active: pageNum === currentPage }]"
         :disabled="pageNum === currentPage || disabled"
         :aria-label="`${pageNum + 1}페이지`"
         :aria-current="pageNum === currentPage ? 'page' : undefined"
+        @click="$emit('change', pageNum)"
       >
         {{ pageNum + 1 }}
       </button>
@@ -28,11 +38,21 @@
     <!-- 다음 버튼 -->
     <button
       :disabled="currentPage >= totalPages - 1 || disabled"
-      @click="$emit('change', currentPage + 1)"
       class="pagination-btn"
       aria-label="다음 페이지"
+      @click="$emit('change', currentPage + 1)"
     >
       다음
+    </button>
+
+    <!-- 맨 뒤 버튼 -->
+    <button
+      :disabled="currentPage >= totalPages - 1 || disabled"
+      class="pagination-btn"
+      aria-label="마지막 페이지"
+      @click="$emit('change', totalPages - 1)"
+    >
+      &raquo;
     </button>
   </div>
 </template>
@@ -69,7 +89,7 @@ const emit = defineEmits<Emits>()
  */
 const visiblePages = computed(() => {
   const pages: number[] = []
-  const totalDisplay = props.displayCount * 2 + 1  // 표시할 총 페이지 수 (예: 2*2+1=5)
+  const totalDisplay = props.displayCount * 2 + 1 // 표시할 총 페이지 수 (예: 2*2+1=5)
 
   // 전체 페이지가 표시할 개수보다 적으면 전체 표시
   if (props.totalPages <= totalDisplay) {
@@ -94,7 +114,7 @@ const visiblePages = computed(() => {
     start -= (end - (props.totalPages - 1))
     end = props.totalPages - 1
     // start가 음수가 되지 않도록
-    if (start < 0) start = 0
+    if (start < 0) { start = 0 }
   }
 
   for (let i = start; i <= end; i++) {

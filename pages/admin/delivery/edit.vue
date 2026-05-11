@@ -12,110 +12,134 @@
         <div class="form-header">
           <h2>납품확인 정보</h2>
         </div>
-        
+
         <div class="form-container">
           <div class="form-grid">
             <!-- 첫 번째 줄: 운송장ID 조회, 수요기관명, 담당자연락처 -->
             <div class="form-group">
               <label>운송장ID</label>
               <div class="input-with-button">
-                <input type="text" v-model="deliveryForm.transportId" class="form-input" placeholder="운송장ID를 선택하세요">
+                <input v-model="deliveryForm.transportId" type="text" class="form-input" placeholder="운송장ID를 선택하세요">
                 <button type="button" class="btn-secondary" @click="searchTransport">
-                  <i class="fas fa-search"></i>
+                  <i class="fas fa-search" />
                   조회
                 </button>
               </div>
             </div>
-            
+
             <div class="form-group">
               <label>수요기관명</label>
-              <input type="text" v-model="deliveryForm.clientName" class="form-input" placeholder="수요기관명 불러오기" readonly>
+              <input v-model="deliveryForm.clientName" type="text" class="form-input" placeholder="수요기관명 불러오기" readonly>
             </div>
-            
+
             <div class="form-group">
               <label>담당자연락처</label>
-              <input type="tel" v-model="deliveryForm.managerContact" class="form-input" placeholder="연락처를 입력하세요">
+              <input v-model="deliveryForm.managerContact" type="tel" class="form-input" placeholder="연락처를 입력하세요">
             </div>
-            
+
             <!-- 두 번째 줄: 기사명, 연락처, 차량번호 -->
             <div class="form-group">
               <label>기사명</label>
-              <input type="text" v-model="deliveryForm.driverName" class="form-input" placeholder="기사명을 입력하세요">
+              <input v-model="deliveryForm.driverName" type="text" class="form-input" placeholder="기사명을 입력하세요">
             </div>
-            
+
             <div class="form-group">
               <label>연락처</label>
-              <input type="tel" v-model="deliveryForm.contact" class="form-input" placeholder="연락처를 입력하세요">
+              <input v-model="deliveryForm.contact" type="tel" class="form-input" placeholder="연락처를 입력하세요">
             </div>
-            
+
             <div class="form-group">
               <label>차량번호</label>
-              <input type="text" v-model="deliveryForm.vehicleNumber" class="form-input" placeholder="차량번호를 입력하세요">
+              <input v-model="deliveryForm.vehicleNumber" type="text" class="form-input" placeholder="차량번호를 입력하세요">
             </div>
-            
+
             <!-- 세 번째 줄: 납품일시, 검수일시 -->
             <div class="form-group">
               <label>납품일시</label>
               <div class="date-time-input">
-                <input type="date" v-model="deliveryForm.deliveryDate" class="form-input date-input">
+                <input v-model="deliveryForm.deliveryDate" type="date" class="form-input date-input">
                 <div class="time-inputs">
                   <select v-model="deliveryForm.deliveryHour" class="time-select">
-                    <option value="">시</option>
-                    <option v-for="hour in 24" :key="hour" :value="hour">{{ hour }} 시</option>
+                    <option value="">
+                      시
+                    </option>
+                    <option v-for="hour in 24" :key="hour" :value="hour">
+                      {{ hour }} 시
+                    </option>
                   </select>
                   <select v-model="deliveryForm.deliveryMinute" class="time-select">
-                    <option value="">분</option>
-                    <option v-for="minute in 60" :key="minute" :value="minute">{{ minute }} 분</option>
+                    <option value="">
+                      분
+                    </option>
+                    <option v-for="minute in 60" :key="minute" :value="minute">
+                      {{ minute }} 분
+                    </option>
                   </select>
                 </div>
               </div>
             </div>
-            
+
             <div class="form-group">
               <label>검수일시</label>
               <div class="date-time-input">
-                <input type="date" v-model="deliveryForm.inspectionDate" class="form-input date-input">
+                <input v-model="deliveryForm.inspectionDate" type="date" class="form-input date-input">
                 <div class="time-inputs">
                   <select v-model="deliveryForm.inspectionHour" class="time-select">
-                    <option value="">시</option>
-                    <option v-for="hour in 24" :key="hour" :value="hour">{{ hour }} 시</option>
+                    <option value="">
+                      시
+                    </option>
+                    <option v-for="hour in 24" :key="hour" :value="hour">
+                      {{ hour }} 시
+                    </option>
                   </select>
                   <select v-model="deliveryForm.inspectionMinute" class="time-select">
-                    <option value="">분</option>
-                    <option v-for="minute in 60" :key="minute" :value="minute">{{ minute }} 분</option>
+                    <option value="">
+                      분
+                    </option>
+                    <option v-for="minute in 60" :key="minute" :value="minute">
+                      {{ minute }} 분
+                    </option>
                   </select>
                 </div>
               </div>
             </div>
-            
+
             <div class="form-group">
               <!-- 빈 공간 -->
             </div>
-            
+
             <!-- 네 번째 줄: 검수결과, 검수자 -->
             <div class="form-group">
               <label>검수결과</label>
               <select v-model="deliveryForm.inspectionResult" class="form-select">
-                <option value="">검수결과를 선택하세요</option>
-                <option value="합격">합격</option>
-                <option value="불합격">불합격</option>
-                <option value="조건부합격">조건부합격</option>
+                <option value="">
+                  검수결과를 선택하세요
+                </option>
+                <option value="합격">
+                  합격
+                </option>
+                <option value="불합격">
+                  불합격
+                </option>
+                <option value="조건부합격">
+                  조건부합격
+                </option>
               </select>
             </div>
-            
+
             <div class="form-group">
               <label>검수자</label>
-              <input type="text" v-model="deliveryForm.inspector" class="form-input" placeholder="검수자명을 입력하세요">
+              <input v-model="deliveryForm.inspector" type="text" class="form-input" placeholder="검수자명을 입력하세요">
             </div>
-            
+
             <div class="form-group">
               <!-- 빈 공간 -->
             </div>
-            
+
             <!-- 다섯 번째 줄: 비고 -->
             <div class="form-group full-width">
               <label>비고</label>
-              <input type="text" v-model="deliveryForm.remarks" class="form-input" placeholder="비고를 입력하세요">
+              <input v-model="deliveryForm.remarks" type="text" class="form-input" placeholder="비고를 입력하세요">
             </div>
           </div>
         </div>
@@ -123,10 +147,18 @@
 
       <!-- 하단 버튼 -->
       <div class="bottom-actions">
-        <button class="btn-primary" @click="register">등록</button>
-        <button class="btn-secondary" @click="modify">수정</button>
-        <button class="btn-secondary" @click="cancel">취소</button>
-        <button class="btn-delete" @click="deleteDelivery">삭제</button>
+        <button class="btn-primary" @click="register">
+          등록
+        </button>
+        <button class="btn-secondary" @click="modify">
+          수정
+        </button>
+        <button class="btn-secondary" @click="cancel">
+          취소
+        </button>
+        <button class="btn-delete" @click="deleteDelivery">
+          삭제
+        </button>
       </div>
     </div>
 
@@ -135,24 +167,26 @@
       <div class="popup-content" @click.stop>
         <div class="popup-header">
           <h3>운송장 목록</h3>
-          <button @click="closeTransportPopup" class="popup-close">
-            <i class="fas fa-times"></i>
+          <button class="popup-close" @click="closeTransportPopup">
+            <i class="fas fa-times" />
           </button>
         </div>
-        
+
         <div class="popup-body">
           <!-- 검색 조건 -->
           <div class="popup-search">
             <div class="search-row">
               <div class="date-range">
-                <input type="date" v-model="transportSearch.startDate" class="form-input">
+                <input v-model="transportSearch.startDate" type="date" class="form-input">
                 <span class="date-separator">~</span>
-                <input type="date" v-model="transportSearch.endDate" class="form-input">
+                <input v-model="transportSearch.endDate" type="date" class="form-input">
               </div>
-              <button class="btn-primary" @click="searchTransports">검색</button>
+              <button class="btn-primary" @click="searchTransports">
+                검색
+              </button>
             </div>
           </div>
-          
+
           <!-- 운송장 목록 테이블 -->
           <div class="table-container">
             <table class="data-table">
@@ -174,11 +208,11 @@
                   <td>{{ transport.driverName }}</td>
                   <td>{{ transport.status }}</td>
                   <td>
-                    <input 
-                      type="radio" 
-                      :name="'transport-select'" 
-                      :value="transport.id"
+                    <input
                       v-model="selectedTransportId"
+                      type="radio"
+                      :name="'transport-select'"
+                      :value="transport.id"
                       @change="selectTransport(transport)"
                     >
                   </td>
@@ -187,9 +221,11 @@
             </table>
           </div>
         </div>
-        
+
         <div class="popup-footer">
-          <button class="btn-primary" @click="confirmTransport">확인</button>
+          <button class="btn-primary" @click="confirmTransport">
+            확인
+          </button>
         </div>
       </div>
     </div>

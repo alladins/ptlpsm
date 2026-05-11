@@ -8,51 +8,51 @@
       </NuxtLink>
       <!-- 모바일 닫기 버튼 -->
       <button class="mobile-close-btn" @click="$emit('close-mobile')">
-        <i class="fas fa-times"></i>
+        <i class="fas fa-times" />
       </button>
     </div>
 
     <!-- 메뉴 영역 -->
     <nav class="sidebar-nav">
       <ul class="menu-list">
-        <li 
-          v-for="menu in menus" 
-          :key="menu.menuId" 
+        <li
+          v-for="menu in menus"
+          :key="menu.menuId"
           class="menu-item"
           :class="{ 'has-submenu': menu.children && menu.children.length > 0 }"
         >
           <!-- 1차 메뉴 -->
-          <div 
+          <div
             class="menu-link"
             :class="{ 'active': isActiveMenu(menu) }"
             @click="toggleSubmenu(menu)"
           >
-            <i :class="menu.menuIcon" class="menu-icon"></i>
+            <i :class="menu.menuIcon" class="menu-icon" />
             <span class="menu-text">{{ menu.menuName }}</span>
-            <i 
+            <i
               v-if="menu.children && menu.children.length > 0"
               class="submenu-arrow fas fa-chevron-down"
               :class="{ 'rotated': expandedMenus.includes(menu.menuId) }"
-            ></i>
+            />
           </div>
 
           <!-- 2차 메뉴 -->
-          <ul 
+          <ul
             v-if="menu.children && menu.children.length > 0"
             class="submenu-list"
             :class="{ 'expanded': expandedMenus.includes(menu.menuId) }"
           >
-            <li 
-              v-for="submenu in menu.children" 
+            <li
+              v-for="submenu in menu.children"
               :key="submenu.menuId"
               class="submenu-item"
             >
-              <NuxtLink 
-                :to="submenu.menuUrl" 
+              <NuxtLink
+                :to="submenu.menuUrl"
                 class="submenu-link"
                 :class="{ 'active': isActiveSubmenu(submenu) }"
               >
-                <i :class="submenu.menuIcon" class="submenu-icon"></i>
+                <i :class="submenu.menuIcon" class="submenu-icon" />
                 <span class="submenu-text">{{ submenu.menuName }}</span>
               </NuxtLink>
             </li>
@@ -65,43 +65,47 @@
     <div class="sidebar-footer">
       <div class="user-info" @click="toggleUserMenu">
         <div class="user-avatar">
-          <img 
-            src="/images/common/ico_my.png" 
-            alt="사용자 프로필" 
+          <img
+            src="/images/common/ico_my.png"
+            alt="사용자 프로필"
             class="user-avatar-img"
             @error="showAvatarFallback = true"
           >
           <div v-if="showAvatarFallback" class="user-avatar-fallback">
-            <i class="fas fa-user"></i>
+            <i class="fas fa-user" />
           </div>
         </div>
         <div class="user-details">
-          <div class="user-name">{{ userInfo.name }}</div>
-          <div class="user-role">{{ userInfo.role }}</div>
+          <div class="user-name">
+            {{ userInfo.name }}
+          </div>
+          <div class="user-role">
+            {{ userInfo.role }}
+          </div>
         </div>
         <div class="user-menu-arrow">
-          <i class="fas fa-chevron-up" :class="{ 'rotated': isUserMenuOpen }"></i>
+          <i class="fas fa-chevron-up" :class="{ 'rotated': isUserMenuOpen }" />
         </div>
       </div>
-      
+
       <!-- 사용자 메뉴 드롭다운 -->
       <div v-if="isUserMenuOpen" class="user-menu-dropdown">
         <NuxtLink to="/profile" class="user-menu-item" @click="closeUserMenu">
-          <i class="fas fa-user"></i>
+          <i class="fas fa-user" />
           <span>내 정보</span>
         </NuxtLink>
         <!-- 사용자 전환 (SYSTEM_ADMIN만 표시) -->
         <button
           v-if="authStore.canImpersonate"
-          @click="openUserSwitchModal"
           class="user-menu-item user-switch-item"
+          @click="openUserSwitchModal"
         >
-          <i class="fas fa-user-secret"></i>
+          <i class="fas fa-user-secret" />
           <span>사용자 전환</span>
         </button>
-        <div class="user-menu-divider"></div>
-        <button @click="handleLogout" class="user-menu-item logout-item">
-          <i class="fas fa-sign-out-alt"></i>
+        <div class="user-menu-divider" />
+        <button class="user-menu-item logout-item" @click="handleLogout">
+          <i class="fas fa-sign-out-alt" />
           <span>로그아웃</span>
         </button>
       </div>
@@ -158,13 +162,50 @@ const manualMenus = ref<MenuWithAuth[]>([
     menuId: 1,
     menuCode: 'SALES',
     menuName: '영업관리',
-    menuUrl: '/admin/sales/list',
+    menuUrl: '/admin/sales',
     menuIcon: 'fas fa-chart-line',
     menuLevel: 1,
     sortOrder: 1,
     visible: 'Y',
     useYn: 'Y',
-    target: '_self',
+    children: [
+      {
+        menuId: 11,
+        menuCode: 'SALESD',
+        menuName: '영업일지',
+        menuUrl: '/admin/sales/list',
+        menuIcon: 'fas fa-book',
+        menuLevel: 2,
+        sortOrder: 1,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 12,
+        menuCode: 'QUOTATION',
+        menuName: '견적관리',
+        menuUrl: '/admin/quotation/list',
+        menuIcon: 'fas fa-file-invoice-dollar',
+        menuLevel: 2,
+        sortOrder: 2,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 13,
+        menuCode: 'BUSINESS_CARD',
+        menuName: '명함관리',
+        menuUrl: '/admin/business-card/list',
+        menuIcon: 'fas fa-address-card',
+        menuLevel: 2,
+        sortOrder: 3,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      }
+    ]
   },
   {
     menuId: 2,
@@ -393,6 +434,18 @@ const manualMenus = ref<MenuWithAuth[]>([
         menuIcon: 'fas fa-credit-card',
         menuLevel: 2,
         sortOrder: 3,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
+        menuId: 65,
+        menuCode: 'COMMISSION_MONTHLY',
+        menuName: '월별 수익배분',
+        menuUrl: '/admin/commission/monthly-snapshots',
+        menuIcon: 'fas fa-calendar-alt',
+        menuLevel: 2,
+        sortOrder: 4,
         visible: 'Y',
         useYn: 'Y',
         children: []
@@ -627,6 +680,18 @@ const manualMenus = ref<MenuWithAuth[]>([
         visible: 'Y',
         useYn: 'Y',
         children: []
+      },
+      {
+        menuId: 89,
+        menuCode: 'COMPANY_FILE_MANAGE',
+        menuName: '회사 파일관리',
+        menuUrl: '/admin/basic-info/company-files/list',
+        menuIcon: 'fas fa-folder-open',
+        menuLevel: 2,
+        sortOrder: 9,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
       }
     ]
   },
@@ -708,16 +773,12 @@ const router = useRouter()
 /**
  * 권한 필터링된 메뉴 목록
  * - readAuth가 'Y'인 메뉴만 표시
- * - 전체 접근 권한(SYSTEM_ADMIN, LEADPOWER_MANAGER)은 모든 메뉴 표시
- * - 단, LEADPOWER_MANAGER는 시스템관리(SYSTEM) 메뉴 제외
+ * - 전체 접근 권한(SYSTEM_ADMIN)은 모든 메뉴 표시
+ * - 그 외 역할은 role_menu_auth 권한 설정에 따라 필터링
  */
 const menus = computed(() => {
-  // 전체 접근 권한이 있으면 필터링 없이 모두 표시
+  // 전체 접근 권한이 있으면 필터링 없이 모두 표시 (SYSTEM_ADMIN)
   if (permissionStore.isFullAccess) {
-    // 리드파워 담당자는 시스템관리 메뉴 제외
-    if (permissionStore.currentUserRole === 'LEADPOWER_MANAGER') {
-      return rawMenus.value.filter(menu => menu.menuCode !== 'SYSTEM')
-    }
     return rawMenus.value
   }
 
@@ -733,9 +794,9 @@ const menus = computed(() => {
  * - isFullAccess(SYSTEM_ADMIN)는 이 함수 호출 전에 처리됨
  * - 부모 메뉴는 자식 중 하나라도 권한이 있으면 표시
  */
-function filterMenusByPermission(menuList: MenuWithAuth[]): MenuWithAuth[] {
+function filterMenusByPermission (menuList: MenuWithAuth[]): MenuWithAuth[] {
   return menuList
-    .map(menu => {
+    .map((menu) => {
       // 하위 메뉴가 있으면 먼저 재귀적으로 필터링
       if (menu.children && menu.children.length > 0) {
         const filteredChildren = filterMenusByPermission(menu.children)
@@ -746,7 +807,7 @@ function filterMenusByPermission(menuList: MenuWithAuth[]): MenuWithAuth[] {
       }
       return menu
     })
-    .filter(menu => {
+    .filter((menu) => {
       // 1. 하위 메뉴가 있는 부모 메뉴인 경우
       if (menu.children && menu.children.length > 0) {
         // 필터링된 자식 메뉴가 하나라도 있으면 부모 표시
@@ -771,13 +832,13 @@ function filterMenusByPermission(menuList: MenuWithAuth[]): MenuWithAuth[] {
 /**
  * 원본 메뉴 찾기
  */
-function findOriginalMenu(menuId: number): MenuWithAuth | null {
-  function search(menus: MenuWithAuth[]): MenuWithAuth | null {
+function findOriginalMenu (menuId: number): MenuWithAuth | null {
+  function search (menus: MenuWithAuth[]): MenuWithAuth | null {
     for (const menu of menus) {
-      if (menu.menuId === menuId) return menu
+      if (menu.menuId === menuId) { return menu }
       if (menu.children) {
         const found = search(menu.children)
-        if (found) return found
+        if (found) { return found }
       }
     }
     return null
@@ -822,16 +883,16 @@ const loadMenus = async () => {
 /**
  * 역할 표시명 변환
  */
-function getRoleDisplayName(role: string): string {
+function getRoleDisplayName (role: string): string {
   const roleNames: Record<string, string> = {
-    'SYSTEM_ADMIN': '시스템관리자',
-    'LEADPOWER_MANAGER': '리드파워 담당자',
-    'OEM_MANAGER': 'OEM 담당자',
-    'SITE_MANAGER': '시공사 담당자',
-    'SITE_INSPECTOR': '시공사 감리원',
-    'SALES_MANAGER': '영업 담당자',
-    'DELIVERY_DRIVER': '운송기사',
-    'READ_ONLY': '조회 전용'
+    SYSTEM_ADMIN: '시스템관리자',
+    LEADPOWER_MANAGER: '리드파워 담당자',
+    OEM_MANAGER: 'OEM 담당자',
+    SITE_MANAGER: '시공사 담당자',
+    SITE_INSPECTOR: '시공사 감리원',
+    SALES_MANAGER: '영업 담당자',
+    DELIVERY_DRIVER: '운송기사',
+    READ_ONLY: '조회 전용'
   }
   return roleNames[role] || role || '사용자'
 }
@@ -843,14 +904,14 @@ function getRoleDisplayName(role: string): string {
  * - 서버에서 권한 정보가 없으면 기본적으로 접근 불허
  * - API에서 명시적으로 readAuth: 'Y'를 받아야만 메뉴 표시
  */
-function mergeMenuPermissions(
+function mergeMenuPermissions (
   manualMenuList: MenuWithAuth[],
   serverMenus: (Menu & { auth?: MenuAuth })[]
 ): MenuWithAuth[] {
   // 서버 메뉴를 menuCode로 맵핑
   const serverMenuMap = new Map<string, Menu & { auth?: MenuAuth }>()
 
-  function mapServerMenus(menus: (Menu & { auth?: MenuAuth })[]) {
+  function mapServerMenus (menus: (Menu & { auth?: MenuAuth })[]) {
     for (const menu of menus) {
       if (menu.menuCode) {
         serverMenuMap.set(menu.menuCode, menu)
@@ -863,14 +924,14 @@ function mergeMenuPermissions(
   mapServerMenus(serverMenus)
 
   // 수동 메뉴에 서버 권한 정보 병합
-  function merge(menus: MenuWithAuth[]): MenuWithAuth[] {
-    return menus.map(menu => {
+  function merge (menus: MenuWithAuth[]): MenuWithAuth[] {
+    return menus.map((menu) => {
       const serverMenu = serverMenuMap.get(menu.menuCode)
       const mergedMenu: MenuWithAuth = {
         ...menu,
         // ✅ 보안 우선: 서버 권한 없으면 기본적으로 접근 불허
         auth: serverMenu?.auth || {
-          readAuth: 'N',   // 기본값: 조회 불허 (API에서 명시적 허용 필요)
+          readAuth: 'N', // 기본값: 조회 불허 (API에서 명시적 허용 필요)
           writeAuth: 'N',
           editAuth: 'N',
           deleteAuth: 'N'
@@ -887,7 +948,6 @@ function mergeMenuPermissions(
 
   return merge(manualMenuList)
 }
-
 
 const toggleSubmenu = (menu: Menu) => {
   if (!menu.children || menu.children.length === 0) {
@@ -1029,12 +1089,12 @@ const expandMenuForCurrentPath = () => {
   const currentPath = route.path
 
   // 현재 경로와 매칭되는 메인 메뉴 찾기
-  const matchingMenu = menus.value.find(menu => {
+  const matchingMenu = menus.value.find((menu) => {
     if (menu.children && menu.children.length > 0) {
       // 자식 메뉴 중에 현재 경로와 일치하거나 시작하는 게 있는지 확인
       // 예: /admin/delivery/list 또는 /admin/order/edit/123 등
-      return menu.children.some(submenu => {
-        if (!submenu.menuUrl) return false
+      return menu.children.some((submenu) => {
+        if (!submenu.menuUrl) { return false }
         // 정확히 일치하거나, 현재 경로가 메뉴 URL로 시작하는 경우
         return currentPath === submenu.menuUrl ||
                currentPath.startsWith(submenu.menuUrl + '/') ||
@@ -1073,7 +1133,9 @@ watch(
 <style scoped>
 /* ========== 사이드바 메인 컨테이너 ========== */
 .sidebar-menu {
-  width: 280px;
+  width: 250px;
+  min-width: 250px;
+  flex-shrink: 0;
   height: 100vh;
   background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-dark) 100%);
   color: var(--sidebar-text);
@@ -1472,7 +1534,7 @@ watch(
 /* 반응형 */
 @media (max-width: 768px) {
   .sidebar-menu {
-    width: 280px;
+    width: 250px;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     position: fixed;
@@ -1505,62 +1567,62 @@ watch(
     transition: all 0.3s ease;
     z-index: 1001;
   }
-  
+
   .mobile-close-btn:hover {
     background: #dc2626;
     transform: scale(1.1);
   }
-  
+
   .mobile-close-btn:active {
     transform: scale(0.9);
   }
-  
+
   /* 모바일에서 사이드바 내부 스크롤 */
   .sidebar-content {
     height: calc(100vh - 120px);
     overflow-y: auto;
   }
-  
+
   /* 모바일에서 사이드바 헤더 조정 */
   .sidebar-header {
     padding: 20px 20px 20px 20px;
     position: relative;
   }
-  
+
   .sidebar-logo {
     padding-right: 50px; /* 닫기 버튼 공간 확보 */
   }
-  
+
   /* 모바일에서 메뉴 아이템 터치 최적화 */
   .menu-item {
     padding: 12px 20px;
     min-height: 48px;
   }
-  
+
   .menu-item i {
     font-size: 18px;
     width: 24px;
   }
-  
+
   .menu-item span {
     font-size: 16px;
   }
-  
+
   /* 모바일에서 서브메뉴 최적화 */
   .submenu {
     padding-left: 20px;
   }
-  
+
   .submenu .menu-item {
     padding: 10px 20px;
     min-height: 44px;
   }
-  
+
   .submenu .menu-item i {
     font-size: 16px;
     width: 20px;
   }
-  
+
   .submenu .menu-item span {
     font-size: 14px;
   }
@@ -1571,7 +1633,7 @@ watch(
   .sidebar-menu {
     transform: translateX(0);
     position: relative;
-    width: 280px;
+    width: 250px;
   }
 
   .mobile-close-btn {

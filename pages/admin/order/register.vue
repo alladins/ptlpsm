@@ -3,41 +3,42 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       title="납품요구관리 - 분할납품요구서 등록"
+      icon="order"
+      icon-color="purple"
       description="발주서 PDF를 업로드하여 분할납품요구서 정보를 등록합니다."
     >
       <template #actions>
         <input
-          type="file"
           ref="fileInput"
+          type="file"
           accept=".pdf"
-          @change="handleFileUpload"
           style="display: none"
+          @change="handleFileUpload"
         >
         <button class="btn-secondary" @click="triggerFileUpload">
-          <i class="fas fa-file-pdf"></i>
+          <i class="fas fa-file-pdf" />
           PDF 업로드
         </button>
       </template>
     </PageHeader>
-
     <!-- 업로드 상태 표시 -->
     <div v-if="uploadStatus && !isDuplicate" class="upload-status">
       <div v-if="uploadStatus.loading" class="status-loading">
-        <i class="fas fa-spinner fa-spin"></i>
+        <i class="fas fa-spinner fa-spin" />
         <span>{{ uploadStatus.message }}</span>
       </div>
       <div v-else-if="uploadStatus.success" class="status-success">
-        <i class="fas fa-check-circle"></i>
+        <i class="fas fa-check-circle" />
         <span>{{ uploadStatus.message }}</span>
         <button class="status-close" @click="uploadStatus = null">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
       <div v-else-if="uploadStatus.error" class="status-error">
-        <i class="fas fa-exclamation-circle"></i>
+        <i class="fas fa-exclamation-circle" />
         <span>{{ uploadStatus.message }}</span>
         <button class="status-close" @click="uploadStatus = null">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
     </div>
@@ -45,13 +46,13 @@
     <!-- 중복 경고 배너 -->
     <div v-if="isDuplicate" class="duplicate-warning">
       <div class="duplicate-warning-content">
-        <i class="fas fa-exclamation-triangle"></i>
+        <i class="fas fa-exclamation-triangle" />
         <div class="duplicate-warning-text">
           <strong>중복된 납품요구번호</strong>
           <span>{{ duplicateMessage || '이미 등록된 납품요구번호입니다.' }}</span>
         </div>
         <button class="btn-secondary btn-sm" @click="cancel">
-          <i class="fas fa-list"></i>
+          <i class="fas fa-list" />
           목록으로 이동
         </button>
       </div>
@@ -63,39 +64,39 @@
         <!-- 1. 계약 정보 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-file-alt"></i>
+            <i class="fas fa-file-alt" />
             <span>계약 정보</span>
           </div>
           <div class="info-grid grid-5">
             <FormField label="계약번호" required>
-              <input type="text" v-model="contractForm.contractNo" class="form-input-sm" readonly>
+              <input v-model="contractForm.contractNo" type="text" class="form-input-sm" readonly>
             </FormField>
             <FormField label="계약일자" required>
-              <input type="text" v-model="contractForm.contractDate" class="form-input-sm" readonly>
+              <input v-model="contractForm.contractDate" type="text" class="form-input-sm" readonly>
             </FormField>
             <FormField label="선고지번호">
-              <input type="text" v-model="contractForm.preNotificationNo" class="form-input-xs" readonly>
+              <input v-model="contractForm.preNotificationNo" type="text" class="form-input-xs" readonly>
             </FormField>
             <FormField label="납품요구번호" required>
-              <input type="text" v-model="contractForm.deliveryRequestNo" class="form-input-sm" readonly>
+              <input v-model="contractForm.deliveryRequestNo" type="text" class="form-input-sm" readonly>
             </FormField>
             <FormField label="납품요구일자" required>
-              <input type="text" v-model="contractForm.deliveryRequestDate" class="form-input-sm" readonly>
+              <input v-model="contractForm.deliveryRequestDate" type="text" class="form-input-sm" readonly>
             </FormField>
           </div>
           <div class="info-group-header">
-            <i class="fas fa-file-contract"></i>
+            <i class="fas fa-file-contract" />
             <span>계약 상세</span>
           </div>
           <div class="info-grid grid-4">
             <FormField label="나라장터번호">
-              <input type="text" v-model="contractForm.naraJangteoNo" class="form-input-sm" readonly>
+              <input v-model="contractForm.naraJangteoNo" type="text" class="form-input-sm" readonly>
             </FormField>
             <FormField label="지급방법">
-              <input type="text" v-model="contractForm.paymentMethod" class="form-input-sm" readonly>
+              <input v-model="contractForm.paymentMethod" type="text" class="form-input-sm" readonly>
             </FormField>
             <FormField label="사업명" grid-2 required>
-              <input type="text" v-model="contractForm.projectName" class="form-input-md" style="width: 370px" readonly>
+              <input v-model="contractForm.projectName" type="text" class="form-input-md" style="width: 370px" readonly>
             </FormField>
           </div>
         </div>
@@ -103,30 +104,30 @@
         <!-- 2. 수요기관 정보 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-building"></i>
+            <i class="fas fa-building" />
             <span>수요기관 정보</span>
           </div>
           <div class="info-grid grid-4">
             <FormField label="수요기관명" required>
-              <input type="text" v-model="contractForm.client" class="form-input-md" readonly>
+              <input v-model="contractForm.client" type="text" class="form-input-md" readonly>
             </FormField>
             <FormField label="기관번호">
-              <input type="text" v-model="contractForm.clientNo" class="form-input-sm" readonly>
+              <input v-model="contractForm.clientNo" type="text" class="form-input-sm" readonly>
             </FormField>
             <FormField label="우편번호">
-              <input type="text" v-model="contractForm.clientPostalCode" class="form-input-sm" readonly>
+              <input v-model="contractForm.clientPostalCode" type="text" class="form-input-sm" readonly>
             </FormField>
             <FormField label="주소" full-width>
-              <input type="text" v-model="contractForm.clientAddress" class="form-input-lg" readonly>
+              <input v-model="contractForm.clientAddress" type="text" class="form-input-lg" readonly>
             </FormField>
             <FormField label="전화번호">
-              <input type="text" v-model="contractForm.clientPhoneNumber" class="form-input" readonly>
+              <input v-model="contractForm.clientPhoneNumber" type="text" class="form-input" readonly>
             </FormField>
             <FormField label="팩스번호">
-              <input type="text" v-model="contractForm.clientFaxNumber" class="form-input" readonly>
+              <input v-model="contractForm.clientFaxNumber" type="text" class="form-input" readonly>
             </FormField>
             <FormField label="담당자">
-              <input type="text" v-model="contractForm.clientManagerName" class="form-input" readonly>
+              <input v-model="contractForm.clientManagerName" type="text" class="form-input" readonly>
             </FormField>
           </div>
         </div>
@@ -134,7 +135,7 @@
         <!-- 3. 기타 정보 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-clipboard-list"></i>
+            <i class="fas fa-clipboard-list" />
             <span>기타 정보</span>
           </div>
           <!-- 건설사 선택 (OEM 제조사는 출하 등록 시 선택) -->
@@ -142,10 +143,12 @@
             <FormField label="건설사">
               <select
                 v-model="contractForm.builderCompanyId"
-                @change="handleBuilderChange"
                 class="form-input-sm"
+                @change="handleBuilderChange"
               >
-                <option :value="null">선택하세요</option>
+                <option :value="null">
+                  선택하세요
+                </option>
                 <option
                   v-for="company in companies"
                   :key="company.id"
@@ -159,16 +162,16 @@
           <!-- 기존 필드들 -->
           <div class="info-grid grid-4">
             <FormField label="분할납품">
-              <input type="text" v-model="contractForm.partialDelivery" class="form-input-xs" readonly>
+              <input v-model="contractForm.partialDelivery" type="text" class="form-input-xs" readonly>
             </FormField>
             <FormField label="하자담보책임기간">
-              <input type="text" v-model="contractForm.warrantyPeriod" class="form-input-xs" readonly>
+              <input v-model="contractForm.warrantyPeriod" type="text" class="form-input-xs" readonly>
             </FormField>
             <FormField label="검사기관">
-              <input type="text" v-model="contractForm.inspectionAgency" class="form-input-md" readonly>
+              <input v-model="contractForm.inspectionAgency" type="text" class="form-input-md" readonly>
             </FormField>
             <FormField label="인수기관">
-              <input type="text" v-model="contractForm.acceptanceAgency" class="form-input-md" readonly>
+              <input v-model="contractForm.acceptanceAgency" type="text" class="form-input-md" readonly>
             </FormField>
           </div>
         </div>
@@ -176,7 +179,7 @@
         <!-- 4. 금액 정보 -->
         <div class="info-group amount-group">
           <div class="info-group-header">
-            <i class="fas fa-won-sign"></i>
+            <i class="fas fa-won-sign" />
             <span>금액 정보</span>
           </div>
           <div class="amount-display">
@@ -204,30 +207,60 @@
           <table class="items-table">
             <thead>
               <tr>
-                <th class="col-no">순번</th>
-                <th class="col-name">품명</th>
-                <th class="col-spec">규격</th>
-                <th class="col-unit">단위</th>
-                <th class="col-price">단가</th>
-                <th class="col-qty">수량</th>
-                <th class="col-amount">금액</th>
-                <th class="col-location">납품장소</th>
-                <th class="col-deadline">납품기한 <span style="color: #ef4444;">*</span></th>
-                <th class="col-terms">납품조건</th>
+                <th class="col-no">
+                  순번
+                </th>
+                <th class="col-name">
+                  품명
+                </th>
+                <th class="col-spec">
+                  규격
+                </th>
+                <th class="col-unit">
+                  단위
+                </th>
+                <th class="col-price">
+                  단가
+                </th>
+                <th class="col-qty">
+                  수량
+                </th>
+                <th class="col-amount">
+                  금액
+                </th>
+                <th class="col-location">
+                  납품장소
+                </th>
+                <th class="col-deadline">
+                  납품기한 <span style="color: #ef4444;">*</span>
+                </th>
+                <th class="col-terms">
+                  납품조건
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="items.length === 0">
-                <td colspan="10" class="empty-row">PDF를 업로드하면 자동으로 채워집니다</td>
+                <td colspan="10" class="empty-row">
+                  PDF를 업로드하면 자동으로 채워집니다
+                </td>
               </tr>
               <tr v-for="(item, index) in items" :key="index">
-                <td class="text-center">{{ index + 1 }}</td>
+                <td class="text-center">
+                  {{ index + 1 }}
+                </td>
                 <td><input v-model="item.name" type="text" readonly></td>
                 <td><input v-model="item.specification" type="text" readonly></td>
                 <td><input v-model="item.unit" type="text" readonly></td>
-                <td class="text-right"><input :value="formatNumber(item.unitPrice)" type="text" readonly class="text-right"></td>
-                <td class="text-right"><input :value="formatQuantity(item.quantity)" type="text" readonly class="text-right"></td>
-                <td class="text-right"><input :value="formatNumber(item.totalAmount)" type="text" readonly class="text-right"></td>
+                <td class="text-right">
+                  <input :value="formatNumber(item.unitPrice)" type="text" readonly class="text-right">
+                </td>
+                <td class="text-right">
+                  <input :value="formatQuantity(item.quantity)" type="text" readonly class="text-right">
+                </td>
+                <td class="text-right">
+                  <input :value="formatNumber(item.totalAmount)" type="text" readonly class="text-right">
+                </td>
                 <td><input v-model="item.deliveryLocation" type="text"></td>
                 <td><input v-model="item.deliveryDeadline" type="text"></td>
                 <td><input v-model="item.deliveryTerms" type="text"></td>
@@ -251,15 +284,15 @@
 
       <!-- 버튼 영역 -->
       <div class="form-actions">
-        <button type="button" @click="cancel" class="btn-secondary" :disabled="submitting">
+        <button type="button" class="btn-secondary" :disabled="submitting" @click="cancel">
           {{ isDuplicate ? '목록으로 이동' : '취소' }}
         </button>
         <button
           type="button"
-          @click="register"
           class="btn-primary"
           :disabled="submitting || isDuplicate || !canWrite || !isPdfLoaded"
           :title="!canWrite ? '등록 권한이 없습니다' : isDuplicate ? '이미 등록된 납품요구번호입니다' : !isPdfLoaded ? 'PDF를 먼저 업로드해주세요' : ''"
+          @click="register"
         >
           {{ submitting ? '등록 중...' : '등록' }}
         </button>
@@ -364,15 +397,15 @@ const contractForm = ref({
   partialDelivery: '',
   inspectionAgency: '',
   acceptanceAgency: '',
-  siteManagerId: null as number | null,  // deprecated
-  builderCompanyId: null as number | null,  // 건설사 ID
-  builderCompany: '',                       // 건설사명
+  siteManagerId: null as number | null, // deprecated
+  builderCompanyId: null as number | null, // 건설사 ID
+  builderCompany: '', // 건설사명
   // OEM 제조사는 출하 등록 시 선택 (납품요구에서 제거됨)
   quantityTotal: '',
   preDiscountAmountTotal: '',
   pdfFilePath: '',
   contractType: '' as ContractType | '',
-  clientBizno: ''  // 수요기관 사업자등록번호
+  clientBizno: '' // 수요기관 사업자등록번호
 })
 
 // 계약 유형 선택 관련 상태
@@ -413,7 +446,7 @@ const handleFileUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
 
-  if (!file) return
+  if (!file) { return }
 
   // PDF 검증
   const isValidPdf = file.type === 'application/pdf' ||
@@ -452,12 +485,14 @@ const handleFileUpload = async (event: Event) => {
 
     if (result.success) {
       // 백엔드 응답에서 계약 유형 체크 결과 구성
-      const contractCheck: ContractTypeCheckResult | undefined = result.isOriginalContract !== undefined ? {
-        isOriginalContract: result.isOriginalContract,
-        existingContractNo: result.extractedContractInfo?.deliveryRequestNumber?.replace(/-\d{2}$/, '-00'),
-        newContractNo: result.extractedContractInfo?.deliveryRequestNumber || '',
-        detectedContractType: result.detectedContractType
-      } : undefined
+      const contractCheck: ContractTypeCheckResult | undefined = result.isOriginalContract !== undefined
+        ? {
+            isOriginalContract: result.isOriginalContract,
+            existingContractNo: result.extractedContractInfo?.deliveryRequestNumber?.replace(/-\d{2}$/, '-00'),
+            newContractNo: result.extractedContractInfo?.deliveryRequestNumber || '',
+            detectedContractType: result.detectedContractType
+          }
+        : undefined
 
       // 계약 유형 체크: 본계약이 아니면 (접미사 01, 02, ...) 팝업으로 선택
       if (contractCheck && !contractCheck.isOriginalContract) {
@@ -520,7 +555,7 @@ const handleFileUpload = async (event: Event) => {
 
 // 쉼표가 포함된 문자열을 숫자로 변환 (PDF 파싱 데이터용)
 const parseFormattedNumber = (value: any): number => {
-  if (value === null || value === undefined || value === '') return 0
+  if (value === null || value === undefined || value === '') { return 0 }
   const str = String(value).replace(/,/g, '')
   const num = parseFloat(str)
   return isNaN(num) ? 0 : num
@@ -528,13 +563,13 @@ const parseFormattedNumber = (value: any): number => {
 
 // 규격에서 두께(mm) 숫자를 추출하여 정렬에 사용
 const extractSpecThickness = (specification: string): number => {
-  if (!specification) return 9999
+  if (!specification) { return 9999 }
   // "NNN×NNN×NNNmm" 또는 "NNN*NNN*NNNmm" 패턴에서 마지막 숫자(두께) 추출
   const dimMatch = specification.match(/(\d+)\s*[×x*]\s*(\d+)\s*[×x*]\s*(\d+)\s*mm/i)
-  if (dimMatch) return parseInt(dimMatch[3], 10)
+  if (dimMatch) { return parseInt(dimMatch[3], 10) }
   // "NNNmm" 패턴에서 숫자 추출
   const mmMatch = specification.match(/(\d+)\s*mm/i)
-  if (mmMatch) return parseInt(mmMatch[1], 10)
+  if (mmMatch) { return parseInt(mmMatch[1], 10) }
   return 9999
 }
 
@@ -575,7 +610,7 @@ const fillItemsWithExtractedData = (deliveryItems: any[]) => {
 
 // 납품요구번호 중복 체크
 const checkDuplicateDeliveryRequest = async (deliveryRequestNo: string) => {
-  if (!deliveryRequestNo) return
+  if (!deliveryRequestNo) { return }
 
   try {
     console.log('📤 중복 체크 요청:', deliveryRequestNo)
@@ -608,32 +643,32 @@ const checkDuplicateDeliveryRequest = async (deliveryRequestNo: string) => {
 
 // 추출된 데이터로 폼 채우기
 const fillFormWithExtractedData = (data: any) => {
-  if (data.contractNumber) contractForm.value.contractNo = data.contractNumber
-  if (data.contractDate) contractForm.value.contractDate = data.contractDate
-  if (data.preNotificationNumber) contractForm.value.preNotificationNo = data.preNotificationNumber
-  if (data.deliveryRequestNumber) contractForm.value.deliveryRequestNo = data.deliveryRequestNumber
-  if (data.requestingAgency) contractForm.value.client = data.requestingAgency
-  if (data.requestingAgencyNumber) contractForm.value.clientNo = data.requestingAgencyNumber
-  if (data.requestingAgencyPostalCode) contractForm.value.clientPostalCode = data.requestingAgencyPostalCode
-  if (data.requestingAgencyAddress) contractForm.value.clientAddress = data.requestingAgencyAddress
-  if (data.requestingAgencyPhoneNumber) contractForm.value.clientPhoneNumber = data.requestingAgencyPhoneNumber
-  if (data.requestingAgencyFaxNumber) contractForm.value.clientFaxNumber = data.requestingAgencyFaxNumber
-  if (data.requestingAgencyContactPerson) contractForm.value.clientManagerName = data.requestingAgencyContactPerson
-  if (data.naraJangteoNumber) contractForm.value.naraJangteoNo = data.naraJangteoNumber
-  if (data.defectWarrantyPeriod) contractForm.value.warrantyPeriod = data.defectWarrantyPeriod
-  if (data.paymentMethod) contractForm.value.paymentMethod = data.paymentMethod
-  if (data.deliveryRequestDate) contractForm.value.deliveryRequestDate = data.deliveryRequestDate
-  if (data.businessName) contractForm.value.projectName = data.businessName
-  if (data.itemTotalAmount) contractForm.value.itemTotalAmount = String(data.itemTotalAmount)
-  if (data.commission) contractForm.value.commission = String(data.commission)
-  if (data.totalAmount) contractForm.value.totalAmount = String(data.totalAmount)
-  if (data.partialDelivery) contractForm.value.partialDelivery = data.partialDelivery
-  if (data.inspectionAgency) contractForm.value.inspectionAgency = data.inspectionAgency
-  if (data.acceptanceAgency) contractForm.value.acceptanceAgency = data.acceptanceAgency
-  if (data.quantityTotal) contractForm.value.quantityTotal = String(data.quantityTotal)
-  if (data.preDiscountAmountTotal) contractForm.value.preDiscountAmountTotal = String(data.preDiscountAmountTotal)
+  if (data.contractNumber) { contractForm.value.contractNo = data.contractNumber }
+  if (data.contractDate) { contractForm.value.contractDate = data.contractDate }
+  if (data.preNotificationNumber) { contractForm.value.preNotificationNo = data.preNotificationNumber }
+  if (data.deliveryRequestNumber) { contractForm.value.deliveryRequestNo = data.deliveryRequestNumber }
+  if (data.requestingAgency) { contractForm.value.client = data.requestingAgency }
+  if (data.requestingAgencyNumber) { contractForm.value.clientNo = data.requestingAgencyNumber }
+  if (data.requestingAgencyPostalCode) { contractForm.value.clientPostalCode = data.requestingAgencyPostalCode }
+  if (data.requestingAgencyAddress) { contractForm.value.clientAddress = data.requestingAgencyAddress }
+  if (data.requestingAgencyPhoneNumber) { contractForm.value.clientPhoneNumber = data.requestingAgencyPhoneNumber }
+  if (data.requestingAgencyFaxNumber) { contractForm.value.clientFaxNumber = data.requestingAgencyFaxNumber }
+  if (data.requestingAgencyContactPerson) { contractForm.value.clientManagerName = data.requestingAgencyContactPerson }
+  if (data.naraJangteoNumber) { contractForm.value.naraJangteoNo = data.naraJangteoNumber }
+  if (data.defectWarrantyPeriod) { contractForm.value.warrantyPeriod = data.defectWarrantyPeriod }
+  if (data.paymentMethod) { contractForm.value.paymentMethod = data.paymentMethod }
+  if (data.deliveryRequestDate) { contractForm.value.deliveryRequestDate = data.deliveryRequestDate }
+  if (data.businessName) { contractForm.value.projectName = data.businessName }
+  if (data.itemTotalAmount) { contractForm.value.itemTotalAmount = String(data.itemTotalAmount) }
+  if (data.commission) { contractForm.value.commission = String(data.commission) }
+  if (data.totalAmount) { contractForm.value.totalAmount = String(data.totalAmount) }
+  if (data.partialDelivery) { contractForm.value.partialDelivery = data.partialDelivery }
+  if (data.inspectionAgency) { contractForm.value.inspectionAgency = data.inspectionAgency }
+  if (data.acceptanceAgency) { contractForm.value.acceptanceAgency = data.acceptanceAgency }
+  if (data.quantityTotal) { contractForm.value.quantityTotal = String(data.quantityTotal) }
+  if (data.preDiscountAmountTotal) { contractForm.value.preDiscountAmountTotal = String(data.preDiscountAmountTotal) }
   // 수요기관 사업자등록번호
-  if (data.businessRegistrationNumberDemand) contractForm.value.clientBizno = data.businessRegistrationNumberDemand
+  if (data.businessRegistrationNumberDemand) { contractForm.value.clientBizno = data.businessRegistrationNumberDemand }
 }
 
 // 계약 유형 선택 확인 핸들러
@@ -685,7 +720,7 @@ const handleContractTypeCancel = () => {
 
 // 등록
 const register = async () => {
-  if (submitting.value) return
+  if (submitting.value) { return }
 
   // OEM 제조사 선택은 선택사항 (출하 등록 시 선택)
 

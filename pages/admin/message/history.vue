@@ -1,7 +1,10 @@
 <template>
-  <div class="content-section">
-    <!-- 페이지 헤더 -->
-    <PageHeader title="메시지 히스토리" description="발송된 메시지 내역을 확인합니다" />
+  <div class="message-history">
+    <!-- 페이지 헤더 - 컴팩트 -->
+    <div class="page-header-compact">
+      <h1>메시지 히스토리</h1>
+      <span class="page-description">발송된 메시지 내역을 확인합니다</span>
+    </div>
 
     <!-- 검색 영역 -->
     <div class="search-section-compact">
@@ -9,28 +12,42 @@
         <div class="search-item search-item-date">
           <label>발송일자</label>
           <div class="date-range">
-            <input v-model="searchParams.startDate" type="date" class="date-input" />
+            <input v-model="searchParams.startDate" type="date" class="date-input">
             <span>~</span>
-            <input v-model="searchParams.endDate" type="date" class="date-input" />
+            <input v-model="searchParams.endDate" type="date" class="date-input">
           </div>
         </div>
 
         <div class="search-item">
           <label>수신자 타입</label>
           <select v-model="searchParams.recipientType" class="status-select">
-            <option value="">전체</option>
-            <option value="DRIVER">배송기사</option>
-            <option value="SUPERVISOR">현장소장</option>
+            <option value="">
+              전체
+            </option>
+            <option value="DRIVER">
+              배송기사
+            </option>
+            <option value="SUPERVISOR">
+              현장소장
+            </option>
           </select>
         </div>
 
         <div class="search-item">
           <label>발송 상태</label>
           <select v-model="searchParams.sendStatus" class="status-select">
-            <option value="">전체</option>
-            <option value="SUCCESS">성공</option>
-            <option value="FAILED">실패</option>
-            <option value="PENDING">대기중</option>
+            <option value="">
+              전체
+            </option>
+            <option value="SUCCESS">
+              성공
+            </option>
+            <option value="FAILED">
+              실패
+            </option>
+            <option value="PENDING">
+              대기중
+            </option>
           </select>
         </div>
 
@@ -42,11 +59,11 @@
             class="text-input"
             placeholder="수신번호 검색"
             @keyup.enter="handleSearch"
-          />
+          >
         </div>
 
         <button class="btn-search-inline" @click="handleSearch">
-          <i class="ri-search-line"></i>
+          <i class="ri-search-line" />
           검색
         </button>
       </div>
@@ -59,27 +76,35 @@
       </div>
       <div class="table-controls">
         <select v-model="pageSize" @change="changePageSize">
-          <option :value="10">10개씩 보기</option>
-          <option :value="20">20개씩 보기</option>
-          <option :value="50">50개씩 보기</option>
-          <option :value="100">100개씩 보기</option>
+          <option :value="10">
+            10개씩 보기
+          </option>
+          <option :value="20">
+            20개씩 보기
+          </option>
+          <option :value="50">
+            50개씩 보기
+          </option>
+          <option :value="100">
+            100개씩 보기
+          </option>
         </select>
       </div>
     </div>
 
     <!-- 데이터 테이블 -->
     <div v-if="loading" class="loading-state">
-      <i class="ri-loader-4-line animate-spin"></i>
+      <i class="ri-loader-4-line animate-spin" />
       데이터를 불러오는 중...
     </div>
 
     <div v-else-if="error" class="error-state">
-      <i class="ri-error-warning-line"></i>
+      <i class="ri-error-warning-line" />
       {{ error }}
     </div>
 
     <div v-else-if="messages.length === 0" class="empty-state">
-      <i class="ri-inbox-line"></i>
+      <i class="ri-inbox-line" />
       검색 결과가 없습니다
     </div>
 
@@ -116,14 +141,14 @@
           </td>
           <td>
             <span :class="['status-badge', getStatusClass(message.sendStatus)]">
-              <i :class="getStatusIcon(message.sendStatus)"></i>
+              <i :class="getStatusIcon(message.sendStatus)" />
               {{ getStatusText(message.sendStatus) }}
             </span>
           </td>
           <td>
             <div class="action-buttons">
               <button class="btn-view" @click="showDetail(message)">
-                <i class="ri-eye-line"></i>
+                <i class="ri-eye-line" />
                 상세
               </button>
             </div>
@@ -146,7 +171,7 @@
         <div class="modal-header">
           <h3>메시지 상세 정보</h3>
           <button class="btn-close" @click="closeDetail">
-            <i class="ri-close-line"></i>
+            <i class="ri-close-line" />
           </button>
         </div>
 
@@ -176,7 +201,7 @@
                 <label>발송 상태</label>
                 <div>
                   <span :class="['status-badge', getStatusClass(selectedMessage.sendStatus)]">
-                    <i :class="getStatusIcon(selectedMessage.sendStatus)"></i>
+                    <i :class="getStatusIcon(selectedMessage.sendStatus)" />
                     {{ getStatusText(selectedMessage.sendStatus) }}
                   </span>
                 </div>
@@ -246,9 +271,11 @@
           <div v-if="selectedMessage.sendStatus === 'FAILED'" class="detail-section error-section">
             <h4>실패 정보</h4>
             <div class="error-message">
-              <i class="ri-error-warning-line"></i>
+              <i class="ri-error-warning-line" />
               <div>
-                <div v-if="selectedMessage.errorCode">에러 코드: {{ selectedMessage.errorCode }}</div>
+                <div v-if="selectedMessage.errorCode">
+                  에러 코드: {{ selectedMessage.errorCode }}
+                </div>
                 <div>{{ selectedMessage.errorMessage || '알 수 없는 오류' }}</div>
               </div>
             </div>
@@ -275,10 +302,12 @@
             :disabled="resending"
             @click="handleResend(selectedMessage.messageId)"
           >
-            <i class="ri-refresh-line"></i>
+            <i class="ri-refresh-line" />
             {{ resending ? '발송 중...' : '재발송' }}
           </button>
-          <button class="btn-secondary" @click="closeDetail">닫기</button>
+          <button class="btn-secondary" @click="closeDetail">
+            닫기
+          </button>
         </div>
       </div>
     </div>
@@ -314,7 +343,7 @@ const resending = ref(false)
 const currentPage = ref(0)
 const totalPages = ref(0)
 const totalElements = ref(0)
-const pageSize = ref(20)
+const pageSize = ref(10)
 
 // Search params
 const searchParams = reactive<MessageHistorySearchRequest>({
@@ -324,7 +353,7 @@ const searchParams = reactive<MessageHistorySearchRequest>({
   sendStatus: '',
   recipientPhone: '',
   page: 0,
-  size: 20
+  size: 10
 })
 
 // Methods
@@ -338,11 +367,11 @@ const loadMessages = async () => {
       size: pageSize.value
     }
 
-    if (searchParams.startDate) params.startDate = searchParams.startDate
-    if (searchParams.endDate) params.endDate = searchParams.endDate
-    if (searchParams.recipientType) params.recipientType = searchParams.recipientType as RecipientType
-    if (searchParams.sendStatus) params.sendStatus = searchParams.sendStatus as SendStatus
-    if (searchParams.recipientPhone) params.recipientPhone = searchParams.recipientPhone
+    if (searchParams.startDate) { params.startDate = searchParams.startDate }
+    if (searchParams.endDate) { params.endDate = searchParams.endDate }
+    if (searchParams.recipientType) { params.recipientType = searchParams.recipientType as RecipientType }
+    if (searchParams.sendStatus) { params.sendStatus = searchParams.sendStatus as SendStatus }
+    if (searchParams.recipientPhone) { params.recipientPhone = searchParams.recipientPhone }
 
     const response = await searchMessageHistory(params)
 
@@ -388,8 +417,8 @@ const changePageSize = () => {
 }
 
 const truncateContent = (content: string, maxLength = 50): string => {
-  if (!content) return '-'
-  if (content.length <= maxLength) return content
+  if (!content) { return '-' }
+  if (content.length <= maxLength) { return content }
   return content.substring(0, maxLength) + '...'
 }
 
@@ -428,9 +457,9 @@ const closeDetail = () => {
 }
 
 const handleResend = async (messageId: number) => {
-  if (resending.value) return
+  if (resending.value) { return }
 
-  if (!confirm('이 메시지를 재발송하시겠습니까?')) return
+  if (!confirm('이 메시지를 재발송하시겠습니까?')) { return }
 
   resending.value = true
   try {

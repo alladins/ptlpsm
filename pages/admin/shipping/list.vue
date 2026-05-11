@@ -8,18 +8,18 @@
       icon-color="green"
     >
       <template #actions>
-        <button class="btn-action" @click="handleSearch" :disabled="loading">
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-search"></i>
+        <button class="btn-action" :disabled="loading" @click="handleSearch">
+          <i v-if="loading" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-search" />
           검색
         </button>
         <button
           v-if="showCreateButton && !isOemManager"
           class="btn-action btn-primary"
-          @click="goToRegister"
           :title="!canWrite ? '권한이 없습니다' : ''"
+          @click="goToRegister"
         >
-          <i class="fas fa-plus"></i>
+          <i class="fas fa-plus" />
           등록
         </button>
       </template>
@@ -32,17 +32,17 @@
           <!-- 출하일자 -->
           <div class="search-item">
             <label>출하일자:</label>
-            <input type="date" v-model="searchForm.startDate" class="date-input">
+            <input v-model="searchForm.startDate" type="date" class="date-input">
             <span class="separator">~</span>
-            <input type="date" v-model="searchForm.endDate" class="date-input">
+            <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
           <!-- 납품요구번호 -->
           <div class="search-item">
             <label>납품요구번호:</label>
-            <input type="text" v-model="searchForm.deliveryRequestNo" placeholder="납품요구번호 입력 또는 조회" class="text-input" @keyup.enter="handleSearch">
+            <input v-model="searchForm.deliveryRequestNo" type="text" placeholder="납품요구번호 입력 또는 조회" class="text-input" @keyup.enter="handleSearch">
             <button type="button" class="btn-search-inline" @click="openOrderSelectPopup">
-              <i class="fas fa-search"></i>
+              <i class="fas fa-search" />
               조회
             </button>
           </div>
@@ -51,7 +51,9 @@
           <div class="search-item">
             <label>상태:</label>
             <select v-model="searchForm.status" class="status-select">
-              <option value="">전체</option>
+              <option value="">
+                전체
+              </option>
               <option v-for="option in statusOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
@@ -62,8 +64,12 @@
           <div class="search-item">
             <label>정렬:</label>
             <select v-model="searchForm.sortOrder" class="status-select">
-              <option value="desc">최근 출하순</option>
-              <option value="asc">과거 출하순</option>
+              <option value="desc">
+                최근 출하순
+              </option>
+              <option value="asc">
+                과거 출하순
+              </option>
             </select>
           </div>
         </div>
@@ -77,82 +83,105 @@
             <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
-            <select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="10">10개씩</option>
-              <option :value="20">20개씩</option>
-              <option :value="50">50개씩</option>
+            <select v-model="pageSize" class="page-size-select" @change="handlePageSizeChange">
+              <option :value="10">
+                10개씩
+              </option>
+              <option :value="20">
+                20개씩
+              </option>
+              <option :value="50">
+                50개씩
+              </option>
             </select>
           </div>
         </div>
 
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <p>데이터를 불러오는 중...</p>
         </div>
 
         <!-- 데이터가 없을 때 - 리팩토링: admin-common.css 스타일 사용 -->
         <div v-else-if="shippingData.length === 0" class="no-data-message">
-          <i class="fas fa-truck"></i>
+          <i class="fas fa-truck" />
           <p>등록된 출하 정보가 없습니다.</p>
         </div>
 
         <div v-else class="table-container">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>출하NO</th>
-              <th>납품요구일자</th>
-              <th class="text-left">수요기관</th>
-              <th>사업명</th>
-              <th>출하일자</th>
-              <th>상태</th>
-              <th>출고</th>
-              <th>출하수량</th>
-              <th>출하금액</th>
-              <th>비고</th>
-            </tr>
-          </thead>          <tbody>
-            <tr
-              v-for="(item, index) in shippingData"
-              :key="item.shipmentId"
-              class="table-row"
-              @click="editItem(item.shipmentId)"
-              style="cursor: pointer;"
-            >
-              <td>{{ startIndex + index }}</td>
-              <td>{{ item.shipmentNo || '-' }}</td>
-              <td>{{ formatDate(item.deliveryRequestDate) }}</td>
-              <td class="text-left">{{ item.client }}</td>
-              <td class="project-name-cell" :title="item.projectName">{{ item.projectName }}</td>
-              <td>{{ formatDate(item.shipmentDate) }}</td>
-              <td>
-                <span :class="getStatusClass(item.status)">
-                  {{ getStatusText(item.status) }}
-                </span>
-              </td>
-              <td class="text-center">
-                <span :class="getDispatchClass(item)">
-                  {{ getDispatchLabel(item) }}
-                </span>
-              </td>
-              <td class="text-right">{{ formatQuantity(item.shipmentQuantity) }} ㎡</td>
-              <td class="text-right">{{ formatCurrency(item.shipmentAmount) }}</td>
-              <td class="text-center badges-cell">
-                <span v-if="item.hasMergedItems" class="merge-badge">합지</span>
-                <span v-if="item.hasBgradeItems" class="bgrade-badge">B급</span>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot v-if="shippingData.length > 0">
-            <tr>
-              <td colspan="8" class="text-right"><strong>총 출하수량</strong></td>
-              <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }} ㎡</strong></td>
-              <td class="text-right"><strong>{{ formatCurrency(totalShippingAmount) }}</strong></td>
-              <td></td>
-            </tr>
-          </tfoot>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>출하NO</th>
+                <th>납품요구일자</th>
+                <th class="text-left">
+                  수요기관
+                </th>
+                <th>사업명</th>
+                <th>출하일자</th>
+                <th>상태</th>
+                <th>출고</th>
+                <th>출하수량</th>
+                <th>출하금액</th>
+                <th>비고</th>
+              </tr>
+            </thead>          <tbody>
+              <tr
+                v-for="(item, index) in shippingData"
+                :key="item.shipmentId"
+                class="table-row"
+                style="cursor: pointer;"
+                @click="editItem(item.shipmentId)"
+              >
+                <td>{{ startIndex + index }}</td>
+                <td>{{ item.shipmentNo || '-' }}</td>
+                <td>{{ formatDate(item.deliveryRequestDate) }}</td>
+                <td class="text-left">
+                  {{ item.client }}
+                </td>
+                <td class="project-name-cell" :title="item.projectName">
+                  {{ item.projectName }}
+                </td>
+                <td>{{ formatDate(item.shipmentDate) }}</td>
+                <td>
+                  <span :class="getStatusClass(item.status)">
+                    {{ getStatusText(item.status) }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <span :class="getDispatchClass(item)">
+                    {{ getDispatchLabel(item) }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  {{ formatQuantity(item.shipmentQuantity) }} ㎡
+                </td>
+                <td class="text-right">
+                  {{ formatCurrency(item.shipmentAmount) }}
+                </td>
+                <td class="text-center badges-cell">
+                  <span v-if="item.hasMergedItems" class="merge-badge">합지</span>
+                  <span v-if="item.hasAdditionalItems" class="additional-badge">추가</span>
+                  <span v-if="item.hasBgradeItems" class="bgrade-badge">B급</span>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot v-if="shippingData.length > 0">
+              <tr>
+                <td colspan="8" class="text-right">
+                  <strong>총 출하수량</strong>
+                </td>
+                <td class="text-right">
+                  <strong>{{ formatQuantity(totalShippingQuantity) }} ㎡</strong>
+                </td>
+                <td class="text-right">
+                  <strong>{{ formatCurrency(totalShippingAmount) }}</strong>
+                </td>
+                <td />
+              </tr>
+            </tfoot>
           </table>
         </div>
 
@@ -166,7 +195,7 @@
         />
       </div>
     </div>
-    
+
     <!-- 발주번호 조회 팝업 -->
     <OrderSelectPopup
       v-if="showOrderSelectPopup"
@@ -244,7 +273,7 @@ const searchForm = ref({
   orderId: null as number | null,
   deliveryRequestNo: '',
   status: '',
-  sortOrder: 'desc' as 'asc' | 'desc'  // 기본값: 최근 출하순
+  sortOrder: 'desc' as 'asc' | 'desc' // 기본값: 최근 출하순
 })
 
 // 리팩토링: useDataTable composable 사용으로 페이지네이션 로직 통합
@@ -301,17 +330,17 @@ const getStatusText = (status: string): string => {
 // 출고 가능 여부 라벨
 const getDispatchLabel = (item: ShipmentListItem): string => {
   // 완료/취소/서명대기 → 표시 안 함
-  if (['COMPLETED', 'CANCELLED', 'PENDING_SIGNATURE'].includes(item.status)) return '-'
+  if (['COMPLETED', 'CANCELLED', 'PENDING_SIGNATURE'].includes(item.status)) { return '-' }
   // 이미 출고요청 있음 → 출고 상태 표시
-  if (item.dispatchStatus === 'DISPATCHED') return '발송완료'
-  if (item.dispatchStatus === 'CONFIRMED') return '확인됨'
-  if (item.dispatchStatus === 'REQUESTED') return '출고요청중'
+  if (item.dispatchStatus === 'DISPATCHED') { return '발송완료' }
+  if (item.dispatchStatus === 'CONFIRMED') { return '확인됨' }
+  if (item.dispatchStatus === 'REQUESTED') { return '출고요청중' }
   // OEM 미설정
-  if (!item.oemCompanyId) return 'OEM미설정'
+  if (!item.oemCompanyId) { return 'OEM미설정' }
   // 재고+발주 기반 판단
   if (item.inventorySufficient != null && !item.inventorySufficient) {
     // 재고 부족이지만 접수된 발주가 있으면 "입고대기"
-    if (item.hasAcceptedPo) return '입고대기'
+    if (item.hasAcceptedPo) { return '입고대기' }
     return '재고부족'
   }
   return '출고가능'
@@ -319,13 +348,13 @@ const getDispatchLabel = (item: ShipmentListItem): string => {
 
 // 출고 상태 CSS 클래스
 const getDispatchClass = (item: ShipmentListItem): string => {
-  if (['COMPLETED', 'CANCELLED', 'PENDING_SIGNATURE'].includes(item.status)) return ''
-  if (item.dispatchStatus === 'DISPATCHED') return 'dispatch-dispatched'
-  if (item.dispatchStatus === 'CONFIRMED') return 'dispatch-confirmed'
-  if (item.dispatchStatus === 'REQUESTED') return 'dispatch-requested'
-  if (!item.oemCompanyId) return 'dispatch-no-oem'
+  if (['COMPLETED', 'CANCELLED', 'PENDING_SIGNATURE'].includes(item.status)) { return '' }
+  if (item.dispatchStatus === 'DISPATCHED') { return 'dispatch-dispatched' }
+  if (item.dispatchStatus === 'CONFIRMED') { return 'dispatch-confirmed' }
+  if (item.dispatchStatus === 'REQUESTED') { return 'dispatch-requested' }
+  if (!item.oemCompanyId) { return 'dispatch-no-oem' }
   if (item.inventorySufficient != null && !item.inventorySufficient) {
-    if (item.hasAcceptedPo) return 'dispatch-incoming'
+    if (item.hasAcceptedPo) { return 'dispatch-incoming' }
     return 'dispatch-shortage'
   }
   return 'dispatch-available'
@@ -422,7 +451,7 @@ const totalShippingAmount = computed(() => {
 
 // 초기 데이터 로드
 onMounted(async () => {
-  await loadStatusCodes()  // 상태 코드 로드
+  await loadStatusCodes() // 상태 코드 로드
 
   // URL 쿼리에서 페이지 번호 복원 (상세 페이지에서 돌아올 때)
   const pageFromQuery = route.query.page || route.query.returnPage
@@ -579,16 +608,14 @@ onMounted(async () => {
 
 /* 배지 셀 */
 .badges-cell {
-  display: flex;
-  gap: 4px;
-  justify-content: center;
-  flex-wrap: wrap;
+  text-align: center;
 }
 
 /* B급 배지 */
 .bgrade-badge {
   display: inline-block;
   padding: 3px 10px;
+  margin: 1px 2px;
   background-color: #fef3c7;
   color: #b45309;
   border-radius: 12px;
@@ -600,8 +627,21 @@ onMounted(async () => {
 .merge-badge {
   display: inline-block;
   padding: 3px 10px;
+  margin: 1px 2px;
   background-color: #e0e7ff;
   color: #3730a3;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* 추가 품목 배지 */
+.additional-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  margin: 1px 2px;
+  background-color: #d1fae5;
+  color: #065f46;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;

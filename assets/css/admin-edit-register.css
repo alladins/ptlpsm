@@ -18,12 +18,10 @@
 
 /* ========== Content Section Layout (등록/수정 페이지 공통) ========== */
 
-.content-section {
+.edit-register-content {
   background: transparent;
   border-radius: 0;
   padding: 0;
-  padding-left: 2rem;
-  padding-bottom: 0;
   margin-top: -1rem;
   margin-bottom: 0;
 }
@@ -341,14 +339,14 @@
     grid-template-columns: 1fr; /* 모바일에서는 1열로 변경 */
   }
 
-  .content-section {
-    padding-left: 1rem;
+  .edit-register-content {
+    padding: 0;
   }
 }
 
 @media (max-width: 768px) {
-  .content-section {
-    padding: 1rem;
+  .edit-register-content {
+    padding: 0;
     margin-top: 0;
   }
 

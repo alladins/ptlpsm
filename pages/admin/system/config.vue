@@ -1,9 +1,9 @@
 <template>
   <div class="system-config">
-    <PageHeader
-      title="시스템설정"
-      description="시스템 전반적인 설정을 관리합니다."
-    />
+    <div class="page-header-compact">
+      <h1>시스템설정</h1>
+      <span class="page-description">시스템 전반적인 설정을 관리합니다.</span>
+    </div>
 
     <!-- 설정 카테고리 탭 -->
     <div class="mb-6">
@@ -25,8 +25,10 @@
 
     <!-- 기본 설정 섹션 -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-lg font-semibold text-gray-800 mb-6">기본 설정</h2>
-      
+      <h2 class="text-lg font-semibold text-gray-800 mb-6">
+        기본 설정
+      </h2>
+
       <div class="space-y-6">
         <!-- 시스템 정보 -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -36,7 +38,7 @@
               type="text"
               value="PTPLPSM 출하관리 시스템"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">시스템 버전</label>
@@ -45,7 +47,7 @@
               value="v1.0.0"
               readonly
               class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-            />
+            >
           </div>
         </div>
 
@@ -57,7 +59,7 @@
               type="number"
               value="30"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">최대 동시 접속자 수</label>
@@ -65,7 +67,7 @@
               type="number"
               value="100"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
           </div>
         </div>
 
@@ -77,7 +79,7 @@
               type="number"
               value="10"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">허용 파일 확장자</label>
@@ -85,7 +87,30 @@
               type="text"
               value="jpg,jpeg,png,pdf,doc,docx,xls,xlsx"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+          </div>
+        </div>
+
+        <!-- 납품/출하 설정 -->
+        <div class="border-t pt-6">
+          <h3 class="text-md font-medium text-gray-800 mb-4">
+            납품/출하 설정
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                환산잔량 임계값 (㎡)
+                <span class="text-xs text-gray-500 ml-1">- 이 값 이하의 잔여수량을 환산잔량 처리 가능</span>
+              </label>
+              <input
+                v-model.number="deliverySettings.conversionRemainderThreshold"
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+            </div>
           </div>
         </div>
 
@@ -94,55 +119,81 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">기본 언어</label>
             <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="ko" selected>한국어</option>
-              <option value="en">English</option>
-              <option value="ja">日本語</option>
+              <option value="ko" selected>
+                한국어
+              </option>
+              <option value="en">
+                English
+              </option>
+              <option value="ja">
+                日本語
+              </option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">시간대</label>
             <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="Asia/Seoul" selected>Asia/Seoul (UTC+9)</option>
-              <option value="UTC">UTC</option>
-              <option value="America/New_York">America/New_York</option>
+              <option value="Asia/Seoul" selected>
+                Asia/Seoul (UTC+9)
+              </option>
+              <option value="UTC">
+                UTC
+              </option>
+              <option value="America/New_York">
+                America/New_York
+              </option>
             </select>
           </div>
         </div>
 
         <!-- 시스템 상태 -->
         <div class="border-t pt-6">
-          <h3 class="text-md font-medium text-gray-800 mb-4">시스템 상태</h3>
+          <h3 class="text-md font-medium text-gray-800 mb-4">
+            시스템 상태
+          </h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-green-50 border border-green-200 rounded-lg p-4">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
-                  <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                  <div class="w-3 h-3 bg-green-400 rounded-full" />
                 </div>
                 <div class="ml-3">
-                  <p class="text-sm font-medium text-green-800">데이터베이스</p>
-                  <p class="text-sm text-green-600">정상</p>
+                  <p class="text-sm font-medium text-green-800">
+                    데이터베이스
+                  </p>
+                  <p class="text-sm text-green-600">
+                    정상
+                  </p>
                 </div>
               </div>
             </div>
             <div class="bg-green-50 border border-green-200 rounded-lg p-4">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
-                  <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                  <div class="w-3 h-3 bg-green-400 rounded-full" />
                 </div>
                 <div class="ml-3">
-                  <p class="text-sm font-medium text-green-800">API 서버</p>
-                  <p class="text-sm text-green-600">정상</p>
+                  <p class="text-sm font-medium text-green-800">
+                    API 서버
+                  </p>
+                  <p class="text-sm text-green-600">
+                    정상
+                  </p>
                 </div>
               </div>
             </div>
             <div class="bg-green-50 border border-green-200 rounded-lg p-4">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
-                  <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                  <div class="w-3 h-3 bg-green-400 rounded-full" />
                 </div>
                 <div class="ml-3">
-                  <p class="text-sm font-medium text-green-800">파일 서버</p>
-                  <p class="text-sm text-green-600">정상</p>
+                  <p class="text-sm font-medium text-green-800">
+                    파일 서버
+                  </p>
+                  <p class="text-sm text-green-600">
+                    정상
+                  </p>
                 </div>
               </div>
             </div>
@@ -151,8 +202,12 @@
 
         <!-- 버튼 -->
         <div class="flex justify-end space-x-3 pt-6 border-t">
-          <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            저장
+          <button
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            :disabled="saving"
+            @click="saveSettings"
+          >
+            {{ saving ? '저장 중...' : '저장' }}
           </button>
         </div>
       </div>
@@ -160,7 +215,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { systemSettingService } from '~/services/systemSetting.service'
+
 definePageMeta({
   layout: 'admin'
 })
@@ -171,4 +229,38 @@ useHead({
     { name: 'description', content: '시스템 설정 관리' }
   ]
 })
+
+const saving = ref(false)
+
+const deliverySettings = ref({
+  conversionRemainderThreshold: 4
+})
+
+onMounted(async () => {
+  try {
+    const settings = await systemSettingService.getAllSettings()
+    const threshold = settings.find(s => s.settingKey === 'CONVERSION_REMAINDER_THRESHOLD')
+    if (threshold) {
+      deliverySettings.value.conversionRemainderThreshold = Number(threshold.settingValue)
+    }
+  } catch (e) {
+    console.warn('설정 로드 실패:', e)
+  }
+})
+
+async function saveSettings () {
+  saving.value = true
+  try {
+    await systemSettingService.updateSetting(
+      'CONVERSION_REMAINDER_THRESHOLD',
+      String(deliverySettings.value.conversionRemainderThreshold)
+    )
+    alert('설정이 저장되었습니다.')
+  } catch (e) {
+    console.error('설정 저장 실패:', e)
+    alert('설정 저장에 실패했습니다.')
+  } finally {
+    saving.value = false
+  }
+}
 </script>

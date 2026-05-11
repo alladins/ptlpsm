@@ -531,9 +531,7 @@ export const salesService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(itemData),
       })
 
@@ -557,9 +555,7 @@ export const salesService = {
 
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(itemData),
       })
 
@@ -627,9 +623,7 @@ export const salesService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -666,9 +660,7 @@ export const salesService = {
 
       const response = await fetch(fullUrl, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {

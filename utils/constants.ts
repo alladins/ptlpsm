@@ -12,7 +12,7 @@ export const PAGINATION = {
   /** 페이지 크기 옵션 */
   PAGE_SIZE_OPTIONS: [10, 20, 50, 100] as const,
   /** 페이지 번호 표시 개수 (현재 페이지 기준 앞뒤) */
-  PAGE_NUMBER_DISPLAY_COUNT: 2
+  PAGE_NUMBER_DISPLAY_COUNT: 5
 } as const
 
 /**

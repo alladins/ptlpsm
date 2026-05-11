@@ -16,6 +16,7 @@ export interface OemLedgerItem {
   amount: number
   remarks: string | null
   shipmentNo: string | null
+  oemCompanyName?: string  // 전체 조회 시 제조사명
 }
 
 /** 원장 응답 */

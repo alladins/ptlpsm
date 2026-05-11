@@ -11,21 +11,47 @@ import type { BaseEntity } from './common'
 
 /**
  * 지분자 타입
- * - MANUFACTURER: 제조사 (원가)
- * - HEADQUARTERS: 본사 (리드파워)
- * - AGENT: 대리점 (영업직원)
- * - PARTNER: 협력사 (에코암스)
+ * - MANUFACTURER: 제조사 (OEM)
+ * - HEADQUARTERS: 본사 (대표)
+ * - AGENT: 에코암스
+ * - PARTNER: 영업담당자
  */
-export type Stakeholder = 'MANUFACTURER' | 'HEADQUARTERS' | 'AGENT' | 'PARTNER'
+export type Stakeholder = 'MANUFACTURER' | 'HEADQUARTERS' | 'AGENT' | 'PARTNER' | 'CERTIFICATION' | 'MAINTENANCE'
 
 /**
  * 지분자 라벨
  */
 export const STAKEHOLDER_LABELS: Record<Stakeholder, string> = {
-  MANUFACTURER: '제조사',
-  HEADQUARTERS: '본사',
-  AGENT: '대리점',
-  PARTNER: '협력사'
+  MANUFACTURER: '제조사(OEM)',
+  HEADQUARTERS: '본사(대표)',
+  AGENT: '에코암스',
+  PARTNER: '영업담당자',
+  CERTIFICATION: '인증관리',
+  MAINTENANCE: '유지보수'
+}
+
+/**
+ * 프론트 Stakeholder → 백엔드 recipientType 매핑
+ */
+export const STAKEHOLDER_TO_RECIPIENT: Record<Stakeholder, string> = {
+  MANUFACTURER: 'OEM',
+  HEADQUARTERS: 'CEO',
+  AGENT: 'ECOARMS',
+  PARTNER: 'SALES_REP',
+  CERTIFICATION: 'CERTIFICATION',
+  MAINTENANCE: 'MAINTENANCE'
+}
+
+/**
+ * 백엔드 recipientType → 프론트 Stakeholder 매핑
+ */
+export const RECIPIENT_TO_STAKEHOLDER: Record<string, Stakeholder> = {
+  OEM: 'MANUFACTURER',
+  CEO: 'HEADQUARTERS',
+  ECOARMS: 'AGENT',
+  SALES_REP: 'PARTNER',
+  CERTIFICATION: 'CERTIFICATION',
+  MAINTENANCE: 'MAINTENANCE'
 }
 
 /**
@@ -128,8 +154,22 @@ export interface CommissionTier {
   minAmount: number
   /** 매출 상한 (원, null이면 무제한) */
   maxAmount: number | null
-  /** 커미션율 (%) */
-  commissionRate: number
+  /** 제조사(OEM) 비율 (%) - 자동계산: 100 - CEO - 에코암스 - 영업 */
+  oemRate: number
+  /** 본사(대표) 비율 (%) */
+  ceoRate: number
+  /** 에코암스 비율 (%) */
+  ecoarmsRate: number
+  /** 영업담당자 비율 (%) */
+  salesRate: number
+  /** 인증관리 비율 (%) */
+  certificationRate: number
+  /** 유지보수 비율 (%) */
+  maintenanceRate: number
+  /** 표시 순서 */
+  displayOrder?: number
+  /** 설명 */
+  description?: string
   /** 비고 */
   remarks?: string
   /** 생성일 */
@@ -190,8 +230,6 @@ export interface CommissionRateUpdateRequest {
   year: number
   /** 매출 구간별 커미션율 목록 */
   tiers: Omit<CommissionTier, 'tierId' | 'year' | 'createdAt' | 'updatedAt'>[]
-  /** 기본 커미션율 */
-  defaultRate?: number
 }
 
 // ============ 커미션 정산 ============
@@ -339,6 +377,32 @@ export interface AnnualCommissionSummary {
   currentTier?: CommissionTier
   /** 다음 구간까지 남은 매출 */
   amountToNextTier?: number
+  /** 최종 적용 구간명 */
+  appliedTier?: string
+  /** 적용 OEM 비율 (%) */
+  appliedOemRate?: number
+  /** 적용 CEO 비율 (%) */
+  appliedCeoRate?: number
+  /** 적용 에코암스 비율 (%) */
+  appliedEcoarmsRate?: number
+  /** 적용 영업 비율 (%) */
+  appliedSalesRate?: number
+  /** 적용 인증관리 비율 (%) */
+  appliedCertificationRate?: number
+  /** 적용 유지보수 비율 (%) */
+  appliedMaintenanceRate?: number
+  /** 총 OEM 정산액 */
+  totalOemAmount?: number
+  /** 총 CEO 정산액 */
+  totalCeoAmount?: number
+  /** 총 에코암스 정산액 */
+  totalEcoarmsAmount?: number
+  /** 총 영업담당자 정산액 */
+  totalSalesRepAmount?: number
+  /** 총 인증관리 정산액 */
+  totalCertificationAmount?: number
+  /** 총 유지보수 정산액 */
+  totalMaintenanceAmount?: number
   /** 월별 데이터 */
   monthlyData: MonthlyCommissionData[]
   /** 분기별 데이터 */
@@ -376,30 +440,30 @@ export interface CommissionPayment extends BaseEntity {
   paymentId: number
   /** 연도 */
   year: number
-  /** 지급 차수 (1, 2, 3...) */
-  paymentSeq: number
-  /** 지급 예정 금액 */
-  scheduledAmount: number
-  /** 실제 지급 금액 */
-  paidAmount: number | null
-  /** 지급 예정일 */
-  scheduledDate: string
-  /** 실제 지급일 */
-  paidDate: string | null
-  /** 지급 상태 */
-  status: CommissionPaymentStatus
-  /** 지급 대상 정산 ID 목록 */
-  settlementIds: number[]
-  /** 지급 대상 정산 건수 */
-  settlementCount: number
-  /** 수취인 정보 */
-  recipientName?: string
-  /** 계좌 정보 */
-  bankAccount?: string
-  /** 은행명 */
-  bankName?: string
+  /** 수령자 유형 (OEM/CEO/ECOARMS/SALES_REP) */
+  recipientType: string
+  /** 수령자 ID (영업담당자인 경우) */
+  recipientId?: number
+  /** 수령자명 */
+  recipientName: string
+  /** 지급 금액 */
+  paymentAmount: number
+  /** 지급일 */
+  paymentDate: string
+  /** 지급 방법 */
+  paymentMethod?: string
+  /** 관련 정산 ID */
+  settlementIds?: string
+  /** 기준 매출액 */
+  baseSalesAmount?: number
+  /** 적용 비율 (%) */
+  appliedRate?: number
   /** 비고 */
   remarks?: string
+  /** 생성일시 */
+  createdAt?: string
+  /** 생성자 */
+  createdBy?: string
 }
 
 /**
@@ -408,18 +472,24 @@ export interface CommissionPayment extends BaseEntity {
 export interface CommissionPaymentCreateRequest {
   /** 연도 */
   year: number
-  /** 지급 예정 금액 */
-  scheduledAmount: number
-  /** 지급 예정일 */
-  scheduledDate: string
-  /** 지급 대상 정산 ID 목록 */
-  settlementIds: number[]
-  /** 수취인 정보 */
-  recipientName?: string
-  /** 계좌 정보 */
-  bankAccount?: string
-  /** 은행명 */
-  bankName?: string
+  /** 수령자 유형 (OEM/CEO/ECOARMS/SALES_REP) - 필수 */
+  recipientType: string
+  /** 수령자 ID (영업담당자인 경우) */
+  recipientId?: number
+  /** 수령자명 - 필수 */
+  recipientName: string
+  /** 지급 금액 - 필수 */
+  paymentAmount: number
+  /** 지급일 - 필수 */
+  paymentDate: string
+  /** 지급 방법 */
+  paymentMethod?: string
+  /** 관련 정산 ID 목록 */
+  settlementIds?: number[]
+  /** 기준 매출액 */
+  baseSalesAmount?: number
+  /** 적용 비율 (%) */
+  appliedRate?: number
   /** 비고 */
   remarks?: string
 }
@@ -432,6 +502,70 @@ export interface CommissionPaymentCompleteRequest {
   paidAmount: number
   /** 실제 지급일 */
   paidDate: string
+  /** 비고 */
+  remarks?: string
+}
+
+// ============ 가지급금 (Advance Payment) ============
+
+/**
+ * 가지급금 상태
+ */
+export type AdvancePaymentStatus = 'PAID' | 'DEDUCTED' | 'REFUNDED'
+
+/**
+ * 가지급금 상태 라벨
+ */
+export const ADVANCE_PAYMENT_STATUS_LABELS: Record<AdvancePaymentStatus, string> = {
+  PAID: '지급완료',
+  DEDUCTED: '차감완료',
+  REFUNDED: '환불'
+}
+
+/**
+ * 가지급금 이력 응답
+ */
+export interface AdvancePaymentHistory {
+  /** 가지급금 ID */
+  advancePaymentId: number
+  /** 연도 */
+  year: number
+  /** 수령자 유형 (CEO/ECOARMS/SALES_REP) */
+  recipientType: string
+  /** 수령자명 */
+  recipientName: string
+  /** 지급 금액 */
+  paymentAmount: number
+  /** 예상 커미션 */
+  expectedCommission?: number
+  /** 가지급 비율 (%) */
+  advanceRate?: number
+  /** 지급일 */
+  paymentDate: string
+  /** 지급 방법 */
+  paymentMethod?: string
+  /** 상태 */
+  status: AdvancePaymentStatus
+  /** 비고 */
+  remarks?: string
+  /** 생성일시 */
+  createdAt?: string
+}
+
+/**
+ * 가지급금 등록 요청
+ */
+export interface AdvancePaymentCreateRequest {
+  /** 수령자 유형 (CEO/ECOARMS/SALES_REP) - OEM 제외 */
+  recipientType: string
+  /** 수령자명 */
+  recipientName: string
+  /** 지급 금액 */
+  paymentAmount: number
+  /** 지급일 */
+  paymentDate: string
+  /** 지급 방법 */
+  paymentMethod?: string
   /** 비고 */
   remarks?: string
 }
@@ -464,6 +598,8 @@ export interface CommissionPaymentSearchParams {
   year?: number
   /** 상태 필터 */
   status?: CommissionPaymentStatus | ''
+  /** 수령자 유형 필터 */
+  recipientType?: string
   /** 페이지 번호 */
   page?: number
   /** 페이지 크기 */
@@ -482,7 +618,7 @@ export interface CommissionSettlementListResponse {
   totalElements: number
   totalPages: number
   size: number
-  number: number
+  page: number
   first: boolean
   last: boolean
   empty: boolean
@@ -626,4 +762,44 @@ export interface PeriodicSettlementListResponse {
   first: boolean
   last: boolean
   empty: boolean
+}
+
+// ============ 연말정산 (Annual Final Settlement) ============
+
+/**
+ * 수령자별 연말정산 결과
+ */
+export interface RecipientSettlement {
+  /** 수령자 유형 (OEM/CEO/ECOARMS/SALES_REP) */
+  recipientType: string
+  /** 수령자 표시명 */
+  recipientLabel: string
+  /** 최종 적용 비율 (%) */
+  finalRate: number
+  /** 기존 정산 합계 */
+  originalTotal: number
+  /** 소급 재계산 합계 */
+  recalculatedTotal: number
+  /** 조정금액 (재계산 - 기존) */
+  adjustmentAmount: number
+  /** 가지급금 합계 */
+  advanceTotal: number
+  /** 최종 지급액 */
+  finalPaymentAmount: number
+}
+
+/**
+ * 연말정산 시뮬레이션/확정 응답
+ */
+export interface AnnualFinalSettlementResponse {
+  /** 연도 */
+  year: number
+  /** 연간 총 매출액 */
+  totalSalesAmount: number
+  /** 최종 적용 구간명 */
+  finalTier: string
+  /** 수령자별 정산 결과 */
+  recipients: RecipientSettlement[]
+  /** 확정 여부 */
+  isFinalized: boolean
 }

@@ -11,34 +11,34 @@
         <button
           v-if="canShowDispatchRequestButton"
           class="btn-action btn-warning"
-          @click="handleDispatchRequestClick"
           :disabled="checkingInventory || (inventoryPreChecked && !inventoryCanDispatch)"
           :title="inventoryPreChecked && !inventoryCanDispatch ? '재고가 부족하여 출고요청할 수 없습니다' : 'OEM 제조사에 출고요청'"
+          @click="handleDispatchRequestClick"
         >
-          <i v-if="checkingInventory" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-paper-plane"></i>
+          <i v-if="checkingInventory" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-paper-plane" />
           {{ checkingInventory ? '확인 중...' : (inventoryPreChecked && !inventoryCanDispatch ? '재고부족' : '출고요청') }}
         </button>
         <button
           class="btn-action btn-delete"
-          @click="handleDelete"
           :disabled="!canDelete"
           :title="!canDelete ? getDeleteDisabledReason : ''"
+          @click="handleDelete"
         >
-          <i class="fas fa-trash"></i>
+          <i class="fas fa-trash" />
           삭제
         </button>
         <button class="btn-action btn-secondary" @click="handleGoBack">
-          <i class="fas fa-list"></i>
+          <i class="fas fa-list" />
           목록
         </button>
         <button
           class="btn-action btn-primary"
-          @click="handleSubmit"
           :disabled="submitting || !canEdit"
           :title="!canEdit ? getEditDisabledReason : ''"
+          @click="handleSubmit"
         >
-          <i class="fas fa-save"></i>
+          <i class="fas fa-save" />
           {{ submitting ? '저장 중...' : '저장' }}
         </button>
       </template>
@@ -48,7 +48,7 @@
     <ErrorSection v-else-if="!shipmentData && !loading" message="출하 정보를 찾을 수 없습니다." />
 
     <div v-else class="content-section">
-      <form @submit.prevent="handleSubmit" class="edit-form">
+      <form class="edit-form" @submit.prevent="handleSubmit">
         <FormSection title="출하 정보">
           <!-- 2열 레이아웃 컨테이너 -->
           <div class="two-column-layout">
@@ -57,14 +57,14 @@
               <!-- 1. 계약 정보 -->
               <div class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-file-alt"></i>
+                  <i class="fas fa-file-alt" />
                   <span>계약 정보</span>
                 </div>
                 <div class="info-grid grid-3">
                   <FormField label="납품요구번호">
                     <input
-                      type="text"
                       v-model="formData.deliveryRequestNo"
+                      type="text"
                       class="form-input-sm"
                       readonly
                     >
@@ -91,14 +91,14 @@
               <!-- 3. 출하 정보 -->
               <div class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-truck"></i>
+                  <i class="fas fa-truck" />
                   <span>출하 정보</span>
                 </div>
                 <div class="info-grid grid-3">
                   <FormField label="출하일자" required :error="errors.shippingDate">
                     <input
-                      type="date"
                       v-model="formData.shippingDate"
+                      type="date"
                       class="form-input-sm text-center"
                       :readonly="!canEdit"
                     >
@@ -120,22 +120,26 @@
                       class="form-select"
                       :disabled="loadingSiteManagers || !canEditOemAndDelivery"
                     >
-                      <option :value="null">{{ loadingSiteManagers ? '로딩 중...' : '선택하세요' }}</option>
+                      <option :value="null">
+                        {{ loadingSiteManagers ? '로딩 중...' : '선택하세요' }}
+                      </option>
                       <option
                         v-for="manager in siteManagers"
                         :key="manager.userId"
                         :value="manager.userId"
                       >
                         {{ manager.userName }} ({{ manager.phone }})
-                        <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
+                        <template v-if="manager.companyName">
+                          - {{ manager.companyName }}
+                        </template>
                       </option>
                     </select>
                   </FormField>
 
                   <FormField label="배송비">
                     <input
-                      type="number"
                       v-model.number="formData.shippingCost"
+                      type="number"
                       class="form-input-sm text-right"
                       placeholder="0"
                       min="0"
@@ -167,7 +171,7 @@
               <!-- 6. 출고요청 정보 (출고요청이 있으면 표시) -->
               <div v-if="dispatchRequest" class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-paper-plane"></i>
+                  <i class="fas fa-paper-plane" />
                   <span>출고요청 정보</span>
                   <span
                     class="dispatch-status-badge"
@@ -233,7 +237,6 @@
                   </FormField>
                 </div>
               </div>
-
             </div>
 
             <!-- 우측 컬럼 -->
@@ -241,14 +244,14 @@
               <!-- 2. 수요기관 정보 -->
               <div class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-building"></i>
+                  <i class="fas fa-building" />
                   <span>수요기관 정보</span>
                 </div>
                 <div class="info-grid grid-3">
                   <FormField label="수요기관명">
                     <input
-                      type="text"
                       v-model="formData.client"
+                      type="text"
                       class="form-input-md text-center"
                       readonly
                     >
@@ -275,24 +278,26 @@
               <!-- 4. OEM 제조사 + 건설사(시공사) -->
               <div class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-industry"></i>
+                  <i class="fas fa-industry" />
                   <span>OEM 제조사 / 건설사(시공사)</span>
                 </div>
                 <div class="info-grid grid-2">
-                  <FormField label="OEM 제조사" required :error="errors.oemCompanyId">
+                  <FormField label="공급원" required :error="errors.oemCompanyId">
                     <select
                       id="oem-company-select"
                       v-model="formData.oemCompanyId"
                       class="form-select"
                       :disabled="loadingOemCompanies || !canEditOemAndDelivery"
                     >
-                      <option :value="null">{{ loadingOemCompanies ? '로딩 중...' : '선택하세요' }}</option>
+                      <option :value="null">
+                        {{ loadingOemCompanies ? '로딩 중...' : '공급원을 선택하세요' }}
+                      </option>
                       <option
                         v-for="company in oemCompanies"
                         :key="company.id"
                         :value="company.id"
                       >
-                        {{ company.companyName }}
+                        {{ company.companyName }}{{ company.companyType === 'LEADPOWER' ? ' (본사)' : '' }}
                       </option>
                     </select>
                   </FormField>
@@ -310,14 +315,14 @@
               <!-- 5. 배송지 정보 -->
               <div class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-map-marker-alt"></i>
+                  <i class="fas fa-map-marker-alt" />
                   <span>배송지 정보</span>
                 </div>
                 <div class="info-grid grid-2">
                   <FormField label="우편번호">
                     <input
-                      type="text"
                       v-model="formData.zipcode"
+                      type="text"
                       class="form-input-sm text-center"
                       placeholder="우편번호"
                       maxlength="10"
@@ -326,8 +331,8 @@
                   </FormField>
                   <FormField label="배송지 주소">
                     <input
-                      type="text"
                       v-model="formData.deliveryAddress"
+                      type="text"
                       class="form-input-xl"
                       placeholder="배송지 주소"
                       :readonly="!canEditOemAndDelivery"
@@ -337,8 +342,8 @@
                 <div class="info-grid grid-2" style="margin-top: 0.5rem;">
                   <FormField label="상세주소">
                     <input
-                      type="text"
                       v-model="formData.addressDetail"
+                      type="text"
                       class="form-input-xl"
                       placeholder="상세주소"
                       :readonly="!canEditOemAndDelivery"
@@ -357,8 +362,8 @@
                 <div class="info-grid grid-2" style="margin-top: 0.5rem;">
                   <FormField label="현장 인수자">
                     <input
-                      type="text"
                       v-model="formData.receiverName"
+                      type="text"
                       class="form-input-sm"
                       placeholder="인수자명"
                       :readonly="!canEditOemAndDelivery"
@@ -366,8 +371,8 @@
                   </FormField>
                   <FormField label="인수자 연락처">
                     <input
-                      type="text"
                       v-model="formData.receiverPhone"
+                      type="text"
                       class="form-input-sm"
                       placeholder="010-0000-0000"
                       :readonly="!canEditOemAndDelivery"
@@ -384,7 +389,7 @@
             <!-- 품목 정보 헤더 -->
             <div class="items-section-header">
               <div class="header-left">
-                <i class="fas fa-box"></i>
+                <i class="fas fa-box" />
                 <span>품목 정보</span>
               </div>
             </div>
@@ -394,13 +399,22 @@
               <table class="items-table">
                 <thead>
                   <tr>
-                    <th style="width: 40px"></th>
-                    <th style="width: 60px">NO</th>
-                    <th style="width: 80px">품목명</th>
-                    <th style="width: 80px">SKU ID</th>
-                    <th style="width: 100px">SKU 품명</th>
+                    <th style="width: 40px" />
+                    <th style="width: 60px">
+                      NO
+                    </th>
+                    <th style="width: 80px">
+                      품목명
+                    </th>
+                    <th style="width: 80px">
+                      SKU ID
+                    </th>
+                    <th style="width: 100px">
+                      SKU 품명
+                    </th>
                     <th>단위</th>
                     <th>발주수량</th>
+                    <th>추가수량</th>
                     <th>기출하</th>
                     <th>잔여수량</th>
                     <th>출하수량</th>
@@ -412,7 +426,7 @@
                 </thead>
                 <tbody>
                   <tr v-if="items.length === 0">
-                    <td colspan="14" class="empty-message">
+                    <td colspan="15" class="empty-message">
                       품목 정보가 없습니다.
                     </td>
                   </tr>
@@ -427,7 +441,15 @@
                       <td>{{ item.skuId }}</td>
                       <td>{{ item.skuName }}</td>
                       <td>{{ item.unit }}</td>
-                      <td class="text-right">{{ formatQuantity(item.orderQuantity) }}</td>
+                      <td class="text-right">
+                        {{ formatQuantity(item.orderQuantity) }}
+                      </td>
+                      <td class="text-right">
+                        <span v-if="item.additionalQuantity > 0" class="additional-qty">
+                          +{{ formatQuantity(item.additionalQuantity) }}
+                        </span>
+                        <span v-else>-</span>
+                      </td>
                       <td class="text-right" :title="`다른 출하들의 합계: ${formatQuantity(item.otherShipmentsQuantity)}`">
                         {{ formatQuantity(item.otherShipmentsQuantity) }}
                       </td>
@@ -437,28 +459,36 @@
                           v-if="canEdit && canEditQuantity && getCalculatedRemainingQuantity(item) > 0"
                           type="button"
                           class="btn-max-quantity"
-                          @click="addRemainingQuantity(item)"
                           :title="'잔여수량 추가 (' + formatQuantity(getCalculatedRemainingQuantity(item)) + ')'"
-                        >▶</button>
+                          @click="addRemainingQuantity(item)"
+                        >
+                          ▶
+                        </button>
                       </td>
                       <td class="text-right quantity-col">
                         <!-- 대기/준비 상태일 때만 수정 가능 -->
                         <input
                           v-if="canEdit && canEditQuantity"
-                          type="number"
                           v-model.number="item.shippingQuantity"
+                          type="number"
                           :min="0"
                           :max="item.maxEditableQuantity"
                           step="2"
                           class="table-input text-right input-w66"
                           @focus="saveOriginalQuantity(item)"
                           @change="validateQuantity(item)"
-                        />
+                        >
                         <span v-else>{{ formatQuantity(item.shippingQuantity) }}</span>
                       </td>
-                      <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
-                      <td class="text-right">{{ formatNumber(item.costPrice) }}</td>
-                      <td class="text-right">{{ formatCurrency(item.shippingQuantity * item.unitPrice) }}</td>
+                      <td class="text-right">
+                        {{ formatNumber(item.unitPrice) }}
+                      </td>
+                      <td class="text-right">
+                        {{ formatNumber(item.costPrice) }}
+                      </td>
+                      <td class="text-right">
+                        {{ formatCurrency(item.shippingQuantity * item.unitPrice) }}
+                      </td>
                       <td class="remark-cell">
                         <template v-if="getRemarksBadges(item.remarks).length > 0">
                           <span
@@ -480,22 +510,43 @@
                 </tbody>
                 <tfoot v-if="items.length > 0">
                   <tr>
-                    <td colspan="9" class="text-right"><strong>합계</strong></td>
-                    <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
-                    <td></td>
-                    <td class="text-right"><strong>{{ formatCurrency(totalCostPrice) }}</strong></td>
-                    <td class="text-right"><strong>{{ formatCurrency(totalAmount) }}</strong></td>
-                    <td></td>
+                    <td colspan="6" class="text-right">
+                      <strong>합계</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalOrderQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong v-if="totalAdditionalQuantity > 0" class="additional-qty">+{{ formatQuantity(totalAdditionalQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalOtherShipmentsQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalRemainingQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalShippingQuantity) }}</strong>
+                    </td>
+                    <td class="text-right" />
+                    <td class="text-right" />
+                    <td class="text-right">
+                      <strong>{{ formatCurrency(totalAmount) }}</strong>
+                    </td>
+                    <td />
                   </tr>
                   <tr v-if="totalBgradeCostAdjustment > 0">
-                    <td colspan="11" class="text-right bgrade-cost-label">B급 원가 차감</td>
-                    <td class="text-right bgrade-cost-value">-{{ formatCurrency(totalBgradeCostAdjustment) }}</td>
-                    <td colspan="2"></td>
+                    <td colspan="11" class="text-right bgrade-cost-label">
+                      B급 원가 차감
+                    </td>
+                    <td class="text-right bgrade-cost-value">
+                      -{{ formatCurrency(totalBgradeCostAdjustment) }}
+                    </td>
+                    <td colspan="2" />
                   </tr>
                 </tfoot>
               </table>
             </div>
-
           </div>
         </FormSection>
       </form>
@@ -535,7 +586,6 @@
       @close="showDispatchRequestModal = false"
       @created="handleDispatchRequestCreated"
     />
-
   </div>
 </template>
 
@@ -590,8 +640,8 @@ const { getStatusLabel: getStatusLabelFromDB, getStatusBadgeClass } = useCommonS
 
 // 품목 인터페이스 (ShipmentItemWithOrder 확장)
 interface OrderItem extends ShipmentItemWithOrder {
-  shippingQuantity: number  // shipmentQuantity의 별칭 (수정 가능)
-  maxEditableQuantity: number  // 최대 수정 가능 수량 (shipmentQuantity + remainingQuantity)
+  shippingQuantity: number // shipmentQuantity의 별칭 (수정 가능)
+  maxEditableQuantity: number // 최대 수정 가능 수량 (shipmentQuantity + remainingQuantity)
   orderId: number
   orderItemId: string
 }
@@ -671,7 +721,7 @@ const {
         return {
           ...item,
           shippingQuantity: item.shipmentQuantity || 0, // 현재 출하 수량
-          maxEditableQuantity: maxEditableQuantity,
+          maxEditableQuantity,
           orderId: data.orderId,
           orderItemId: item.skuId,
           isNewItem: item.remarks === '신규 추가' // 신규 추가 품목 여부
@@ -818,6 +868,26 @@ const { errors, validateAll, rules } = useFormValidation({
 // 현장담당자 선택 시 건설사 자동 설정 (composable)
 setupBuilderAutoSet(formData)
 
+// 총 발주수량
+const totalOrderQuantity = computed(() => {
+  return items.value.reduce((sum, item) => sum + (item.orderQuantity || 0), 0)
+})
+
+// 총 추가수량
+const totalAdditionalQuantity = computed(() => {
+  return items.value.reduce((sum, item) => sum + (item.additionalQuantity || 0), 0)
+})
+
+// 총 기출하수량
+const totalOtherShipmentsQuantity = computed(() => {
+  return items.value.reduce((sum, item) => sum + (item.otherShipmentsQuantity || 0), 0)
+})
+
+// 총 잔여수량
+const totalRemainingQuantity = computed(() => {
+  return items.value.reduce((sum, item) => sum + getCalculatedRemainingQuantity(item), 0)
+})
+
 // 총 출하수량 (현재 편집 중인 수량 합계)
 const totalShippingQuantity = computed(() => {
   return items.value.reduce((sum, item) => sum + (item.shippingQuantity || 0), 0)
@@ -847,18 +917,18 @@ const totalBgradeCostAdjustment = computed(() => {
 
 // 비고(remarks)에서 합지 배지 정보 추출 (SKU ID 포함)
 const getRemarksBadges = (remarks: string | null | undefined): { label: string; color: string }[] => {
-  if (!remarks) return []
+  if (!remarks) { return [] }
 
-  // 합지 타겟 품목 (합지 결과물): "에서 이전" 또는 "에서 병합됨" 또는 "추가 병합" 포함
-  if (remarks.includes('에서 이전') || remarks.includes('에서 병합됨') || remarks.includes('추가 병합')) {
+  // 합지 타겟 품목 (합지 결과물): "에서 이전" 또는 "에서 합지됨/병합됨" 또는 "추가 합지/병합" 포함
+  if (remarks.includes('에서 이전') || remarks.includes('에서 합지됨') || remarks.includes('에서 병합됨') || remarks.includes('추가 합지') || remarks.includes('추가 병합')) {
     // SKU ID 추출: "24547483, 24547485에서" 패턴
     const match = remarks.match(/([\d,\s]+)에서/)
     const skuIds = match ? match[1].trim() : ''
     return [{ label: skuIds ? `합지 ← ${skuIds}` : '합지', color: '#3b82f6' }]
   }
 
-  // 합지 소스 품목 (원본): "로" + ("이전" 또는 "병합됨") 포함
-  if ((remarks.includes('이전') || remarks.includes('병합됨')) &&
+  // 합지 소스 품목 (원본): "로" + ("이전" 또는 "합지됨/병합됨") 포함
+  if ((remarks.includes('이전') || remarks.includes('합지됨') || remarks.includes('병합됨')) &&
       (remarks.includes('로 ') || remarks.includes('로\n'))) {
     // SKU ID 추출: "24547481로" 패턴
     const match = remarks.match(/(\d+)로/)
@@ -881,7 +951,7 @@ const isEditableStatus = computed(() => {
 
 // 삭제 가능 여부 (권한 + 비즈니스 로직)
 const canDelete = computed(() => {
-  if (isOemManager.value) return false
+  if (isOemManager.value) { return false }
   return hasDeletePermission.value && isDeletableStatus.value
 })
 
@@ -893,24 +963,24 @@ const canEditQuantity = computed(() => {
 // 출하 수정 가능 여부 (권한 + 비즈니스 로직)
 const canEdit = computed(() => {
   // OEM 제조사 담당자는 수정 불가 (조회만 가능)
-  if (isOemManager.value) return false
+  if (isOemManager.value) { return false }
   // 출고요청이 존재하면 수정 불가
-  if (dispatchRequest.value) return false
+  if (dispatchRequest.value) { return false }
   return hasEditPermission.value && isEditableStatus.value
 })
 
 // 비활성화 사유 표시 (권한 vs 상태 구분)
 const getEditDisabledReason = computed(() => {
-  if (isOemManager.value) return 'OEM 제조사 담당자는 출하를 수정할 수 없습니다'
-  if (dispatchRequest.value) return '출고요청이 완료된 출하는 수정할 수 없습니다'
-  if (!hasEditPermission.value) return '수정 권한이 없습니다'
-  if (!isEditableStatus.value) return '완료 또는 취소된 출하는 수정할 수 없습니다'
+  if (isOemManager.value) { return 'OEM 제조사 담당자는 출하를 수정할 수 없습니다' }
+  if (dispatchRequest.value) { return '출고요청이 완료된 출하는 수정할 수 없습니다' }
+  if (!hasEditPermission.value) { return '수정 권한이 없습니다' }
+  if (!isEditableStatus.value) { return '완료 또는 취소된 출하는 수정할 수 없습니다' }
   return ''
 })
 
 const getDeleteDisabledReason = computed(() => {
-  if (!hasDeletePermission.value) return '삭제 권한이 없습니다'
-  if (!isDeletableStatus.value) return '대기 또는 취소 상태에서만 삭제할 수 있습니다'
+  if (!hasDeletePermission.value) { return '삭제 권한이 없습니다' }
+  if (!isDeletableStatus.value) { return '대기 또는 취소 상태에서만 삭제할 수 있습니다' }
   return ''
 })
 
@@ -921,15 +991,15 @@ const getDeleteDisabledReason = computed(() => {
 // - 발주서가 생성되지 않은 경우에만 수정 가능
 const canEditOemAndDelivery = computed(() => {
   // OEM 제조사 담당자는 수정 불가
-  if (isOemManager.value) return false
+  if (isOemManager.value) { return false }
   // 출고요청이 존재하면 수정 불가
-  if (dispatchRequest.value) return false
+  if (dispatchRequest.value) { return false }
   // 출하가 취소 상태면 불가
-  if (formData.status === 'CANCELLED') return false
+  if (formData.status === 'CANCELLED') { return false }
   // 기성에 포함된 경우 수정 불가
-  if (shipmentData.value?.isBilled) return false
+  if (shipmentData.value?.isBilled) { return false }
   // 납품완료계가 완료된 경우 수정 불가
-  if (shipmentData.value?.deliveryDoneStatus === 'COMPLETED') return false
+  if (shipmentData.value?.deliveryDoneStatus === 'COMPLETED') { return false }
   return true
 })
 
@@ -958,17 +1028,17 @@ const handleSendMessage = () => {
 
 // 현장 도착 예정일시 포맷 (UTC → KST 변환 후 표시용)
 const formatExpectedArrivalAt = (dateTimeStr: string): string => {
-  if (!dateTimeStr) return '-'
+  if (!dateTimeStr) { return '-' }
   // UTC ISO 문자열을 KST로 변환 후 사람이 읽기 좋은 형식으로 출력
   const kst = utcToKstDateTimeLocal(dateTimeStr)
-  if (!kst) return '-'
+  if (!kst) { return '-' }
   const [datePart, timePart] = kst.split('T')
   return `${datePart} ${timePart}`
 }
 
 // 데이터 새로고침 (출하 상세 + 출고요청)
 const refreshData = async () => {
-  if (!shipmentId.value) return
+  if (!shipmentId.value) { return }
 
   try {
     // 출하 상세 새로고침
@@ -979,7 +1049,7 @@ const refreshData = async () => {
     shipmentData.value = data
 
     // 품목 데이터 다시 매핑
-    items.value = data.items.map((item) => ({
+    items.value = data.items.map(item => ({
       ...item,
       shippingQuantity: item.shipmentQuantity || 0,
       maxEditableQuantity: (item.shipmentQuantity || 0) + (item.remainingQuantity || 0),
@@ -1040,7 +1110,7 @@ const validateQuantity = (item: OrderItem) => {
 
   if (item.shippingQuantity < 0) {
     alert('출하수량은 0 이상이어야 합니다.')
-    item.shippingQuantity = originalValue  // 원래 값으로 복원
+    item.shippingQuantity = originalValue // 원래 값으로 복원
     return
   }
 
@@ -1049,7 +1119,7 @@ const validateQuantity = (item: OrderItem) => {
       `출하수량은 최대 ${formatQuantity(item.maxEditableQuantity)}개까지 가능합니다.\n` +
       `(현재 출하분 ${formatQuantity(item.shipmentQuantity)}개 + 잔여 ${formatQuantity(item.remainingQuantity)}개)`
     )
-    item.shippingQuantity = originalValue  // 원래 값으로 복원
+    item.shippingQuantity = originalValue // 원래 값으로 복원
   }
 }
 
@@ -1135,17 +1205,17 @@ const handleDispatchRequestClick = async () => {
 // 출고요청 버튼 표시 조건 (출고요청이 없는 경우에만 표시)
 const canShowDispatchRequestButton = computed(() => {
   // OEM 제조사 담당자는 출고요청 불가
-  if (isOemManager.value) return false
+  if (isOemManager.value) { return false }
   // 취소/완료 상태에서는 표시하지 않음
-  if (['CANCELLED', 'COMPLETED'].includes(formData.status)) return false
+  if (['CANCELLED', 'COMPLETED'].includes(formData.status)) { return false }
   // 이미 출고요청이 있으면 표시하지 않음
-  if (dispatchRequest.value) return false
+  if (dispatchRequest.value) { return false }
   return true
 })
 
 // 출고요청 데이터 로드
 const loadDispatchRequest = async () => {
-  if (!shipmentId.value) return
+  if (!shipmentId.value) { return }
 
   loadingDispatchRequest.value = true
   try {
@@ -1163,16 +1233,16 @@ const loadDispatchRequest = async () => {
  * 현재 출하에 배송지 정보가 없고, 출고요청도 없는 경우에만 적용
  */
 const prefillSiblingDeliveryInfo = async () => {
-  if (!shipmentId.value) return
+  if (!shipmentId.value) { return }
 
   // 이미 배송지 정보가 있으면 스킵
-  if (formData.deliveryAddress) return
+  if (formData.deliveryAddress) { return }
   // 이미 출고요청이 있으면 스킵
-  if (dispatchRequest.value) return
+  if (dispatchRequest.value) { return }
 
   try {
     const siblingInfo = await shipmentService.getSiblingDeliveryInfo(shipmentId.value)
-    if (!siblingInfo) return
+    if (!siblingInfo) { return }
 
     // 배송지 정보 프리필 (현재 값이 비어있는 필드만)
     if (!formData.zipcode && siblingInfo.zipcode) {
@@ -1252,7 +1322,7 @@ const handleDelete = async () => {
   try {
     await shipmentService.deleteShipment(shipmentId.value)
     alert('출하 정보가 삭제되었습니다.')
-    handleGoBack()  // 삭제 후에도 returnPage로 이동
+    handleGoBack() // 삭제 후에도 returnPage로 이동
   } catch (error: any) {
     console.error('출하 정보 삭제 실패:', error)
     alert(error.message || '출하 정보 삭제에 실패했습니다.')
@@ -1535,6 +1605,13 @@ const handleDelete = async () => {
   max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 추가수량 표시 */
+.additional-qty {
+  color: #059669;
+  font-weight: 600;
+  font-size: 0.875rem;
 }
 
 /* 신규 뱃지 */

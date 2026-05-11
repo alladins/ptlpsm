@@ -1,20 +1,19 @@
 <template>
   <div class="access-log">
-    <PageHeader
-      title="접근로그"
-      description="사용자 접근 및 시스템 활동 로그를 확인합니다."
-    >
-      <template #actions>
+    <div class="page-header-compact">
+      <h1>접근로그</h1>
+      <span class="page-description">사용자 접근 및 시스템 활동 로그를 확인합니다.</span>
+      <div class="header-actions-right">
         <button class="btn-action" @click="handleSearch">
-          <i class="fas fa-search"></i>
+          <i class="fas fa-search" />
           검색
         </button>
         <button class="btn-action btn-primary" @click="handleExportExcel">
-          <i class="fas fa-file-excel"></i>
+          <i class="fas fa-file-excel" />
           엑셀 다운로드
         </button>
-      </template>
-    </PageHeader>
+      </div>
+    </div>
 
     <!-- 검색 조건 섹션 -->
     <div class="search-section-compact">
@@ -28,18 +27,28 @@
             placeholder="사용자 ID"
             class="text-input"
             @keyup.enter="handleSearch"
-          />
+          >
         </div>
 
         <!-- HTTP 메서드 -->
         <div class="search-item">
           <label>메서드:</label>
           <select v-model="searchParams.httpMethod" class="type-select">
-            <option value="">전체</option>
-            <option value="GET">GET (조회)</option>
-            <option value="POST">POST (등록)</option>
-            <option value="PUT">PUT (수정)</option>
-            <option value="DELETE">DELETE (삭제)</option>
+            <option value="">
+              전체
+            </option>
+            <option value="GET">
+              GET (조회)
+            </option>
+            <option value="POST">
+              POST (등록)
+            </option>
+            <option value="PUT">
+              PUT (수정)
+            </option>
+            <option value="DELETE">
+              DELETE (삭제)
+            </option>
           </select>
         </div>
 
@@ -47,19 +56,27 @@
         <div class="search-item">
           <label>상태:</label>
           <select v-model="searchParams.statusCode" class="type-select">
-            <option value="">전체</option>
-            <option :value="200">성공 (200)</option>
-            <option :value="400">클라이언트 오류 (4xx)</option>
-            <option :value="500">서버 오류 (5xx)</option>
+            <option value="">
+              전체
+            </option>
+            <option :value="200">
+              성공 (200)
+            </option>
+            <option :value="400">
+              클라이언트 오류 (4xx)
+            </option>
+            <option :value="500">
+              서버 오류 (5xx)
+            </option>
           </select>
         </div>
 
         <!-- 날짜 -->
         <div class="search-item search-keyword">
           <label>기간:</label>
-          <input v-model="searchParams.startDate" type="date" class="date-input" />
+          <input v-model="searchParams.startDate" type="date" class="date-input">
           <span class="separator">~</span>
-          <input v-model="searchParams.endDate" type="date" class="date-input" />
+          <input v-model="searchParams.endDate" type="date" class="date-input">
         </div>
       </div>
     </div>
@@ -71,13 +88,17 @@
           <div class="flex-shrink-0">
             <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
               </svg>
             </div>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">오늘 접속자</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ formatNumber(statistics.todayVisitors) }}</p>
+            <p class="text-sm font-medium text-gray-500">
+              오늘 접속자
+            </p>
+            <p class="text-2xl font-semibold text-gray-900">
+              {{ formatNumber(statistics.todayVisitors) }}
+            </p>
           </div>
         </div>
       </div>
@@ -86,13 +107,17 @@
           <div class="flex-shrink-0">
             <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
               <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">성공 로그인</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ formatNumber(statistics.successLogins) }}</p>
+            <p class="text-sm font-medium text-gray-500">
+              성공 로그인
+            </p>
+            <p class="text-2xl font-semibold text-gray-900">
+              {{ formatNumber(statistics.successLogins) }}
+            </p>
           </div>
         </div>
       </div>
@@ -101,13 +126,17 @@
           <div class="flex-shrink-0">
             <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
               <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">실패 로그인</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ formatNumber(statistics.failedLogins) }}</p>
+            <p class="text-sm font-medium text-gray-500">
+              실패 로그인
+            </p>
+            <p class="text-2xl font-semibold text-gray-900">
+              {{ formatNumber(statistics.failedLogins) }}
+            </p>
           </div>
         </div>
       </div>
@@ -116,13 +145,17 @@
           <div class="flex-shrink-0">
             <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
               <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">오류 발생</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ formatNumber(statistics.errorCount) }}</p>
+            <p class="text-sm font-medium text-gray-500">
+              오류 발생
+            </p>
+            <p class="text-2xl font-semibold text-gray-900">
+              {{ formatNumber(statistics.errorCount) }}
+            </p>
           </div>
         </div>
       </div>
@@ -132,7 +165,9 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div class="px-6 py-4 border-b border-gray-200">
         <div class="flex justify-between items-center">
-          <h3 class="text-lg font-semibold text-gray-800">접근 로그 목록</h3>
+          <h3 class="text-lg font-semibold text-gray-800">
+            접근 로그 목록
+          </h3>
           <div class="text-sm text-gray-600">
             총 <span class="font-semibold">{{ formatNumber(totalElements) }}</span>건
           </div>
@@ -141,7 +176,7 @@
 
       <!-- 로딩 상태 -->
       <div v-if="loading" class="p-8 text-center text-gray-500">
-        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+        <i class="fas fa-spinner fa-spin text-2xl mb-2" />
         <p>로그를 불러오는 중...</p>
       </div>
 
@@ -179,7 +214,7 @@
                 조회된 로그가 없습니다.
               </td>
             </tr>
-            <tr v-else v-for="log in logs" :key="log.id" class="hover:bg-gray-50">
+            <tr v-for="log in logs" v-else :key="log.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ formatDateTime(log.accessTime) }}
               </td>
@@ -310,7 +345,7 @@ const searchParams = reactive<AccessLogSearchParams>({
 })
 
 // 기본 시작일 (7일 전)
-function getDefaultStartDate(): string {
+function getDefaultStartDate (): string {
   const date = new Date()
   date.setDate(date.getDate() - 7)
   // 로컬 타임존 기준 날짜 반환
@@ -321,7 +356,7 @@ function getDefaultStartDate(): string {
 }
 
 // 기본 종료일 (오늘)
-function getDefaultEndDate(): string {
+function getDefaultEndDate (): string {
   return getLocalDateString()
 }
 
@@ -335,22 +370,20 @@ const displayedPages = computed(() => {
     for (let i = 1; i <= total; i++) {
       pages.push(i)
     }
+  } else if (current <= 4) {
+    for (let i = 1; i <= 5; i++) { pages.push(i) }
+    pages.push('...')
+    pages.push(total)
+  } else if (current >= total - 3) {
+    pages.push(1)
+    pages.push('...')
+    for (let i = total - 4; i <= total; i++) { pages.push(i) }
   } else {
-    if (current <= 4) {
-      for (let i = 1; i <= 5; i++) pages.push(i)
-      pages.push('...')
-      pages.push(total)
-    } else if (current >= total - 3) {
-      pages.push(1)
-      pages.push('...')
-      for (let i = total - 4; i <= total; i++) pages.push(i)
-    } else {
-      pages.push(1)
-      pages.push('...')
-      for (let i = current - 1; i <= current + 1; i++) pages.push(i)
-      pages.push('...')
-      pages.push(total)
-    }
+    pages.push(1)
+    pages.push('...')
+    for (let i = current - 1; i <= current + 1; i++) { pages.push(i) }
+    pages.push('...')
+    pages.push(total)
   }
 
   return pages
@@ -368,9 +401,9 @@ const loadData = async () => {
     }
 
     // 빈 값 제거
-    if (!params.username) delete params.username
-    if (!params.httpMethod) delete params.httpMethod
-    if (params.statusCode === undefined || params.statusCode === null || params.statusCode === ('' as any)) delete params.statusCode
+    if (!params.username) { delete params.username }
+    if (!params.httpMethod) { delete params.httpMethod }
+    if (params.statusCode === undefined || params.statusCode === null || params.statusCode === ('' as any)) { delete params.statusCode }
 
     const response = await accessLogService.getAccessLogs(params)
 
@@ -428,7 +461,7 @@ const handleExportExcel = async () => {
 
 // 페이지 이동
 const goToPage = (page: number) => {
-  if (page < 0 || page >= totalPages.value) return
+  if (page < 0 || page >= totalPages.value) { return }
   currentPage.value = page
   loadData()
 }

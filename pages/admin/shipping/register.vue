@@ -2,27 +2,28 @@
   <div class="shipping-register">
     <PageHeader
       title="출하 등록"
+      icon="shipping"
+      icon-color="green"
       description="출하 정보를 등록하고 관리합니다."
     >
       <template #actions>
         <button class="btn-action btn-secondary" @click="goBack">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
           취소
         </button>
         <button
           class="btn-action btn-primary"
-          @click="handleSubmit"
           :disabled="submitting || !canWrite || isOemManager"
           :title="isOemManager ? 'OEM 제조사 담당자는 출하를 등록할 수 없습니다' : (!canWrite ? '등록 권한이 없습니다' : '')"
+          @click="handleSubmit"
         >
-          <i class="fas fa-save"></i>
+          <i class="fas fa-save" />
           {{ submitting ? '저장 중...' : '저장' }}
         </button>
       </template>
     </PageHeader>
-
     <div class="content-section">
-      <form @submit.prevent="handleSubmit" class="register-form">
+      <form class="register-form" @submit.prevent="handleSubmit">
         <FormSection title="출하 정보">
           <!-- 2열 레이아웃 컨테이너 -->
           <div class="two-column-layout">
@@ -31,21 +32,21 @@
               <!-- 1. 계약 정보 -->
               <div class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-file-alt"></i>
+                  <i class="fas fa-file-alt" />
                   <span>계약 정보</span>
                 </div>
                 <div class="info-grid grid-3">
                   <FormField label="납품요구번호(발주번호)" required :error="errors.deliveryRequestNo">
                     <div class="search-group">
                       <input
-                        type="text"
                         v-model="formData.deliveryRequestNo"
+                        type="text"
                         class="form-input-sm"
                         placeholder="납품요구번호를 선택하세요"
                         readonly
                       >
                       <button type="button" class="btn-search" @click="openOrderSelectPopup">
-                        <i class="fas fa-search"></i>
+                        <i class="fas fa-search" />
                         조회
                       </button>
                     </div>
@@ -73,14 +74,14 @@
               <!-- 3. 출하 정보 -->
               <div class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-truck"></i>
+                  <i class="fas fa-truck" />
                   <span>출하 정보</span>
                 </div>
                 <div class="info-grid grid-4">
                   <FormField label="출하일자" required :error="errors.shippingDate">
                     <input
-                      type="date"
                       v-model="formData.shippingDate"
+                      type="date"
                       class="form-input-sm text-center"
                     >
                   </FormField>
@@ -96,8 +97,8 @@
 
                   <FormField label="배송비">
                     <input
-                      type="number"
                       v-model.number="formData.shippingCost"
+                      type="number"
                       class="form-input-sm text-right"
                       placeholder="0"
                       min="0"
@@ -131,14 +132,14 @@
               <!-- 2. 수요기관 정보 -->
               <div class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-building"></i>
+                  <i class="fas fa-building" />
                   <span>수요기관 정보</span>
                 </div>
                 <div class="info-grid grid-3">
                   <FormField label="수요기관명" required :error="errors.client">
                     <input
-                      type="text"
                       v-model="formData.client"
+                      type="text"
                       class="form-input-md text-center"
                       placeholder="수요기관 불러오기"
                       readonly
@@ -167,23 +168,25 @@
               <!-- 4. OEM 제조사 / 건설사(시공사) -->
               <div class="info-group">
                 <div class="info-group-header">
-                  <i class="fas fa-industry"></i>
+                  <i class="fas fa-industry" />
                   <span>OEM 제조사 / 건설사(시공사)</span>
                 </div>
                 <div class="info-grid grid-2">
-                  <FormField label="OEM 제조사" required :error="errors.oemCompanyId">
+                  <FormField label="공급원" required :error="errors.oemCompanyId">
                     <select
                       v-model="formData.oemCompanyId"
                       class="form-select"
                       :disabled="loadingOemCompanies"
                     >
-                      <option :value="null">{{ loadingOemCompanies ? '로딩 중...' : 'OEM 제조사를 선택하세요' }}</option>
+                      <option :value="null">
+                        {{ loadingOemCompanies ? '로딩 중...' : '공급원을 선택하세요' }}
+                      </option>
                       <option
                         v-for="company in oemCompanies"
                         :key="company.id"
                         :value="company.id"
                       >
-                        {{ company.companyName }}
+                        {{ company.companyName }}{{ company.companyType === 'LEADPOWER' ? ' (본사)' : '' }}
                       </option>
                     </select>
                   </FormField>
@@ -203,14 +206,18 @@
                       class="form-select"
                       :disabled="loadingSiteManagers"
                     >
-                      <option :value="null">{{ loadingSiteManagers ? '로딩 중...' : '선택하세요' }}</option>
+                      <option :value="null">
+                        {{ loadingSiteManagers ? '로딩 중...' : '선택하세요' }}
+                      </option>
                       <option
                         v-for="manager in siteManagers"
                         :key="manager.userId"
                         :value="manager.userId"
                       >
                         {{ manager.userName }} ({{ manager.phone }})
-                        <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
+                        <template v-if="manager.companyName">
+                          - {{ manager.companyName }}
+                        </template>
                       </option>
                     </select>
                   </FormField>
@@ -226,7 +233,7 @@
           <div class="items-section-wrapper">
             <div class="items-section-header">
               <div class="header-left">
-                <i class="fas fa-box"></i>
+                <i class="fas fa-box" />
                 <span>품목 정보</span>
               </div>
               <button
@@ -235,7 +242,7 @@
                 class="btn-add-item"
                 @click="openSkuSelector"
               >
-                <i class="fas fa-plus"></i>
+                <i class="fas fa-plus" />
                 품목 추가
               </button>
             </div>
@@ -243,61 +250,112 @@
               <table class="items-table">
                 <thead>
                   <tr>
-                    <th style="width: 20px">NO</th>
-                    <th style="width: 80px">품목명</th>
-                    <th style="width: 60px">SKU ID</th>
-                    <th style="width: 100px">SKU 품명</th>
-                    <th style="width: 350px">규격</th>
-                    <th style="width: 20px">단위</th>
-                    <th style="width: 70px">발주수량</th>
-                    <th style="width: 60px">기출하</th>
-                    <th style="width: 60px">잔여수량</th>
-                    <th style="width: 80px" class="quantity-col">출하수량</th>
-                    <th style="width: 70px">단가</th>
-                    <th style="width: 80px">금액</th>
-                    <th style="width: 120px">비고</th>
-                    <th style="width: 50px">삭제</th>
+                    <th style="width: 20px">
+                      NO
+                    </th>
+                    <th style="width: 80px">
+                      품목명
+                    </th>
+                    <th style="width: 60px">
+                      SKU ID
+                    </th>
+                    <th style="width: 100px">
+                      SKU 품명
+                    </th>
+                    <th style="width: 350px">
+                      규격
+                    </th>
+                    <th style="width: 20px">
+                      단위
+                    </th>
+                    <th style="width: 70px">
+                      발주수량
+                    </th>
+                    <th style="width: 70px">
+                      추가수량
+                    </th>
+                    <th style="width: 60px">
+                      기출하
+                    </th>
+                    <th style="width: 60px">
+                      잔여수량
+                    </th>
+                    <th style="width: 80px" class="quantity-col">
+                      출하수량
+                    </th>
+                    <th style="width: 70px">
+                      단가
+                    </th>
+                    <th style="width: 80px">
+                      금액
+                    </th>
+                    <th style="width: 120px">
+                      비고
+                    </th>
+                    <th style="width: 50px">
+                      삭제
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="selectedOrderItems.length === 0 && newItems.length === 0">
-                    <td colspan="14" class="empty-message">
+                    <td colspan="15" class="empty-message">
                       납품요구번호를 선택하면 품목이 표시됩니다.
                     </td>
                   </tr>
                   <!-- 기존 발주 품목 -->
-                  <tr v-for="item in selectedOrderItems" :key="item.itemId" :style="getMergeGroupStyle(item.skuId)">
-                    <td>{{ item.itemId }}</td>
+                  <tr v-for="(item, index) in selectedOrderItems" :key="item.skuId" :style="getMergeGroupStyle(item.skuId)">
+                    <td class="text-center">
+                      {{ index + 1 }}
+                    </td>
                     <td>{{ item.itemName }}</td>
                     <td>{{ item.skuId }}</td>
                     <td>{{ item.skuName }}</td>
-                    <td class="specification-cell" :title="item.specification">{{ item.specification }}</td>
+                    <td class="specification-cell" :title="item.specification">
+                      {{ item.specification }}
+                    </td>
                     <td>{{ item.unit }}</td>
-                    <td class="text-right">{{ formatQuantity(item.quantity) }}</td>
-                    <td class="text-right">{{ formatQuantity(item.shippedQuantity) }}</td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.quantity) }}
+                    </td>
+                    <td class="text-right">
+                      <span v-if="item.additionalQuantity > 0" class="additional-qty">
+                        +{{ formatQuantity(item.additionalQuantity) }}
+                      </span>
+                      <span v-else>-</span>
+                    </td>
+                    <td class="text-right">
+                      {{ formatQuantity(item.shippedQuantity) }}
+                    </td>
                     <td class="text-right">
                       {{ formatQuantity(getCalculatedRemainingQuantity(item)) }}
                       <button
                         type="button"
                         class="btn-max-quantity"
-                        @click="setMaxQuantity(item)"
                         :title="'전체수량 입력 (' + formatQuantity(getCalculatedRemainingQuantity(item)) + ')'"
                         :disabled="getCalculatedRemainingQuantity(item) <= 0"
-                      >▶</button>
+                        @click="setMaxQuantity(item)"
+                      >
+                        ▶
+                      </button>
                     </td>
                     <td class="text-right quantity-col">
                       <input
-                        type="number"
                         v-model.number="item.shippingQuantity"
+                        type="number"
                         :min="0"
                         :max="item.remainingQuantity"
                         step="2"
                         class="table-input text-right input-w75"
                         @change="updateShippingQuantity(item)"
-                      />
+                      >
                     </td>
-                    <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
-                    <td class="text-right">{{ formatCurrency(item.shippingQuantity * item.unitPrice) }}</td>
+                    <td class="text-right">
+                      {{ formatNumber(item.unitPrice) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatCurrency(item.shippingQuantity * item.unitPrice) }}
+                    </td>
                     <td class="remark-cell">
                       <template v-if="getMergeBadges(item.skuId).length > 0">
                         <span
@@ -312,76 +370,122 @@
                       </template>
                     </td>
                     <td class="text-center">
-                      <button
-                        type="button"
-                        class="btn-remove"
-                        @click="removeOrderItem(item.skuId)"
-                        title="삭제"
-                      >
-                        <i class="fas fa-trash-alt"></i>
-                      </button>
+                      <!-- 발주 품목은 삭제 불가 (추가수량이 있는 경우만 추가수량 취소 가능) -->
+                      <span class="text-muted" title="발주 품목은 삭제할 수 없습니다">-</span>
                     </td>
                   </tr>
                   <!-- 신규 추가 품목 -->
-                  <tr v-for="item in newItems" :key="'new-' + item.skuId" class="new-item-row" :style="getMergeGroupStyle(item.skuId)">
+                  <tr v-for="(item, idx) in newItems" :key="'new-' + item.skuId" class="new-item-row" :style="getMergeGroupStyle(item.skuId)">
                     <td class="text-center">
-                      <span class="badge-new">신규</span>
+                      {{ selectedOrderItems.length + idx + 1 }}
                     </td>
                     <td>{{ item.itemName }}</td>
-                    <td class="text-center">{{ item.skuId }}</td>
+                    <td class="text-center">
+                      {{ item.skuId }}
+                    </td>
                     <td>{{ item.skuName }}</td>
-                    <td class="specification-cell" :title="item.specification">{{ item.specification }}</td>
-                    <td class="text-center">{{ item.unit }}</td>
-                    <!-- 발주수량: 병합 시 수량 표시, 아니면 "-" -->
-                    <td class="text-right">{{ item.quantity ? formatQuantity(item.quantity) : '-' }}</td>
+                    <td class="specification-cell" :title="item.specification">
+                      {{ item.specification }}
+                    </td>
+                    <td class="text-center">
+                      {{ item.unit }}
+                    </td>
+                    <!-- 발주수량 -->
+                    <td class="text-right">
+                      {{ item.quantity ? formatQuantity(item.quantity) : '-' }}
+                    </td>
+                    <!-- 추가수량 -->
+                    <td class="text-right">
+                      <span v-if="item.additionalQuantity > 0" class="additional-qty">
+                        +{{ formatQuantity(item.additionalQuantity) }}
+                      </span>
+                      <span v-else>-</span>
+                    </td>
                     <!-- 기출하 -->
-                    <td class="text-right">{{ item.shippedQuantity !== undefined ? formatQuantity(item.shippedQuantity) : '-' }}</td>
+                    <td class="text-right">
+                      {{ item.shippedQuantity !== undefined ? formatQuantity(item.shippedQuantity) : '-' }}
+                    </td>
                     <!-- 잔여수량 -->
-                    <td class="text-right">{{ item.remainingQuantity ? formatQuantity(item.remainingQuantity - item.shippingQuantity) : '-' }}</td>
+                    <td class="text-right">
+                      {{ item.remainingQuantity ? formatQuantity(item.remainingQuantity - item.shippingQuantity) : '-' }}
+                      <button
+                        v-if="item.remainingQuantity && (item.remainingQuantity - item.shippingQuantity) > 0"
+                        type="button"
+                        class="btn-max-quantity"
+                        :title="'전체수량 입력 (' + formatQuantity(item.remainingQuantity) + ')'"
+                        @click="item.shippingQuantity = item.remainingQuantity"
+                      >
+                        ▶
+                      </button>
+                    </td>
+                    <!-- 출하수량 -->
                     <td class="text-right quantity-col">
                       <input
-                        type="number"
                         v-model.number="item.shippingQuantity"
+                        type="number"
                         :min="0"
+                        :max="item.remainingQuantity"
                         step="2"
                         class="table-input text-right input-w75"
-                      />
+                      >
                     </td>
-                    <td class="text-right">{{ formatNumber(item.unitPrice) }}</td>
-                    <td class="text-right">{{ formatCurrency(item.shippingQuantity * item.unitPrice) }}</td>
+                    <td class="text-right">
+                      {{ formatNumber(item.unitPrice) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatCurrency(item.shippingQuantity * item.unitPrice) }}
+                    </td>
                     <td class="remark-cell">
+                      <span class="badge-new">신규</span>
                       <template v-if="getMergeBadges(item.skuId).length > 0">
                         <span
-                          v-for="(badge, idx) in getMergeBadges(item.skuId)"
-                          :key="idx"
+                          v-for="(badge, bidx) in getMergeBadges(item.skuId)"
+                          :key="bidx"
                           class="merge-badge"
                           :style="{ backgroundColor: badge.color }"
                         >{{ badge.label }}</span>
                       </template>
-                      <template v-else>
-                        {{ item.shippingQuantity > 0 ? `${formatQuantity(Math.round(item.shippingQuantity / 2))} 매` : '-' }}
+                      <template v-else-if="item.shippingQuantity > 0">
+                        {{ `${formatQuantity(Math.round(item.shippingQuantity / 2))} 매` }}
                       </template>
                     </td>
                     <td class="text-center">
                       <button
                         type="button"
                         class="btn-remove"
-                        @click="removeNewItem(item.skuId)"
                         title="삭제"
+                        @click="removeNewItem(item.skuId)"
                       >
-                        <i class="fas fa-trash-alt"></i>
+                        <i class="fas fa-trash-alt" />
                       </button>
                     </td>
                   </tr>
                 </tbody>
                 <tfoot v-if="selectedOrderItems.length > 0 || newItems.length > 0">
                   <tr>
-                    <td colspan="7" class="text-right"></td>
-                    <td colspan="2" class="text-right"><strong>총 출하수량</strong></td>
-                    <td class="text-right"><strong>{{ formatQuantity(totalShippingQuantity) }}</strong></td>
-                    <td class="text-right"><strong>총 금액</strong></td>
-                    <td class="text-right"><strong>{{ formatCurrency(totalAmount) }}</strong></td>
-                    <td colspan="2"></td>
+                    <td colspan="6" class="text-right">
+                      <strong>합계</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalOrderQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong v-if="totalAdditionalQuantity > 0" class="text-additional">+{{ formatQuantity(totalAdditionalQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalShippedQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalRemainingQuantity) }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatQuantity(totalShippingQuantity) }}</strong>
+                    </td>
+                    <td class="text-right" />
+                    <td class="text-right">
+                      <strong>{{ formatCurrency(totalAmount) }}</strong>
+                    </td>
+                    <td colspan="2" />
                   </tr>
                 </tfoot>
               </table>
@@ -395,7 +499,7 @@
     <OrderSelectPopup
       v-if="showOrderSelectPopup"
       :show="showOrderSelectPopup"
-      :shippable-only="true"
+      :shippable-only="false"
       @close="closeOrderSelectPopup"
       @select="handleOrderSelect"
     />
@@ -406,7 +510,7 @@
       @sku-selected="handleSkuSelected"
     />
 
-    <!-- 품목 병합 모달 -->
+    <!-- 품목 합지 모달 -->
     <ItemMergeSelectModal
       v-if="pendingNewItem"
       :is-open="showMergeModal"
@@ -470,14 +574,14 @@ interface OrderItem {
   unit: string
   quantity: number
   shippingQuantity: number
-  shippedQuantity: number  // 기출하 수량
+  shippedQuantity: number // 기출하 수량
   remainingQuantity: number
   unitPrice: number
   amount: number
   deliveryLocation?: string
   deliveryDeadline?: string
   deliveryTerms?: string
-  remark?: string  // 비고 (병합 사유)
+  remark?: string // 비고 (병합 사유)
   optionItemNumber?: string
   itemClassificationNumber?: string
   itemIdentificationNumber?: string
@@ -499,28 +603,28 @@ interface NewItem {
   unitPrice: number
   shippingQuantity: number
   isNew: true
-  remark?: string           // 비고 (병합 사유)
-  quantity?: number         // 병합 시 발주수량
-  shippedQuantity?: number  // 병합 시 기출하 (0)
+  remark?: string // 비고 (병합 사유)
+  quantity?: number // 병합 시 발주수량
+  shippedQuantity?: number // 병합 시 기출하 (0)
   remainingQuantity?: number // 병합 시 잔여수량
   mergeSourceSkuIds?: string[] // 병합 출처 SKU ID 목록
 }
 
 // 합지 그룹 추적
 interface MergeGroupInfo {
-  id: string                // 고유 ID
-  targetSkuId: string       // 합지 결과 품목 SKU ID
-  targetSkuName: string     // 합지 결과 SKU 품명
+  id: string // 고유 ID
+  targetSkuId: string // 합지 결과 품목 SKU ID
+  targetSkuName: string // 합지 결과 SKU 품명
   sources: { skuId: string; skuName: string; amount: number }[]
-  colorIndex: number        // 색상 인덱스 (0~4)
+  colorIndex: number // 색상 인덱스 (0~4)
 }
 
 const MERGE_GROUP_COLORS = [
-  { border: '#3b82f6', bg: '#eff6ff' },   // 파랑
-  { border: '#10b981', bg: '#ecfdf5' },   // 초록
-  { border: '#f59e0b', bg: '#fffbeb' },   // 주황
-  { border: '#8b5cf6', bg: '#f5f3ff' },   // 보라
-  { border: '#ec4899', bg: '#fdf2f8' },   // 분홍
+  { border: '#3b82f6', bg: '#eff6ff' }, // 파랑
+  { border: '#10b981', bg: '#ecfdf5' }, // 초록
+  { border: '#f59e0b', bg: '#fffbeb' }, // 주황
+  { border: '#8b5cf6', bg: '#f5f3ff' }, // 보라
+  { border: '#ec4899', bg: '#fdf2f8' } // 분홍
 ]
 
 // 신규 추가 품목 목록
@@ -551,10 +655,24 @@ const openSkuSelector = () => {
 const handleSkuSelected = (item: Item, sku: ItemSku) => {
   const skuIdStr = String(sku.skuId)
 
-  // 기존 발주 품목에 있는지 확인
-  const existsInOrder = selectedOrderItems.value.some(i => i.skuId === skuIdStr)
-  if (existsInOrder) {
-    alert('이미 발주 목록에 있는 품목입니다.')
+  // 기존 발주 품목에 동일 SKU가 있으면 → 추가수량으로 처리 (병합이 아님)
+  const existingOrderIdx = selectedOrderItems.value.findIndex(i => i.skuId === skuIdStr)
+  if (existingOrderIdx !== -1) {
+    const additionalQty = prompt('추가할 수량을 입력하세요.\n\n※ 추가된 수량은 해당 출하에서 전량 출하됩니다.')
+    if (additionalQty === null) { return } // 취소
+    const qty = parseFloat(additionalQty)
+    if (isNaN(qty) || qty <= 0) {
+      alert('올바른 수량을 입력하세요.')
+      return
+    }
+    const existingItem = selectedOrderItems.value[existingOrderIdx]
+    selectedOrderItems.value[existingOrderIdx] = {
+      ...existingItem,
+      additionalQuantity: (existingItem.additionalQuantity || 0) + qty,
+      shippingQuantity: (existingItem.shippingQuantity || 0) + qty, // 추가 = 전량 출하 자동 세팅
+      remainingQuantity: (existingItem.remainingQuantity || 0) // 잔여수량은 변경 없음 (출하수량이 동시에 증가했으므로)
+    }
+    showSkuSelector.value = false
     return
   }
 
@@ -567,7 +685,7 @@ const handleSkuSelected = (item: Item, sku: ItemSku) => {
 
   // 품목명 추출: "폴리우레탄기포단열재,경질2종2호" → "기포단열재"
   // item_nm에서 쉼표 앞부분의 마지막 부분(폴리우레탄 제거)을 간단한 품목명으로 사용
-  let simpleItemName = '기포단열재'  // 기본값
+  let simpleItemName = '기포단열재' // 기본값
   if (item.itemNm) {
     const parts = item.itemNm.split(',')
     if (parts.length > 0) {
@@ -576,25 +694,26 @@ const handleSkuSelected = (item: Item, sku: ItemSku) => {
     }
   }
 
-  // 규격 문자열 생성 (기존 형식: "폴리우레탄기포단열재,리드파워,HYDRO-22-130T,1000×1000×130mm,경질2종2호")
+  // 규격 문자열 생성 (형식: "폴리우레탄기포단열재,HYDRO-22-130T,1000×1000×130mm,경질2종2호")
   const specParts: string[] = []
   // 1. 품목유형 (item_nm의 첫 부분)
   if (item.itemNm) {
     const itemParts = item.itemNm.split(',')
-    if (itemParts.length > 0) specParts.push(itemParts[0])
+    if (itemParts.length > 0) { specParts.push(itemParts[0]) }
   }
-  // 2. 브랜드 (리드파워 고정)
-  specParts.push('리드파워')
-  // 3. SKU 이름
-  if (sku.skuNm) specParts.push(sku.skuNm)
-  // 4. 크기 (width×height×thickness mm)
+  // 2. SKU 이름
+  if (sku.skuNm) { specParts.push(sku.skuNm) }
+  // 3. 크기 (width×height×thickness mm) - 소수점 제거
   if (sku.width && sku.height && sku.thickness) {
-    specParts.push(`${sku.width}×${sku.height}×${sku.thickness}mm`)
+    const w = Math.round(Number(sku.width))
+    const h = Math.round(Number(sku.height))
+    const t = Math.round(Number(sku.thickness))
+    specParts.push(`${w}×${h}×${t}mm`)
   }
-  // 5. 품목유형의 나머지 부분 (경질2종2호 등)
+  // 4. 품목유형의 나머지 부분 (경질2종2호 등)
   if (item.itemNm) {
     const itemParts = item.itemNm.split(',')
-    if (itemParts.length > 1) specParts.push(itemParts.slice(1).join(','))
+    if (itemParts.length > 1) { specParts.push(itemParts.slice(1).join(',')) }
   }
 
   // 기존 품목이 있으면 병합 모달 표시
@@ -611,7 +730,7 @@ const handleSkuSelected = (item: Item, sku: ItemSku) => {
     showSkuSelector.value = false
     showMergeModal.value = true
   } else {
-    // 기존 품목 없으면 바로 추가
+    // 기존 품목 없으면 바로 추가 (병합 모달로 가지 않는 경우)
     newItems.value.push({
       skuId: skuIdStr,
       itemId: item.itemId,
@@ -621,6 +740,7 @@ const handleSkuSelected = (item: Item, sku: ItemSku) => {
       unit: 'm2',
       unitPrice: sku.unitPrice || 0,
       shippingQuantity: 0,
+      remainingQuantity: 0,
       isNew: true
     })
     showSkuSelector.value = false
@@ -630,7 +750,7 @@ const handleSkuSelected = (item: Item, sku: ItemSku) => {
 // 기존 발주 품목 삭제 (합지 관계 체크)
 const removeOrderItem = (skuId: string) => {
   const index = selectedOrderItems.value.findIndex(i => i.skuId === skuId)
-  if (index === -1) return
+  if (index === -1) { return }
 
   // 합지 그룹에 속해 있는지 확인
   const relatedGroups = mergeGroups.value.filter(g =>
@@ -644,7 +764,7 @@ const removeOrderItem = (skuId: string) => {
     }
 
     // 관련 합지 그룹의 타겟 품목(신규) 삭제 + 다른 소스 품목 수량 복구
-    relatedGroups.forEach(group => {
+    relatedGroups.forEach((group) => {
       // 타겟 신규 품목 삭제
       const targetIdx = newItems.value.findIndex(ni => ni.skuId === group.targetSkuId)
       if (targetIdx !== -1) {
@@ -652,8 +772,8 @@ const removeOrderItem = (skuId: string) => {
         const mergeAmount = targetItem.quantity || 0
 
         // 다른 소스 품목들의 수량 복구 (삭제 대상 제외)
-        group.sources.forEach(source => {
-          if (source.skuId === skuId) return // 삭제 대상은 스킵
+        group.sources.forEach((source) => {
+          if (source.skuId === skuId) { return } // 삭제 대상은 스킵
           const srcIdx = selectedOrderItems.value.findIndex(i => i.skuId === source.skuId)
           if (srcIdx !== -1) {
             const srcItem = selectedOrderItems.value[srcIdx]
@@ -671,7 +791,7 @@ const removeOrderItem = (skuId: string) => {
 
       // 합지 그룹 제거
       const gIdx = mergeGroups.value.findIndex(g => g.id === group.id)
-      if (gIdx !== -1) mergeGroups.value.splice(gIdx, 1)
+      if (gIdx !== -1) { mergeGroups.value.splice(gIdx, 1) }
     })
   }
 
@@ -681,13 +801,13 @@ const removeOrderItem = (skuId: string) => {
 // 신규 품목 삭제 (합지 품목이면 원본 수량 복구)
 const removeNewItem = (skuId: string) => {
   const index = newItems.value.findIndex(item => item.skuId === skuId)
-  if (index === -1) return
+  if (index === -1) { return }
 
   const item = newItems.value[index]
 
   // 합지 품목인 경우 수량 복구
   if (item.mergeSourceSkuIds && item.mergeSourceSkuIds.length > 0) {
-    if (!confirm(`이 품목은 합지 품목입니다. 삭제하면 원본 품목의 수량이 복구됩니다. 계속하시겠습니까?`)) {
+    if (!confirm('이 품목은 합지 품목입니다. 삭제하면 원본 품목의 수량이 복구됩니다. 계속하시겠습니까?')) {
       return
     }
 
@@ -695,7 +815,7 @@ const removeNewItem = (skuId: string) => {
     const group = mergeGroups.value.find(g => g.targetSkuId === skuId)
 
     // 원본 품목 수량 복구
-    item.mergeSourceSkuIds.forEach(sourceSkuId => {
+    item.mergeSourceSkuIds.forEach((sourceSkuId) => {
       const srcIdx = selectedOrderItems.value.findIndex(i => i.skuId === sourceSkuId)
       if (srcIdx !== -1) {
         const srcItem = selectedOrderItems.value[srcIdx]
@@ -708,7 +828,7 @@ const removeNewItem = (skuId: string) => {
           ...srcItem,
           quantity: srcItem.quantity + deductionAmount,
           remainingQuantity: srcItem.remainingQuantity + deductionAmount,
-          remark: undefined  // 병합 비고 제거
+          remark: undefined // 병합 비고 제거
         }
       }
     })
@@ -716,7 +836,7 @@ const removeNewItem = (skuId: string) => {
     // 합지 그룹 제거
     if (group) {
       const gIdx = mergeGroups.value.findIndex(g => g.id === group.id)
-      if (gIdx !== -1) mergeGroups.value.splice(gIdx, 1)
+      if (gIdx !== -1) { mergeGroups.value.splice(gIdx, 1) }
     }
   }
 
@@ -743,19 +863,20 @@ const handleMergeConfirm = (result: MergeResult) => {
   // 1. 신규 품목 추가 (발주수량 = 입력한 병합 수량)
   const deductionSkuIds = result.deductions.map(d => d.skuId)
   const deductionSkuNames = result.deductions.map(d => d.skuName).join(', ')
-  const mergeQuantity = result.newItem.shippingQuantity  // 입력한 병합 수량
+  const mergeQuantity = result.newItem.shippingQuantity // 병합 수량
   newItems.value.push({
     ...result.newItem,
     isNew: true,
-    quantity: mergeQuantity,         // 발주수량 = 병합 수량
-    shippedQuantity: 0,              // 기출하 = 0
-    remainingQuantity: mergeQuantity, // 잔여수량 = 병합 수량
-    remark: `병합: ${deductionSkuNames}에서 이전`,
-    mergeSourceSkuIds: deductionSkuIds // 병합 출처 SKU ID 목록
+    quantity: 0,
+    shippingQuantity: mergeQuantity, // 병합 = 전량 출하 자동 세팅
+    shippedQuantity: 0,
+    remainingQuantity: 0, // 전량 출하이므로 잔여 = 0
+    remark: `합지: ${deductionSkuNames}에서 이전`,
+    mergeSourceSkuIds: deductionSkuIds
   })
 
   // 2. 기존 품목의 발주수량(quantity) 감소 + 출하수량 조정 (인덱스 기반 업데이트로 반응성 보장)
-  result.deductions.forEach(deduction => {
+  result.deductions.forEach((deduction) => {
     const index = selectedOrderItems.value.findIndex(i => i.skuId === deduction.skuId)
     if (index !== -1) {
       const item = selectedOrderItems.value[index]
@@ -778,7 +899,7 @@ const handleMergeConfirm = (result: MergeResult) => {
         // 출하수량 조정 (발주수량 초과 방지)
         shippingQuantity: newShippingQuantity,
         // 기출하는 건드리지 않음!
-        remark: `병합: ${result.newItem.skuName}로 ${deduction.amount} 이전`
+        remark: `합지: ${result.newItem.skuName}로 ${deduction.amount} 이전`
       }
     }
   })
@@ -798,13 +919,17 @@ const handleMergeConfirm = (result: MergeResult) => {
   pendingNewItem.value = null
 }
 
-// 병합 없이 추가 (모달에서 입력한 수량 반영)
+// 병합 없이 추가 (추가수량은 저장 시 delivery_done_items에 반영)
 const handleMergeSkip = (quantity?: number) => {
   if (pendingNewItem.value) {
+    const additionalQty = quantity || 0
     newItems.value.push({
       ...pendingNewItem.value,
-      shippingQuantity: quantity || 0,
-      isNew: true
+      shippingQuantity: additionalQty, // 추가 = 전량 출하 자동 세팅
+      additionalQuantity: additionalQty,
+      remainingQuantity: 0, // 전량 출하이므로 잔여 = 0
+      isNew: true,
+      remark: quantity ? `품목 추가: +${quantity}` : null
     })
   }
   showMergeModal.value = false
@@ -827,7 +952,7 @@ const getMergeGroupsForSku = (skuId: string): MergeGroupInfo[] => {
 // 합지 그룹 스타일 (왼쪽 컬러 바 + 배경색)
 const getMergeGroupStyle = (skuId: string) => {
   const groups = getMergeGroupsForSku(skuId)
-  if (groups.length === 0) return {}
+  if (groups.length === 0) { return {} }
   const color = MERGE_GROUP_COLORS[groups[0].colorIndex]
   return { borderLeft: `4px solid ${color.border}`, backgroundColor: color.bg }
 }
@@ -835,10 +960,10 @@ const getMergeGroupStyle = (skuId: string) => {
 // 합지 배지 정보 (비고 컬럼용)
 const getMergeBadges = (skuId: string): { label: string; color: string }[] => {
   const groups = getMergeGroupsForSku(skuId)
-  if (groups.length === 0) return []
+  if (groups.length === 0) { return [] }
 
   const badges: { label: string; color: string }[] = []
-  groups.forEach(g => {
+  groups.forEach((g) => {
     const color = MERGE_GROUP_COLORS[g.colorIndex].border
     if (g.targetSkuId === skuId) {
       // 타겟 품목: 소스들 표시
@@ -870,17 +995,18 @@ const {
         specification: item.specification,
         unit: item.unit,
         shipmentQuantity: item.shippingQuantity,
+        additionalQuantity: item.additionalQuantity || 0,
         unitPrice: item.unitPrice,
         amount: item.shippingQuantity * item.unitPrice,
         orderId: item.orderId,
         orderItemId: item.orderItemId,
         isNew: false,
-        remark: item.remark || null
+        itemMemo: item.remark || null
       }))
 
-    // 신규 품목 중 출하수량이 있는 것
+    // 신규 품목 중 수량이 있는 것 (출하수량 또는 추가수량)
     const newShippingItems = newItems.value
-      .filter(item => item.shippingQuantity > 0)
+      .filter(item => (item.shippingQuantity || 0) > 0)
       .map(item => ({
         skuId: item.skuId,
         itemId: item.itemId,
@@ -888,10 +1014,11 @@ const {
         specification: item.specification,
         unit: item.unit,
         shipmentQuantity: item.shippingQuantity,
+        additionalQuantity: item.additionalQuantity || 0,
         unitPrice: item.unitPrice,
         amount: item.shippingQuantity * item.unitPrice,
         isNew: true,
-        remark: item.remark || null,
+        itemMemo: item.remark || null,
         // 병합 출처 SKU ID 목록 (병합된 품목인 경우에만)
         mergeSourceSkuIds: item.mergeSourceSkuIds || null
       }))
@@ -918,7 +1045,7 @@ const {
       addressDetail: data.addressDetail || null,
       receiverName: data.receiverName || null,
       receiverPhone: data.receiverPhone || null,
-      shippingCost: data.shippingCost || 0,  // 배송비
+      shippingCost: data.shippingCost || 0, // 배송비
       items: allItems
     }
 
@@ -926,7 +1053,7 @@ const {
   },
   successRoute: '/admin/shipping/list',
   defaultValues: {
-    orderId: null as number | null,  // 품목 추가 버튼 표시 조건
+    orderId: null as number | null, // 품목 추가 버튼 표시 조건
     deliveryRequestNo: '',
     deliveryRequestDate: '',
     client: '',
@@ -945,7 +1072,7 @@ const {
     addressDetail: '',
     receiverName: '',
     receiverPhone: '',
-    shippingCost: 0  // 배송비
+    shippingCost: 0 // 배송비
   },
   onCreateSuccess: () => {
     alert('출하 정보가 저장되었습니다.')
@@ -989,7 +1116,7 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
 
   try {
     // 폼 데이터 업데이트
-    formData.orderId = order.orderId  // 품목 추가 버튼 표시 조건
+    formData.orderId = order.orderId // 품목 추가 버튼 표시 조건
     formData.deliveryRequestNo = order.deliveryRequestNo
     formData.deliveryRequestDate = order.deliveryRequestDate || ''
     formData.client = order.client
@@ -1001,52 +1128,30 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
     const shipmentStatus = await shipmentService.getShipmentStatusByOrder(order.deliveryRequestNo)
     console.log('출하 현황:', shipmentStatus)
 
-    // 품목 정보 매핑 및 필터링
-    const orderItems = order.items
-      .map(item => {
-        const statusItem = shipmentStatus.items.find(si => si.skuId === item.skuId)
+    // 품목 정보 매핑: delivery_done_items (shipmentStatus) 기준 단일 소스
+    // 발주 생성 시 delivery_done이 자동 생성되므로 항상 존재함
+    selectedOrderItems.value = (shipmentStatus.items || []).map((si) => {
+      const unitPrice = typeof si.unitPrice === 'string' ? parseFloat(si.unitPrice) : (si.unitPrice || 0)
+      const orderQuantity = si.orderQuantity || 0
 
-        // 백엔드에서 계산된 잔여수량 사용 (부동소수점 오차 없음)
-        const remainingQuantity = statusItem?.remainingQuantity || 0
-        const shippedQuantity = statusItem?.totalShippedQuantity || 0
-        // shipmentStatus의 orderQuantity 우선 사용 (delivery_done 테이블 기준)
-        const orderQuantity = statusItem?.orderQuantity || item.quantity
-        const unitPrice = typeof item.unitPrice === 'string' ? parseFloat(item.unitPrice) : item.unitPrice
-
-        return {
-          itemId: item.itemId,
-          itemName: item.productName || item.itemNm || item.itemName || '',
-          skuId: item.skuId,
-          skuName: item.skuNm || item.skuName || '',
-          specification: item.specification,
-          unit: item.unit || item.unitCd,
-          quantity: orderQuantity,
-          shippingQuantity: 0,
-          remainingQuantity,
-          shippedQuantity,
-          unitPrice,
-          amount: orderQuantity * unitPrice,
-          deliveryLocation: item.deliveryLocation,
-          deliveryDeadline: item.deliveryDeadline,
-          deliveryTerms: item.deliveryTerms,
-          optionItemNumber: item.optionItemNumber,
-          itemClassificationNumber: item.itemClassificationNumber,
-          itemIdentificationNumber: item.itemIdentificationNumber,
-          inspectionExemption: item.inspectionExemption || 'N',
-          midTermCompetitionItem: item.midTermCompetitionItem || 'N',
-          sortOrder: item.sortOrder || 0,
-          orderId: order.orderId,
-          orderItemId: item.skuId
-        }
-      })
-      .filter(item => item.remainingQuantity > 0)
-
-    selectedOrderItems.value = orderItems
-
-    if (selectedOrderItems.value.length === 0) {
-      alert('출하 가능한 품목이 없습니다. 모든 수량이 이미 출하되었습니다.')
-      closeOrderSelectPopup()
-    }
+      return {
+        itemId: si.itemId || '',
+        itemName: si.itemName || '',
+        skuId: si.skuId,
+        skuName: si.skuName || '',
+        specification: si.specification || '',
+        unit: si.unit || si.unitCd || 'm2',
+        quantity: orderQuantity,
+        shippingQuantity: 0,
+        additionalQuantity: si.totalAdditionalQuantity || 0,
+        remainingQuantity: si.remainingQuantity || 0,
+        shippedQuantity: si.totalShippedQuantity || 0,
+        unitPrice,
+        amount: orderQuantity * unitPrice,
+        orderId: order.orderId,
+        orderItemId: si.skuId
+      }
+    })
 
     console.log('매핑된 품목 목록:', selectedOrderItems.value)
   } catch (error) {
@@ -1055,10 +1160,10 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
   }
 }
 
-// 실시간 잔여수량 계산 (발주수량 - 기출하 - 현재 입력된 출하수량)
+// 실시간 잔여수량 계산 ((발주수량 + 추가수량) - 기출하 - 현재 입력된 출하수량)
 // 병합 시 quantity가 감소되므로 자동으로 잔여수량도 감소됨
 const getCalculatedRemainingQuantity = (item: OrderItem): number => {
-  const remaining = item.quantity - item.shippedQuantity - item.shippingQuantity
+  const remaining = (item.quantity + (item.additionalQuantity || 0)) - item.shippedQuantity - item.shippingQuantity
   // 부동소수점 연산 오차 방지
   return parseFloat(Math.max(0, remaining).toFixed(2))
 }
@@ -1066,7 +1171,7 @@ const getCalculatedRemainingQuantity = (item: OrderItem): number => {
 // 전체수량 설정
 const setMaxQuantity = (item: OrderItem) => {
   const index = selectedOrderItems.value.findIndex(i => i.skuId === item.skuId)
-  if (index === -1) return
+  if (index === -1) { return }
 
   // 기출하를 제외한 실제 잔여수량을 출하수량에 설정 (인덱스 기반 업데이트)
   selectedOrderItems.value[index] = {
@@ -1078,7 +1183,7 @@ const setMaxQuantity = (item: OrderItem) => {
 // 출하수량 업데이트
 const updateShippingQuantity = (item: OrderItem) => {
   const index = selectedOrderItems.value.findIndex(i => i.skuId === item.skuId)
-  if (index === -1) return
+  if (index === -1) { return }
 
   let newShippingQuantity = item.shippingQuantity
 
@@ -1096,10 +1201,38 @@ const updateShippingQuantity = (item: OrderItem) => {
   }
 }
 
-// 총 출하수량 (기존 + 신규)
+// 총 발주수량
+const totalOrderQuantity = computed(() => {
+  return selectedOrderItems.value.reduce((sum, item) => sum + (item.quantity || 0), 0)
+})
+
+// 총 추가수량
+const totalAdditionalQuantity = computed(() => {
+  const existingTotal = selectedOrderItems.value.reduce((sum, item) => sum + (item.additionalQuantity || 0), 0)
+  const newTotal = newItems.value.reduce((sum, item) => sum + (item.additionalQuantity || 0), 0)
+  return existingTotal + newTotal
+})
+
+// 총 기출하수량
+const totalShippedQuantity = computed(() => {
+  return selectedOrderItems.value.reduce((sum, item) => sum + (item.shippedQuantity || 0), 0)
+})
+
+// 총 잔여수량
+const totalRemainingQuantity = computed(() => {
+  const existingTotal = selectedOrderItems.value.reduce((sum, item) =>
+    sum + getCalculatedRemainingQuantity(item), 0)
+  const newTotal = newItems.value.reduce((sum, item) =>
+    sum + (item.remainingQuantity || 0), 0)
+  return existingTotal + newTotal
+})
+
+// 총 출하수량 (순수 출하수량만)
 const totalShippingQuantity = computed(() => {
-  const existingTotal = selectedOrderItems.value.reduce((sum, item) => sum + (item.shippingQuantity || 0), 0)
-  const newTotal = newItems.value.reduce((sum, item) => sum + (item.shippingQuantity || 0), 0)
+  const existingTotal = selectedOrderItems.value.reduce((sum, item) =>
+    sum + (item.shippingQuantity || 0), 0)
+  const newTotal = newItems.value.reduce((sum, item) =>
+    sum + (item.shippingQuantity || 0), 0)
   return existingTotal + newTotal
 })
 
@@ -1287,6 +1420,20 @@ const handleSubmit = async () => {
 
 .new-item-row:hover {
   background: #dcfce7 !important;
+}
+
+/* 추가수량 표시 */
+.additional-qty {
+  color: #059669;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* 추가수량 입력 필드 */
+.additional-input {
+  border-color: #10b981 !important;
+  color: #059669;
+  font-weight: 600;
 }
 
 /* 신규 뱃지 */

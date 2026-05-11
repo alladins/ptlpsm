@@ -7,7 +7,7 @@
         :class="getRateClass(rate)"
         :style="{ width: `${rate}%` }"
         :title="`납품율: ${rate.toFixed(1)}% (${formatQuantity(completed)} / ${formatQuantity(total)} ${unit})`"
-      ></div>
+      />
     </div>
 
     <!-- Full 모드: 기존 디자인 -->
@@ -38,12 +38,12 @@
 import { formatQuantity } from '~/utils/format'
 
 interface Props {
-  rate: number          // 납품율 (0-100)
-  total: number         // 전체 수량
-  completed: number     // 완료 수량
-  unit?: string         // 단위 (㎡, 개 등)
-  showLabel?: boolean   // 라벨 표시 여부
-  compact?: boolean     // 컴팩트 모드 (인라인 미니 바)
+  rate: number // 납품율 (0-100)
+  total: number // 전체 수량
+  completed: number // 완료 수량
+  unit?: string // 단위 (㎡, 개 등)
+  showLabel?: boolean // 라벨 표시 여부
+  compact?: boolean // 컴팩트 모드 (인라인 미니 바)
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -60,9 +60,9 @@ const props = withDefaults(defineProps<Props>(), {
  * 81-100%: 초록 (우수)
  */
 const getRateClass = (rate: number): string => {
-  if (rate <= 30) return 'rate-danger'
-  if (rate <= 60) return 'rate-warning'
-  if (rate <= 80) return 'rate-good'
+  if (rate <= 30) { return 'rate-danger' }
+  if (rate <= 60) { return 'rate-warning' }
+  if (rate <= 80) { return 'rate-good' }
   return 'rate-excellent'
 }
 </script>

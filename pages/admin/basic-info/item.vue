@@ -15,23 +15,29 @@
           <!-- 검색 인라인 -->
           <div class="search-inline">
             <input
-              type="text"
               v-model="searchForm.keyword"
+              type="text"
               placeholder="품목코드, 품목명 검색"
               class="search-input-sm"
               @keyup.enter="searchItems"
             >
             <select v-model="searchForm.useYn" class="search-select-sm">
-              <option value="">전체</option>
-              <option value="Y">사용</option>
-              <option value="N">미사용</option>
+              <option value="">
+                전체
+              </option>
+              <option value="Y">
+                사용
+              </option>
+              <option value="N">
+                미사용
+              </option>
             </select>
             <button class="btn-search-sm" @click="searchItems">
-              <i class="fas fa-search"></i> 검색
+              <i class="fas fa-search" /> 검색
             </button>
           </div>
-          <button @click="openAddModal" class="btn-primary-sm">
-            <i class="fas fa-plus"></i> 새 품목
+          <button class="btn-search-inline" style="background: #16a34a; color: white; border-color: #16a34a;" @click="openAddModal">
+            <i class="fas fa-plus" /> 새 품목
           </button>
         </div>
 
@@ -42,29 +48,39 @@
               <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
             </div>
             <div class="table-actions">
-              <select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
-                <option :value="10">10개씩</option>
-                <option :value="20">20개씩</option>
-                <option :value="50">50개씩</option>
+              <select v-model="pageSize" class="page-size-select" @change="handlePageSizeChange">
+                <option :value="10">
+                  10개씩
+                </option>
+                <option :value="20">
+                  20개씩
+                </option>
+                <option :value="50">
+                  50개씩
+                </option>
               </select>
             </div>
           </div>
           <div class="table-container">
             <table class="data-table">
-                             <thead>
-                 <tr>
-                   <th>품목코드</th>
-                   <th>품목명</th>
-                   <th>품목유형</th>
-                   <th>단위</th>
-                   <th>사용여부</th>
-                   <th>관리</th>
-                 </tr>
-               </thead>
+              <thead>
+                <tr>
+                  <th>품목코드</th>
+                  <th>품목명</th>
+                  <th>품목유형</th>
+                  <th>단위</th>
+                  <th>사용여부</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
               <tbody>
-                <tr v-for="item in items" :key="item.itemClassificationNumber || ''" class="table-row"
-                    :class="{ 'selected': selectedItemId === item.itemClassificationNumber?.toString() }"
-                    @click="selectItem(item)">
+                <tr
+                  v-for="item in items"
+                  :key="item.itemClassificationNumber || ''"
+                  class="table-row"
+                  :class="{ 'selected': selectedItemId === item.itemClassificationNumber?.toString() }"
+                  @click="selectItem(item)"
+                >
                   <td>{{ item.itemClassificationNumber }}</td>
                   <td>{{ item.itemNm }}</td>
                   <td>{{ item.itemTypeCd || '-' }}</td>
@@ -75,31 +91,27 @@
                     </span>
                   </td>
                   <td class="action-buttons">
-                    <button class="btn-view" @click.stop="openViewModal(item)" title="상세보기">
-                      <i class="fas fa-eye"></i>
-                      <span>상세</span>
+                    <button class="btn-icon btn-view" title="상세보기" @click.stop="openViewModal(item)">
+                      <i class="fas fa-eye" />
                     </button>
-                    <button class="btn-edit" @click.stop="openEditModal(item)" title="수정">
-                      <i class="fas fa-edit"></i>
-                      <span>수정</span>
+                    <button class="btn-icon btn-edit" title="수정" @click.stop="openEditModal(item)">
+                      <i class="fas fa-edit" />
                     </button>
-                    <button 
-                      v-if="isItemDeletable(item)" 
-                      class="btn-delete" 
-                      @click.stop="deleteItem(item)" 
+                    <button
+                      v-if="isItemDeletable(item)"
+                      class="btn-icon btn-delete"
                       title="삭제"
+                      @click.stop="deleteItem(item)"
                     >
-                      <i class="fas fa-trash"></i>
-                      <span>삭제</span>
+                      <i class="fas fa-trash" />
                     </button>
-                    <button 
-                      v-else 
-                      class="btn-delete disabled" 
+                    <button
+                      v-else
+                      class="btn-icon btn-delete disabled"
                       title="스펙/SKU 정보가 있어 삭제할 수 없습니다"
                       disabled
                     >
-                      <i class="fas fa-ban"></i>
-                      <span>삭제 불가</span>
+                      <i class="fas fa-ban" />
                     </button>
                   </td>
                 </tr>
@@ -108,13 +120,13 @@
 
             <!-- 데이터가 없을 때 -->
             <div v-if="items.length === 0 && !loading" class="no-data-message">
-              <i class="fas fa-box"></i>
+              <i class="fas fa-box" />
               <p>등록된 품목이 없습니다.</p>
             </div>
 
             <!-- 로딩 중 -->
             <div v-if="loading" class="loading-message">
-              <i class="fas fa-spinner fa-spin"></i>
+              <i class="fas fa-spinner fa-spin" />
               <p>데이터를 불러오는 중...</p>
             </div>
           </div>
@@ -136,24 +148,24 @@
           <h2>상세 정보 관리</h2>
           <!-- 탭 네비게이션 인라인 -->
           <div class="tab-navigation-inline">
-           <button
-             @click="activeTab = 'skus'"
-             :class="['tab-button', { active: activeTab === 'skus' }]"
-             :disabled="!selectedItem"
-           >
-             <i class="fas fa-barcode"></i>
-             SKU 정보
-             <span v-if="selectedItem" class="tab-count">({{ selectedItem.itemSkus.length }})</span>
-           </button>
-           <button
-             @click="activeTab = 'specs'"
-             :class="['tab-button', { active: activeTab === 'specs' }]"
-             :disabled="!selectedItem"
-           >
-             <i class="fas fa-cogs"></i>
-             스펙정보
-             <span v-if="selectedItem" class="tab-count">({{ selectedItem.itemSpecs.length }})</span>
-           </button>
+            <button
+              :class="['tab-button', { active: activeTab === 'skus' }]"
+              :disabled="!selectedItem"
+              @click="activeTab = 'skus'"
+            >
+              <i class="fas fa-barcode" />
+              SKU 정보
+              <span v-if="selectedItem" class="tab-count">({{ selectedItem.itemSkus.length }})</span>
+            </button>
+            <button
+              :class="['tab-button', { active: activeTab === 'specs' }]"
+              :disabled="!selectedItem"
+              @click="activeTab = 'specs'"
+            >
+              <i class="fas fa-cogs" />
+              스펙정보
+              <span v-if="selectedItem" class="tab-count">({{ selectedItem.itemSpecs.length }})</span>
+            </button>
           </div>
           <span v-if="selectedItem" class="selected-item-badge">
             {{ selectedItem.itemNm }}
@@ -165,8 +177,8 @@
         <div v-if="activeTab === 'specs'" class="tab-content">
           <div class="tab-header-sm">
             <span>스펙정보</span>
-            <button @click="openSpecModal('create')" class="btn-primary-sm" :disabled="!selectedItem">
-              <i class="fas fa-plus"></i> 새 스펙
+            <button class="btn-primary-sm" :disabled="!selectedItem" @click="openSpecModal('create')">
+              <i class="fas fa-plus" /> 새 스펙
             </button>
           </div>
 
@@ -185,7 +197,7 @@
                 <tr v-if="!selectedItem" class="no-selection-row">
                   <td colspan="10" class="no-selection-message">
                     <div class="empty-state">
-                      <i class="fas fa-info-circle"></i>
+                      <i class="fas fa-info-circle" />
                       <span>품목을 선택해주세요</span>
                     </div>
                   </td>
@@ -193,24 +205,22 @@
                 <tr v-else-if="selectedItem.itemSpecs.length === 0" class="no-data-row">
                   <td colspan="10" class="no-data-message">
                     <div class="empty-state">
-                      <i class="fas fa-inbox"></i>
+                      <i class="fas fa-inbox" />
                       <span>등록된 스펙이 없습니다</span>
                     </div>
                   </td>
                 </tr>
-                <tr v-else v-for="spec in selectedItem.itemSpecs" :key="spec.specName" class="table-row">
+                <tr v-for="spec in selectedItem.itemSpecs" v-else :key="spec.specName" class="table-row">
                   <td>{{ spec.specName }}</td>
                   <td>{{ spec.specValue }}</td>
                   <td>{{ spec.specUnit || '-' }}</td>
                   <td>{{ spec.sortOrder || '-' }}</td>
                   <td class="action-buttons">
-                    <button @click="openSpecModal('edit', spec)" class="btn-edit" title="수정">
-                      <i class="fas fa-edit"></i>
-                      <span>수정</span>
+                    <button class="btn-icon btn-edit" title="수정" @click="openSpecModal('edit', spec)">
+                      <i class="fas fa-edit" />
                     </button>
-                    <button @click="deleteSpec(spec.id)" class="btn-delete" title="삭제">
-                      <i class="fas fa-trash"></i>
-                      <span>삭제</span>
+                    <button class="btn-icon btn-delete" title="삭제" @click="deleteSpec(spec.id)">
+                      <i class="fas fa-trash" />
                     </button>
                   </td>
                 </tr>
@@ -223,68 +233,66 @@
         <div v-if="activeTab === 'skus'" class="tab-content">
           <div class="tab-header-sm">
             <span>SKU 정보</span>
-            <button @click="openSkuModal('create')" class="btn-primary-sm" :disabled="!selectedItem">
-              <i class="fas fa-plus"></i> 새 SKU
+            <button class="btn-search-inline" style="background: #16a34a; color: white; border-color: #16a34a;" :disabled="!selectedItem" @click="openSkuModal('create')">
+              <i class="fas fa-plus" /> 새 SKU
             </button>
           </div>
 
           <div class="table-container">
             <table class="data-table">
-                             <thead>
-                 <tr>
-                   <th>SKU코드</th>
-                   <th>SKU명</th>
-                   <th>너비</th>
-                   <th>높이</th>
-                   <th>두께</th>
-                   <th>납품단가</th>
-                   <th>OEM 원가</th>
-                   <th>재고수량</th>
-                   <th>관리</th>
-                 </tr>
-               </thead>
+              <thead>
+                <tr>
+                  <th>SKU코드</th>
+                  <th>SKU명</th>
+                  <th>너비</th>
+                  <th>높이</th>
+                  <th>두께</th>
+                  <th>납품단가</th>
+                  <th>OEM 원가</th>
+                  <th>재고수량</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
               <tbody>
-                                 <tr v-if="!selectedItem" class="no-selection-row">
-                   <td colspan="9" class="no-selection-message">
-                     <div class="empty-state">
-                       <i class="fas fa-info-circle"></i>
-                       <span>품목을 선택해주세요</span>
-                     </div>
-                   </td>
-                 </tr>
-                 <tr v-else-if="selectedItem.itemSkus.length === 0" class="no-data-row">
-                   <td colspan="9" class="no-data-message">
-                     <div class="empty-state">
-                       <i class="fas fa-inbox"></i>
-                       <span>등록된 SKU가 없습니다</span>
-                     </div>
-                   </td>
-                 </tr>
-                                 <tr v-else v-for="sku in selectedItem.itemSkus" :key="sku.skuId" class="table-row">
-                   <td>{{ sku.skuId }}</td>
-                   <td>{{ sku.skuNm }}</td>
-                   <td>{{ sku.width || '-' }}</td>
-                   <td>{{ sku.height || '-' }}</td>
-                   <td>{{ sku.thickness || '-' }}</td>
-                   <td>{{ formatCurrency(sku.unitPrice) }}</td>
-                   <td>
-                     <button class="btn-oem-cost" @click.stop="goToOemCostPage(sku.skuId)" title="OEM 원가 관리">
-                       <i class="fas fa-industry"></i>
-                       <span>관리</span>
-                     </button>
-                   </td>
-                   <td>{{ sku.stockQty || '-' }}</td>
-                   <td class="action-buttons">
-                     <button @click="openSkuModal('edit', sku)" class="btn-edit" title="수정">
-                       <i class="fas fa-edit"></i>
-                       <span>수정</span>
-                     </button>
-                                         <button @click="deleteSku(sku.skuId)" class="btn-delete" title="삭제">
-                      <i class="fas fa-trash"></i>
-                      <span>삭제</span>
+                <tr v-if="!selectedItem" class="no-selection-row">
+                  <td colspan="9" class="no-selection-message">
+                    <div class="empty-state">
+                      <i class="fas fa-info-circle" />
+                      <span>품목을 선택해주세요</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-else-if="selectedItem.itemSkus.length === 0" class="no-data-row">
+                  <td colspan="9" class="no-data-message">
+                    <div class="empty-state">
+                      <i class="fas fa-inbox" />
+                      <span>등록된 SKU가 없습니다</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-for="sku in selectedItem.itemSkus" v-else :key="sku.skuId" class="table-row">
+                  <td>{{ sku.skuId }}</td>
+                  <td>{{ sku.skuNm }}</td>
+                  <td>{{ sku.width || '-' }}</td>
+                  <td>{{ sku.height || '-' }}</td>
+                  <td>{{ sku.thickness || '-' }}</td>
+                  <td>{{ formatCurrency(sku.unitPrice) }}</td>
+                  <td>
+                    <button class="btn-oem-cost" title="OEM 원가 관리" @click.stop="goToOemCostPage(sku.skuId)">
+                      <i class="fas fa-industry" />
+                      <span>관리</span>
                     </button>
-                   </td>
-                 </tr>
+                  </td>
+                  <td>{{ sku.stockQty || '-' }}</td>
+                  <td class="action-buttons">
+                    <button class="btn-icon btn-edit" title="수정" @click="openSkuModal('edit', sku)">
+                      <i class="fas fa-edit" />
+                    </button>
+                    <button class="btn-icon btn-delete" title="삭제" @click="deleteSku(sku.skuId)">
+                      <i class="fas fa-trash" />
+                    </button>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -298,12 +306,12 @@
         <div class="modal-header">
           <h3>{{ showAddModal ? '품목 등록' : '품목 수정' }}</h3>
           <button class="modal-close" @click="closeModal">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
         <div class="modal-body">
-          <form @submit.prevent="handleFormSubmit" class="item-form">
+          <form class="item-form" @submit.prevent="handleFormSubmit">
             <div class="form-row">
               <div class="form-group">
                 <label>품목코드 *</label>
@@ -403,8 +411,12 @@
               <div class="form-group">
                 <label>사용여부</label>
                 <select v-model="formData.useYn" class="form-select">
-                  <option value="Y">사용</option>
-                  <option value="N">미사용</option>
+                  <option value="Y">
+                    사용
+                  </option>
+                  <option value="N">
+                    미사용
+                  </option>
                 </select>
               </div>
             </div>
@@ -417,17 +429,17 @@
                   placeholder="품목 설명"
                   rows="3"
                   class="form-textarea"
-                ></textarea>
+                />
               </div>
             </div>
 
             <div class="form-actions">
               <button type="submit" class="btn-primary">
-                <i class="fas fa-save"></i>
+                <i class="fas fa-save" />
                 <span>{{ showAddModal ? '등록' : '수정' }}</span>
               </button>
               <button type="button" class="btn-secondary" @click="closeModal">
-                <i class="fas fa-times"></i>
+                <i class="fas fa-times" />
                 <span>취소</span>
               </button>
             </div>
@@ -442,7 +454,7 @@
         <div class="modal-header">
           <h3>품목 상세보기</h3>
           <button class="modal-close" @click="closeModal">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
@@ -463,14 +475,14 @@
                   <label>품목유형:</label>
                   <span>{{ viewingItem?.itemTypeCd || '-' }}</span>
                 </div>
-                                 <div class="detail-item">
-                   <label>단위:</label>
-                   <span>{{ viewingItem?.unitCd || '-' }}</span>
-                 </div>
-                 <div class="detail-item full-width">
-                   <label>설명:</label>
-                   <span>{{ viewingItem?.description || '-' }}</span>
-                 </div>
+                <div class="detail-item">
+                  <label>단위:</label>
+                  <span>{{ viewingItem?.unitCd || '-' }}</span>
+                </div>
+                <div class="detail-item full-width">
+                  <label>설명:</label>
+                  <span>{{ viewingItem?.description || '-' }}</span>
+                </div>
               </div>
             </div>
 
@@ -504,30 +516,30 @@
             <div class="detail-section">
               <h4>SKU 정보</h4>
               <div v-if="viewingItem?.itemSkus.length" class="sku-table">
-                                 <table class="data-table">
-                   <thead>
-                     <tr>
-                       <th>SKU코드</th>
-                       <th>SKU명</th>
-                       <th>너비</th>
-                       <th>높이</th>
-                       <th>두께</th>
-                       <th>납품단가</th>
-                       <th>재고수량</th>
-                     </tr>
-                   </thead>
-                   <tbody>
-                     <tr v-for="sku in viewingItem?.itemSkus" :key="sku.skuId">
-                       <td>{{ sku.skuId }}</td>
-                       <td>{{ sku.skuNm }}</td>
-                       <td>{{ sku.width || '-' }}</td>
-                       <td>{{ sku.height || '-' }}</td>
-                       <td>{{ sku.thickness || '-' }}</td>
-                       <td>{{ formatCurrency(sku.unitPrice) }}</td>
-                       <td>{{ sku.stockQty || '-' }}</td>
-                     </tr>
-                   </tbody>
-                 </table>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>SKU코드</th>
+                      <th>SKU명</th>
+                      <th>너비</th>
+                      <th>높이</th>
+                      <th>두께</th>
+                      <th>납품단가</th>
+                      <th>재고수량</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="sku in viewingItem?.itemSkus" :key="sku.skuId">
+                      <td>{{ sku.skuId }}</td>
+                      <td>{{ sku.skuNm }}</td>
+                      <td>{{ sku.width || '-' }}</td>
+                      <td>{{ sku.height || '-' }}</td>
+                      <td>{{ sku.thickness || '-' }}</td>
+                      <td>{{ formatCurrency(sku.unitPrice) }}</td>
+                      <td>{{ sku.stockQty || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
               <div v-else class="no-data-message">
                 <p>등록된 SKU가 없습니다.</p>
@@ -544,18 +556,18 @@
         <div class="modal-header">
           <h3>{{ specModalMode === 'create' ? '스펙 등록' : '스펙 수정' }}</h3>
           <button class="modal-close" @click="closeSpecModal">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
         <div class="modal-body">
-          <form @submit.prevent="submitSpec" class="spec-form">
+          <form class="spec-form" @submit.prevent="submitSpec">
             <div class="form-row">
               <div class="form-group">
                 <label>스펙명 *</label>
-                <input 
-                  v-model="specForm.specName" 
-                  type="text" 
+                <input
+                  v-model="specForm.specName"
+                  type="text"
                   required
                   placeholder="스펙명"
                   maxlength="100"
@@ -564,9 +576,9 @@
               </div>
               <div class="form-group">
                 <label>스펙값 *</label>
-                <input 
-                  v-model="specForm.specValue" 
-                  type="text" 
+                <input
+                  v-model="specForm.specValue"
+                  type="text"
                   required
                   placeholder="스펙값"
                   maxlength="200"
@@ -575,37 +587,36 @@
               </div>
             </div>
 
-                         <div class="form-row">
-               <div class="form-group">
-                 <label>단위</label>
-                 <input 
-                   v-model="specForm.specUnit" 
-                   type="text" 
-                   placeholder="단위"
-                   maxlength="20"
-                   class="form-input"
-                 >
-               </div>
-               <div class="form-group">
-                 <label>정렬순서</label>
-                 <input 
-                   v-model="specForm.sortOrder" 
-                   type="number" 
-                   placeholder="정렬순서"
-                   min="1"
-                   class="form-input"
-                 >
-               </div>
-             </div>
-
+            <div class="form-row">
+              <div class="form-group">
+                <label>단위</label>
+                <input
+                  v-model="specForm.specUnit"
+                  type="text"
+                  placeholder="단위"
+                  maxlength="20"
+                  class="form-input"
+                >
+              </div>
+              <div class="form-group">
+                <label>정렬순서</label>
+                <input
+                  v-model="specForm.sortOrder"
+                  type="number"
+                  placeholder="정렬순서"
+                  min="1"
+                  class="form-input"
+                >
+              </div>
+            </div>
 
             <div class="form-actions">
               <button type="submit" class="btn-primary">
-                <i class="fas fa-save"></i>
+                <i class="fas fa-save" />
                 <span>{{ specModalMode === 'create' ? '등록' : '수정' }}</span>
               </button>
               <button type="button" class="btn-secondary" @click="closeSpecModal">
-                <i class="fas fa-times"></i>
+                <i class="fas fa-times" />
                 <span>취소</span>
               </button>
             </div>
@@ -620,18 +631,18 @@
         <div class="modal-header">
           <h3>{{ skuModalMode === 'create' ? 'SKU 등록' : 'SKU 수정' }}</h3>
           <button class="modal-close" @click="closeSkuModal">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
         <div class="modal-body">
-          <form @submit.prevent="submitSku" class="sku-form">
+          <form class="sku-form" @submit.prevent="submitSku">
             <div class="form-row">
               <div class="form-group">
                 <label>SKU코드 *</label>
-                <input 
-                  v-model="skuForm.skuId" 
-                  type="text" 
+                <input
+                  v-model="skuForm.skuId"
+                  type="text"
                   required
                   placeholder="SKU코드"
                   maxlength="50"
@@ -640,9 +651,9 @@
               </div>
               <div class="form-group">
                 <label>SKU명 *</label>
-                <input 
-                  v-model="skuForm.skuName" 
-                  type="text" 
+                <input
+                  v-model="skuForm.skuName"
+                  type="text"
                   required
                   placeholder="SKU명"
                   maxlength="200"
@@ -651,37 +662,37 @@
               </div>
             </div>
 
-                         <div class="form-row">
-               <div class="form-group">
-                 <label>단가</label>
-                 <input 
-                   v-model="skuForm.unitPrice" 
-                   type="number" 
-                   placeholder="단가"
-                   min="0"
-                   step="0.01"
-                   class="form-input"
-                 >
-               </div>
-               <div class="form-group">
-                 <label>너비</label>
-                 <input 
-                   v-model="skuForm.width" 
-                   type="number" 
-                   placeholder="너비"
-                   min="0"
-                   step="0.01"
-                   class="form-input"
-                 >
-               </div>
-             </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>단가</label>
+                <input
+                  v-model="skuForm.unitPrice"
+                  type="number"
+                  placeholder="단가"
+                  min="0"
+                  step="0.01"
+                  class="form-input"
+                >
+              </div>
+              <div class="form-group">
+                <label>너비</label>
+                <input
+                  v-model="skuForm.width"
+                  type="number"
+                  placeholder="너비"
+                  min="0"
+                  step="0.01"
+                  class="form-input"
+                >
+              </div>
+            </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label>높이</label>
-                <input 
-                  v-model="skuForm.height" 
-                  type="number" 
+                <input
+                  v-model="skuForm.height"
+                  type="number"
                   placeholder="높이"
                   min="0"
                   step="0.01"
@@ -690,9 +701,9 @@
               </div>
               <div class="form-group">
                 <label>두께</label>
-                <input 
-                  v-model="skuForm.thickness" 
-                  type="number" 
+                <input
+                  v-model="skuForm.thickness"
+                  type="number"
                   placeholder="두께"
                   min="0"
                   step="0.01"
@@ -704,9 +715,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label>재고수량</label>
-                <input 
-                  v-model="skuForm.stockQty" 
-                  type="number" 
+                <input
+                  v-model="skuForm.stockQty"
+                  type="number"
                   placeholder="재고수량"
                   min="0"
                   class="form-input"
@@ -716,11 +727,11 @@
 
             <div class="form-actions">
               <button type="submit" class="btn-primary">
-                <i class="fas fa-save"></i>
+                <i class="fas fa-save" />
                 <span>{{ skuModalMode === 'create' ? '등록' : '수정' }}</span>
               </button>
               <button type="button" class="btn-secondary" @click="closeSkuModal">
-                <i class="fas fa-times"></i>
+                <i class="fas fa-times" />
                 <span>취소</span>
               </button>
             </div>
@@ -728,7 +739,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -884,7 +894,6 @@ const skuForm = ref<SkuForm>({
   useYn: 'Y'
 })
 
-
 // 품목 선택
 const selectItem = (item: Item) => {
   selectedItem.value = item
@@ -896,8 +905,6 @@ const selectItem = (item: Item) => {
 const searchItems = () => {
   search()
 }
-
-
 
 // 등록 모달 열기
 const openAddModal = () => {
@@ -1041,7 +1048,7 @@ const validateForm = async (): Promise<boolean> => {
     alert('품목코드를 입력해주세요.')
     return false
   }
-  
+
   if (!formData.value.itemNm) {
     alert('품목명을 입력해주세요.')
     return false
@@ -1060,7 +1067,7 @@ const validateForm = async (): Promise<boolean> => {
       // 중복 확인 실패 시에도 진행
     }
   }
-  
+
   return true
 }
 
@@ -1070,12 +1077,12 @@ const validateSpecForm = (): boolean => {
     alert('스펙명을 입력해주세요.')
     return false
   }
-  
+
   if (!specForm.value.specValue) {
     alert('스펙값을 입력해주세요.')
     return false
   }
-  
+
   return true
 }
 
@@ -1085,12 +1092,12 @@ const validateSkuForm = async (): Promise<boolean> => {
     alert('SKU코드를 입력해주세요.')
     return false
   }
-  
+
   if (!skuForm.value.skuName) {
     alert('SKU명을 입력해주세요.')
     return false
   }
-  
+
   // SKU 코드 중복 확인 (새로 등록하는 경우에만)
   if (skuModalMode.value === 'create') {
     try {
@@ -1104,7 +1111,7 @@ const validateSkuForm = async (): Promise<boolean> => {
       // 중복 확인 실패 시에도 진행 (백엔드에서 최종 검증)
     }
   }
-  
+
   return true
 }
 
@@ -1119,7 +1126,7 @@ const handleFormSubmit = async () => {
 
 // 등록
 const submitAdd = async () => {
-  if (!(await validateForm())) return
+  if (!(await validateForm())) { return }
 
   try {
     await itemService.createItem(formData.value)
@@ -1137,8 +1144,8 @@ const submitAdd = async () => {
 
 // 수정
 const submitEdit = async () => {
-  if (!(await validateForm()) || !editingItem.value) return
-  
+  if (!(await validateForm()) || !editingItem.value) { return }
+
   try {
     const updateData: ItemUpdateRequest = {
       itemNm: formData.value.itemNm,
@@ -1153,7 +1160,7 @@ const submitEdit = async () => {
       itemSpecs: formData.value.itemSpecs,
       itemSkus: formData.value.itemSkus
     }
-    
+
     await itemService.updateItem(editingItem.value.itemClassificationNumber, updateData)
     closeModal()
     // 선택된 품목 초기화
@@ -1169,21 +1176,21 @@ const submitEdit = async () => {
 
 // 스펙 등록/수정
 const submitSpec = async () => {
-  if (!validateSpecForm() || !selectedItem.value) return
-  
+  if (!validateSpecForm() || !selectedItem.value) { return }
+
   try {
     if (specModalMode.value === 'create') {
-             // 새 스펙 추가
-       const newSpec = {
-         id: Date.now(), // 임시 ID
-         specName: specForm.value.specName,
-         specValue: specForm.value.specValue,
-         specUnit: specForm.value.specUnit,
-         sortOrder: specForm.value.sortOrder
-       }
-      
+      // 새 스펙 추가
+      const newSpec = {
+        id: Date.now(), // 임시 ID
+        specName: specForm.value.specName,
+        specValue: specForm.value.specValue,
+        specUnit: specForm.value.specUnit,
+        sortOrder: specForm.value.sortOrder
+      }
+
       selectedItem.value.itemSpecs.push(newSpec)
-      
+
       // 품목 업데이트
       const updateData: ItemUpdateRequest = {
         itemNm: selectedItem.value.itemNm,
@@ -1198,21 +1205,21 @@ const submitSpec = async () => {
         itemSpecs: selectedItem.value.itemSpecs,
         itemSkus: selectedItem.value.itemSkus
       }
-      
+
       await itemService.updateItem(selectedItem.value.itemClassificationNumber, updateData)
     } else {
       // 기존 스펙 수정
       const specIndex = selectedItem.value.itemSpecs.findIndex(spec => spec.id === specForm.value.id)
       if (specIndex !== -1) {
-                 selectedItem.value.itemSpecs[specIndex] = {
-           ...selectedItem.value.itemSpecs[specIndex],
-           specName: specForm.value.specName,
-           specValue: specForm.value.specValue,
-           specUnit: specForm.value.specUnit,
-           sortOrder: specForm.value.sortOrder,
-           id: specForm.value.id!
-         }
-        
+        selectedItem.value.itemSpecs[specIndex] = {
+          ...selectedItem.value.itemSpecs[specIndex],
+          specName: specForm.value.specName,
+          specValue: specForm.value.specValue,
+          specUnit: specForm.value.specUnit,
+          sortOrder: specForm.value.sortOrder,
+          id: specForm.value.id!
+        }
+
         // 품목 업데이트
         const updateData: ItemUpdateRequest = {
           itemNm: selectedItem.value.itemNm,
@@ -1227,7 +1234,7 @@ const submitSpec = async () => {
           itemSpecs: selectedItem.value.itemSpecs,
           itemSkus: selectedItem.value.itemSkus
         }
-        
+
         await itemService.updateItem(selectedItem.value.itemClassificationNumber, updateData)
       }
     }
@@ -1236,11 +1243,11 @@ const submitSpec = async () => {
 
     // 등록/수정 후 즉시 데이터 새로고침
     await refreshItemDetail(selectedItem.value.itemClassificationNumber)
-    
+
     alert(`스펙이 성공적으로 ${specModalMode.value === 'create' ? '등록' : '수정'}되었습니다.`)
   } catch (error) {
     console.error('스펙 등록/수정 실패:', error)
-    
+
     // 백엔드에서 전달된 구체적인 에러 메시지 처리
     if (error instanceof Error) {
       if (error.message.includes('404') || error.message.includes('Not Found')) {
@@ -1259,8 +1266,8 @@ const submitSpec = async () => {
 
 // SKU 등록/수정
 const submitSku = async () => {
-  if (!(await validateSkuForm()) || !selectedItem.value) return
-  
+  if (!(await validateSkuForm()) || !selectedItem.value) { return }
+
   try {
     if (skuModalMode.value === 'create') {
       // 새 SKU 추가 - 별도 API 사용
@@ -1276,7 +1283,7 @@ const submitSku = async () => {
         stockQty: skuForm.value.stockQty || undefined,
         useYn: skuForm.value.useYn
       }
-      
+
       // API를 통한 SKU 등록
       await itemService.createSku(selectedItem.value.itemClassificationNumber, skuData)
     } else {
@@ -1294,7 +1301,7 @@ const submitSku = async () => {
           stockQty: skuForm.value.stockQty || undefined,
           useYn: skuForm.value.useYn
         }
-        
+
         // 품목 업데이트
         const updateData: ItemUpdateRequest = {
           itemNm: selectedItem.value.itemNm,
@@ -1309,7 +1316,7 @@ const submitSku = async () => {
           itemSpecs: selectedItem.value.itemSpecs,
           itemSkus: selectedItem.value.itemSkus
         }
-        
+
         await itemService.updateItem(selectedItem.value.itemClassificationNumber, updateData)
       }
     }
@@ -1318,7 +1325,7 @@ const submitSku = async () => {
 
     // 등록/수정 후 즉시 데이터 새로고침
     await refreshItemDetail(selectedItem.value.itemClassificationNumber)
-    
+
     alert(`SKU가 성공적으로 ${skuModalMode.value === 'create' ? '등록' : '수정'}되었습니다.`)
   } catch (error) {
     console.error('SKU 등록/수정 실패:', error)
@@ -1354,9 +1361,9 @@ const deleteItem = async (item: Item) => {
     alert('스펙이나 SKU 정보가 있는 품목은 삭제할 수 없습니다. 먼저 스펙/SKU 정보를 삭제해주세요.')
     return
   }
-  
-  if (!confirm('정말 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) return
-  
+
+  if (!confirm('정말 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) { return }
+
   try {
     await itemService.deleteItem(item.itemClassificationNumber)
     // 선택된 품목이 삭제된 품목이면 초기화
@@ -1374,8 +1381,8 @@ const deleteItem = async (item: Item) => {
 
 // 스펙 삭제 전 확인 및 삭제 처리
 const deleteSpec = async (specId: string | number) => {
-  if (!selectedItem.value) return
-  
+  if (!selectedItem.value) { return }
+
   try {
     // 삭제할 스펙 정보 찾기
     const specToDelete = selectedItem.value.itemSpecs.find(spec => spec.id === specId)
@@ -1383,24 +1390,24 @@ const deleteSpec = async (specId: string | number) => {
       alert('삭제할 스펙 정보를 찾을 수 없습니다.')
       return
     }
-    
+
     // 삭제 확인 다이얼로그
     const confirmed = confirm(
       `스펙 "${specToDelete.specName}" (${specToDelete.specValue})를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.`
     )
-    
-    if (!confirmed) return
-    
+
+    if (!confirmed) { return }
+
     // API를 통한 스펙 삭제
     await itemService.deleteSpec(selectedItem.value.itemClassificationNumber, specId?.toString() ?? '')
 
     // 삭제 후 즉시 데이터 새로고침
     await refreshItemDetail(selectedItem.value.itemClassificationNumber)
-    
+
     alert('스펙이 성공적으로 삭제되었습니다.')
   } catch (error) {
     console.error('스펙 삭제 실패:', error)
-    
+
     // 백엔드에서 전달된 구체적인 에러 메시지 처리
     if (error instanceof Error) {
       if (error.message.includes('404') || error.message.includes('Not Found')) {
@@ -1420,8 +1427,8 @@ const deleteSpec = async (specId: string | number) => {
 
 // SKU 삭제 전 확인 및 삭제 처리
 const deleteSku = async (skuId: string) => {
-  if (!selectedItem.value) return
-  
+  if (!selectedItem.value) { return }
+
   try {
     // 삭제할 SKU 정보 찾기
     const skuToDelete = selectedItem.value.itemSkus.find(sku => sku.skuId === skuId)
@@ -1429,24 +1436,24 @@ const deleteSku = async (skuId: string) => {
       alert('삭제할 SKU 정보를 찾을 수 없습니다.')
       return
     }
-    
+
     // 삭제 확인 다이얼로그
     const confirmed = confirm(
       `SKU "${skuToDelete.skuNm}" (${skuToDelete.skuId})를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.`
     )
-    
-    if (!confirmed) return
-    
+
+    if (!confirmed) { return }
+
     // API를 통한 SKU 삭제
     await itemService.deleteSku(selectedItem.value.itemClassificationNumber, skuId)
 
     // 삭제 후 즉시 데이터 새로고침
     await refreshItemDetail(selectedItem.value.itemClassificationNumber)
-    
+
     alert('SKU가 성공적으로 삭제되었습니다.')
   } catch (error) {
     console.error('SKU 삭제 실패:', error)
-    
+
     // 백엔드에서 전달된 구체적인 에러 메시지 처리
     if (error instanceof Error) {
       if (error.message.includes('404') || error.message.includes('Not Found')) {
@@ -1524,27 +1531,6 @@ onMounted(() => {
    - .form-input, .form-select, .btn-primary, .btn-secondary 등은 공통 CSS 사용
    - .data-table, .modal-overlay, .modal 등은 공통 CSS 사용
    ============================================ */
-
-/* 컴팩트 페이지 헤더 */
-.page-header-compact {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 0;
-  margin-bottom: 0.5rem;
-}
-
-.page-header-compact h1 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.page-header-compact .page-description {
-  font-size: 0.8125rem;
-  color: #64748b;
-}
 
 /* 1단계: 페이지 컨테이너 */
 .item-management {
@@ -1847,7 +1833,6 @@ onMounted(() => {
 
 .table-row:hover {
   background: #f0f9ff;
-  transform: translateX(2px);
 }
 
 /* 선택된 행 - 강조 */

@@ -2,7 +2,7 @@
   <div class="variable-helper">
     <div class="helper-header">
       <h4>
-        <i class="ri-code-s-slash-line"></i>
+        <i class="ri-code-s-slash-line" />
         템플릿 변수
       </h4>
       <p class="helper-description">
@@ -34,9 +34,11 @@
           <span class="variable-name">{{ variable.name }}</span>
           <code class="variable-key">&#123;&#123;{{ variable.key }}&#125;&#125;</code>
         </div>
-        <div class="variable-description">{{ variable.description }}</div>
+        <div class="variable-description">
+          {{ variable.description }}
+        </div>
         <div class="variable-example">
-          <i class="ri-lightbulb-line"></i>
+          <i class="ri-lightbulb-line" />
           예: {{ variable.example }}
         </div>
       </div>
@@ -45,7 +47,7 @@
     <!-- 사용 예시 -->
     <div class="usage-example">
       <div class="example-header">
-        <i class="ri-information-line"></i>
+        <i class="ri-information-line" />
         사용 예시
       </div>
       <div class="example-content">
@@ -69,12 +71,12 @@ const selectedCategory = ref<'납품' | '운송' | '공통'>('납품')
 
 // Computed
 const categories = computed(() => {
-  const allCategories = [...new Set(TEMPLATE_VARIABLES.map((v) => v.category))]
+  const allCategories = [...new Set(TEMPLATE_VARIABLES.map(v => v.category))]
   return allCategories
 })
 
 const filteredVariables = computed(() => {
-  return TEMPLATE_VARIABLES.filter((v) => v.category === selectedCategory.value)
+  return TEMPLATE_VARIABLES.filter(v => v.category === selectedCategory.value)
 })
 
 const exampleMessage = computed(() => {

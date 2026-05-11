@@ -1,25 +1,25 @@
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <!-- 배경 오버레이 -->
-    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
-    
+    <div class="absolute inset-0 bg-black bg-opacity-50" />
+
     <!-- 팝업 컨텐츠 -->
     <div class="relative bg-white rounded-lg w-full max-w-xl mx-auto p-4 sm:p-8 max-h-[80vh] overflow-y-auto mt-16 sm:mt-20">
       <!-- 닫기 버튼 -->
-      <button 
-        @click="close" 
+      <button
         class="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+        @click="close"
       >
-        <svg 
-          class="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          class="w-5 h-5 sm:w-6 sm:h-6 text-gray-500"
+          fill="none"
+          stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path 
-            stroke-linecap="round" 
-            stroke-linejoin="round" 
-            stroke-width="2" 
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
             d="M6 18L18 6M6 6l12 12"
           />
         </svg>
@@ -27,27 +27,33 @@
 
       <!-- 팝업 헤더 -->
       <div class="text-center mb-6 sm:mb-8">
-        <h3 class="text-xl sm:text-2xl font-bold text-gray-800">{{ popupTitle }}</h3>
+        <h3 class="text-xl sm:text-2xl font-bold text-gray-800">
+          {{ popupTitle }}
+        </h3>
         <p class="text-sm sm:text-base text-gray-600 mt-2">
           전문 컨설턴트가 빠르게 답변드리겠습니다
         </p>
       </div>
 
       <!-- 상담 폼 -->
-      <form @submit.prevent="handleSubmit" class="space-y-4 sm:space-y-6">
+      <form class="space-y-4 sm:space-y-6" @submit.prevent="handleSubmit">
         <!-- 메인페이지에서 접근 시에만 표시되는 문의유형 선택 -->
         <div v-if="!props.defaultInquiryType">
           <label class="block text-sm font-medium text-gray-700 mb-1">문의유형 *</label>
-          <select 
+          <select
             v-model="form.inquiryType"
             required
-            @change="handleInquiryTypeChange"
             class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            @change="handleInquiryTypeChange"
           >
-            <option value="">선택해주세요</option>
-            <option v-for="type in inquiryTypes" 
-                    :key="type.code" 
-                    :value="type.code">
+            <option value="">
+              선택해주세요
+            </option>
+            <option
+              v-for="type in inquiryTypes"
+              :key="type.code"
+              :value="type.code"
+            >
               {{ type.codeName }}
             </option>
           </select>
@@ -56,65 +62,71 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">회사명 *</label>
-            <input 
+            <input
               v-model="form.company"
-              type="text" 
+              type="text"
               required
               placeholder="회사명을 입력해주세요"
               class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               :class="{'border-red-500': errors.company}"
             >
-            <p v-if="errors.company" class="mt-1 text-xs sm:text-sm text-red-500">{{ errors.company }}</p>
+            <p v-if="errors.company" class="mt-1 text-xs sm:text-sm text-red-500">
+              {{ errors.company }}
+            </p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">담당자명</label>
-            <input 
+            <input
               v-model="form.name"
-              type="text" 
+              type="text"
               placeholder="담당자명을 입력해주세요"
               class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               :class="{'border-red-500': errors.name}"
             >
-            <p v-if="errors.name" class="mt-1 text-xs sm:text-sm text-red-500">{{ errors.name }}</p>
+            <p v-if="errors.name" class="mt-1 text-xs sm:text-sm text-red-500">
+              {{ errors.name }}
+            </p>
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">연락처 *</label>
-            <input 
+            <input
               v-model="form.phone"
               type="text"
               maxlength="13"
               required
-              @input="formatPhoneNumber"
-              placeholder="010-0000-0000" 
+              placeholder="010-0000-0000"
               class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              @input="formatPhoneNumber"
             >
-          </div> 
+          </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
-            <input 
+            <input
               v-model="form.email"
               type="email"
               placeholder="example@email.com"
               class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               :class="{'border-red-500': errors.email}"
             >
-            <p v-if="errors.email" class="mt-1 text-xs sm:text-sm text-red-500">{{ errors.email }}</p>
+            <p v-if="errors.email" class="mt-1 text-xs sm:text-sm text-red-500">
+              {{ errors.email }}
+            </p>
           </div>
-        </div>               
+        </div>
 
         <!-- <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">매출액</label>
-            <select 
+            <select
               v-model="form.revenue"
               class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">선택해주세요</option>
-              <option v-for="revenue in revenueTypes" 
-                      :key="revenue.code" 
+              <option v-for="revenue in revenueTypes"
+                      :key="revenue.code"
                       :value="revenue.code">
                 {{ revenue.codeName }}
               </option>
@@ -122,13 +134,13 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">인원수</label>
-            <select 
+            <select
               v-model="form.employeeCount"
               class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">선택해주세요</option>
-              <option v-for="employee in employeeTypes" 
-                      :key="employee.code" 
+              <option v-for="employee in employeeTypes"
+                      :key="employee.code"
                       :value="employee.code">
                 {{ employee.codeName }}
               </option>
@@ -138,9 +150,9 @@
 
         <!-- <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">업종</label>
-          <input 
+          <input
             v-model="form.industry"
-            type="text" 
+            type="text"
             placeholder="업종을 입력해주세요"
             class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
@@ -149,11 +161,11 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">추가인증</label>
           <div class="flex flex-wrap gap-2">
-            <label v-for="type in inquiryTypes" 
-                   :key="type.code" 
+            <label v-for="type in inquiryTypes"
+                   :key="type.code"
                    class="inline-flex items-center">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 :value="type.code"
                 v-model="form.additionalCertifications"
                 class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
@@ -165,7 +177,7 @@
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">문의내용</label>
-          <textarea 
+          <textarea
             v-model="form.message"
             rows="4"
             placeholder="문의하실 내용을 자세히 적어주시면 더욱 정확한 상담이 가능합니다."
@@ -176,7 +188,7 @@
         </div> -->
 
         <div class="flex items-start">
-          <input 
+          <input
             v-model="form.agreement"
             type="checkbox"
             required
@@ -185,20 +197,22 @@
           >
           <label class="ml-2 text-xs sm:text-sm text-gray-600">
             개인정보 수집 및 이용에 동의합니다. *
-          </label>          
+          </label>
         </div>
-        <p v-if="errors.agreement" class="mt-1 text-xs sm:text-sm text-red-500">{{ errors.agreement }}</p>
+        <p v-if="errors.agreement" class="mt-1 text-xs sm:text-sm text-red-500">
+          {{ errors.agreement }}
+        </p>
 
         <!-- Textarea to display the privacy policy -->
-        <textarea 
-          id="privacyPolicyText" 
+        <textarea
+          id="privacyPolicyText"
           v-model="privacyPolicyContent"
           class="w-full mt-4 border border-gray-300 rounded p-2 text-xs sm:text-sm text-gray-600"
           rows="4"
           readonly
-        ></textarea>
+        />
 
-        <button 
+        <button
           type="submit"
           class="w-full bg-blue-600 text-white py-2.5 sm:py-3 px-4 text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors relative"
           :disabled="isLoading"
@@ -206,8 +220,16 @@
           <span v-if="!isLoading">상담 신청하기</span>
           <span v-else class="flex items-center justify-center">
             <svg class="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+                fill="none"
+              />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             처리중...
           </span>
@@ -233,25 +255,25 @@ import { formatPhoneNumberInput } from '~/utils/format'
 
 // 상담 폼 데이터 인터페이스 정의
 interface ConsultationForm {
-  company: string        // 회사명
-  name: string          // 담당자명
-  phone: string         // 연락처
-  email: string         // 이메일
-  message: string       // 문의내용
-  agreement: boolean    // 개인정보 수집 동의 여부
-  inquiryType: string   // 문의유형
-  source: string        // 접근 경로
-  createdAt: string     // 생성일시
-  revenue: string       // 매출액 코드
+  company: string // 회사명
+  name: string // 담당자명
+  phone: string // 연락처
+  email: string // 이메일
+  message: string // 문의내용
+  agreement: boolean // 개인정보 수집 동의 여부
+  inquiryType: string // 문의유형
+  source: string // 접근 경로
+  createdAt: string // 생성일시
+  revenue: string // 매출액 코드
   employeeCount: string // 인원수 코드
-  industry: string      // 업종
+  industry: string // 업종
   additionalCertifications: string[] // 추가인증 코드 배열
 }
 
 // 컴포넌트 props 정의
 const props = defineProps({
-  isOpen: Boolean,      // 팝업 표시 여부
-  pageTitle: {          // 페이지 제목
+  isOpen: Boolean, // 팝업 표시 여부
+  pageTitle: { // 페이지 제목
     type: String,
     default: ''
   },
@@ -302,11 +324,11 @@ const loadCodeData = async () => {
     // 문의유형 로드
     const certTypes = await codeService.getActiveCodes('CERT_TYPE')
     inquiryTypes.value = certTypes.sort((a, b) => a.sortOrder - b.sortOrder)
-    
+
     // 매출액 코드 로드
     const revenueCodes = await codeService.getActiveCodes('REVENUE')
     revenueTypes.value = revenueCodes.sort((a, b) => a.sortOrder - b.sortOrder)
-    
+
     // 인원수 코드 로드
     const employeeCodes = await codeService.getActiveCodes('EMPLOYEE')
     employeeTypes.value = employeeCodes.sort((a, b) => a.sortOrder - b.sortOrder)
@@ -317,9 +339,9 @@ const loadCodeData = async () => {
 
 // 컴포넌트 마운트 시 초기화
 onMounted(async () => {
-  form.value.source = route.path  // 현재 경로 저장
-  await loadCodeData()            // 코드 데이터 로드
-  
+  form.value.source = route.path // 현재 경로 저장
+  await loadCodeData() // 코드 데이터 로드
+
   // 기본 문의유형이 있는 경우 추가인증에 자동으로 추가
   if (props.defaultInquiryType) {
     form.value.inquiryType = props.defaultInquiryType
@@ -382,13 +404,13 @@ const close = () => {
 }
 
 // Google Ads 전환 추적 변수 설정
-const goog_snippet_vars = function() {
-  var w = window as any;
-  w.google_conversion_id = 871622967;
-  w.google_conversion_label = "jGJlCLnr6asaELfSz58D";
-  w.google_conversion_value = 1.0;
-  w.google_conversion_currency = "KRW";
-  w.google_remarketing_only = false;
+const goog_snippet_vars = function () {
+  const w = window as any
+  w.google_conversion_id = 871622967
+  w.google_conversion_label = 'jGJlCLnr6asaELfSz58D'
+  w.google_conversion_value = 1.0
+  w.google_conversion_currency = 'KRW'
+  w.google_remarketing_only = false
 }
 
 // Google Ads 전환 추적 옵션 인터페이스 정의
@@ -399,7 +421,7 @@ interface ConversionOptions {
 // Google Ads 전환 추적 실행
 const goog_report_conversion = () => {
   const opt: ConversionOptions = {
-    onload_callback: function() {
+    onload_callback: function () {
       console.log('Google Ads 전환 추적 완료')
     }
   }
@@ -408,7 +430,7 @@ const goog_report_conversion = () => {
 
 // 폼 제출 처리
 const handleSubmit = async () => {
-  if (!validateForm()) return
+  if (!validateForm()) { return }
 
   isLoadingState.value = true
   try {

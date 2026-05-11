@@ -1,22 +1,21 @@
 <template>
-  <div class="content-section">
-    <!-- 페이지 헤더 -->
-    <PageHeader
-      title="메시지 템플릿 관리"
-      description="발송할 메시지 템플릿을 관리합니다"
-    >
-      <template #actions>
+  <div class="message-template-list">
+    <!-- 페이지 헤더 - 컴팩트 -->
+    <div class="page-header-compact">
+      <h1>메시지 템플릿 관리</h1>
+      <span class="page-description">발송할 메시지 템플릿을 관리합니다</span>
+      <div class="header-actions-right">
         <button
           class="btn-primary"
-          @click="goToRegister"
           :disabled="!canWrite"
           :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          @click="goToRegister"
         >
-          <i class="ri-add-line"></i>
+          <i class="ri-add-line" />
           템플릿 등록
         </button>
-      </template>
-    </PageHeader>
+      </div>
+    </div>
 
     <!-- 검색 영역 -->
     <div class="search-section-compact">
@@ -29,7 +28,7 @@
             class="text-input"
             placeholder="템플릿 코드 검색"
             @keyup.enter="handleSearch"
-          />
+          >
         </div>
 
         <div class="search-item">
@@ -40,30 +39,44 @@
             class="text-input"
             placeholder="템플릿명 검색"
             @keyup.enter="handleSearch"
-          />
+          >
         </div>
 
         <div class="search-item">
           <label>메시지 타입</label>
           <select v-model="searchParams.messageType" class="status-select">
-            <option value="">전체</option>
-            <option value="SMS">SMS</option>
-            <option value="LMS">LMS</option>
-            <option value="MMS">MMS</option>
+            <option value="">
+              전체
+            </option>
+            <option value="SMS">
+              SMS
+            </option>
+            <option value="LMS">
+              LMS
+            </option>
+            <option value="MMS">
+              MMS
+            </option>
           </select>
         </div>
 
         <div class="search-item">
           <label>사용여부</label>
           <select v-model="searchParams.useYn" class="status-select">
-            <option value="">전체</option>
-            <option value="Y">사용</option>
-            <option value="N">미사용</option>
+            <option value="">
+              전체
+            </option>
+            <option value="Y">
+              사용
+            </option>
+            <option value="N">
+              미사용
+            </option>
           </select>
         </div>
 
         <button class="btn-search-inline" @click="handleSearch">
-          <i class="ri-search-line"></i>
+          <i class="ri-search-line" />
           검색
         </button>
       </div>
@@ -76,27 +89,35 @@
       </div>
       <div class="table-controls">
         <select v-model="pageSize" @change="changePageSize">
-          <option :value="10">10개씩 보기</option>
-          <option :value="20">20개씩 보기</option>
-          <option :value="50">50개씩 보기</option>
-          <option :value="100">100개씩 보기</option>
+          <option :value="10">
+            10개씩 보기
+          </option>
+          <option :value="20">
+            20개씩 보기
+          </option>
+          <option :value="50">
+            50개씩 보기
+          </option>
+          <option :value="100">
+            100개씩 보기
+          </option>
         </select>
       </div>
     </div>
 
     <!-- 데이터 테이블 -->
     <div v-if="loading" class="loading-state">
-      <i class="ri-loader-4-line animate-spin"></i>
+      <i class="ri-loader-4-line animate-spin" />
       데이터를 불러오는 중...
     </div>
 
     <div v-else-if="error" class="error-state">
-      <i class="ri-error-warning-line"></i>
+      <i class="ri-error-warning-line" />
       {{ error }}
     </div>
 
     <div v-else-if="templates.length === 0" class="empty-state">
-      <i class="ri-inbox-line"></i>
+      <i class="ri-inbox-line" />
       검색 결과가 없습니다
     </div>
 
@@ -113,7 +134,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="template in templates" :key="template.templateId" class="table-row" @click="goToEdit(template.templateId)" style="cursor: pointer;">
+        <tr v-for="template in templates" :key="template.templateId" class="table-row" style="cursor: pointer;" @click="goToEdit(template.templateId)">
           <td>
             <code class="template-code">{{ template.templateCode }}</code>
           </td>
@@ -135,7 +156,7 @@
               :class="['toggle-btn', template.useYn === 'Y' ? 'active' : 'inactive']"
               @click.stop="handleToggleUse(template)"
             >
-              <i :class="template.useYn === 'Y' ? 'ri-check-line' : 'ri-close-line'"></i>
+              <i :class="template.useYn === 'Y' ? 'ri-check-line' : 'ri-close-line'" />
               {{ template.useYn === 'Y' ? '사용' : '미사용' }}
             </button>
           </td>
@@ -148,7 +169,7 @@
                 class="btn-action-table btn-delete"
                 @click.stop="handleDelete(template)"
               >
-                <i class="ri-delete-bin-line"></i>
+                <i class="ri-delete-bin-line" />
                 삭제
               </button>
             </div>
@@ -202,7 +223,7 @@ const templates = ref<MessageTemplate[]>([])
 const currentPage = ref(0)
 const totalPages = ref(0)
 const totalElements = ref(0)
-const pageSize = ref(20)
+const pageSize = ref(10)
 
 // Search params
 const searchParams = reactive<MessageTemplateSearchParams>({
@@ -211,7 +232,7 @@ const searchParams = reactive<MessageTemplateSearchParams>({
   messageType: undefined,
   useYn: undefined,
   page: 0,
-  size: 20,
+  size: 10,
   sort: 'createdAt,desc'
 })
 
@@ -228,10 +249,10 @@ const loadTemplates = async () => {
     }
 
     // Remove empty params
-    if (!params.templateCode) delete params.templateCode
-    if (!params.templateName) delete params.templateName
-    if (!params.messageType) delete params.messageType
-    if (!params.useYn) delete params.useYn
+    if (!params.templateCode) { delete params.templateCode }
+    if (!params.templateName) { delete params.templateName }
+    if (!params.messageType) { delete params.messageType }
+    if (!params.useYn) { delete params.useYn }
 
     const response = await getMessageTemplateList(params)
 
@@ -280,7 +301,7 @@ const handleToggleUse = async (template: MessageTemplate) => {
       ? `"${template.templateName}" 템플릿을 미사용 상태로 변경하시겠습니까?`
       : `"${template.templateName}" 템플릿을 사용 상태로 변경하시겠습니까?`
 
-  if (!confirm(confirmMessage)) return
+  if (!confirm(confirmMessage)) { return }
 
   try {
     await toggleMessageTemplateUse(template.templateId)
@@ -297,8 +318,7 @@ const handleDelete = async (template: MessageTemplate) => {
     !confirm(
       `"${template.templateName}" 템플릿을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`
     )
-  )
-    return
+  ) { return }
 
   try {
     await deleteMessageTemplate(template.templateId)
@@ -311,8 +331,8 @@ const handleDelete = async (template: MessageTemplate) => {
 }
 
 const truncateContent = (content: string | null | undefined, maxLength = 50): string => {
-  if (!content) return '-'
-  if (content.length <= maxLength) return content
+  if (!content) { return '-' }
+  if (content.length <= maxLength) { return content }
   return content.substring(0, maxLength) + '...'
 }
 

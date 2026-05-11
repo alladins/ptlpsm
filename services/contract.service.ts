@@ -1,5 +1,6 @@
 import { apiEnvironment, getAuthHeaders } from '~/services/api'
 import { CONTRACT_ENDPOINTS } from './api/endpoints/contract.endpoints'
+import { safeStorage } from '~/utils/storage'
 
 // MIGRATED: 2025-01-25 - URL을 CONTRACT_ENDPOINTS로 이전
 
@@ -104,34 +105,14 @@ export interface DuplicateCheckResponse {
 
 /**
  * 현재 로그인한 사용자 ID 가져오기
+ *
+ * auth 스토어가 localStorage 'auth_user' 키에 저장한 사용자 객체에서 loginId를 읽는다.
+ * 비어있거나 SSR 환경이면 'admin' 반환.
  */
 function getCurrentUserId(): string {
-  if (typeof window === 'undefined') return 'admin'
-
-  try {
-    // localStorage에서 사용자 정보 확인
-    const userInfo = localStorage.getItem('userInfo')
-    if (userInfo) {
-      const user = JSON.parse(userInfo)
-      return user.loginId || user.userId || user.userName || 'admin'
-    }
-
-    // localStorage에서 loginId 직접 확인
-    const loginId = localStorage.getItem('loginId')
-    if (loginId) return loginId
-
-    // sessionStorage 확인
-    const sessionUser = sessionStorage.getItem('userInfo')
-    if (sessionUser) {
-      const user = JSON.parse(sessionUser)
-      return user.loginId || user.userId || user.userName || 'admin'
-    }
-  } catch (error) {
-    console.warn('사용자 정보 가져오기 실패:', error)
-  }
-
-  // 기본값
-  return 'admin'
+  const user = safeStorage.getJSON<{ loginId?: string; userId?: number | string; userName?: string }>('auth_user')
+  if (!user) return 'admin'
+  return String(user.loginId || user.userId || user.userName || 'admin')
 }
 
 /**

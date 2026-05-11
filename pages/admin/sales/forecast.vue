@@ -8,18 +8,18 @@
       icon-color="blue"
     >
       <template #actions>
-        <button class="btn-action" @click="loadForecasts" :disabled="loading">
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-sync-alt"></i>
+        <button class="btn-action" :disabled="loading" @click="loadForecasts">
+          <i v-if="loading" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-sync-alt" />
           새로고침
         </button>
         <button
           class="btn-action btn-primary"
-          @click="openCreateModal"
           :disabled="!canWrite"
           :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          @click="openCreateModal"
         >
-          <i class="fas fa-plus"></i>
+          <i class="fas fa-plus" />
           예측 등록
         </button>
       </template>
@@ -30,42 +30,58 @@
       <div class="stats-dashboard">
         <div class="stat-card">
           <div class="stat-icon high">
-            <i class="fas fa-fire"></i>
+            <i class="fas fa-fire" />
           </div>
           <div class="stat-content">
             <h3>높음</h3>
-            <p class="stat-value">{{ probabilityStats.high }}건</p>
-            <p class="stat-amount">{{ formatCurrency(probabilityStats.highAmount) }}</p>
+            <p class="stat-value">
+              {{ probabilityStats.high }}건
+            </p>
+            <p class="stat-amount">
+              {{ formatCurrency(probabilityStats.highAmount) }}
+            </p>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon medium">
-            <i class="fas fa-chart-line"></i>
+            <i class="fas fa-chart-line" />
           </div>
           <div class="stat-content">
             <h3>중간</h3>
-            <p class="stat-value">{{ probabilityStats.medium }}건</p>
-            <p class="stat-amount">{{ formatCurrency(probabilityStats.mediumAmount) }}</p>
+            <p class="stat-value">
+              {{ probabilityStats.medium }}건
+            </p>
+            <p class="stat-amount">
+              {{ formatCurrency(probabilityStats.mediumAmount) }}
+            </p>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon low">
-            <i class="fas fa-chart-area"></i>
+            <i class="fas fa-chart-area" />
           </div>
           <div class="stat-content">
             <h3>낮음</h3>
-            <p class="stat-value">{{ probabilityStats.low }}건</p>
-            <p class="stat-amount">{{ formatCurrency(probabilityStats.lowAmount) }}</p>
+            <p class="stat-value">
+              {{ probabilityStats.low }}건
+            </p>
+            <p class="stat-amount">
+              {{ formatCurrency(probabilityStats.lowAmount) }}
+            </p>
           </div>
         </div>
         <div class="stat-card total">
           <div class="stat-icon">
-            <i class="fas fa-calculator"></i>
+            <i class="fas fa-calculator" />
           </div>
           <div class="stat-content">
             <h3>전체</h3>
-            <p class="stat-value">{{ forecasts.length }}건</p>
-            <p class="stat-amount">{{ formatCurrency(probabilityStats.totalAmount) }}</p>
+            <p class="stat-value">
+              {{ forecasts.length }}건
+            </p>
+            <p class="stat-amount">
+              {{ formatCurrency(probabilityStats.totalAmount) }}
+            </p>
           </div>
         </div>
       </div>
@@ -77,11 +93,19 @@
             <span>총 {{ forecasts.length }}개의 예측</span>
           </div>
           <div class="table-actions">
-            <select v-model="filterProbability" @change="applyFilter" class="filter-select">
-              <option value="">전체 확률</option>
-              <option value="높음">높음</option>
-              <option value="중간">중간</option>
-              <option value="낮음">낮음</option>
+            <select v-model="filterProbability" class="filter-select" @change="applyFilter">
+              <option value="">
+                전체 확률
+              </option>
+              <option value="높음">
+                높음
+              </option>
+              <option value="중간">
+                중간
+              </option>
+              <option value="낮음">
+                낮음
+              </option>
             </select>
           </div>
         </div>
@@ -116,11 +140,11 @@
                 </td>
                 <td>{{ formatDate(item.expectedContractDate) }}</td>
                 <td class="action-buttons">
-                  <button class="btn-edit" @click="openEditModal(item)" title="수정">
-                    <i class="fas fa-edit"></i>
+                  <button class="btn-edit" title="수정" @click="openEditModal(item)">
+                    <i class="fas fa-edit" />
                   </button>
-                  <button class="btn-delete" @click="deleteForecast(item.id!)" title="삭제">
-                    <i class="fas fa-trash"></i>
+                  <button class="btn-delete" title="삭제" @click="deleteForecast(item.id!)">
+                    <i class="fas fa-trash" />
                   </button>
                 </td>
               </tr>
@@ -129,13 +153,13 @@
 
           <!-- 로딩 상태 -->
           <div v-if="loading" class="loading-message">
-            <i class="fas fa-spinner fa-spin"></i>
+            <i class="fas fa-spinner fa-spin" />
             <p>데이터를 불러오는 중...</p>
           </div>
 
           <!-- 데이터가 없을 때 -->
           <div v-if="filteredForecasts.length === 0 && !loading" class="no-data-message">
-            <i class="fas fa-chart-line"></i>
+            <i class="fas fa-chart-line" />
             <p>등록된 예측 정보가 없습니다.</p>
           </div>
         </div>
@@ -149,60 +173,70 @@
           <div class="modal-header">
             <h2>{{ isEditMode ? '예측 수정' : '예측 등록' }}</h2>
             <button class="modal-close" @click="closeModal">
-              <i class="fas fa-times"></i>
+              <i class="fas fa-times" />
             </button>
           </div>
           <div class="modal-body">
             <div class="info-group">
               <label>수주 ID <span class="required">*</span></label>
-              <input type="number" v-model="formData.salesId" required>
+              <input v-model="formData.salesId" type="number" required>
             </div>
             <div class="info-group">
               <label>수요기관</label>
-              <input type="text" v-model="formData.demandOrganization">
+              <input v-model="formData.demandOrganization" type="text">
             </div>
             <div class="info-group">
               <label>사업명</label>
-              <input type="text" v-model="formData.businessName">
+              <input v-model="formData.businessName" type="text">
             </div>
             <div class="info-group">
               <label>사업내용</label>
-              <textarea v-model="formData.businessContent" rows="3"></textarea>
+              <textarea v-model="formData.businessContent" rows="3" />
             </div>
             <div class="info-group">
               <label>품목리스트</label>
-              <textarea v-model="formData.itemList" rows="2"></textarea>
+              <textarea v-model="formData.itemList" rows="2" />
             </div>
             <div class="info-group">
               <label>개략 수량</label>
-              <input type="text" v-model="formData.approximateQuantity">
+              <input v-model="formData.approximateQuantity" type="text">
             </div>
             <div class="info-group">
               <label>예상 금액</label>
-              <input type="number" v-model="formData.forecastAmount">
+              <input v-model="formData.forecastAmount" type="number">
             </div>
             <div class="info-group">
               <label>확률</label>
               <select v-model="formData.probability">
-                <option value="">선택</option>
-                <option value="높음">높음</option>
-                <option value="중간">중간</option>
-                <option value="낮음">낮음</option>
+                <option value="">
+                  선택
+                </option>
+                <option value="높음">
+                  높음
+                </option>
+                <option value="중간">
+                  중간
+                </option>
+                <option value="낮음">
+                  낮음
+                </option>
               </select>
             </div>
             <div class="info-group">
               <label>예상 계약일</label>
-              <input type="date" v-model="formData.expectedContractDate">
+              <input v-model="formData.expectedContractDate" type="date">
             </div>
             <div class="info-group">
               <label>비고</label>
-              <textarea v-model="formData.remark" rows="2"></textarea>
+              <textarea v-model="formData.remark" rows="2" />
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn-secondary" @click="closeModal">취소</button>
-            <button class="btn-primary" @click="saveForecast" :disabled="saving">
-              <i v-if="saving" class="fas fa-spinner fa-spin"></i>
+            <button class="btn-secondary" @click="closeModal">
+              취소
+            </button>
+            <button class="btn-primary" :disabled="saving" @click="saveForecast">
+              <i v-if="saving" class="fas fa-spinner fa-spin" />
               {{ isEditMode ? '수정' : '등록' }}
             </button>
           </div>
@@ -253,7 +287,7 @@ const formData = ref<SalesForecastRequest>({
 
 // 필터링된 예측 목록
 const filteredForecasts = computed(() => {
-  if (!filterProbability.value) return forecasts.value
+  if (!filterProbability.value) { return forecasts.value }
   return forecasts.value.filter(f => f.probability === filterProbability.value)
 })
 
@@ -269,7 +303,7 @@ const probabilityStats = computed(() => {
     totalAmount: 0
   }
 
-  forecasts.value.forEach(f => {
+  forecasts.value.forEach((f) => {
     const amount = f.forecastAmount || 0
     stats.totalAmount += amount
 
@@ -377,7 +411,7 @@ const saveForecast = async () => {
 
 // 예측 삭제
 const deleteForecast = async (id: number) => {
-  if (!confirm('정말 삭제하시겠습니까?')) return
+  if (!confirm('정말 삭제하시겠습니까?')) { return }
 
   try {
     await salesForecastService.deleteForecast(id)
@@ -390,9 +424,9 @@ const deleteForecast = async (id: number) => {
 
 // 확률 클래스 반환
 const getProbabilityClass = (probability?: string) => {
-  if (probability === '높음') return 'prob-high'
-  if (probability === '중간') return 'prob-medium'
-  if (probability === '낮음') return 'prob-low'
+  if (probability === '높음') { return 'prob-high' }
+  if (probability === '중간') { return 'prob-medium' }
+  if (probability === '낮음') { return 'prob-low' }
   return ''
 }
 

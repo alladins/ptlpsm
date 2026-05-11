@@ -315,6 +315,23 @@ class PurchaseOrderService {
   }
 
   /**
+   * 본사 바로 입고 (DRAFT → STOCKED)
+   * @param poId - 발주서 ID
+   */
+  async directStockIn(poId: number): Promise<void> {
+    const url = PURCHASE_ORDER_ENDPOINTS.directStockIn(poId)
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || `본사 바로 입고 실패: ${response.status}`)
+    }
+  }
+
+  /**
    * 발주서 접수 (ISSUED → ACCEPTED)
    * @param poId - 발주서 ID
    * @returns 접수된 발주서 정보

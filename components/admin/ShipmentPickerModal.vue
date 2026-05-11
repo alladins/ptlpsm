@@ -4,19 +4,21 @@
       <div class="popup-content shipment-picker-popup">
         <div class="popup-header">
           <h3>미출고 출하 선택</h3>
-          <button class="popup-close" @click="close">&times;</button>
+          <button class="popup-close" @click="close">
+            &times;
+          </button>
         </div>
 
         <div class="popup-body">
           <!-- 안내 배너 -->
           <div class="info-banner">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             출고요청이 되지 않은 출하를 선택하여 품목을 추가합니다.
           </div>
 
           <!-- 로딩 -->
           <div v-if="loading" class="text-center" style="padding: 2rem;">
-            <i class="fas fa-spinner fa-spin"></i> 출하 목록을 불러오는 중...
+            <i class="fas fa-spinner fa-spin" /> 출하 목록을 불러오는 중...
           </div>
 
           <!-- 출하 목록 -->
@@ -33,7 +35,7 @@
                     type="checkbox"
                     :checked="isAllSelected"
                     @change="toggleSelectAll"
-                  />
+                  >
                   전체 선택
                 </label>
                 <span class="count-badge">{{ selectedIds.size }}/{{ shipments.length }}건 선택</span>
@@ -53,7 +55,7 @@
                         type="checkbox"
                         :checked="selectedIds.has(shipment.shipmentId)"
                         @change="toggleSelect(shipment.shipmentId)"
-                      />
+                      >
                     </label>
                     <span class="shipment-no">{{ shipment.shipmentNo }}</span>
                     <span class="shipment-date">{{ shipment.shipmentDate }}</span>
@@ -64,32 +66,44 @@
                       class="btn-expand"
                       @click.stop="toggleExpand(shipment.shipmentId)"
                     >
-                      <i :class="expandedIds.has(shipment.shipmentId) ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"></i>
+                      <i :class="expandedIds.has(shipment.shipmentId) ? 'fas fa-chevron-down' : 'fas fa-chevron-right'" />
                     </button>
                   </div>
 
                   <!-- 아코디언 품목 상세 -->
                   <div v-if="expandedIds.has(shipment.shipmentId)" class="shipment-items">
                     <div v-if="loadingDetail.has(shipment.shipmentId)" class="text-center" style="padding: 0.75rem;">
-                      <i class="fas fa-spinner fa-spin"></i> 품목 로딩 중...
+                      <i class="fas fa-spinner fa-spin" /> 품목 로딩 중...
                     </div>
                     <table v-else-if="detailCache.has(shipment.shipmentId)" class="items-detail-table">
                       <thead>
                         <tr>
                           <th>SKU ID</th>
                           <th>품명</th>
-                          <th class="text-right">수량</th>
-                          <th class="text-right">단가</th>
-                          <th class="text-right">금액</th>
+                          <th class="text-right">
+                            수량
+                          </th>
+                          <th class="text-right">
+                            단가
+                          </th>
+                          <th class="text-right">
+                            금액
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr v-for="item in detailCache.get(shipment.shipmentId)!.items" :key="item.skuId">
                           <td>{{ item.skuId }}</td>
                           <td>{{ item.skuName || item.itemName }}</td>
-                          <td class="text-right">{{ formatQuantity(item.shipmentQuantity) }}</td>
-                          <td class="text-right">{{ formatCurrency(item.costPrice || item.unitPrice) }}</td>
-                          <td class="text-right">{{ formatCurrency(item.shipmentQuantity * (item.costPrice || item.unitPrice)) }}</td>
+                          <td class="text-right">
+                            {{ formatQuantity(item.shipmentQuantity) }}
+                          </td>
+                          <td class="text-right">
+                            {{ formatCurrency(item.costPrice || item.unitPrice) }}
+                          </td>
+                          <td class="text-right">
+                            {{ formatCurrency(item.shipmentQuantity * (item.costPrice || item.unitPrice)) }}
+                          </td>
                         </tr>
                       </tbody>
                     </table>
@@ -101,13 +115,15 @@
         </div>
 
         <div class="popup-footer">
-          <button class="btn-secondary" @click="close">취소</button>
+          <button class="btn-secondary" @click="close">
+            취소
+          </button>
           <button
             class="btn-primary"
             :disabled="selectedIds.size === 0 || confirming"
             @click="handleConfirm"
           >
-            <i v-if="confirming" class="fas fa-spinner fa-spin"></i>
+            <i v-if="confirming" class="fas fa-spinner fa-spin" />
             {{ confirming ? '처리 중...' : `${selectedIds.size}건 출하 선택` }}
           </button>
         </div>
@@ -236,7 +252,7 @@ const toggleExpand = async (shipmentId: number) => {
 
 // 확인 버튼
 const handleConfirm = async () => {
-  if (selectedIds.value.size === 0) return
+  if (selectedIds.value.size === 0) { return }
 
   confirming.value = true
   try {
@@ -255,7 +271,7 @@ const handleConfirm = async () => {
     const allItems: SelectedShipmentItem[] = []
     for (const shipmentId of selectedIds.value) {
       const detail = detailCache.value.get(shipmentId)
-      if (!detail?.items) continue
+      if (!detail?.items) { continue }
 
       for (const item of detail.items) {
         allItems.push({

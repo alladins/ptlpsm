@@ -8,18 +8,18 @@
       icon-color="orange"
     >
       <template #actions>
-        <button class="btn-action" @click="handleSearch" :disabled="loading">
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-search"></i>
+        <button class="btn-action" :disabled="loading" @click="handleSearch">
+          <i v-if="loading" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-search" />
           검색
         </button>
         <button
           class="btn-action btn-primary"
-          @click="goRegister"
           :disabled="!canWrite"
           :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          @click="goRegister"
         >
-          <i class="fas fa-plus"></i>
+          <i class="fas fa-plus" />
           등록
         </button>
       </template>
@@ -32,17 +32,17 @@
           <!-- 등록일자 -->
           <div class="search-item">
             <label>등록일자:</label>
-            <input type="date" v-model="searchForm.startDate" class="date-input">
+            <input v-model="searchForm.startDate" type="date" class="date-input">
             <span class="separator">~</span>
-            <input type="date" v-model="searchForm.endDate" class="date-input">
+            <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
           <!-- 납품요구번호 -->
           <div class="search-item">
             <label>납품요구번호:</label>
-            <input type="text" v-model="searchForm.deliveryRequestNo" placeholder="납품요구번호" class="text-input" readonly>
+            <input v-model="searchForm.deliveryRequestNo" type="text" placeholder="납품요구번호" class="text-input" readonly>
             <button type="button" class="btn-search-inline" @click="openOrderSelectPopup">
-              <i class="fas fa-search"></i>
+              <i class="fas fa-search" />
               조회
             </button>
           </div>
@@ -50,14 +50,16 @@
           <!-- 출하NO -->
           <div class="search-item">
             <label>출하NO:</label>
-            <input type="text" v-model="searchForm.shipmentNo" placeholder="출하NO" class="text-input" @keyup.enter="handleSearch">
+            <input v-model="searchForm.shipmentNo" type="text" placeholder="출하NO" class="text-input" @keyup.enter="handleSearch">
           </div>
 
           <!-- 상태 -->
           <div class="search-item search-keyword">
             <label>상태:</label>
             <select v-model="searchForm.status" class="keyword-input">
-              <option value="">전체</option>
+              <option value="">
+                전체
+              </option>
               <option v-for="option in statusOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
@@ -74,85 +76,99 @@
             <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
-            <select v-model="sortOption" @change="handleSortChange" class="form-select mr-2">
-              <option value="createdAt,desc">생성일자 ↓</option>
-              <option value="createdAt,asc">생성일자 ↑</option>
-              <option value="deliveryDate,desc">배송예정일 ↓</option>
-              <option value="deliveryDate,asc">배송예정일 ↑</option>
+            <select v-model="sortOption" class="form-select mr-2" @change="handleSortChange">
+              <option value="createdAt,desc">
+                생성일자 ↓
+              </option>
+              <option value="createdAt,asc">
+                생성일자 ↑
+              </option>
+              <option value="deliveryDate,desc">
+                배송예정일 ↓
+              </option>
+              <option value="deliveryDate,asc">
+                배송예정일 ↑
+              </option>
             </select>
-            <select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="10">10개씩</option>
-              <option :value="20">20개씩</option>
-              <option :value="50">50개씩</option>
+            <select v-model="pageSize" class="page-size-select" @change="handlePageSizeChange">
+              <option :value="10">
+                10개씩
+              </option>
+              <option :value="20">
+                20개씩
+              </option>
+              <option :value="50">
+                50개씩
+              </option>
             </select>
           </div>
         </div>
 
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <p>데이터를 불러오는 중...</p>
         </div>
 
         <!-- 데이터가 없을 때 - 리팩토링: admin-common.css 스타일 사용 -->
         <div v-else-if="transportList.length === 0" class="no-data-message">
-          <i class="fas fa-truck"></i>
+          <i class="fas fa-truck" />
           <p>등록된 운송장 정보가 없습니다.</p>
         </div>
 
         <div v-else class="table-container">
-            <table class="data-table">
+          <table class="data-table">
             <thead>
-                <tr>
-                  <th>No</th>
-                  <th>출하NO</th>
-                  <th>납품요구번호</th>
-                  <th>사업명</th>
-                  <th>배송지</th>
-                  <th>배송예정일</th>
-                  <th>운송장번호</th>
-                  <th>기사명</th>
-                  <th>배송상태</th>
-                  <th>등록자</th>
-                  <th>등록일시</th>
-                  <th>메시지</th>
-                </tr>
+              <tr>
+                <th>No</th>
+                <th>출하NO</th>
+                <th>납품요구번호</th>
+                <th>사업명</th>
+                <th>배송지</th>
+                <th>배송예정일</th>
+                <th>운송장번호</th>
+                <th>기사명</th>
+                <th>배송상태</th>
+                <th>등록자</th>
+                <th>등록일시</th>
+                <th>메시지</th>
+              </tr>
             </thead>
             <tbody>
-                <tr v-for="(item, index) in transportList" :key="item.transportId" class="table-row" @click="goToEdit(item.transportId)" style="cursor: pointer;">
-                  <td>{{ startIndex + index }}</td>
-                  <td>{{ item.shipmentNo || '-' }}</td>
-                  <td>{{ item.deliveryRequestNo }}</td>
-                  <td>
-                    <span class="project-name-text" :title="item.projectName">
-                      {{ item.projectName || '-' }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="address-text">
-                      {{ item.deliveryAddress }}
-                    </span>
-                  </td>
-                  <td>{{ formatDate(item.deliveryDate) }}</td>
-                  <td>{{ item.trackingNumber || '-' }}</td>
-                  <td>{{ item.driverName || '-' }}</td>
-                  <td>{{ formatStatus(item.status) }}</td>
-                  <td>{{ item.createdBy }}</td>
-                  <td>{{ formatDateTime(item.createdAt) }}</td>
-                  <td>
-                    <button
-                      class="btn-message-sm"
-                      @click.stop="sendMessage(item)"
-                      :disabled="!canSendMessage(item)"
-                      :title="getMessageButtonTitle(item)"
-                    >
-                      <i class="fas fa-comment-dots"></i>
-                      메시지
-                    </button>
-                  </td>
-                </tr>
+              <tr v-for="(item, index) in transportList" :key="item.transportId" class="table-row" style="cursor: pointer;" @click="goToEdit(item.transportId)">
+                <td>{{ startIndex + index }}</td>
+                <td>{{ item.shipmentNo || '-' }}</td>
+                <td>{{ item.deliveryRequestNo }}</td>
+                <td>
+                  <span class="project-name-text" :title="item.projectName">
+                    {{ item.projectName || '-' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="address-text">
+                    {{ item.deliveryAddress }}
+                  </span>
+                </td>
+                <td>{{ formatDate(item.deliveryDate) }}</td>
+                <td>{{ item.trackingNumber || '-' }}</td>
+                <td>{{ item.driverName || '-' }}</td>
+                <td>{{ formatStatus(item.status) }}</td>
+                <td>{{ item.createdBy }}</td>
+                <td>{{ formatDateTime(item.createdAt) }}</td>
+                <td>
+                  <button
+                    class="btn-message-sm"
+                    :disabled="!canSendMessage(item)"
+                    :title="getMessageButtonTitle(item)"
+                    @click.stop="sendMessage(item)"
+                  >
+                    <i class="fas fa-comment-dots" />
+                    메시지
+                  </button>
+                </td>
+              </tr>
             </tbody>
-            </table>
+          </table>
         </div>
 
         <!-- 페이지네이션 - 리팩토링: UiPagination 컴포넌트 사용 -->
@@ -317,7 +333,7 @@ const closeOrderSelectPopup = () => {
 const closeResultModal = () => {
   showResultModal.value = false
   resultInfo.value = null
-  search()  // 목록 새로고침
+  search() // 목록 새로고침
 }
 
 // 발주 선택 처리
@@ -401,13 +417,13 @@ const getMessageButtonTitle = (transport: TransportDetail): string => {
 const sendMessage = async (transport: TransportDetail) => {
   // 첫 번째 confirm만 유지
   const confirmed = confirm(
-    `기사에게 메시지를 전송하시겠습니까?\n\n` +
+    '기사에게 메시지를 전송하시겠습니까?\n\n' +
     `기사명: ${transport.driverName || '(미입력)'}\n` +
     `연락처: ${transport.driverPhone}\n` +
     `운송장번호: ${transport.trackingNumber}`
   )
 
-  if (!confirmed) return
+  if (!confirmed) { return }
 
   try {
     // deliveryService로 납품 생성 및 토큰 발급

@@ -44,6 +44,9 @@ export interface DeliveryApiResponse {
   deliveryRequestNo: string
   contractId: string
 
+  // 서명 여부 (재진입 복원용)
+  hasSignature?: boolean
+
   // 품목 목록
   items: Array<{
     skuId: string
@@ -112,6 +115,9 @@ export interface DeliveryInfo {
     contractId: string
   }
 
+  // 서명 여부 (재진입 복원용)
+  hasSignature?: boolean
+
   // 품목 목록
   items: Array<{
     skuId: string
@@ -139,6 +145,27 @@ export interface DeliveryConfirmResponse {
   confirmedAt: string
 }
 
+// 임시 사진 업로드 응답
+export interface TempPhotoResponse {
+  success: boolean
+  tempPhotoId: string
+  fileName: string
+}
+
+// 임시 사진 항목
+export interface TempPhotoItem {
+  tempPhotoId: string
+  fileName: string
+  fileSize: number
+}
+
+// 임시 사진 목록 응답
+export interface TempPhotoListResponse {
+  success: boolean
+  photos: TempPhotoItem[]
+  count: number
+}
+
 /**
  * 서버 API 응답(flat)을 프론트엔드 형식(nested)으로 변환
  * @param apiResponse 서버로부터 받은 flat structure 응답
@@ -152,6 +179,7 @@ function transformDeliveryResponse(apiResponse: DeliveryApiResponse): DeliveryIn
     orderId: apiResponse.orderId,
     status: apiResponse.status,
     tokenExpiresAt: apiResponse.tokenExpiresAt,
+    hasSignature: apiResponse.hasSignature,
 
     // 운송 정보를 nested object로 변환
     transport: {
@@ -274,10 +302,18 @@ class DeliveryService {
    * @param token 접근 토큰
    * @param signatureBlob 서명 이미지 Blob
    */
-  async uploadSignature(token: string, signatureBlob: Blob): Promise<UploadResponse> {
+  async uploadSignature(token: string, signatureBlob: Blob, gps?: { latitude?: number; longitude?: number }): Promise<UploadResponse> {
     try {
       const formData = new FormData()
       formData.append('signatureImage', signatureBlob, 'signature.png')
+
+      // GPS 정보가 있으면 함께 전송 (서명 시 수집)
+      if (gps?.latitude !== undefined) {
+        formData.append('latitude', gps.latitude.toString())
+      }
+      if (gps?.longitude !== undefined) {
+        formData.append('longitude', gps.longitude.toString())
+      }
 
       const response = await fetch(DELIVERY_ENDPOINTS.uploadSignature(token), {
         method: 'POST',
@@ -370,6 +406,78 @@ class DeliveryService {
       console.error('납품 완료 처리 실패:', error)
       throw error
     }
+  }
+
+  /**
+   * 임시 사진 단일 업로드 (모바일용)
+   * 촬영 즉시 서버 temp 폴더에 업로드
+   * @param token 접근 토큰
+   * @param photo 사진 파일
+   */
+  async uploadTempPhoto(token: string, photo: File): Promise<TempPhotoResponse> {
+    const formData = new FormData()
+    formData.append('photo', photo, photo.name)
+
+    const response = await fetch(DELIVERY_ENDPOINTS.uploadTempPhoto(token), {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null)
+      throw new Error(errorBody?.message || `임시 사진 업로드 실패: ${response.status}`)
+    }
+
+    const result: TempPhotoResponse = await response.json()
+
+    if (!result.success) {
+      throw new Error('임시 사진 업로드에 실패했습니다.')
+    }
+
+    return result
+  }
+
+  /**
+   * 임시 사진 삭제 (모바일용)
+   * UI에서 사진 삭제 시 서버 temp 파일도 함께 삭제
+   * @param token 접근 토큰
+   * @param tempPhotoId 임시 사진 ID
+   */
+  async deleteTempPhoto(token: string, tempPhotoId: string): Promise<void> {
+    const response = await fetch(DELIVERY_ENDPOINTS.deleteTempPhoto(token, tempPhotoId), {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null)
+      throw new Error(errorBody?.message || `임시 사진 삭제 실패: ${response.status}`)
+    }
+  }
+
+  /**
+   * 임시 사진 미리보기 URL 반환 (모바일용)
+   * 페이지 재진입 시 썸네일 복원용 — 인증 헤더 불필요 (공개 경로 /api/m/**)
+   * @param token 접근 토큰
+   * @param tempPhotoId 임시 사진 ID
+   */
+  getTempPhotoUrl(token: string, tempPhotoId: string): string {
+    return DELIVERY_ENDPOINTS.getTempPhotoUrl(token, tempPhotoId)
+  }
+
+  /**
+   * 임시 사진 목록 조회 (모바일용)
+   * 페이지 재진입 시 기존 temp 사진 복원용
+   * @param token 접근 토큰
+   */
+  async getTempPhotos(token: string): Promise<TempPhotoListResponse> {
+    const response = await fetch(DELIVERY_ENDPOINTS.getTempPhotos(token))
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null)
+      throw new Error(errorBody?.message || `임시 사진 목록 조회 실패: ${response.status}`)
+    }
+
+    return await response.json()
   }
 
   /**
@@ -480,6 +588,124 @@ class DeliveryService {
       console.error('납품 상세 조회 실패:', error)
       throw error
     }
+  }
+
+  /**
+   * 관리자용 납품 진행 상태 조회 (temp 사진 + 서명 상태)
+   * @param deliveryId 납품 ID
+   */
+  async getAdminTempStatus(deliveryId: number): Promise<TempPhotoListResponse> {
+    const response = await fetch(DELIVERY_ENDPOINTS.adminTempStatus(deliveryId), {
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`납품 진행 상태 조회 실패: ${response.status}`)
+    }
+
+    return await response.json()
+  }
+
+  /**
+   * 관리자용 임시 사진 URL 생성
+   * @param deliveryId 납품 ID
+   * @param tempPhotoId 임시 사진 ID
+   */
+  getAdminTempPhotoUrl(deliveryId: number, tempPhotoId: string): string {
+    return DELIVERY_ENDPOINTS.adminTempPhoto(deliveryId, tempPhotoId)
+  }
+
+  /**
+   * 관리자 임시 사진 업로드
+   * @param deliveryId 납품 ID
+   * @param photo 사진 파일 (JPG)
+   */
+  async uploadAdminTempPhoto(deliveryId: number, photo: File): Promise<TempPhotoResponse> {
+    const formData = new FormData()
+    formData.append('photo', photo, photo.name)
+
+    // FormData 전송 시 Content-Type 헤더 제거 (브라우저가 boundary 포함한 multipart/form-data 자동 설정)
+    const headers = getAuthHeaders()
+    delete (headers as Record<string, string>)['Content-Type']
+
+    const response = await fetch(DELIVERY_ENDPOINTS.uploadAdminTempPhoto(deliveryId), {
+      method: 'POST',
+      headers,
+      body: formData
+    })
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null)
+      throw new Error(errorBody?.message || `관리자 임시 사진 업로드 실패: ${response.status}`)
+    }
+
+    const result: TempPhotoResponse = await response.json()
+
+    if (!result.success) {
+      throw new Error('관리자 임시 사진 업로드에 실패했습니다.')
+    }
+
+    return result
+  }
+
+  /**
+   * 관리자 임시 사진 삭제
+   * @param deliveryId 납품 ID
+   * @param tempPhotoId 임시 사진 ID
+   */
+  async deleteAdminTempPhoto(deliveryId: number, tempPhotoId: string): Promise<void> {
+    const response = await fetch(DELIVERY_ENDPOINTS.deleteAdminTempPhoto(deliveryId, tempPhotoId), {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null)
+      throw new Error(errorBody?.message || `관리자 임시 사진 삭제 실패: ${response.status}`)
+    }
+  }
+
+  /**
+   * 관리자 대리 납품 완료 처리
+   * @param deliveryId 납품 ID
+   */
+  async adminConfirmDelivery(deliveryId: number): Promise<UploadResponse> {
+    const response = await fetch(DELIVERY_ENDPOINTS.adminConfirm(deliveryId), {
+      method: 'POST',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null)
+      throw new Error(errorBody?.message || `관리자 대리 완료 실패: ${response.status}`)
+    }
+
+    return await response.json()
+  }
+
+  /**
+   * 인수자에게 서명 전용 모바일 링크를 SMS로 발송
+   * @param deliveryId 납품 ID
+   * @returns 발송 결과 (수신자 정보, 모바일 URL, 토큰 만료 일시)
+   */
+  async requestReceiverSignature(deliveryId: number): Promise<{
+    deliveryId: number
+    recipientName: string
+    recipientPhone: string
+    mobileUrl: string
+    tokenExpiresAt: string
+  }> {
+    const response = await fetch(DELIVERY_ENDPOINTS.requestReceiverSignature(deliveryId), {
+      method: 'POST',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null)
+      throw new Error(errorBody?.message || `서명 요청 발송 실패: ${response.status}`)
+    }
+
+    return await response.json()
   }
 }
 

@@ -3,24 +3,21 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       title="회사 정보 상세"
+      icon="default"
+      icon-color="blue"
       description="회사 정보를 조회하고 수정합니다."
     >
       <template #actions>
         <button class="btn-action btn-secondary" @click="handleCancel">
-          <i class="fas fa-list"></i>
+          <i class="fas fa-list" />
           {{ isEditMode ? '취소' : '목록' }}
         </button>
         <button v-if="!isEditMode" class="btn-action btn-primary" @click="enterEditMode">
-          <i class="fas fa-edit"></i>
+          <i class="fas fa-edit" />
           수정
         </button>
-        <button v-if="isEditMode" class="btn-action btn-success" @click="handleSave" :disabled="saving">
-          <i v-if="saving" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-save"></i>
-          저장
-        </button>
         <button class="btn-action btn-danger" @click="handleDelete">
-          <i class="fas fa-trash"></i>
+          <i class="fas fa-trash" />
           삭제
         </button>
       </template>
@@ -29,16 +26,16 @@
     <div class="content-section">
       <!-- 로딩 상태 -->
       <div v-if="loading" class="loading-message">
-        <i class="fas fa-spinner fa-spin"></i>
+        <i class="fas fa-spinner fa-spin" />
         <p>데이터를 불러오는 중...</p>
       </div>
 
       <!-- 에러 상태 -->
       <div v-else-if="error" class="error-message">
-        <i class="fas fa-exclamation-triangle"></i>
+        <i class="fas fa-exclamation-triangle" />
         <p>{{ error }}</p>
         <button class="btn-action btn-primary" @click="loadCompany">
-          <i class="fas fa-redo"></i>
+          <i class="fas fa-redo" />
           다시 시도
         </button>
       </div>
@@ -70,7 +67,7 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
-const formRef = ref<{ setSaving: (value: boolean) => void } | null>(null)
+const formRef = ref<{ setSaving:(value: boolean) => void; triggerSubmit: () => void } | null>(null)
 
 // 상태 관리
 const loading = ref(false)
@@ -83,7 +80,7 @@ const saving = ref(false)
 const companyId = computed(() => Number(route.params.id))
 
 // 회사 정보 로드
-async function loadCompany() {
+async function loadCompany () {
   loading.value = true
   error.value = null
 
@@ -102,12 +99,12 @@ async function loadCompany() {
 }
 
 // 편집 모드 진입
-function enterEditMode() {
+function enterEditMode () {
   isEditMode.value = true
 }
 
 // 취소 처리
-function handleCancel() {
+function handleCancel () {
   if (isEditMode.value) {
     const confirmed = confirm('수정을 취소하시겠습니까? 변경사항이 저장되지 않습니다.')
     if (confirmed) {
@@ -120,7 +117,7 @@ function handleCancel() {
 }
 
 // 저장 처리
-async function handleSubmit(data: CompanyCreateRequest) {
+async function handleSubmit (data: CompanyCreateRequest) {
   saving.value = true
   if (formRef.value) {
     formRef.value.setSaving(true)
@@ -151,21 +148,18 @@ async function handleSubmit(data: CompanyCreateRequest) {
 }
 
 // 수동 저장 버튼 (헤더)
-function handleSave() {
-  // CompanyForm의 submit 이벤트를 트리거하기 위해
-  // 폼 내부의 submit 버튼을 프로그래밍 방식으로 클릭
-  const submitBtn = document.querySelector('.company-form button[type="submit"]') as HTMLButtonElement
-  if (submitBtn) {
-    submitBtn.click()
+function handleSave () {
+  if (formRef.value) {
+    formRef.value.triggerSubmit()
   }
 }
 
 // 삭제 처리
-async function handleDelete() {
-  if (!companyData.value) return
+async function handleDelete () {
+  if (!companyData.value) { return }
 
   const confirmed = confirm(`'${companyData.value.companyName}' 회사를 삭제하시겠습니까?`)
-  if (!confirmed) return
+  if (!confirmed) { return }
 
   try {
     await companyService.deleteCompany(companyId.value)

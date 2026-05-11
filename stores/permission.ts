@@ -87,9 +87,9 @@ export const usePermissionStore = defineStore('permission', () => {
   // 권한 캐시 TTL (5분)
   const CACHE_TTL = 5 * 60 * 1000
 
-  // 전체 접근 권한을 가진 역할 (시스템관리자 + 리드파워 담당자)
-  // 리드파워 담당자는 SidebarMenu에서 시스템관리 메뉴만 별도 제외
-  const FULL_ACCESS_ROLES: UserRole[] = ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER']
+  // 전체 접근 권한을 가진 역할 (시스템관리자만)
+  // 리드파워 담당자는 role_menu_auth 권한 설정에 따라 메뉴 표시/숨김 처리
+  const FULL_ACCESS_ROLES: UserRole[] = ['SYSTEM_ADMIN']
 
   // ========================================
   // Computed

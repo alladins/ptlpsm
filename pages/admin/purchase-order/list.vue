@@ -8,21 +8,20 @@
       icon-color="blue"
     >
       <template #actions>
-        <button class="btn-action" @click="handleSearch" :disabled="loading">
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-search"></i>
+        <button class="btn-action" :disabled="loading" @click="handleSearch">
+          <i v-if="loading" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-search" />
           검색
         </button>
         <button
           class="btn-action btn-primary"
           @click="goToRegister"
         >
-          <i class="fas fa-plus"></i>
+          <i class="fas fa-plus" />
           발주서 등록
         </button>
       </template>
     </PageHeader>
-
 
     <!-- 발주서 목록 -->
     <div class="content-section">
@@ -32,16 +31,18 @@
           <!-- 발주일자 기간 -->
           <div class="search-item">
             <label>발주일자:</label>
-            <input type="date" v-model="searchForm.startDate" class="date-input">
+            <input v-model="searchForm.startDate" type="date" class="date-input">
             <span class="separator">~</span>
-            <input type="date" v-model="searchForm.endDate" class="date-input">
+            <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
           <!-- 상태 -->
           <div class="search-item">
             <label>상태:</label>
             <select v-model="searchForm.status" class="status-select">
-              <option value="">전체</option>
+              <option value="">
+                전체
+              </option>
               <option v-for="(label, key) in PO_STATUS_LABELS" :key="key" :value="key">
                 {{ label }}
               </option>
@@ -52,7 +53,9 @@
           <div class="search-item">
             <label>OEM 제조사:</label>
             <select v-model="searchForm.oemCompanyId" class="status-select">
-              <option :value="null">전체</option>
+              <option :value="null">
+                전체
+              </option>
               <option
                 v-for="company in oemCompanies"
                 :key="company.id"
@@ -67,8 +70,8 @@
           <div class="search-item">
             <label>검색어:</label>
             <input
-              type="text"
               v-model="searchForm.keyword"
+              type="text"
               placeholder="발주서번호, OEM명"
               class="text-input"
               @keyup.enter="handleSearch"
@@ -85,23 +88,29 @@
             <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
-            <select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="10">10개씩</option>
-              <option :value="20">20개씩</option>
-              <option :value="50">50개씩</option>
+            <select v-model="pageSize" class="page-size-select" @change="handlePageSizeChange">
+              <option :value="10">
+                10개씩
+              </option>
+              <option :value="20">
+                20개씩
+              </option>
+              <option :value="50">
+                50개씩
+              </option>
             </select>
           </div>
         </div>
 
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <p>데이터를 불러오는 중...</p>
         </div>
 
         <!-- 데이터 없음 -->
         <div v-else-if="poList.length === 0" class="no-data-message">
-          <i class="fas fa-file-alt"></i>
+          <i class="fas fa-file-alt" />
           <p>등록된 발주서가 없습니다.</p>
         </div>
 
@@ -127,12 +136,14 @@
                 v-for="(item, index) in poList"
                 :key="item.poId"
                 class="table-row"
-                @click="goToDetail(item.poId)"
                 style="cursor: pointer;"
+                @click="goToDetail(item.poId)"
               >
                 <td>{{ startIndex + index }}</td>
                 <td>{{ item.poNo || '-' }}</td>
-                <td class="text-left">{{ item.oemCompanyName || '-' }}</td>
+                <td class="text-left">
+                  {{ item.oemCompanyName || '-' }}
+                </td>
                 <td>{{ formatDate(item.orderDate) }}</td>
                 <td>{{ formatDate(item.expectedCompletionDate) }}</td>
                 <td>
@@ -140,18 +151,28 @@
                     {{ getStatusLabel(item.status) }}
                   </span>
                 </td>
-                <td class="text-right">{{ formatQuantity(item.totalQuantity) }} ㎡</td>
-                <td class="text-right">{{ formatCurrency(item.totalAmount) }}</td>
+                <td class="text-right">
+                  {{ formatQuantity(item.totalQuantity) }} ㎡
+                </td>
+                <td class="text-right">
+                  {{ formatCurrency(item.totalAmount) }}
+                </td>
                 <td>{{ formatDate(item.createdAt) }}</td>
                 <td>{{ item.createdBy || '-' }}</td>
               </tr>
             </tbody>
             <tfoot v-if="poList.length > 0">
               <tr>
-                <td colspan="6" class="text-right"><strong>합계</strong></td>
-                <td class="text-right"><strong>{{ formatQuantity(totalQuantitySum) }} ㎡</strong></td>
-                <td class="text-right"><strong>{{ formatCurrency(totalAmountSum) }}</strong></td>
-                <td colspan="2"></td>
+                <td colspan="6" class="text-right">
+                  <strong>합계</strong>
+                </td>
+                <td class="text-right">
+                  <strong>{{ formatQuantity(totalQuantitySum) }} ㎡</strong>
+                </td>
+                <td class="text-right">
+                  <strong>{{ formatCurrency(totalAmountSum) }}</strong>
+                </td>
+                <td colspan="2" />
               </tr>
             </tfoot>
           </table>
@@ -167,7 +188,6 @@
         />
       </div>
     </div>
-
   </div>
 </template>
 

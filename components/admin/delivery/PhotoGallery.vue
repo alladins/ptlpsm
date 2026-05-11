@@ -24,7 +24,7 @@
   <div v-else class="photo-gallery">
     <!-- 사진 없을 때 -->
     <div v-if="photoCount === 0" class="no-photos">
-      <i class="fas fa-camera"></i>
+      <i class="fas fa-camera" />
       <span>사진 없음</span>
     </div>
 
@@ -39,19 +39,19 @@
         >
           <UiSecureImage :src="url" :alt="`사진 ${index + 1}`" loading="lazy" />
           <div class="thumbnail-overlay">
-            <i class="fas fa-search-plus"></i>
+            <i class="fas fa-search-plus" />
           </div>
         </div>
 
         <!-- 더보기 버튼 (3장 초과 시) -->
         <div v-if="photoCount > 3" class="photo-more" @click="openGallery(0)">
-          <i class="fas fa-images"></i>
+          <i class="fas fa-images" />
           <span>+{{ photoCount - 3 }}</span>
         </div>
       </div>
 
       <div class="photo-info">
-        <i class="fas fa-image"></i>
+        <i class="fas fa-image" />
         <span>{{ photoCount }}장</span>
       </div>
     </div>
@@ -63,11 +63,11 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3>
-            <i class="fas fa-images"></i>
+            <i class="fas fa-images" />
             {{ selectionMode ? '사진대지 선택' : '납품 사진' }} ({{ currentIndex + 1 }} / {{ photoCount }})
           </h3>
           <button class="btn-close" @click="closeGallery">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
@@ -76,10 +76,10 @@
           <button
             v-if="photoCount > 1"
             class="nav-btn nav-prev"
-            @click="prevPhoto"
             :disabled="currentIndex === 0"
+            @click="prevPhoto"
           >
-            <i class="fas fa-chevron-left"></i>
+            <i class="fas fa-chevron-left" />
           </button>
 
           <!-- 현재 이미지 -->
@@ -109,7 +109,7 @@
               class="select-hint-overlay"
             >
               <div class="hint-content">
-                <i class="fas fa-hand-pointer"></i>
+                <i class="fas fa-hand-pointer" />
                 <span>클릭하여 선택</span>
               </div>
             </div>
@@ -120,7 +120,7 @@
               class="disabled-overlay"
             >
               <div class="disabled-content">
-                <i class="fas fa-ban"></i>
+                <i class="fas fa-ban" />
                 <span>최대 2장 선택됨</span>
               </div>
             </div>
@@ -130,10 +130,10 @@
           <button
             v-if="photoCount > 1"
             class="nav-btn nav-next"
-            @click="nextPhoto"
             :disabled="currentIndex === photoCount - 1"
+            @click="nextPhoto"
           >
-            <i class="fas fa-chevron-right"></i>
+            <i class="fas fa-chevron-right" />
           </button>
         </div>
 
@@ -162,23 +162,23 @@
 
           <!-- 선택 모드일 때 저장/취소 버튼 -->
           <div v-if="selectionMode" class="selection-actions">
-            <button class="btn-cancel" @click="closeGallery" :disabled="saving">
-              <i class="fas fa-times"></i>
+            <button class="btn-cancel" :disabled="saving" @click="closeGallery">
+              <i class="fas fa-times" />
               취소
             </button>
             <button
               class="btn-save"
-              @click="savePhotoSelection"
               :disabled="saving || selectedIndices.length === 0"
+              @click="savePhotoSelection"
             >
-              <i class="fas" :class="saving ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+              <i class="fas" :class="saving ? 'fa-spinner fa-spin' : 'fa-check'" />
               {{ saving ? '저장 중...' : '선택 완료' }}
             </button>
           </div>
 
           <!-- 일반 모드일 때 닫기 버튼 -->
           <button v-else class="btn-close-bottom" @click="closeGallery">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
             닫기
           </button>
         </div>
@@ -197,9 +197,9 @@ interface Props {
   photoCount: number
   compact?: boolean
   maxShow?: number
-  selectionMode?: boolean           // 선택 모드 활성화 여부
-  deliveryId?: number               // 출하 ID (선택 저장용)
-  photoIds?: number[]               // 실제 사진 ID 배열
+  selectionMode?: boolean // 선택 모드 활성화 여부
+  deliveryId?: number // 출하 ID (선택 저장용)
+  photoIds?: number[] // 실제 사진 ID 배열
   initialSelectedIndices?: number[] // 초기 선택된 사진 인덱스들
 }
 
@@ -329,7 +329,7 @@ const savePhotoSelection = async () => {
 
 // 키보드 네비게이션
 const handleKeydown = (e: KeyboardEvent) => {
-  if (!showGallery.value) return
+  if (!showGallery.value) { return }
 
   if (e.key === 'ArrowLeft') {
     prevPhoto()

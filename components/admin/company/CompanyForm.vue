@@ -1,5 +1,5 @@
 <template>
-  <form @submit.prevent="handleSubmit" class="company-form">
+  <form class="company-form" @submit.prevent="handleSubmit">
     <!-- 2열 레이아웃 -->
     <div class="form-two-column">
       <!-- 좌측 컬럼 -->
@@ -7,14 +7,14 @@
         <!-- 기본 정보 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-building"></i>
+            <i class="fas fa-building" />
             <span>기본 정보</span>
           </div>
           <div class="info-grid grid-2">
             <FormField label="회사명" required>
               <input
-                type="text"
                 v-model="formData.companyName"
+                type="text"
                 class="form-input"
                 :class="{ 'error': errors.companyName }"
                 :readonly="mode === 'view'"
@@ -25,8 +25,8 @@
 
             <FormField label="대표자명" required>
               <input
-                type="text"
                 v-model="formData.representative"
+                type="text"
                 class="form-input"
                 :class="{ 'error': errors.representative }"
                 :readonly="mode === 'view'"
@@ -35,19 +35,21 @@
               <span v-if="errors.representative" class="error-message">{{ errors.representative }}</span>
             </FormField>
 
-            <FormField label="설립일자">
+            <FormField label="설립일자" required>
               <input
-                type="date"
                 v-model="formData.establishedDate"
+                type="date"
                 class="form-input"
+                :class="{ 'error': errors.establishedDate }"
                 :readonly="mode === 'view'"
               >
+              <span v-if="errors.establishedDate" class="error-message">{{ errors.establishedDate }}</span>
             </FormField>
 
             <FormField label="직원수">
               <input
-                type="number"
                 v-model.number="formData.employeeCount"
+                type="number"
                 class="form-input"
                 :readonly="mode === 'view'"
                 placeholder="직원수를 입력하세요"
@@ -61,7 +63,9 @@
                 class="form-input"
                 :disabled="mode === 'view'"
               >
-                <option :value="undefined">선택하세요</option>
+                <option :value="undefined">
+                  선택하세요
+                </option>
                 <option
                   v-for="option in companyTypeOptions"
                   :key="option.code"
@@ -77,14 +81,14 @@
         <!-- 사업자 정보 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-file-contract"></i>
+            <i class="fas fa-file-contract" />
             <span>사업자 정보</span>
           </div>
           <div class="info-grid grid-2">
             <FormField label="사업자등록번호" required>
               <input
-                type="text"
                 v-model="formData.businessNumber"
+                type="text"
                 class="form-input"
                 :class="{ 'error': errors.businessNumber }"
                 :readonly="mode === 'view'"
@@ -96,8 +100,8 @@
 
             <FormField label="나라장터등록번호">
               <input
-                type="text"
                 v-model="formData.g2bNumber"
+                type="text"
                 class="form-input"
                 :class="{ 'error': errors.g2bNumber }"
                 :readonly="mode === 'view'"
@@ -109,22 +113,24 @@
 
             <FormField label="업태">
               <input
-                type="text"
                 v-model="formData.businessType"
+                type="text"
                 class="form-input"
                 :readonly="mode === 'view'"
                 placeholder="제조업 / 기타 플라스틱 발포 성형제품 제조업"
               >
+              <span class="field-hint">* 견적서 등 문서에 표시됩니다.</span>
             </FormField>
 
             <FormField label="업종">
               <input
-                type="text"
                 v-model="formData.businessCategory"
+                type="text"
                 class="form-input"
                 :readonly="mode === 'view'"
                 placeholder="건축자재, 단열재(우레탄풀, 스펀레이폼)"
               >
+              <span class="field-hint">* 견적서 등 문서에 표시됩니다.</span>
             </FormField>
           </div>
         </div>
@@ -132,14 +138,14 @@
         <!-- 연락처 정보 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-phone"></i>
+            <i class="fas fa-phone" />
             <span>연락처 정보</span>
           </div>
           <div class="info-grid grid-2">
             <FormField label="전화번호" required>
               <input
-                type="text"
                 v-model="formData.tel"
+                type="text"
                 class="form-input"
                 :class="{ 'error': errors.tel }"
                 :readonly="mode === 'view'"
@@ -151,8 +157,8 @@
 
             <FormField label="팩스번호">
               <input
-                type="text"
                 v-model="formData.fax"
+                type="text"
                 class="form-input"
                 :class="{ 'error': errors.fax }"
                 :readonly="mode === 'view'"
@@ -164,20 +170,21 @@
 
             <FormField label="이메일">
               <input
-                type="email"
                 v-model="formData.email"
+                type="email"
                 class="form-input"
                 :class="{ 'error': errors.email }"
                 :readonly="mode === 'view'"
                 placeholder="example@company.com"
               >
               <span v-if="errors.email" class="error-message">{{ errors.email }}</span>
+              <span v-else class="field-hint">* 견적서 등 문서에 표시됩니다.</span>
             </FormField>
 
             <FormField label="홈페이지">
               <input
-                type="url"
                 v-model="formData.homepage"
+                type="url"
                 class="form-input"
                 :readonly="mode === 'view'"
                 placeholder="https://example.com"
@@ -192,16 +199,17 @@
         <!-- 주소 정보 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-map-marker-alt"></i>
+            <i class="fas fa-map-marker-alt" />
             <span>주소 정보</span>
           </div>
           <div class="info-grid grid-1">
-            <FormField label="우편번호">
+            <FormField label="우편번호" required>
               <div class="input-with-button">
                 <input
-                  type="text"
                   v-model="formData.zipCode"
+                  type="text"
                   class="form-input"
+                  :class="{ 'error': errors.zipCode }"
                   :readonly="true"
                   placeholder="17608"
                 >
@@ -214,22 +222,24 @@
                   우편번호 검색
                 </button>
               </div>
+              <span v-if="errors.zipCode" class="error-message">{{ errors.zipCode }}</span>
             </FormField>
 
             <FormField label="주소">
               <input
-                type="text"
                 v-model="formData.address"
+                type="text"
                 class="form-input"
                 :readonly="true"
                 placeholder="경기 안성시 서운면 서동로 21-10"
               >
+              <span class="field-hint">* 견적서 등 문서에 표시됩니다.</span>
             </FormField>
 
             <FormField label="상세주소">
               <input
-                type="text"
                 v-model="formData.detailAddress"
+                type="text"
                 class="form-input"
                 :readonly="mode === 'view'"
                 placeholder="상세주소를 입력하세요"
@@ -241,7 +251,7 @@
         <!-- 회사 직인 -->
         <div class="info-group">
           <div class="info-group-header">
-            <i class="fas fa-stamp"></i>
+            <i class="fas fa-stamp" />
             <span>회사 직인</span>
           </div>
           <div class="seal-section">
@@ -253,10 +263,10 @@
                   v-if="mode !== 'view'"
                   type="button"
                   class="btn-remove"
-                  @click="removeSealImage"
                   title="직인 이미지 제거"
+                  @click="removeSealImage"
                 >
-                  <i class="fas fa-times"></i>
+                  <i class="fas fa-times" />
                 </button>
               </div>
               <!-- 서버에서 불러온 기존 이미지 (URL) -->
@@ -270,15 +280,15 @@
                   v-if="mode === 'edit'"
                   type="button"
                   class="btn-remove"
-                  @click="removeSealImage"
                   title="직인 이미지 제거"
+                  @click="removeSealImage"
                 >
-                  <i class="fas fa-times"></i>
+                  <i class="fas fa-times" />
                 </button>
               </div>
               <!-- 이미지 없음 -->
               <div v-else class="seal-placeholder">
-                <i class="fas fa-stamp"></i>
+                <i class="fas fa-stamp" />
                 <p>직인 이미지 없음</p>
               </div>
             </div>
@@ -288,22 +298,24 @@
                 ref="sealFileInput"
                 type="file"
                 accept="image/png,image/jpeg,image/jpg"
-                @change="handleSealImageUpload"
                 style="display: none"
+                @change="handleSealImageUpload"
               >
               <button
                 type="button"
                 class="btn-upload"
                 @click="triggerFileUpload"
               >
-                <i class="fas fa-upload"></i>
+                <i class="fas fa-upload" />
                 직인 이미지 업로드
               </button>
-              <p class="upload-hint">PNG, JPG 형식, 최대 2MB</p>
+              <p class="upload-hint">
+                PNG, JPG 형식, 최대 2MB
+              </p>
             </div>
 
             <div v-if="formData.sealImageFileName" class="seal-info">
-              <i class="fas fa-file-image"></i>
+              <i class="fas fa-file-image" />
               <span>{{ formData.sealImageFileName }}</span>
             </div>
           </div>
@@ -312,19 +324,18 @@
     </div>
 
     <!-- 버튼 영역 -->
-    <div class="form-actions" v-if="mode !== 'view'">
+    <div v-if="mode !== 'view'" class="form-actions">
       <button
         type="submit"
-        class="btn-primary"
-        :disabled="saving || (canWrite === false)"
-        :title="canWrite === false ? (mode === 'create' ? '등록 권한이 없습니다' : '수정 권한이 없습니다') : ''"
+        class="btn-submit-primary"
+        :disabled="saving"
       >
-        <i v-if="saving" class="fas fa-spinner fa-spin"></i>
-        <i v-else class="fas fa-save"></i>
+        <i v-if="saving" class="fas fa-spinner fa-spin" />
+        <i v-else class="fas fa-save" />
         {{ mode === 'create' ? '등록' : '수정' }}
       </button>
-      <button type="button" class="btn-secondary" @click="$emit('cancel')">
-        <i class="fas fa-times"></i>
+      <button type="button" class="btn-submit-cancel" @click="$emit('cancel')">
+        <i class="fas fa-times" />
         취소
       </button>
     </div>
@@ -474,7 +485,7 @@ const handleSealImageUpload = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
 
-  if (!file) return
+  if (!file) { return }
 
   // 파일 타입 검증
   const validTypes = ['image/png', 'image/jpeg', 'image/jpg']
@@ -585,6 +596,18 @@ const validateForm = (): boolean => {
     isValid = false
   }
 
+  // 설립일자 (필수)
+  if (!formData.value.establishedDate) {
+    errors.value.establishedDate = '설립일자를 입력해주세요.'
+    isValid = false
+  }
+
+  // 우편번호 (필수 - 우편번호 검색으로 입력)
+  if (!formData.value.zipCode) {
+    errors.value.zipCode = '우편번호를 검색해주세요.'
+    isValid = false
+  }
+
   return isValid
 }
 
@@ -592,12 +615,19 @@ const validateForm = (): boolean => {
 const handleSubmit = () => {
   if (validateForm()) {
     emit('submit', formData.value)
+  } else {
+    // validation 실패 시 첫 번째 에러 메시지 알림
+    const firstError = Object.values(errors.value)[0]
+    if (firstError) {
+      alert(firstError)
+    }
   }
 }
 
-// 외부에서 saving 상태 제어 가능하도록 expose
+// 외부에서 saving 상태 제어 및 submit 트리거 가능하도록 expose
 defineExpose({
-  setSaving: (value: boolean) => { saving.value = value }
+  setSaving: (value: boolean) => { saving.value = value },
+  triggerSubmit: () => { handleSubmit() }
 })
 </script>
 
@@ -608,6 +638,14 @@ defineExpose({
 @import '@/assets/css/admin-buttons.css';
 
 /* ===== Company Form Specific Styles ===== */
+
+/* 필드 안내 힌트 */
+.field-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+}
 
 /* Form container */
 .company-form {
@@ -795,5 +833,50 @@ defineExpose({
     width: 100%;
     justify-content: center;
   }
+}
+
+/* 폼 제출 버튼 - 명시적 스타일 */
+.btn-submit-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #3b82f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-submit-primary:hover:not(:disabled) {
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-submit-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-submit-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #ffffff;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-submit-cancel:hover {
+  background: #f3f4f6;
 }
 </style>

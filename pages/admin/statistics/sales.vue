@@ -2,6 +2,8 @@
   <div class="statistics-sales">
     <PageHeader
       title="영업통계"
+      icon="chart"
+      icon-color="blue"
       description="영업 현황을 통계로 확인합니다."
     />
 
@@ -9,45 +11,61 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-chart-line"></i>
+            <i class="fas fa-chart-line" />
           </div>
           <div class="stat-content">
             <h3>총 영업건수</h3>
-            <p class="stat-number">1,234</p>
-            <p class="stat-change positive">+12.5%</p>
+            <p class="stat-number">
+              1,234
+            </p>
+            <p class="stat-change positive">
+              +12.5%
+            </p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-dollar-sign"></i>
+            <i class="fas fa-dollar-sign" />
           </div>
           <div class="stat-content">
             <h3>총 영업금액</h3>
-            <p class="stat-number">₩12,345,678,900</p>
-            <p class="stat-change positive">+8.3%</p>
+            <p class="stat-number">
+              ₩12,345,678,900
+            </p>
+            <p class="stat-change positive">
+              +8.3%
+            </p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-users"></i>
+            <i class="fas fa-users" />
           </div>
           <div class="stat-content">
             <h3>활성 고객수</h3>
-            <p class="stat-number">89</p>
-            <p class="stat-change positive">+5.2%</p>
+            <p class="stat-number">
+              89
+            </p>
+            <p class="stat-change positive">
+              +5.2%
+            </p>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-percentage"></i>
+            <i class="fas fa-percentage" />
           </div>
           <div class="stat-content">
             <h3>성공률</h3>
-            <p class="stat-number">78.5%</p>
-            <p class="stat-change positive">+2.1%</p>
+            <p class="stat-number">
+              78.5%
+            </p>
+            <p class="stat-change positive">
+              +2.1%
+            </p>
           </div>
         </div>
       </div>
@@ -56,7 +74,7 @@
         <div class="chart-card">
           <h2>월별 영업 현황</h2>
           <div class="chart-placeholder">
-            <i class="fas fa-chart-bar"></i>
+            <i class="fas fa-chart-bar" />
             <p>차트 영역</p>
             <small>실제 구현 시 Chart.js 또는 D3.js 등을 사용하여 차트를 표시합니다.</small>
           </div>
@@ -65,7 +83,7 @@
         <div class="chart-card">
           <h2>고객별 영업 현황</h2>
           <div class="chart-placeholder">
-            <i class="fas fa-pie-chart"></i>
+            <i class="fas fa-pie-chart" />
             <p>파이 차트 영역</p>
             <small>실제 구현 시 Chart.js 또는 D3.js 등을 사용하여 차트를 표시합니다.</small>
           </div>
@@ -345,59 +363,59 @@ const recentSales = ref([
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   .stat-card {
     padding: 1rem;
   }
-  
+
   .stat-icon {
     width: 40px;
     height: 40px;
     font-size: 1.25rem;
   }
-  
+
   .stat-content h3 {
     font-size: 0.875rem;
   }
-  
+
   .stat-number {
     font-size: 1.5rem;
   }
-  
+
   .chart-section {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   .chart-card {
     padding: 1rem;
   }
-  
+
   .chart-placeholder {
     height: 200px;
   }
-  
+
   .chart-placeholder i {
     font-size: 2rem;
   }
-  
+
   .chart-placeholder p {
     font-size: 1rem;
   }
-  
+
   .table-section {
     padding: 1rem;
   }
-  
+
   .data-table {
     font-size: 0.75rem;
   }
-  
+
   .data-table th,
   .data-table td {
     padding: 0.5rem;
   }
-  
+
   /* 모바일에서 숨길 컬럼들 */
   .data-table th:nth-child(2),
   .data-table th:nth-child(3),

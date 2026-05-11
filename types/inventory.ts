@@ -113,12 +113,21 @@ export interface TransferRequest {
   fromWarehouseId: number
   /** 도착 창고 ID */
   toWarehouseId: number
+  /** SKU ID (단일 이동 시) */
+  skuId?: string
+  /** 이동 수량 (단일 이동 시) */
+  quantity?: number
+  /** 비고 */
+  remarks?: string
+  /** 다중 품목 이동 */
+  items?: TransferItem[]
+}
+
+export interface TransferItem {
   /** SKU ID */
   skuId: string
   /** 이동 수량 */
   quantity: number
-  /** 비고 */
-  remarks?: string
 }
 
 /**

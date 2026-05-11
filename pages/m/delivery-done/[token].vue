@@ -2,38 +2,38 @@
   <div class="mobile-delivery-done" :data-view="currentView">
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-screen">
-      <div class="loading-spinner"></div>
+      <div class="loading-spinner" />
       <p>서명 정보를 불러오는 중...</p>
     </div>
 
     <!-- 에러 상태: 이미 완료 -->
     <div v-else-if="errorType === 'completed'" class="completed-screen">
-      <i class="fas fa-check-circle"></i>
+      <i class="fas fa-check-circle" />
       <h2>해당 작업은 이미 완료되었습니다.</h2>
       <p>본인이 하신 것이 아니라면,<br>관리자에게 링크를 재요청해주세요.</p>
       <button class="btn-close-page" @click="closePage">
-        <i class="fas fa-times"></i>
+        <i class="fas fa-times" />
         닫기
       </button>
     </div>
 
     <!-- 에러 상태: 링크 만료 -->
     <div v-else-if="errorType === 'expired'" class="error-screen">
-      <i class="fas fa-clock" style="color: #f59e0b;"></i>
+      <i class="fas fa-clock" style="color: #f59e0b;" />
       <h2>서명 링크가 만료되었습니다.</h2>
       <p>관리자에게 새 서명 링크를 요청해주세요.</p>
     </div>
 
     <!-- 에러 상태: 기타 오류 -->
     <div v-else-if="error" class="error-screen">
-      <i class="fas fa-exclamation-triangle"></i>
+      <i class="fas fa-exclamation-triangle" />
       <h2>{{ error }}</h2>
       <p>관리자에게 문의해주세요.</p>
     </div>
 
     <!-- 완료 상태 -->
     <div v-else-if="isCompleted" class="completed-screen">
-      <i class="fas fa-check-circle"></i>
+      <i class="fas fa-check-circle" />
       <h2>서명이 완료되었습니다</h2>
       <p>감사합니다!</p>
       <div class="completed-info">
@@ -42,20 +42,20 @@
       </div>
       <div class="next-step-info">
         <div v-if="needsOtherSignature" class="pending-notice">
-          <i class="fas fa-clock"></i>
+          <i class="fas fa-clock" />
           <p>{{ otherSignatureMessage }}</p>
         </div>
         <div v-else class="all-done-notice">
-          <i class="fas fa-thumbs-up"></i>
+          <i class="fas fa-thumbs-up" />
           <p>모든 서명이 완료되었습니다. PDF가 자동 생성됩니다.</p>
         </div>
       </div>
       <p v-if="autoCloseCountdown > 0" class="auto-close-notice">
-        <i class="fas fa-clock"></i>
+        <i class="fas fa-clock" />
         {{ autoCloseCountdown }}초 후 자동으로 닫힙니다...
       </p>
       <button class="btn-close-page" @click="closePage">
-        <i class="fas fa-times"></i>
+        <i class="fas fa-times" />
         닫기
       </button>
     </div>
@@ -64,19 +64,19 @@
     <div v-else class="delivery-content">
       <!-- 헤더 -->
       <div class="mobile-header">
-        <img src="/images/common/logo.png" alt="LEADPOWER" class="logo" />
+        <img src="/images/common/logo.png" alt="LEADPOWER" class="logo">
         <h1>납품완료계 서명</h1>
       </div>
 
       <!-- 역할 표시 배지 -->
       <div class="role-badge" :class="getRecipientTypeBadgeClass(deliveryDoneInfo?.recipientType)">
-        <i :class="getRecipientTypeIcon(deliveryDoneInfo?.recipientType)"></i>
+        <i :class="getRecipientTypeIcon(deliveryDoneInfo?.recipientType)" />
         <span>{{ getRecipientTypeText(deliveryDoneInfo?.recipientType) }}</span>
       </div>
 
       <!-- 발주 정보 -->
       <section class="info-section">
-        <h2><i class="fas fa-file-contract"></i> 발주 정보</h2>
+        <h2><i class="fas fa-file-contract" /> 발주 정보</h2>
         <div class="info-grid-simple">
           <div class="info-row">
             <span class="label">납품요구번호</span>
@@ -103,41 +103,70 @@
 
       <!-- 요약 정보 -->
       <section class="info-section">
-        <h2><i class="fas fa-chart-bar"></i> 요약 정보</h2>
+        <h2><i class="fas fa-chart-bar" /> 요약 정보</h2>
         <div class="summary-cards">
           <div class="summary-card">
-            <div class="card-value">{{ deliveryDoneInfo?.items?.length ?? 0 }}개</div>
-            <div class="card-label">품목 수</div>
+            <div class="card-value">
+              {{ deliveryDoneInfo?.items?.length ?? 0 }}개
+            </div>
+            <div class="card-label">
+              품목 수
+            </div>
           </div>
           <div class="summary-card">
-            <div class="card-value">{{ formatQuantity(calculatedOrderedQuantity) }}</div>
-            <div class="card-label">발주 수량</div>
+            <div class="card-value">
+              {{ formatQuantity(calculatedOrderedQuantity) }}
+            </div>
+            <div class="card-label">
+              발주 수량
+            </div>
           </div>
           <div class="summary-card">
-            <div class="card-value">{{ formatQuantity(calculatedDeliveredQuantity) }}</div>
-            <div class="card-label">납품 수량</div>
+            <div class="card-value">
+              {{ formatQuantity(calculatedDeliveredQuantity) }}
+            </div>
+            <div class="card-label">
+              납품 수량
+            </div>
           </div>
         </div>
       </section>
 
       <!-- 품목 리스트 -->
       <section class="info-section">
-        <h2><i class="fas fa-box"></i> 품목 리스트 ({{ deliveryDoneInfo?.items?.length ?? 0 }}개)</h2>
+        <h2><i class="fas fa-box" /> 품목 리스트 ({{ deliveryDoneInfo?.items?.length ?? 0 }}개)</h2>
         <table class="items-table">
           <thead>
             <tr>
-              <th class="text-center">품목</th>
-              <th class="text-center">규격</th>
-              <th class="text-right">수량</th>
-              <th class="text-center">비고</th>
+              <th class="text-center">
+                품목
+              </th>
+              <th class="text-center">
+                규격
+              </th>
+              <th class="text-right">
+                수량
+              </th>
+              <th class="text-center">
+                비고
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index) in deliveryDoneInfo?.items" :key="item.itemId"
-                :class="{ 'row-merge-source': (item?.orderedQuantity ?? 0) === 0 }">
-              <td class="text-center">{{ item.itemName ?? '-' }}</td>
-              <td class="text-center spec-cell">{{ extractSpecification(item.specification) }}</td>
-              <td class="text-right">{{ formatQuantity(item.orderedQuantity) }} {{ item.unit ?? '' }}</td>
+            <tr
+              v-for="(item, index) in deliveryDoneInfo?.items"
+              :key="item.itemId"
+              :class="{ 'row-merge-source': (item?.orderedQuantity ?? 0) === 0 }"
+            >
+              <td class="text-center">
+                {{ item.itemName ?? '-' }}
+              </td>
+              <td class="text-center spec-cell">
+                {{ extractSpecification(item.specification) }}
+              </td>
+              <td class="text-right">
+                {{ formatQuantity(item.orderedQuantity) }} {{ item.unit ?? '' }}
+              </td>
               <td class="text-center remark-cell">
                 <span v-if="getMergeLabel(item?.remarks)" class="merge-badge" :style="{ backgroundColor: getMergeLabel(item?.remarks)?.color }">
                   {{ getMergeLabel(item?.remarks)?.label }}
@@ -152,7 +181,7 @@
       <!-- 서명 섹션 -->
       <section class="info-section signature-section">
         <h2>
-          <i :class="getRecipientTypeIcon(deliveryDoneInfo?.recipientType)"></i>
+          <i :class="getRecipientTypeIcon(deliveryDoneInfo?.recipientType)" />
           {{ getRecipientTypeText(deliveryDoneInfo?.recipientType) }} 서명
         </h2>
 
@@ -162,15 +191,15 @@
         <!-- 안내 메시지 (간소화) -->
         <div class="signature-notice">
           <p v-if="deliveryDoneInfo?.recipientType === 'SITE_MANAGER'">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             현장소장님, 서명판에 직접 서명 → '서명 저장' 버튼 클릭 → '서명 완료' 버튼 클릭으로 제출해주세요.
           </p>
           <p v-else-if="deliveryDoneInfo?.recipientType === 'SITE_INSPECTOR'">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             현장감리원님, 서명판에 직접 서명 → '서명 저장' 버튼 클릭 → '서명 완료' 버튼 클릭으로 제출해주세요.
           </p>
           <p v-else>
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             담당자님, 서명판에 직접 서명 → '서명 저장' 버튼 클릭 → '서명 완료' 버튼 클릭으로 제출해주세요.
           </p>
         </div>
@@ -178,9 +207,9 @@
 
       <!-- 제출 버튼 -->
       <div class="submit-section">
-        <button class="btn-submit" @click="handleSubmit" :disabled="submitting || !hasSignature">
-          <i v-if="submitting" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-check"></i>
+        <button class="btn-submit" :disabled="submitting || !hasSignature" @click="handleSubmit">
+          <i v-if="submitting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-check" />
           {{ submitting ? '제출 중...' : '서명 완료' }}
         </button>
       </div>
@@ -203,7 +232,7 @@ import UiMobileSignatureCanvas from '~/components/ui/mobile/SignatureCanvas.vue'
 definePageMeta({
   layout: false,
   pageTitle: '납품완료계 서명',
-  middleware: []  // 공개 페이지 - 모든 미들웨어 비활성화
+  middleware: [] // 공개 페이지 - 모든 미들웨어 비활성화
 })
 
 const route = useRoute()
@@ -212,7 +241,7 @@ const token = route.params.token as string
 // 디버그 모드 (개발 환경에서만 로그 출력)
 const DEBUG = process.env.NODE_ENV === 'development'
 const debugLog = (...args: any[]) => {
-  if (DEBUG) console.log('[DeliveryDone]', ...args)
+  if (DEBUG) { console.log('[DeliveryDone]', ...args) }
 }
 
 // 상태 관리
@@ -231,12 +260,12 @@ const signatureRef = ref<InstanceType<typeof UiMobileSignatureCanvas> | null>(nu
 
 // 계산된 값
 const needsOtherSignature = computed(() => {
-  if (!deliveryDoneInfo.value) return false
+  if (!deliveryDoneInfo.value) { return false }
 
   // Stage 2 (납품완료계): 감리원 1명만 서명 → 다른 서명 불필요
-  const isStage2 = deliveryDoneInfo.value.st1ManagerSignaturePath
-    && deliveryDoneInfo.value.st1InspectorSignaturePath
-  if (isStage2) return false
+  const isStage2 = deliveryDoneInfo.value.st1ManagerSignaturePath &&
+    deliveryDoneInfo.value.st1InspectorSignaturePath
+  if (isStage2) { return false }
 
   // Stage 1 (납품확인서): 현장소장 + 감리원 2인 서명
   if (deliveryDoneInfo.value.recipientType === 'SITE_MANAGER') {
@@ -247,7 +276,7 @@ const needsOtherSignature = computed(() => {
 })
 
 const otherSignatureMessage = computed(() => {
-  if (!deliveryDoneInfo.value) return ''
+  if (!deliveryDoneInfo.value) { return '' }
   if (deliveryDoneInfo.value.recipientType === 'SITE_MANAGER') {
     return '현장감리원 서명을 기다리고 있습니다.'
   } else {
@@ -276,7 +305,7 @@ const currentView = computed(() => {
 
 // 합지 배지 라벨 추출
 const getMergeLabel = (remarks: string | null | undefined): { label: string; color: string } | null => {
-  if (!remarks) return null
+  if (!remarks) { return null }
 
   // 합지 결과 품목 (타겟)
   if (remarks.includes('에서 병합됨') || remarks.includes('추가 병합')) {
@@ -292,42 +321,42 @@ const getMergeLabel = (remarks: string | null | undefined): { label: string; col
 }
 
 // 규격 문자열에서 마지막 부분만 추출 (쉼표로 분리)
-function extractSpecification(specification: string | null | undefined): string {
-  if (!specification) return '-'
+function extractSpecification (specification: string | null | undefined): string {
+  if (!specification) { return '-' }
   const parts = specification.split(',')
   return parts[parts.length - 1].trim() || specification
 }
 
 // 요약 정보 계산 (items 배열로부터)
 const calculatedOrderedQuantity = computed(() => {
-  if (!deliveryDoneInfo.value?.items) return 0
+  if (!deliveryDoneInfo.value?.items) { return 0 }
   return deliveryDoneInfo.value.items.reduce((sum, item) => sum + (item.orderedQuantity ?? 0), 0)
 })
 
 const calculatedDeliveredQuantity = computed(() => {
-  if (!deliveryDoneInfo.value?.items) return 0
+  if (!deliveryDoneInfo.value?.items) { return 0 }
   return deliveryDoneInfo.value.items.reduce((sum, item) => sum + (item.deliveredQuantity ?? 0), 0)
 })
 
 // RecipientType 텍스트 (신규 - recipientType 기반)
-function getRecipientTypeText(recipientType?: RecipientType): string {
-  if (!recipientType) return '-'
-  if (recipientType === 'SITE_MANAGER') return '현장소장'
-  if (recipientType === 'SITE_INSPECTOR') return '현장감리원'
+function getRecipientTypeText (recipientType?: RecipientType): string {
+  if (!recipientType) { return '-' }
+  if (recipientType === 'SITE_MANAGER') { return '현장소장' }
+  if (recipientType === 'SITE_INSPECTOR') { return '현장감리원' }
   return '-'
 }
 
 // RecipientType 아이콘 (신규 - recipientType 기반)
-function getRecipientTypeIcon(recipientType?: RecipientType): string {
-  if (recipientType === 'SITE_MANAGER') return 'fas fa-user-tie'
-  if (recipientType === 'SITE_INSPECTOR') return 'fas fa-user-check'
+function getRecipientTypeIcon (recipientType?: RecipientType): string {
+  if (recipientType === 'SITE_MANAGER') { return 'fas fa-user-tie' }
+  if (recipientType === 'SITE_INSPECTOR') { return 'fas fa-user-check' }
   return 'fas fa-user'
 }
 
 // RecipientType 배지 클래스 (신규 - recipientType 기반)
-function getRecipientTypeBadgeClass(recipientType?: RecipientType): string {
-  if (recipientType === 'SITE_MANAGER') return 'role-site-manager'
-  if (recipientType === 'SITE_INSPECTOR') return 'role-site-inspector'
+function getRecipientTypeBadgeClass (recipientType?: RecipientType): string {
+  if (recipientType === 'SITE_MANAGER') { return 'role-site-manager' }
+  if (recipientType === 'SITE_INSPECTOR') { return 'role-site-inspector' }
   return ''
 }
 
@@ -380,16 +409,26 @@ onMounted(async () => {
     console.log('✅ [DEBUG] recipientType === "SITE_MANAGER":', deliveryDoneInfo.value?.recipientType === 'SITE_MANAGER')
     console.log('✅ [DEBUG] recipientType === "SITE_INSPECTOR":', deliveryDoneInfo.value?.recipientType === 'SITE_INSPECTOR')
 
-    // 현재 역할의 서명이 이미 완료된 경우
-    if (
-      (deliveryDoneInfo.value.recipientType === 'SITE_MANAGER' && deliveryDoneInfo.value.hasContractorSignature) ||
-      (deliveryDoneInfo.value.recipientType === 'SITE_INSPECTOR' && deliveryDoneInfo.value.hasSupervisorSignature)
-    ) {
-      console.log('✅ [DEBUG] 이미 서명 완료된 상태 - isCompleted = true')
+    // 현재 역할의 서명이 이미 완료된 경우 (Stage 구분 필요)
+    // - Stage 1 (납품확인서): 현장소장=st1_manager, 감리원=st1_inspector
+    // - Stage 2 (납품완료계): st1 모두 채움 + 감리원 재서명은 st2_inspector 기준
+    const st1Complete = !!(deliveryDoneInfo.value.st1ManagerSignaturePath &&
+                        deliveryDoneInfo.value.st1InspectorSignaturePath)
+
+    const alreadySigned =
+      (deliveryDoneInfo.value.recipientType === 'SITE_MANAGER' &&
+         !!deliveryDoneInfo.value.st1ManagerSignaturePath) ||
+      (deliveryDoneInfo.value.recipientType === 'SITE_INSPECTOR' && !st1Complete &&
+         !!deliveryDoneInfo.value.st1InspectorSignaturePath) ||
+      (deliveryDoneInfo.value.recipientType === 'SITE_INSPECTOR' && st1Complete &&
+         !!deliveryDoneInfo.value.st2InspectorSignaturePath)
+
+    if (alreadySigned) {
+      console.log('✅ [DEBUG] 이미 서명 완료된 상태 - isCompleted = true (st1Complete=' + st1Complete + ')')
       isCompleted.value = true
       completedAt.value = new Date().toLocaleString('ko-KR')
     } else {
-      console.log('✅ [DEBUG] 서명 대기 상태 - 메인 컨텐츠 표시')
+      console.log('✅ [DEBUG] 서명 대기 상태 - 메인 컨텐츠 표시 (st1Complete=' + st1Complete + ')')
     }
   } catch (err) {
     console.error('❌ [DEBUG] 납품완료계 정보 로드 실패:', err)
@@ -416,7 +455,7 @@ onMounted(async () => {
 })
 
 // 서명 저장 (별도 저장 - 운송장과 동일한 로직)
-async function handleSignatureSave(blob: Blob) {
+async function handleSignatureSave (blob: Blob) {
   try {
     console.log('🔵 [DEBUG] 서명 저장 (Blob):', blob)
 
@@ -429,8 +468,8 @@ async function handleSignatureSave(blob: Blob) {
     console.log('🔵 [DEBUG] 서버 저장 시작 - recipientType:', deliveryDoneInfo.value.recipientType)
     const result = await submitSignature(
       token,
-      blob,  // ✅ Blob 직접 전송
-      deliveryDoneInfo.value.recipientType  // ✅ recipientType 별도 파라미터
+      blob, // ✅ Blob 직접 전송
+      deliveryDoneInfo.value.recipientType // ✅ recipientType 별도 파라미터
     )
     console.log('✅ [DEBUG] 서버 응답:', result)
 
@@ -449,7 +488,7 @@ async function handleSignatureSave(blob: Blob) {
 }
 
 // 서명 완료 (서명은 이미 handleSignatureSave에서 저장됨)
-async function handleSubmit() {
+async function handleSubmit () {
   console.log('🔵 [DEBUG] handleSubmit 시작')
 
   if (!deliveryDoneInfo.value || !signatureRef.value) {
@@ -505,7 +544,7 @@ async function handleSubmit() {
 }
 
 // 페이지 닫기
-function closePage() {
+function closePage () {
   // window.close()는 window.open()으로 열린 창에서만 동작
   // 모바일 SMS 링크에서 열린 경우 동작하지 않으므로 카운트다운만 표시
   try {

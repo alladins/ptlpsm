@@ -3,12 +3,14 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       title="기성청구"
+      icon="order"
+      icon-color="blue"
       description="납품요구별 기성 현황(선급금/기성금/잔금)을 조회하고 관리합니다."
     >
       <template #actions>
-        <button class="btn-action" @click="handleSearch" :disabled="loading">
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-search"></i>
+        <button class="btn-action" :disabled="loading" @click="handleSearch">
+          <i v-if="loading" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-search" />
           검색
         </button>
       </template>
@@ -19,38 +21,54 @@
       <div class="stats-cards">
         <div class="stat-card">
           <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <i class="fas fa-file-contract"></i>
+            <i class="fas fa-file-contract" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">총 계약금액</div>
-            <div class="stat-value">{{ formatCurrency(summaryData.totalContractAmount) }}</div>
+            <div class="stat-label">
+              총 계약금액
+            </div>
+            <div class="stat-value">
+              {{ formatCurrency(summaryData.totalContractAmount) }}
+            </div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-            <i class="fas fa-coins"></i>
+            <i class="fas fa-coins" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">수금 누계</div>
-            <div class="stat-value">{{ formatCurrency(summaryData.totalCollected) }}</div>
+            <div class="stat-label">
+              수금 누계
+            </div>
+            <div class="stat-value">
+              {{ formatCurrency(summaryData.totalCollected) }}
+            </div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="fas fa-exclamation-circle" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">미수금</div>
-            <div class="stat-value text-danger">{{ formatCurrency(summaryData.totalOutstanding) }}</div>
+            <div class="stat-label">
+              미수금
+            </div>
+            <div class="stat-value text-danger">
+              {{ formatCurrency(summaryData.totalOutstanding) }}
+            </div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <i class="fas fa-truck"></i>
+            <i class="fas fa-truck" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">OEM 지급액</div>
-            <div class="stat-value">{{ formatCurrency(summaryData.totalOemPaid) }}</div>
+            <div class="stat-label">
+              OEM 지급액
+            </div>
+            <div class="stat-value">
+              {{ formatCurrency(summaryData.totalOemPaid) }}
+            </div>
           </div>
         </div>
       </div>
@@ -61,17 +79,17 @@
           <!-- 조회기간 -->
           <div class="search-item">
             <label>조회기간:</label>
-            <input type="date" v-model="searchForm.startDate" class="date-input">
+            <input v-model="searchForm.startDate" type="date" class="date-input">
             <span class="separator">~</span>
-            <input type="date" v-model="searchForm.endDate" class="date-input">
+            <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
           <!-- 납품요구번호 -->
           <div class="search-item">
             <label>납품요구번호:</label>
             <input
-              type="text"
               v-model="searchForm.deliveryRequestNo"
+              type="text"
               placeholder="납품요구번호"
               class="text-input"
               @keyup.enter="handleSearch"
@@ -82,8 +100,8 @@
           <div class="search-item">
             <label>사업명:</label>
             <input
-              type="text"
               v-model="searchForm.projectName"
+              type="text"
               placeholder="사업명"
               class="text-input"
               @keyup.enter="handleSearch"
@@ -94,29 +112,37 @@
           <div class="search-item">
             <label>상태:</label>
             <select v-model="searchForm.status" class="select-input">
-              <option value="">전체</option>
-              <option value="ACTIVE">진행중</option>
-              <option value="COMPLETED">완료</option>
-              <option value="CANCELLED">취소</option>
+              <option value="">
+                전체
+              </option>
+              <option value="ACTIVE">
+                진행중
+              </option>
+              <option value="COMPLETED">
+                완료
+              </option>
+              <option value="CANCELLED">
+                취소
+              </option>
             </select>
           </div>
 
           <!-- 수금구성 범례 -->
           <div class="collection-legend">
             <div class="legend-item">
-              <span class="legend-color advance"></span>
+              <span class="legend-color advance" />
               <span>선급금</span>
             </div>
             <div class="legend-item">
-              <span class="legend-color progress-payment"></span>
+              <span class="legend-color progress-payment" />
               <span>기성금</span>
             </div>
             <div class="legend-item">
-              <span class="legend-color balance"></span>
+              <span class="legend-color balance" />
               <span>잔금</span>
             </div>
             <div class="legend-item">
-              <span class="legend-color remaining"></span>
+              <span class="legend-color remaining" />
               <span>미수금</span>
             </div>
           </div>
@@ -131,17 +157,23 @@
             <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
-            <select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="10">10개씩</option>
-              <option :value="20">20개씩</option>
-              <option :value="50">50개씩</option>
+            <select v-model="pageSize" class="page-size-select" @change="handlePageSizeChange">
+              <option :value="10">
+                10개씩
+              </option>
+              <option :value="20">
+                20개씩
+              </option>
+              <option :value="50">
+                50개씩
+              </option>
             </select>
           </div>
         </div>
 
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <p>데이터를 불러오는 중...</p>
         </div>
 
@@ -150,16 +182,34 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 50px;">No</th>
-                <th style="width: 160px;">납품요구번호</th>
+                <th style="width: 50px;">
+                  No
+                </th>
+                <th style="width: 160px;">
+                  납품요구번호
+                </th>
                 <th>사업명</th>
-                <th style="width: 130px;">선급금</th>
-                <th style="width: 130px;">기성금 누계</th>
-                <th style="width: 130px;">잔금</th>
-                <th style="width: 140px;">수금률</th>
-                <th style="width: 100px;">납품율</th>
-                <th style="width: 140px;">수금구성</th>
-                <th style="width: 80px;">자금상태</th>
+                <th style="width: 130px;">
+                  선급금
+                </th>
+                <th style="width: 130px;">
+                  기성금 누계
+                </th>
+                <th style="width: 130px;">
+                  잔금
+                </th>
+                <th style="width: 140px;">
+                  수금률
+                </th>
+                <th style="width: 100px;">
+                  납품율
+                </th>
+                <th style="width: 140px;">
+                  수금구성
+                </th>
+                <th style="width: 80px;">
+                  자금상태
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -171,10 +221,18 @@
               >
                 <td>{{ startIndex + index }}</td>
                 <td>{{ item.deliveryRequestNo }}</td>
-                <td class="text-left">{{ item.projectName || item.siteName }}</td>
-                <td class="text-right">{{ formatCurrency(item.advancePaymentAmount || item.advancePayment || 0) }}</td>
-                <td class="text-right">{{ formatCurrency(item.progressPaymentTotal || 0) }}</td>
-                <td class="text-right">{{ formatCurrency(item.balancePayment || item.balanceAmount || 0) }}</td>
+                <td class="text-left">
+                  {{ item.projectName || item.siteName }}
+                </td>
+                <td class="text-right">
+                  {{ formatCurrency(item.advancePaymentAmount || item.advancePayment || 0) }}
+                </td>
+                <td class="text-right">
+                  {{ formatCurrency(item.progressPaymentTotal || 0) }}
+                </td>
+                <td class="text-right">
+                  {{ formatCurrency(item.balancePayment || item.balanceAmount || 0) }}
+                </td>
                 <td class="text-center">
                   <div class="progress-cell">
                     <div class="progress-bar-mini">
@@ -182,7 +240,7 @@
                         class="progress-fill"
                         :style="{ width: getCollectionRate(item) + '%' }"
                         :class="getProgressClass(getCollectionRate(item))"
-                      ></div>
+                      />
                     </div>
                     <span class="progress-text">{{ getCollectionRate(item).toFixed(1) }}%</span>
                   </div>
@@ -194,7 +252,7 @@
                         class="progress-fill"
                         :style="{ width: getDeliveryRate(item) + '%' }"
                         :class="getProgressClass(getDeliveryRate(item))"
-                      ></div>
+                      />
                     </div>
                     <span class="progress-text">{{ getDeliveryRate(item).toFixed(1) }}%</span>
                   </div>
@@ -218,7 +276,7 @@
 
           <!-- 데이터가 없을 때 -->
           <div v-if="fundList.length === 0" class="no-data-message">
-            <i class="fas fa-folder-open"></i>
+            <i class="fas fa-folder-open" />
             <p>등록된 자금 정보가 없습니다.</p>
           </div>
         </div>
@@ -307,7 +365,7 @@ const totalPages = computed(() => fundStore.pagination.totalPages)
 const currentPage = computed(() => fundStore.pagination.page)
 
 const startIndex = computed(() => {
-  if (totalElements.value === 0) return 0
+  if (totalElements.value === 0) { return 0 }
   return currentPage.value * pageSize.value + 1
 })
 
@@ -356,7 +414,7 @@ const handlePageChange = async (page: number) => {
     deliveryRequestNo: searchForm.value.deliveryRequestNo || undefined,
     projectName: searchForm.value.projectName || undefined,
     status: searchForm.value.status || undefined,
-    page: page,
+    page,
     size: pageSize.value
   })
 }
@@ -387,9 +445,9 @@ const getDeliveryRate = (item: FundListItem): number => {
  * 진행률에 따른 CSS 클래스
  */
 const getProgressClass = (rate: number): string => {
-  if (rate >= 100) return 'progress-complete'
-  if (rate >= 70) return 'progress-high'
-  if (rate >= 40) return 'progress-medium'
+  if (rate >= 100) { return 'progress-complete' }
+  if (rate >= 70) { return 'progress-high' }
+  if (rate >= 40) { return 'progress-medium' }
   return 'progress-low'
 }
 
@@ -397,7 +455,7 @@ const getProgressClass = (rate: number): string => {
  * 상태 배지 클래스
  */
 const getStatusClass = (status?: FundStatus): string => {
-  if (!status) return ''
+  if (!status) { return '' }
   switch (status) {
     case 'ACTIVE':
       return 'status-in-progress'
@@ -414,7 +472,7 @@ const getStatusClass = (status?: FundStatus): string => {
  * 상태 라벨
  */
 const getStatusLabel = (status?: FundStatus): string => {
-  if (!status) return '-'
+  if (!status) { return '-' }
   return FUND_STATUS_LABELS[status] || status
 }
 
@@ -422,7 +480,7 @@ const getStatusLabel = (status?: FundStatus): string => {
  * 주문(납품) 상태 라벨
  */
 const getOrderStatusLabel = (status?: string): string => {
-  if (!status) return '-'
+  if (!status) { return '-' }
   return ORDER_STATUS_LABELS[status as OrderStatus] || status
 }
 
@@ -430,7 +488,7 @@ const getOrderStatusLabel = (status?: string): string => {
  * 주문(납품) 상태 배지 클래스
  */
 const getOrderStatusClass = (status?: string): string => {
-  if (!status) return ''
+  if (!status) { return '' }
   switch (status) {
     case 'PENDING':
       return 'status-pending'

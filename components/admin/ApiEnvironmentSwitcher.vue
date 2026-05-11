@@ -2,37 +2,37 @@
   <div class="api-environment-switcher">
     <div class="current-mode">
       <span class="mode-label">API 환경:</span>
-      <span 
-        class="mode-value" 
-        :class="{ 
-          'development': currentMode === 'development', 
-          'production': currentMode === 'production' 
+      <span
+        class="mode-value"
+        :class="{
+          'development': currentMode === 'development',
+          'production': currentMode === 'production'
         }"
       >
         {{ currentMode === 'development' ? '개발' : '운영' }}
       </span>
     </div>
-    
+
     <div class="mode-buttons">
-      <button 
-        @click="switchToDevelopment" 
+      <button
         class="mode-button dev-button"
         :class="{ active: currentMode === 'development' }"
         :disabled="currentMode === 'development'"
+        @click="switchToDevelopment"
       >
         개발
       </button>
-      <button 
-        @click="switchToProduction" 
+      <button
         class="mode-button prod-button"
         :class="{ active: currentMode === 'production' }"
         :disabled="currentMode === 'production'"
+        @click="switchToProduction"
       >
         운영
       </button>
-      <button 
-        @click="resetToAuto" 
+      <button
         class="mode-button auto-button"
+        @click="resetToAuto"
       >
         자동
       </button>
@@ -46,7 +46,7 @@ import { apiEnvironment } from '~/services/api'
 
 export default defineComponent({
   name: 'ApiEnvironmentSwitcher',
-  setup() {
+  setup () {
     const currentMode = ref('development')
 
     // 현재 모드 업데이트
@@ -58,10 +58,10 @@ export default defineComponent({
     const switchToDevelopment = () => {
       apiEnvironment.forceDevelopment()
       updateCurrentMode()
-      
+
       // 알림 표시
       alert('API 환경이 개발 모드로 설정되었습니다. 페이지를 새로고침하세요.')
-      
+
       // 페이지 새로고침
       setTimeout(() => {
         window.location.reload()
@@ -72,10 +72,10 @@ export default defineComponent({
     const switchToProduction = () => {
       apiEnvironment.forceProduction()
       updateCurrentMode()
-      
+
       // 알림 표시
       alert('API 환경이 운영 모드로 설정되었습니다. 페이지를 새로고침하세요.')
-      
+
       // 페이지 새로고침
       setTimeout(() => {
         window.location.reload()
@@ -86,10 +86,10 @@ export default defineComponent({
     const resetToAuto = () => {
       localStorage.removeItem('api_environment')
       updateCurrentMode()
-      
+
       // 알림 표시
       alert('API 환경이 자동 감지 모드로 재설정되었습니다. 페이지를 새로고침하세요.')
-      
+
       // 페이지 새로고침
       setTimeout(() => {
         window.location.reload()
@@ -207,4 +207,4 @@ export default defineComponent({
 .auto-button:hover {
   background-color: #fff3cd;
 }
-</style> 
+</style>

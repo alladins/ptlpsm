@@ -1,6 +1,6 @@
 <template>
   <div class="loading-section">
-    <i class="fas fa-spinner fa-spin"></i>
+    <i class="fas fa-spinner fa-spin" />
     <span>{{ message || '데이터를 불러오는 중...' }}</span>
   </div>
 </template>

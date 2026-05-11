@@ -1,9 +1,9 @@
 <template>
   <div class="message-template-edit-page">
-    <PageHeader title="메시지 템플릿 수정" description="메시지 템플릿 정보를 수정합니다">
+    <PageHeader title="메시지 템플릿 수정" icon="default" icon-color="blue" description="메시지 템플릿 정보를 수정합니다">
       <template #actions>
         <button class="btn-secondary" @click="goToList">
-          <i class="ri-arrow-left-line"></i>
+          <i class="ri-arrow-left-line" />
           목록으로
         </button>
       </template>
@@ -11,16 +11,16 @@
 
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-state">
-      <i class="ri-loader-4-line animate-spin"></i>
+      <i class="ri-loader-4-line animate-spin" />
       데이터를 불러오는 중...
     </div>
 
     <!-- 에러 상태 -->
     <div v-else-if="error" class="error-state">
-      <i class="ri-error-warning-line"></i>
+      <i class="ri-error-warning-line" />
       {{ error }}
       <button class="btn-secondary" @click="loadTemplate">
-        <i class="ri-refresh-line"></i>
+        <i class="ri-refresh-line" />
         다시 시도
       </button>
     </div>
@@ -85,7 +85,7 @@ const loadTemplate = async () => {
 }
 
 const handleSubmit = async (data: MessageTemplateUpdateRequest) => {
-  if (!template.value) return
+  if (!template.value) { return }
 
   try {
     await updateMessageTemplate(template.value.templateId, data)

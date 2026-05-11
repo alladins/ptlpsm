@@ -1,91 +1,114 @@
 <template>
   <div class="bank-account">
-    <PageHeader
-      title="계좌조회"
-      description="등록된 계좌 정보와 입출금 내역을 조회합니다."
-    >
-      <template #actions>
-        <button class="btn-action" @click="loadAccounts">
-          <i class="fas fa-sync-alt"></i>
+    <!-- 페이지 헤더 - 컴팩트 -->
+    <div class="page-header-compact">
+      <h1>계좌조회</h1>
+      <span class="page-description">등록된 계좌 정보와 입출금 내역을 조회합니다.</span>
+      <div class="header-actions-right">
+        <button class="btn-refresh" @click="loadAccounts">
+          <i class="fas fa-sync-alt" />
           새로고침
         </button>
-      </template>
-    </PageHeader>
-
+      </div>
+    </div>
     <!-- 계좌 목록 섹션 -->
-    <div class="content-section">
-      <div class="section-header">
-        <h3>계좌 목록</h3>
-        <div class="header-actions">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="availOnlyChecked" @change="loadAccounts" />
-            유효계좌만 조회
-          </label>
-        </div>
+    <div class="table-header">
+      <div class="table-info">
+        계좌 목록
       </div>
+      <div class="table-controls">
+        <label class="checkbox-label">
+          <input v-model="availOnlyChecked" type="checkbox" @change="loadAccounts">
+          유효계좌만 조회
+        </label>
+      </div>
+    </div>
 
-      <!-- 로딩 -->
-      <div v-if="accountsLoading" class="loading-state">
-        <i class="fas fa-spinner fa-spin"></i>
-        <span>계좌 정보를 불러오는 중...</span>
-      </div>
+    <!-- 로딩 -->
+    <div v-if="accountsLoading" class="loading-state">
+      <i class="fas fa-spinner fa-spin" />
+      <span>계좌 정보를 불러오는 중...</span>
+    </div>
 
-      <!-- 에러 -->
-      <div v-else-if="accountsError" class="error-state">
-        <i class="fas fa-exclamation-circle"></i>
-        <span>{{ accountsError }}</span>
-        <button class="btn-retry" @click="loadAccounts">다시 시도</button>
-      </div>
+    <!-- 에러 -->
+    <div v-else-if="accountsError" class="error-state">
+      <i class="fas fa-exclamation-circle" />
+      <span>{{ accountsError }}</span>
+      <button class="btn-retry" @click="loadAccounts">
+        다시 시도
+      </button>
+    </div>
 
-      <!-- 계좌 목록 테이블 -->
-      <div v-else class="table-wrapper">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th style="width: 100px">은행</th>
-              <th style="width: 150px">계좌번호</th>
-              <th style="width: 100px">유형</th>
-              <th style="width: 150px">별칭</th>
-              <th style="width: 120px" class="text-right">잔액</th>
-              <th style="width: 80px" class="text-center">상태</th>
-              <th style="width: 100px">수집주기</th>
-              <th style="width: 100px" class="text-center">마지막수집</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="accounts.length === 0">
-              <td colspan="8" class="empty-row">등록된 계좌가 없습니다.</td>
-            </tr>
-            <tr
-              v-for="account in accounts"
-              :key="account.bankAccountNum"
-              :class="{ selected: selectedAccount?.bankAccountNum === account.bankAccountNum }"
-              @click="selectAccount(account)"
-              class="clickable-row"
-            >
-              <td>{{ getBankName(account.bankCode, account.bankName) }}</td>
-              <td>{{ account.bankAccountNumMasked }}</td>
-              <td>{{ getAccountTypeName(account.bankAccountType, account.bankAccountTypeName) }}</td>
-              <td>{{ account.alias || '-' }}</td>
-              <td class="text-right">{{ formatCurrency(account.balance) }}</td>
-              <td class="text-center">
-                <span class="status-badge" :class="getStatusClass(account.status)">
-                  {{ account.status }}
-                </span>
-              </td>
-              <td>{{ getCollectCycleName(account.collectCycle, account.collectCycleName) }}</td>
-              <td class="text-center">{{ account.lastCollectDate || '-' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <!-- 계좌 목록 테이블 -->
+    <div v-else class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 100px">
+              은행
+            </th>
+            <th style="width: 150px">
+              계좌번호
+            </th>
+            <th style="width: 100px">
+              유형
+            </th>
+            <th style="width: 150px">
+              별칭
+            </th>
+            <th style="width: 120px" class="text-right">
+              잔액
+            </th>
+            <th style="width: 80px" class="text-center">
+              상태
+            </th>
+            <th style="width: 100px">
+              수집주기
+            </th>
+            <th style="width: 100px" class="text-center">
+              마지막수집
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="accounts.length === 0">
+            <td colspan="8" class="empty-row">
+              등록된 계좌가 없습니다.
+            </td>
+          </tr>
+          <tr
+            v-for="account in accounts"
+            :key="account.bankAccountNum"
+            :class="{ selected: selectedAccount?.bankAccountNum === account.bankAccountNum }"
+            class="clickable-row"
+            @click="selectAccount(account)"
+          >
+            <td>{{ getBankName(account.bankCode, account.bankName) }}</td>
+            <td>{{ account.bankAccountNumMasked }}</td>
+            <td>{{ getAccountTypeName(account.bankAccountType, account.bankAccountTypeName) }}</td>
+            <td>{{ account.alias || '-' }}</td>
+            <td class="text-right">
+              {{ formatCurrency(account.balance) }}
+            </td>
+            <td class="text-center">
+              <span class="status-badge" :class="getStatusClass(account.status)">
+                {{ account.status }}
+              </span>
+            </td>
+            <td>{{ getCollectCycleName(account.collectCycle, account.collectCycleName) }}</td>
+            <td class="text-center">
+              {{ account.lastCollectDate || '-' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- 거래내역 섹션 (계좌 선택 시 표시) -->
     <div v-if="selectedAccount" class="content-section">
       <div class="section-header">
         <h3>
-          <i class="fas fa-exchange-alt"></i>
+          <i class="fas fa-exchange-alt" />
           거래내역
           <span class="selected-account-info">
             {{ getBankName(selectedAccount.bankCode, selectedAccount.bankName) }} {{ selectedAccount.bankAccountNum }}
@@ -99,9 +122,9 @@
         <div class="search-row-single">
           <div class="search-item">
             <label>기간:</label>
-            <input type="date" v-model="transSearchForm.startDate" class="date-input" />
+            <input v-model="transSearchForm.startDate" type="date" class="date-input">
             <span class="separator">~</span>
-            <input type="date" v-model="transSearchForm.endDate" class="date-input" />
+            <input v-model="transSearchForm.endDate" type="date" class="date-input">
           </div>
           <div class="search-item">
             <label>구분:</label>
@@ -121,7 +144,7 @@
           </div>
           <div class="search-buttons">
             <button class="btn-search" @click="loadTransactions">
-              <i class="fas fa-search"></i>
+              <i class="fas fa-search" />
               조회
             </button>
           </div>
@@ -130,46 +153,72 @@
 
       <!-- 거래내역 로딩 -->
       <div v-if="transLoading" class="loading-state">
-        <i class="fas fa-spinner fa-spin"></i>
+        <i class="fas fa-spinner fa-spin" />
         <span>거래내역을 불러오는 중...</span>
       </div>
 
       <!-- 거래내역 에러 -->
       <div v-else-if="transError" class="error-state">
-        <i class="fas fa-exclamation-circle"></i>
+        <i class="fas fa-exclamation-circle" />
         <span>{{ transError }}</span>
-        <button class="btn-retry" @click="loadTransactions">다시 시도</button>
+        <button class="btn-retry" @click="loadTransactions">
+          다시 시도
+        </button>
       </div>
 
       <!-- 거래내역 테이블 -->
       <div v-else class="table-wrapper">
         <div class="table-header">
           <span>총 {{ transData.totalCount }}건</span>
-          <select v-model="transSearchForm.size" @change="loadTransactions" class="page-size-select">
-            <option :value="10">10건</option>
-            <option :value="20">20건</option>
-            <option :value="50">50건</option>
+          <select v-model="transSearchForm.size" class="page-size-select" @change="loadTransactions">
+            <option :value="10">
+              10건
+            </option>
+            <option :value="20">
+              20건
+            </option>
+            <option :value="50">
+              50건
+            </option>
           </select>
         </div>
 
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 150px" class="text-center">거래일시</th>
-              <th style="width: 60px" class="text-center">구분</th>
-              <th style="width: 120px" class="text-right">금액</th>
-              <th style="width: 120px" class="text-right">잔액</th>
-              <th style="width: 150px">거래처</th>
-              <th style="width: 200px">적요</th>
-              <th style="width: 150px">메모</th>
+              <th style="width: 150px" class="text-center">
+                거래일시
+              </th>
+              <th style="width: 60px" class="text-center">
+                구분
+              </th>
+              <th style="width: 120px" class="text-right">
+                금액
+              </th>
+              <th style="width: 120px" class="text-right">
+                잔액
+              </th>
+              <th style="width: 150px">
+                거래처
+              </th>
+              <th style="width: 200px">
+                적요
+              </th>
+              <th style="width: 150px">
+                메모
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="transData.transactions.length === 0">
-              <td colspan="7" class="empty-row">거래내역이 없습니다.</td>
+              <td colspan="7" class="empty-row">
+                거래내역이 없습니다.
+              </td>
             </tr>
             <tr v-for="trans in transData.transactions" :key="trans.transRefKey">
-              <td class="text-center">{{ formatTransDateTime(trans.transDateTime) }}</td>
+              <td class="text-center">
+                {{ formatTransDateTime(trans.transDateTime) }}
+              </td>
               <td class="text-center">
                 <span class="trans-type" :class="getTransTypeClass(trans.transTypeCode)">
                   {{ getTransTypeName(trans.transTypeCode) }}
@@ -178,7 +227,9 @@
               <td class="text-right" :class="getAmountClass(trans.transTypeCode)">
                 {{ formatCurrency(trans.amount) }}
               </td>
-              <td class="text-right">{{ formatCurrency(trans.balance) }}</td>
+              <td class="text-right">
+                {{ formatCurrency(trans.balance) }}
+              </td>
               <td>{{ trans.counterpartName || '-' }}</td>
               <td>{{ trans.description || '-' }}</td>
               <td>{{ trans.memo || '-' }}</td>
@@ -200,7 +251,7 @@
     <!-- 계좌 미선택 안내 -->
     <div v-else class="content-section empty-section">
       <div class="empty-message">
-        <i class="fas fa-hand-pointer"></i>
+        <i class="fas fa-hand-pointer" />
         <p>계좌를 선택하면 거래내역을 조회할 수 있습니다.</p>
       </div>
     </div>
@@ -229,28 +280,28 @@ const bankCodeMap = ref<Record<string, string>>({})
 
 // 계좌 유형 매핑
 const BANK_ACCOUNT_TYPE_MAP: Record<string, string> = {
-  'COMPANY': '법인계좌',
-  'C': '법인계좌',
-  'PERSONAL': '개인계좌',
-  'P': '개인계좌'
+  COMPANY: '법인계좌',
+  C: '법인계좌',
+  PERSONAL: '개인계좌',
+  P: '개인계좌'
 }
 
 // 거래 유형 매핑 (입금/출금)
 const TRANS_TYPE_MAP: Record<string, string> = {
-  '1': '출금',
-  '2': '입금'
+  1: '출금',
+  2: '입금'
 }
 
 // 수집주기 매핑
 const COLLECT_CYCLE_MAP: Record<string, string> = {
-  'MINUTE10': '10분',
-  'MINUTE30': '30분',
-  'HOUR1': '1시간',
-  'HOUR3': '3시간',
-  'HOUR6': '6시간',
-  'HOUR12': '12시간',
-  'DAY1': '1일',
-  'REALTIME': '실시간'
+  MINUTE10: '10분',
+  MINUTE30: '30분',
+  HOUR1: '1시간',
+  HOUR3: '3시간',
+  HOUR6: '6시간',
+  HOUR12: '12시간',
+  DAY1: '1일',
+  REALTIME: '실시간'
 }
 
 // 계좌 목록 상태
@@ -282,19 +333,19 @@ const transSearchForm = reactive({
 })
 
 // 기본 시작일 (7일 전)
-function getDefaultStartDate(): string {
+function getDefaultStartDate (): string {
   const date = new Date()
   date.setDate(date.getDate() - 7)
   return formatDateForInput(date)
 }
 
 // 기본 종료일 (오늘)
-function getDefaultEndDate(): string {
+function getDefaultEndDate (): string {
   return formatDateForInput(new Date())
 }
 
 // 날짜를 input용 문자열로 변환 (로컬 타임존 기준)
-function formatDateForInput(date: Date): string {
+function formatDateForInput (date: Date): string {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
@@ -302,12 +353,12 @@ function formatDateForInput(date: Date): string {
 }
 
 // 날짜를 API용 문자열로 변환 (YYYYMMDD)
-function formatDateForApi(dateStr: string): string {
+function formatDateForApi (dateStr: string): string {
   return dateStr.replace(/-/g, '')
 }
 
 // 계좌 목록 조회
-async function loadAccounts() {
+async function loadAccounts () {
   accountsLoading.value = true
   accountsError.value = null
 
@@ -340,15 +391,15 @@ async function loadAccounts() {
 }
 
 // 계좌 선택
-function selectAccount(account: BankAccount) {
+function selectAccount (account: BankAccount) {
   selectedAccount.value = account
   resetTransSearch()
   loadTransactions()
 }
 
 // 거래내역 조회
-async function loadTransactions() {
-  if (!selectedAccount.value) return
+async function loadTransactions () {
+  if (!selectedAccount.value) { return }
 
   transLoading.value = true
   transError.value = null
@@ -361,7 +412,7 @@ async function loadTransactions() {
         endDate: formatDateForApi(transSearchForm.endDate),
         transDirection: transSearchForm.transDirection,
         orderDirection: transSearchForm.orderDirection,
-        page: transSearchForm.page + 1,  // Barobill API는 1-indexed
+        page: transSearchForm.page + 1, // Barobill API는 1-indexed
         size: transSearchForm.size
       }
     )
@@ -386,7 +437,7 @@ async function loadTransactions() {
 }
 
 // 거래내역 검색 초기화
-function resetTransSearch() {
+function resetTransSearch () {
   transSearchForm.startDate = getDefaultStartDate()
   transSearchForm.endDate = getDefaultEndDate()
   transSearchForm.transDirection = 1
@@ -396,18 +447,18 @@ function resetTransSearch() {
 }
 
 // 페이지 변경
-function handlePageChange(page: number) {
+function handlePageChange (page: number) {
   transSearchForm.page = page
   loadTransactions()
 }
 
 // 상태 클래스
-function getStatusClass(status: string): string {
+function getStatusClass (status: string): string {
   return status === '정상' ? 'status-active' : 'status-inactive'
 }
 
 // 거래 유형 클래스 (입금: '2' 또는 '입금', 출금: '1' 또는 '출금')
-function getTransTypeClass(typeCode: string | number): string {
+function getTransTypeClass (typeCode: string | number): string {
   const code = String(typeCode)
   // 코드값('2') 또는 한글 텍스트('입금') 모두 처리
   const isDeposit = code === '2' || code === '입금'
@@ -415,15 +466,15 @@ function getTransTypeClass(typeCode: string | number): string {
 }
 
 // 금액 클래스 (입금: '2' 또는 '입금', 출금: '1' 또는 '출금')
-function getAmountClass(typeCode: string | number): string {
+function getAmountClass (typeCode: string | number): string {
   const code = String(typeCode)
   const isDeposit = code === '2' || code === '입금'
   return isDeposit ? 'amount-in' : 'amount-out'
 }
 
 // 거래일시 포맷 (20251231172340 → 2025-12-31 17:23:40)
-function formatTransDateTime(dateTimeStr: string): string {
-  if (!dateTimeStr || dateTimeStr.length < 12) return dateTimeStr || '-'
+function formatTransDateTime (dateTimeStr: string): string {
+  if (!dateTimeStr || dateTimeStr.length < 12) { return dateTimeStr || '-' }
 
   const year = dateTimeStr.substring(0, 4)
   const month = dateTimeStr.substring(4, 6)
@@ -436,7 +487,7 @@ function formatTransDateTime(dateTimeStr: string): string {
 }
 
 // 은행 코드 목록 조회
-async function loadBankCodes() {
+async function loadBankCodes () {
   try {
     const codes = await codeService.getCodeDetails('BANK_CODE')
     // code → codeName 매핑 생성
@@ -453,22 +504,22 @@ async function loadBankCodes() {
 }
 
 // 은행코드로 은행명 조회
-function getBankName(bankCode: string, fallbackName?: string): string {
+function getBankName (bankCode: string, fallbackName?: string): string {
   return bankCodeMap.value[bankCode] || fallbackName || bankCode
 }
 
 // 계좌유형 코드로 유형명 조회
-function getAccountTypeName(typeCode: string, fallbackName?: string): string {
+function getAccountTypeName (typeCode: string, fallbackName?: string): string {
   return BANK_ACCOUNT_TYPE_MAP[typeCode] || fallbackName || typeCode
 }
 
 // 거래유형 코드로 유형명 조회 (1: 출금, 2: 입금)
-function getTransTypeName(typeCode: string): string {
+function getTransTypeName (typeCode: string): string {
   return TRANS_TYPE_MAP[typeCode] || typeCode
 }
 
 // 수집주기 코드로 명칭 조회
-function getCollectCycleName(cycleCode: string, fallbackName?: string): string {
+function getCollectCycleName (cycleCode: string, fallbackName?: string): string {
   return COLLECT_CYCLE_MAP[cycleCode] || fallbackName || cycleCode
 }
 

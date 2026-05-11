@@ -5,24 +5,26 @@
         <div class="modal-header">
           <h3>
             <!-- 성공/중복에 따른 아이콘 -->
-            <i v-if="resultInfo?.type === 'success'" class="fas fa-check-circle text-success"></i>
-            <i v-else class="fas fa-exclamation-triangle text-warning"></i>
+            <i v-if="resultInfo?.type === 'success'" class="fas fa-check-circle text-success" />
+            <i v-else class="fas fa-exclamation-triangle text-warning" />
             {{ resultInfo?.type === 'success' ? '메시지 발송 완료' : '중복 발송 안내' }}
           </h3>
           <button class="close-btn" @click="handleClose">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
         <div class="modal-body">
           <p class="result-message">
             {{ resultInfo?.type === 'success'
-               ? '메시지가 발송되었습니다.'
-               : '이미 메시지가 발송되었습니다.' }}
+              ? '메시지가 발송되었습니다.'
+              : '이미 메시지가 발송되었습니다.' }}
           </p>
 
           <div class="url-info">
             <label>발송 URL:</label>
-            <div class="url-box">{{ resultInfo?.mobileUrl }}</div>
+            <div class="url-box">
+              {{ resultInfo?.mobileUrl }}
+            </div>
 
             <!-- 성공: 만료 시간 표시 -->
             <p v-if="resultInfo?.type === 'success' && resultInfo?.tokenExpiresAt" class="info-time">
@@ -37,7 +39,7 @@
         </div>
         <div class="modal-footer">
           <button class="btn-primary" @click="copyUrl">
-            <i class="fas fa-copy"></i>
+            <i class="fas fa-copy" />
             URL 복사
           </button>
           <button class="btn-secondary" @click="handleClose">

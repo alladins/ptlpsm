@@ -3,17 +3,19 @@
     <!-- 헤더 -->
     <div class="mobile-header">
       <button class="btn-back" @click="goBack">
-        <i class="fas fa-arrow-left"></i>
+        <i class="fas fa-arrow-left" />
       </button>
       <h1>새 주문 요청</h1>
-      <div class="header-spacer"></div>
+      <div class="header-spacer" />
     </div>
 
     <!-- 폼 -->
     <div class="form-container">
       <!-- 현장 정보 -->
       <div class="form-section">
-        <h3 class="section-title">현장 정보</h3>
+        <h3 class="section-title">
+          현장 정보
+        </h3>
 
         <div class="form-group">
           <label class="form-label required">현장명</label>
@@ -37,7 +39,7 @@
               @click="openAddressSearch"
             >
             <button class="btn-search" @click="openAddressSearch">
-              <i class="fas fa-search"></i>
+              <i class="fas fa-search" />
             </button>
           </div>
           <input
@@ -51,7 +53,9 @@
 
       <!-- 납품 정보 -->
       <div class="form-section">
-        <h3 class="section-title">납품 정보</h3>
+        <h3 class="section-title">
+          납품 정보
+        </h3>
 
         <div class="form-group">
           <label class="form-label required">희망 납품일</label>
@@ -73,7 +77,7 @@
               :class="{ active: formData.urgency === option.value, [option.class]: true }"
               @click="formData.urgency = option.value"
             >
-              <i :class="option.icon"></i>
+              <i :class="option.icon" />
               <span>{{ option.label }}</span>
             </button>
           </div>
@@ -83,9 +87,11 @@
       <!-- 요청 품목 -->
       <div class="form-section">
         <div class="section-header">
-          <h3 class="section-title">요청 품목</h3>
+          <h3 class="section-title">
+            요청 품목
+          </h3>
           <button class="btn-add-item" @click="addItem">
-            <i class="fas fa-plus"></i>
+            <i class="fas fa-plus" />
             추가
           </button>
         </div>
@@ -99,14 +105,16 @@
             <div class="item-header">
               <span class="item-number">품목 {{ index + 1 }}</span>
               <button class="btn-remove-item" @click="removeItem(index)">
-                <i class="fas fa-times"></i>
+                <i class="fas fa-times" />
               </button>
             </div>
             <div class="item-body">
               <div class="form-group">
                 <label class="form-label">품목 선택</label>
                 <select v-model="item.itemId" class="form-select" @change="onItemSelect(index)">
-                  <option value="">선택하세요</option>
+                  <option value="">
+                    선택하세요
+                  </option>
                   <option v-for="availableItem in availableItems" :key="availableItem.itemId" :value="availableItem.itemId">
                     {{ availableItem.itemNm }}
                   </option>
@@ -116,7 +124,9 @@
                 <div class="form-group flex-1">
                   <label class="form-label">SKU</label>
                   <select v-model="item.skuId" class="form-select">
-                    <option value="">선택하세요</option>
+                    <option value="">
+                      선택하세요
+                    </option>
                     <option v-for="sku in getSkuOptions(item.itemId)" :key="sku.skuId" :value="sku.skuId">
                       {{ sku.skuNm }}
                     </option>
@@ -148,14 +158,16 @@
 
       <!-- 추가 요청사항 -->
       <div class="form-section">
-        <h3 class="section-title">추가 요청사항</h3>
+        <h3 class="section-title">
+          추가 요청사항
+        </h3>
         <div class="form-group">
           <textarea
             v-model="formData.additionalNotes"
             class="form-textarea"
             placeholder="추가 요청사항이 있으면 입력해주세요."
             rows="3"
-          ></textarea>
+          />
         </div>
       </div>
     </div>
@@ -167,10 +179,10 @@
       </button>
       <button
         class="btn-submit"
-        @click="submitRequest"
         :disabled="!isValid || submitting"
+        @click="submitRequest"
       >
-        <i v-if="submitting" class="fas fa-spinner fa-spin"></i>
+        <i v-if="submitting" class="fas fa-spinner fa-spin" />
         <span v-else>요청하기</span>
       </button>
     </div>
@@ -286,7 +298,7 @@ const goBack = () => {
 }
 
 const submitRequest = async () => {
-  if (!isValid.value || submitting.value) return
+  if (!isValid.value || submitting.value) { return }
 
   submitting.value = true
   try {

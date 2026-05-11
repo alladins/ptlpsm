@@ -1,121 +1,135 @@
 <template>
   <div class="warehouse-management">
-    <!-- 페이지 헤더 -->
-    <PageHeader
-      title="창고관리"
-      description="창고 정보를 등록하고 관리합니다."
-      icon="warehouse"
-      icon-color="blue"
-    >
-      <template #actions>
-        <button class="btn-action btn-primary" @click="openAddModal">
-          <i class="fas fa-plus"></i>
-          창고 추가
+    <!-- 페이지 헤더 - 컴팩트 -->
+    <div class="page-header-compact">
+      <h1>창고관리</h1>
+      <span class="page-description">창고 정보를 등록하고 관리합니다.</span>
+    </div>
+    <!-- 검색 조건 -->
+    <div class="search-section-compact">
+      <div class="search-row-single">
+        <div class="search-item">
+          <label>창고유형:</label>
+          <select v-model="searchType" class="status-select" @change="filterWarehouses">
+            <option value="">
+              전체
+            </option>
+            <option value="LEADPOWER">
+              리드파워
+            </option>
+            <option value="OEM">
+              OEM
+            </option>
+          </select>
+        </div>
+        <div class="search-item">
+          <label>활성여부:</label>
+          <select v-model="searchActive" class="status-select" @change="filterWarehouses">
+            <option value="">
+              전체
+            </option>
+            <option value="true">
+              활성
+            </option>
+            <option value="false">
+              비활성
+            </option>
+          </select>
+        </div>
+        <div class="search-item">
+          <label>검색어:</label>
+          <input
+            v-model="searchKeyword"
+            type="text"
+            placeholder="창고명, 회사명"
+            class="text-input"
+            @keyup.enter="filterWarehouses"
+          >
+        </div>
+        <button class="btn-search-inline" @click="filterWarehouses">
+          <i class="fas fa-search" /> 검색
         </button>
-      </template>
-    </PageHeader>
+        <button class="btn-search-inline" style="background: #16a34a; color: white; border-color: #16a34a;" @click="openAddModal">
+          <i class="fas fa-plus" /> 창고 추가
+        </button>
+      </div>
+    </div>
 
-    <div class="content-section">
-      <!-- 검색 조건 -->
-      <div class="search-section-compact">
-        <div class="search-row-single">
-          <div class="search-item">
-            <label>창고유형:</label>
-            <select v-model="searchType" class="status-select" @change="filterWarehouses">
-              <option value="">전체</option>
-              <option value="LEADPOWER">리드파워</option>
-              <option value="OEM">OEM</option>
-            </select>
-          </div>
-          <div class="search-item">
-            <label>활성여부:</label>
-            <select v-model="searchActive" class="status-select" @change="filterWarehouses">
-              <option value="">전체</option>
-              <option value="true">활성</option>
-              <option value="false">비활성</option>
-            </select>
-          </div>
-          <div class="search-item">
-            <label>검색어:</label>
-            <input
-              type="text"
-              v-model="searchKeyword"
-              placeholder="창고명, 회사명"
-              class="text-input"
-              @keyup.enter="filterWarehouses"
-            >
-          </div>
+    <!-- 테이블 섹션 -->
+    <div class="table-section">
+      <div class="table-header">
+        <div class="table-info">
+          <span>총 {{ filteredWarehouses.length }}개</span>
         </div>
       </div>
 
-      <!-- 테이블 섹션 -->
-      <div class="table-section">
-        <div class="table-header">
-          <div class="table-info">
-            <span>총 {{ filteredWarehouses.length }}개</span>
-          </div>
-        </div>
+      <!-- 로딩 -->
+      <div v-if="loading" class="loading-message">
+        <i class="fas fa-spinner fa-spin" />
+        <p>데이터를 불러오는 중...</p>
+      </div>
 
-        <!-- 로딩 -->
-        <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin"></i>
-          <p>데이터를 불러오는 중...</p>
-        </div>
+      <!-- 데이터 없음 -->
+      <div v-else-if="filteredWarehouses.length === 0" class="no-data-message">
+        <i class="fas fa-warehouse" />
+        <p>등록된 창고가 없습니다.</p>
+      </div>
 
-        <!-- 데이터 없음 -->
-        <div v-else-if="filteredWarehouses.length === 0" class="no-data-message">
-          <i class="fas fa-warehouse"></i>
-          <p>등록된 창고가 없습니다.</p>
-        </div>
-
-        <!-- 테이블 -->
-        <div v-else class="table-container">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>창고명</th>
-                <th>유형</th>
-                <th>회사명</th>
-                <th>주소</th>
-                <th>활성여부</th>
-                <th>정렬순서</th>
-                <th style="min-width: 140px">관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(item, index) in filteredWarehouses"
-                :key="item.warehouseId"
-                class="table-row"
-              >
-                <td>{{ index + 1 }}</td>
-                <td class="text-left">{{ item.warehouseName }}</td>
-                <td>
-                  <span :class="['type-badge', getTypeBadgeClass(item.warehouseType)]">
-                    {{ getTypeLabel(item.warehouseType) }}
-                  </span>
-                </td>
-                <td class="text-left">{{ item.companyName || '-' }}</td>
-                <td class="text-left">{{ item.address || '-' }}</td>
-                <td>
-                  <span :class="['status-badge', item.isActive ? 'active' : 'inactive']">
-                    {{ item.isActive ? '활성' : '비활성' }}
-                  </span>
-                </td>
-                <td>{{ item.sortOrder }}</td>
-                <td class="action-buttons">
-                  <button class="btn-edit" @click="openEditModal(item)" title="수정">
-                    <i class="fas fa-edit"></i> 수정
-                  </button>
-                  <button class="btn-delete" @click="handleDelete(item)" title="삭제">
-                    <i class="fas fa-trash"></i> 삭제
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <!-- 테이블 -->
+      <div v-else class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>창고명</th>
+              <th>유형</th>
+              <th>회사명</th>
+              <th>주소</th>
+              <th>활성여부</th>
+              <th>정렬순서</th>
+              <th style="min-width: 140px">
+                관리
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(item, index) in filteredWarehouses"
+              :key="item.warehouseId"
+              class="table-row"
+            >
+              <td>{{ index + 1 }}</td>
+              <td class="text-left">
+                {{ item.warehouseName }}
+              </td>
+              <td>
+                <span :class="['type-badge', getTypeBadgeClass(item.warehouseType)]">
+                  {{ getTypeLabel(item.warehouseType) }}
+                </span>
+              </td>
+              <td class="text-left">
+                {{ item.companyName || '-' }}
+              </td>
+              <td class="text-left">
+                {{ item.address || '-' }}
+              </td>
+              <td>
+                <span :class="['status-badge', item.isActive ? 'active' : 'inactive']">
+                  {{ item.isActive ? '활성' : '비활성' }}
+                </span>
+              </td>
+              <td>{{ item.sortOrder }}</td>
+              <td class="action-buttons">
+                <button class="btn-icon btn-edit" title="수정" @click="openEditModal(item)">
+                  <i class="fas fa-edit" />
+                </button>
+                <button class="btn-icon btn-delete" title="삭제" @click="handleDelete(item)">
+                  <i class="fas fa-trash" />
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -126,15 +140,15 @@
           <div class="modal-header">
             <h3>{{ isEditMode ? '창고 수정' : '창고 등록' }}</h3>
             <button class="modal-close" @click="closeModal">
-              <i class="fas fa-times"></i>
+              <i class="fas fa-times" />
             </button>
           </div>
           <div class="modal-body">
             <div class="form-group">
               <label class="form-label required">창고명</label>
               <input
-                type="text"
                 v-model="formData.warehouseName"
+                type="text"
                 class="form-input"
                 placeholder="창고명을 입력하세요"
               >
@@ -142,14 +156,20 @@
             <div class="form-group">
               <label class="form-label required">창고유형</label>
               <select v-model="formData.warehouseType" class="form-input">
-                <option value="LEADPOWER">리드파워</option>
-                <option value="OEM">OEM</option>
+                <option value="LEADPOWER">
+                  리드파워
+                </option>
+                <option value="OEM">
+                  OEM
+                </option>
               </select>
             </div>
             <div class="form-group">
               <label class="form-label">회사</label>
               <select v-model="formData.companyId" class="form-input">
-                <option :value="null">선택 안함</option>
+                <option :value="null">
+                  선택 안함
+                </option>
                 <option
                   v-for="company in companies"
                   :key="company.id"
@@ -162,8 +182,8 @@
             <div class="form-group">
               <label class="form-label">주소</label>
               <input
-                type="text"
                 v-model="formData.address"
+                type="text"
                 class="form-input"
                 placeholder="주소를 입력하세요"
               >
@@ -172,8 +192,8 @@
               <div class="form-group half">
                 <label class="form-label">정렬순서</label>
                 <input
-                  type="number"
                   v-model.number="formData.sortOrder"
+                  type="number"
                   class="form-input"
                   min="0"
                 >
@@ -181,16 +201,22 @@
               <div class="form-group half">
                 <label class="form-label">활성여부</label>
                 <select v-model="formData.isActive" class="form-input">
-                  <option :value="true">활성</option>
-                  <option :value="false">비활성</option>
+                  <option :value="true">
+                    활성
+                  </option>
+                  <option :value="false">
+                    비활성
+                  </option>
                 </select>
               </div>
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn-cancel" @click="closeModal">취소</button>
-            <button class="btn-submit" @click="handleSubmit" :disabled="saving">
-              <i v-if="saving" class="fas fa-spinner fa-spin"></i>
+            <button class="btn-cancel" @click="closeModal">
+              취소
+            </button>
+            <button class="btn-submit" :disabled="saving" @click="handleSubmit">
+              <i v-if="saving" class="fas fa-spinner fa-spin" />
               {{ isEditMode ? '수정' : '등록' }}
             </button>
           </div>

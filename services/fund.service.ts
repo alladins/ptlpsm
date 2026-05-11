@@ -335,9 +335,7 @@ export const fundService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -508,9 +506,7 @@ export const fundService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -636,9 +632,7 @@ export const fundService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -671,9 +665,7 @@ export const fundService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {

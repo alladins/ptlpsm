@@ -5,25 +5,25 @@
         <!-- 헤더 -->
         <div class="modal-header">
           <h3>
-            <i class="fas fa-tags"></i>
+            <i class="fas fa-tags" />
             B급 제품 가격 조정
           </h3>
           <button class="modal-close" @click="closeModal">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
         <div class="modal-body">
           <!-- 로딩 상태 -->
           <div v-if="loading" class="loading-container">
-            <i class="fas fa-spinner fa-spin"></i>
+            <i class="fas fa-spinner fa-spin" />
             <span>데이터를 불러오는 중...</span>
           </div>
 
           <!-- 완료된 출하가 없을 때 -->
           <div v-else-if="completedShipments.length === 0" class="warning-container">
             <div class="warning-icon">
-              <i class="fas fa-exclamation-triangle"></i>
+              <i class="fas fa-exclamation-triangle" />
             </div>
             <div class="warning-content">
               <h4>완료된 출하가 없습니다</h4>
@@ -47,12 +47,12 @@
                   :class="{ selected: selectedShipmentId === shipment.shipmentId }"
                 >
                   <input
-                    type="radio"
                     v-model="selectedShipmentId"
+                    type="radio"
                     :value="shipment.shipmentId"
                     name="shipment"
-                  />
-                  <div class="shipment-radio"></div>
+                  >
+                  <div class="shipment-radio" />
                   <div class="shipment-info">
                     <span class="shipment-no">{{ shipment.shipmentNo || `#${shipment.shipmentId}` }}</span>
                     <span class="shipment-date">{{ formatDate(shipment.shipmentDate) }}</span>
@@ -70,13 +70,13 @@
 
               <!-- 품목 로딩 중 -->
               <div v-if="loadingItems" class="loading-items">
-                <i class="fas fa-spinner fa-spin"></i>
+                <i class="fas fa-spinner fa-spin" />
                 <span>품목을 불러오는 중...</span>
               </div>
 
               <!-- 품목 없음 -->
               <div v-else-if="shipmentItems.length === 0" class="empty-items">
-                <i class="fas fa-box-open"></i>
+                <i class="fas fa-box-open" />
                 <span>해당 출하에 품목이 없습니다.</span>
               </div>
 
@@ -94,7 +94,7 @@
                     :class="{ 'no-cost': !item.costPrice || item.shipmentQuantity <= 0 }"
                     @click="(item.costPrice && item.shipmentQuantity > 0) ? toggleAccordion(item) : null"
                   >
-                    <i class="fas" :class="expandedSkuId === item.skuId ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                    <i class="fas" :class="expandedSkuId === item.skuId ? 'fa-chevron-down' : 'fa-chevron-right'" />
                     <span class="item-name">{{ item.skuName }}</span>
                     <span class="item-spec">{{ item.specification }}</span>
                     <span class="item-qty" :class="{ 'qty-zero': item.shipmentQuantity <= 0 }">{{ item.shipmentQuantity }}{{ item.unit }}</span>
@@ -109,13 +109,13 @@
                         <label>B급 수량 <span class="hint">(짝수만 입력)</span></label>
                         <div class="input-group">
                           <input
-                            type="number"
                             v-model.number="bgradeForm.quantity"
+                            type="number"
                             placeholder="0"
                             min="0"
                             :max="getAvailableBgradeQuantity(item)"
                             step="2"
-                          />
+                          >
                           <span class="unit">{{ item.unit }}</span>
                         </div>
                         <span v-if="bgradeForm.quantity > 0 && bgradeForm.quantity % 2 !== 0" class="error-hint">
@@ -126,21 +126,21 @@
                         <label>B급 단가</label>
                         <div class="input-group">
                           <input
-                            type="number"
                             v-model.number="bgradeForm.adjustedUnitPrice"
+                            type="number"
                             placeholder="0"
                             min="0"
-                          />
+                          >
                           <span class="unit">원</span>
                         </div>
                       </div>
                       <div class="form-row full">
                         <label>사유 <span class="optional">(선택)</span></label>
                         <input
-                          type="text"
                           v-model="bgradeForm.reason"
+                          type="text"
                           placeholder="예: 경미한 스크래치"
-                        />
+                        >
                       </div>
                     </div>
 
@@ -164,11 +164,11 @@
                     <div class="form-actions">
                       <button
                         class="btn-add"
-                        @click="addBgradeItem"
                         :disabled="!canAddBgrade || saving"
+                        @click="addBgradeItem"
                       >
-                        <i v-if="saving" class="fas fa-spinner fa-spin"></i>
-                        <i v-else class="fas fa-plus"></i>
+                        <i v-if="saving" class="fas fa-spinner fa-spin" />
+                        <i v-else class="fas fa-plus" />
                         {{ saving ? '저장 중...' : '추가' }}
                       </button>
                     </div>
@@ -181,7 +181,7 @@
             <div v-if="bgradeItems.length > 0" class="bgrade-summary">
               <div class="summary-header">
                 <span class="summary-title">
-                  <i class="fas fa-list-check"></i>
+                  <i class="fas fa-list-check" />
                   등록된 B급 품목
                   <span class="count-badge">{{ bgradeItems.length }}</span>
                 </span>
@@ -196,8 +196,8 @@
                     </span>
                   </div>
                   <span class="item-discount">-{{ formatCurrency(calculateDiscount(item)) }}</span>
-                  <button class="btn-delete" @click="confirmDeleteItem(item)" title="삭제">
-                    <i class="fas fa-times"></i>
+                  <button class="btn-delete" title="삭제" @click="confirmDeleteItem(item)">
+                    <i class="fas fa-times" />
                   </button>
                 </div>
               </div>
@@ -208,7 +208,7 @@
         <!-- 푸터 -->
         <div class="modal-footer">
           <div class="notice">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             <span>B급 정보는 인수증에 표시되지 않습니다.</span>
           </div>
           <button class="btn-close" @click="closeModal">
@@ -275,14 +275,14 @@ const completedShipments = computed(() => {
 
 /** 선택된 출하의 deliveryDoneId */
 const selectedDeliveryDoneId = computed(() => {
-  if (!selectedShipmentId.value) return null
+  if (!selectedShipmentId.value) { return null }
   const shipment = completedShipments.value.find(s => s.shipmentId === selectedShipmentId.value)
   return shipment?.deliveryDoneId || null
 })
 
 /** 현재 확장된 품목 정보 */
 const expandedItem = computed(() => {
-  if (!expandedSkuId.value) return null
+  if (!expandedSkuId.value) { return null }
   return shipmentItems.value.find(i => i.skuId === expandedSkuId.value)
 })
 
@@ -292,7 +292,7 @@ const canAddBgrade = computed(() => {
     selectedDeliveryDoneId.value &&
     expandedSkuId.value &&
     bgradeForm.quantity > 0 &&
-    bgradeForm.quantity % 2 === 0 &&  // 짝수만 허용
+    bgradeForm.quantity % 2 === 0 && // 짝수만 허용
     bgradeForm.adjustedUnitPrice >= 0
   )
 })
@@ -316,7 +316,7 @@ const totalDiscount = computed(() => {
 const formatCurrency = (value: number) => formatCurrencyUtil(value)
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return '-'
+  if (!dateString) { return '-' }
   const date = new Date(dateString)
   return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
 }
@@ -359,7 +359,7 @@ const loadBgradeItems = async () => {
 /** 아코디언 토글 */
 const toggleAccordion = (item: ShipmentItemWithOrder) => {
   // OEM 원가 미설정 품목은 B급 조정 불가
-  if (!item.costPrice) return
+  if (!item.costPrice) { return }
 
   if (expandedSkuId.value === item.skuId) {
     // 닫기
@@ -384,8 +384,8 @@ const resetBgradeForm = () => {
 
 /** B급 품목 추가 */
 const addBgradeItem = async () => {
-  if (!canAddBgrade.value || saving.value) return
-  if (!selectedDeliveryDoneId.value || !expandedItem.value) return
+  if (!canAddBgrade.value || saving.value) { return }
+  if (!selectedDeliveryDoneId.value || !expandedItem.value) { return }
 
   saving.value = true
   try {
@@ -423,8 +423,8 @@ const addBgradeItem = async () => {
 
 /** B급 품목 삭제 확인 */
 const confirmDeleteItem = async (item: BgradeItemResponse) => {
-  if (!confirm(`"${item.itemName}" B급 품목을 삭제하시겠습니까?`)) return
-  if (!selectedDeliveryDoneId.value) return
+  if (!confirm(`"${item.itemName}" B급 품목을 삭제하시겠습니까?`)) { return }
+  if (!selectedDeliveryDoneId.value) { return }
 
   try {
     await bgradeItemService.deleteBgradeItem(selectedDeliveryDoneId.value, item.id)

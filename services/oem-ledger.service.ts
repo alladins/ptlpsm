@@ -13,11 +13,11 @@ class OemLedgerService {
   /**
    * 월별 매출원장 조회
    */
-  async getMonthlyLedger(oemCompanyId: number, yearMonth: string): Promise<OemMonthlyLedgerResponse> {
-    const params = new URLSearchParams({
-      oemCompanyId: oemCompanyId.toString(),
-      yearMonth
-    })
+  async getMonthlyLedger(oemCompanyId: number | null, yearMonth: string): Promise<OemMonthlyLedgerResponse> {
+    const params = new URLSearchParams({ yearMonth })
+    if (oemCompanyId) {
+      params.set('oemCompanyId', oemCompanyId.toString())
+    }
     const response = await fetch(`${this.getBaseUrl()}?${params}`, {
       headers: getAuthHeaders()
     })

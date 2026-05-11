@@ -9,7 +9,7 @@
           :title="recalcDisabledReason || '현재 원가 기준으로 OEM 예정총액을 재계산합니다'"
           @click="emit('recalculateOemCost')"
         >
-          <i class="fas" :class="isRecalculating ? 'fa-spinner fa-spin' : 'fa-calculator'"></i>
+          <i class="fas" :class="isRecalculating ? 'fa-spinner fa-spin' : 'fa-calculator'" />
           {{ isRecalculating ? '재계산 중...' : '원가 재계산' }}
         </button>
         <button
@@ -18,14 +18,14 @@
           :title="bgradeButtonTitle"
           @click="emit('openBgradeModal')"
         >
-          <i class="fas fa-tags"></i>
+          <i class="fas fa-tags" />
           B급 조정
         </button>
         <button
           class="btn-link-po"
           @click="goToMonthlyLedger"
         >
-          <i class="fas fa-external-link-alt"></i>
+          <i class="fas fa-external-link-alt" />
           월별 매출원장
         </button>
       </div>
@@ -34,10 +34,12 @@
     <!-- 재계산 경고 배너 -->
     <div v-if="needsRecalculation" class="recalc-banner">
       <div class="recalc-banner-icon">
-        <i class="fas fa-exclamation-triangle"></i>
+        <i class="fas fa-exclamation-triangle" />
       </div>
       <div class="recalc-banner-content">
-        <div class="recalc-banner-title">OEM 원가가 변경되어 재계산이 필요합니다</div>
+        <div class="recalc-banner-title">
+          OEM 원가가 변경되어 재계산이 필요합니다
+        </div>
         <div class="recalc-banner-detail">
           현재: <strong>{{ formatCurrency(recalcPreview!.currentOemExpectedTotal) }}</strong>
           → 재계산 시: <strong>{{ formatCurrency(recalcPreview!.newOemExpectedTotal) }}</strong>
@@ -51,7 +53,7 @@
         :disabled="isRecalculating"
         @click="emit('recalculateOemCost')"
       >
-        <i class="fas" :class="isRecalculating ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+        <i class="fas" :class="isRecalculating ? 'fa-spinner fa-spin' : 'fa-sync-alt'" />
         {{ isRecalculating ? '처리 중...' : '원가 재계산' }}
       </button>
     </div>
@@ -62,17 +64,17 @@
         <span class="label">기성금 누계</span>
         <span class="value">{{ formatCurrency(progressPaymentTotal) }}</span>
       </div>
-      <div class="summary-divider"></div>
+      <div class="summary-divider" />
       <div class="summary-item">
         <span class="label">OEM 지급 예정 (예정원가)</span>
         <span class="value highlight">{{ formatCurrency(oemExpectedAmount) }}</span>
       </div>
-      <div class="summary-divider"></div>
+      <div class="summary-divider" />
       <div class="summary-item">
         <span class="label">지급 완료</span>
         <span class="value success">{{ formatCurrency(oemPaidTotal) }}</span>
       </div>
-      <div class="summary-divider"></div>
+      <div class="summary-divider" />
       <div class="summary-item">
         <span class="label">미지급</span>
         <span class="value warning">{{ formatCurrency(oemExpectedAmount - oemPaidTotal) }}</span>
@@ -81,11 +83,11 @@
 
     <!-- 안내 메시지 -->
     <div class="info-banner">
-      <i class="fas fa-info-circle"></i>
+      <i class="fas fa-info-circle" />
       <div class="info-content">
         <p>OEM 지급은 <strong>제조생산 > 월별 매출원장</strong>에서 관리합니다.</p>
         <button class="btn-go-po" @click="goToMonthlyLedger">
-          월별 매출원장 바로가기 <i class="fas fa-arrow-right"></i>
+          월별 매출원장 바로가기 <i class="fas fa-arrow-right" />
         </button>
       </div>
     </div>
@@ -93,39 +95,63 @@
     <!-- OEM 지급 이력 (읽기 전용) -->
     <div v-if="oemPayments.length > 0" class="readonly-section">
       <h5 class="readonly-title">
-        <i class="fas fa-history"></i>
+        <i class="fas fa-history" />
         자금관리 기준 OEM 지급 이력
       </h5>
       <div class="table-container">
         <table class="data-table oem-table">
           <colgroup>
-            <col class="col-seq" />
-            <col class="col-company" />
-            <col class="col-amount" />
-            <col class="col-date" />
-            <col class="col-amount" />
-            <col class="col-date" />
-            <col class="col-status" />
+            <col class="col-seq">
+            <col class="col-company">
+            <col class="col-amount">
+            <col class="col-date">
+            <col class="col-amount">
+            <col class="col-date">
+            <col class="col-status">
           </colgroup>
           <thead>
             <tr>
-              <th class="text-center">차수</th>
+              <th class="text-center">
+                차수
+              </th>
               <th>OEM 업체</th>
-              <th class="text-right">지급예정금액</th>
-              <th class="text-center">예정일</th>
-              <th class="text-right">실제지급금액</th>
-              <th class="text-center">지급일</th>
-              <th class="text-center">상태</th>
+              <th class="text-right">
+                지급예정금액
+              </th>
+              <th class="text-center">
+                예정일
+              </th>
+              <th class="text-right">
+                실제지급금액
+              </th>
+              <th class="text-center">
+                지급일
+              </th>
+              <th class="text-center">
+                상태
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="oem in oemPayments" :key="oem.oemPaymentId">
-              <td class="text-center">{{ oem.paymentSeq }}차</td>
-              <td class="cell-company">{{ oem.oemCompanyName || '-' }}</td>
-              <td class="text-right cell-amount">{{ formatCurrency(oem.scheduledAmount) }}</td>
-              <td class="text-center cell-date">{{ oem.scheduledDate || '-' }}</td>
-              <td class="text-right cell-amount">{{ oem.paidAmount ? formatCurrency(oem.paidAmount) : '-' }}</td>
-              <td class="text-center cell-date">{{ oem.paidDate || '-' }}</td>
+              <td class="text-center">
+                {{ oem.paymentSeq }}차
+              </td>
+              <td class="cell-company">
+                {{ oem.oemCompanyName || '-' }}
+              </td>
+              <td class="text-right cell-amount">
+                {{ formatCurrency(oem.scheduledAmount) }}
+              </td>
+              <td class="text-center cell-date">
+                {{ oem.scheduledDate || '-' }}
+              </td>
+              <td class="text-right cell-amount">
+                {{ oem.paidAmount ? formatCurrency(oem.paidAmount) : '-' }}
+              </td>
+              <td class="text-center cell-date">
+                {{ oem.paidDate || '-' }}
+              </td>
               <td class="text-center">
                 <span class="status-badge" :class="getOemPaymentStatusClass(oem.status)">
                   {{ getOemPaymentStatusLabel(oem.status) }}
@@ -196,8 +222,8 @@ const needsRecalculation = computed(() => {
 
 // 재계산 버튼 비활성화 사유
 const recalcDisabledReason = computed(() => {
-  if (!props.recalcPreview) return '납품완료 정보가 없습니다'
-  if (props.recalcPreview.difference === 0) return '현재 원가와 동일합니다'
+  if (!props.recalcPreview) { return '납품완료 정보가 없습니다' }
+  if (props.recalcPreview.difference === 0) { return '현재 원가와 동일합니다' }
   return ''
 })
 
@@ -208,7 +234,7 @@ const { getOemPaymentStatusClass, getOemPaymentStatusLabel } = useFundStatusForm
 const oemExpectedAmount = computed(() => Math.floor((props.progressPaymentTotal || 0) * 0.7))
 
 // 월별 매출원장으로 이동
-function goToMonthlyLedger() {
+function goToMonthlyLedger () {
   router.push('/admin/oem/monthly-ledger')
 }
 </script>

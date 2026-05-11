@@ -5,8 +5,8 @@
       <div class="popup-content" @click.stop>
         <div class="popup-header">
           <h3>품목 SKU 선택</h3>
-          <button type="button" @click="closePopup" class="close-btn">
-            <i class="fas fa-times"></i>
+          <button type="button" class="close-btn" @click="closePopup">
+            <i class="fas fa-times" />
           </button>
         </div>
 
@@ -14,19 +14,19 @@
         <div class="search-section">
           <div class="search-input-group">
             <input
-              type="text"
               v-model="searchKeyword"
+              type="text"
               placeholder="품목코드, 품목명, SKU코드로 검색하세요"
               class="search-input"
               @input="handleSearch"
               @keyup.enter="handleSearch"
             >
-            <button type="button" @click="handleSearch" class="btn-primary">
-              <i class="fas fa-search"></i>
+            <button type="button" class="btn-primary" @click="handleSearch">
+              <i class="fas fa-search" />
               조회
             </button>
-            <button type="button" @click="closePopup" class="btn-secondary">
-              <i class="fas fa-times"></i>
+            <button type="button" class="btn-secondary" @click="closePopup">
+              <i class="fas fa-times" />
               닫기
             </button>
           </div>
@@ -35,18 +35,18 @@
         <!-- 품목 목록 -->
         <div class="items-section">
           <div v-if="loading" class="loading">
-            <i class="fas fa-spinner fa-spin"></i>
+            <i class="fas fa-spinner fa-spin" />
             <span>품목을 불러오는 중...</span>
           </div>
-          
+
           <div v-else-if="items.length === 0" class="no-items">
-            <i class="fas fa-box"></i>
+            <i class="fas fa-box" />
             <span>검색된 품목이 없습니다.</span>
           </div>
-          
+
           <div v-else class="items-list">
-            <div 
-              v-for="item in items" 
+            <div
+              v-for="item in items"
               :key="item.itemId"
               class="item-card"
               @click="selectItem(item)"
@@ -57,7 +57,7 @@
                   <span class="item-full-name">{{ item.itemNm }}</span>
                 </div>
               </div>
-              
+
               <div class="sku-list">
                 <!-- 헤더 행 추가 -->
                 <div class="sku-header">
@@ -69,13 +69,13 @@
                   <span class="sku-header-cell">가격</span>
                 </div>
 
-                <!-- SKU 데이터 행 -->              
+                <!-- SKU 데이터 행 -->
                 <div
                   v-for="sku in item.itemSkus"
                   :key="sku.skuId"
                   class="sku-item"
                   @click.stop="selectSku(item, sku)"
-                > 
+                >
                   <div class="sku-row">
                     <span class="sku-code">{{ sku.skuId }}</span>
                     <span v-if="sku.width" class="sku-spec">W: {{ sku.width }}mm</span>
@@ -92,24 +92,24 @@
 
         <!-- 페이징 -->
         <div v-if="totalPages > 1" class="pagination">
-          <button 
-            type="button" 
-            @click="changePage(currentPage - 1)" 
+          <button
+            type="button"
             :disabled="currentPage === 0"
             class="page-btn"
+            @click="changePage(currentPage - 1)"
           >
-            <i class="fas fa-chevron-left"></i>
+            <i class="fas fa-chevron-left" />
           </button>
-          
+
           <span class="page-info">{{ currentPage + 1 }} / {{ totalPages }}</span>
-          
-          <button 
-            type="button" 
-            @click="changePage(currentPage + 1)" 
+
+          <button
+            type="button"
             :disabled="currentPage >= totalPages - 1"
             class="page-btn"
+            @click="changePage(currentPage + 1)"
           >
-            <i class="fas fa-chevron-right"></i>
+            <i class="fas fa-chevron-right" />
           </button>
         </div>
       </div>
@@ -160,13 +160,13 @@ const closePopup = () => {
 const loadItems = async () => {
   try {
     loading.value = true
-    
+
     const params = {
       page: currentPage.value,
       size: 10,
       keyword: searchKeyword.value || undefined
     }
-    
+
     const response = await itemService.getItems(params)
     items.value = response.content
     totalPages.value = response.totalPages
@@ -206,7 +206,7 @@ const selectItem = (item: Item) => {
   } else {
     // SKU가 없으면 기본 정보만 전달
     const defaultSku: ItemSku = {
-      skuId: item.itemId,        // SKU ID를 품목 ID와 동일하게 설정
+      skuId: item.itemId, // SKU ID를 품목 ID와 동일하게 설정
       skuNm: item.itemNm,
       width: item.width,
       height: item.height,

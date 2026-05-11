@@ -4,17 +4,19 @@
       <div class="modal-header">
         <h3>수량 변경 완료</h3>
         <button class="modal-close" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
       <div class="modal-body">
         <div class="success-icon">
-          <i class="fas fa-check-circle"></i>
+          <i class="fas fa-check-circle" />
         </div>
 
         <div class="message-content">
-          <p class="main-message">수량이 변경되었습니다.</p>
+          <p class="main-message">
+            수량이 변경되었습니다.
+          </p>
           <p class="sub-message">
             서명이 완료된 상태에서 수량이 변경되어<br>
             재서명이 필요합니다.
@@ -28,11 +30,11 @@
 
       <div class="modal-footer">
         <button class="btn-secondary" @click="closeModal">
-          <i class="fas fa-check"></i>
+          <i class="fas fa-check" />
           확인
         </button>
         <button class="btn-primary" @click="handleSendMessage">
-          <i class="fas fa-paper-plane"></i>
+          <i class="fas fa-paper-plane" />
           메시지 발송
         </button>
       </div>

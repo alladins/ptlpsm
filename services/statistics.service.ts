@@ -27,6 +27,7 @@ function transformServerResponse(serverData: any): ShipmentStatisticsResponse {
       totalShipmentCount: serverData.totalShipmentCount ?? 0,
       totalOrderAmount: serverData.totalOrderAmount ?? 0,
       totalShipmentAmount: serverData.totalShipmentAmount ?? 0,
+      totalShipmentSalesAmount: serverData.totalShipmentSalesAmount ?? 0,
       completionRate: serverData.completionRate ?? 0,
       statusCount: {
         pending: serverData.pendingCount ?? 0,

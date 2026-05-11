@@ -35,12 +35,20 @@ export const COST_CHANGE_TYPE_LABELS: Record<CostChangeType, string> = {
 /**
  * OEM 원가 기본 정보
  */
+export type CostSourceType = 'OEM' | 'LEADPOWER'
+
+export const COST_SOURCE_TYPE_LABELS: Record<CostSourceType, string> = {
+  OEM: '제조사',
+  LEADPOWER: '본사'
+}
+
 export interface OemCost {
   id: number
   skuId: string
   skuName?: string
   oemCompanyId: number
   oemCompanyName?: string
+  costSourceType: CostSourceType
   costPrice: number
   effectiveDate: string       // YYYY-MM-DD
   expiryDate: string | null   // YYYY-MM-DD or null (무기한)
@@ -72,6 +80,7 @@ export interface OemCostHistory {
   skuId: string
   oemCompanyId: number
   oemCompanyName?: string
+  costSourceType: CostSourceType
   oldCost: number | null
   newCost: number | null
   changeType: CostChangeType
@@ -87,6 +96,7 @@ export interface OemCostHistory {
 export interface OemCostCreateRequest {
   skuId: string
   oemCompanyId: number
+  costSourceType?: CostSourceType
   costPrice: number
   effectiveDate: string
   expiryDate?: string | null

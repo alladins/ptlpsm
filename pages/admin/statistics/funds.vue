@@ -3,6 +3,8 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       title="기성통계"
+      icon="chart"
+      icon-color="blue"
       description="기성 현황을 통계로 확인합니다."
     >
       <template #actions>
@@ -34,7 +36,9 @@
           <!-- 분기 선택 -->
           <div v-if="periodType === 'QUARTER'" class="option-group">
             <select v-model="selectedYear" class="form-select-sm">
-              <option v-for="year in availableYears" :key="year" :value="year">{{ year }}년</option>
+              <option v-for="year in availableYears" :key="year" :value="year">
+                {{ year }}년
+              </option>
             </select>
             <div class="quarter-chips">
               <button
@@ -51,13 +55,15 @@
           <!-- 년도 선택 -->
           <div v-if="periodType === 'YEAR'" class="option-group">
             <select v-model="selectedYear" class="form-select-sm">
-              <option v-for="year in availableYears" :key="year" :value="year">{{ year }}년</option>
+              <option v-for="year in availableYears" :key="year" :value="year">
+                {{ year }}년
+              </option>
             </select>
           </div>
 
           <!-- 조회 버튼 -->
           <button class="btn-search" @click="loadStatistics">
-            <i class="fas fa-search"></i>
+            <i class="fas fa-search" />
             조회
           </button>
         </div>
@@ -66,7 +72,7 @@
 
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-container">
-      <i class="fas fa-spinner fa-spin"></i>
+      <i class="fas fa-spinner fa-spin" />
       <p>통계 데이터를 불러오는 중...</p>
     </div>
 
@@ -74,72 +80,102 @@
       <!-- 전체 현황 카드 -->
       <div class="overview-section">
         <h3 class="section-title">
-          <i class="fas fa-chart-pie"></i>
+          <i class="fas fa-chart-pie" />
           전체 현황
         </h3>
         <div class="overview-cards">
           <div class="overview-card blue">
             <div class="card-icon">
-              <i class="fas fa-file-invoice-dollar"></i>
+              <i class="fas fa-file-invoice-dollar" />
             </div>
             <div class="card-content">
-              <div class="card-label">총 계약금액</div>
-              <div class="card-value">{{ formatCurrency(statistics.totalContractAmount) }}</div>
+              <div class="card-label">
+                총 계약금액
+              </div>
+              <div class="card-value">
+                {{ formatCurrency(statistics.totalContractAmount) }}
+              </div>
             </div>
           </div>
           <div class="overview-card green">
             <div class="card-icon">
-              <i class="fas fa-hand-holding-usd"></i>
+              <i class="fas fa-hand-holding-usd" />
             </div>
             <div class="card-content">
-              <div class="card-label">수금 누계</div>
-              <div class="card-value">{{ formatCurrency(statistics.totalCollected) }}</div>
-              <div class="card-sub">{{ getCollectionRate() }}%</div>
+              <div class="card-label">
+                수금 누계
+              </div>
+              <div class="card-value">
+                {{ formatCurrency(statistics.totalCollected) }}
+              </div>
+              <div class="card-sub">
+                {{ getCollectionRate() }}%
+              </div>
             </div>
           </div>
           <div class="overview-card red">
             <div class="card-icon">
-              <i class="fas fa-exclamation-circle"></i>
+              <i class="fas fa-exclamation-circle" />
             </div>
             <div class="card-content">
-              <div class="card-label">미수금</div>
-              <div class="card-value">{{ formatCurrency(statistics.totalOutstanding) }}</div>
+              <div class="card-label">
+                미수금
+              </div>
+              <div class="card-value">
+                {{ formatCurrency(statistics.totalOutstanding) }}
+              </div>
             </div>
           </div>
           <div class="overview-card purple">
             <div class="card-icon">
-              <i class="fas fa-industry"></i>
+              <i class="fas fa-industry" />
             </div>
             <div class="card-content">
-              <div class="card-label">OEM 지급액</div>
-              <div class="card-value">{{ formatCurrency(statistics.totalOemPaid) }}</div>
+              <div class="card-label">
+                OEM 지급액
+              </div>
+              <div class="card-value">
+                {{ formatCurrency(statistics.totalOemPaid) }}
+              </div>
             </div>
           </div>
           <div class="overview-card orange">
             <div class="card-icon">
-              <i class="fas fa-clock"></i>
+              <i class="fas fa-clock" />
             </div>
             <div class="card-content">
-              <div class="card-label">OEM 미지급</div>
-              <div class="card-value">{{ formatCurrency(statistics.totalOemOutstanding) }}</div>
+              <div class="card-label">
+                OEM 미지급
+              </div>
+              <div class="card-value">
+                {{ formatCurrency(statistics.totalOemOutstanding) }}
+              </div>
             </div>
           </div>
           <div class="overview-card teal">
             <div class="card-icon">
-              <i class="fas fa-coins"></i>
+              <i class="fas fa-coins" />
             </div>
             <div class="card-content">
-              <div class="card-label">현재 수익</div>
-              <div class="card-value">{{ formatCurrency(statistics.currentProfit) }}</div>
+              <div class="card-label">
+                현재 수익
+              </div>
+              <div class="card-value">
+                {{ formatCurrency(statistics.currentProfit) }}
+              </div>
             </div>
           </div>
           <div class="overview-card indigo">
             <div class="card-icon">
-              <i class="fas fa-percentage"></i>
+              <i class="fas fa-percentage" />
             </div>
             <div class="card-content">
-              <div class="card-label">수익률</div>
-              <div class="card-value">{{ statistics.profitRate?.toFixed(1) || 0 }}%</div>
+              <div class="card-label">
+                수익률
+              </div>
+              <div class="card-value">
+                {{ statistics.profitRate?.toFixed(1) || 0 }}%
+              </div>
             </div>
           </div>
         </div>
@@ -149,28 +185,28 @@
       <div class="charts-section">
         <div class="chart-container">
           <h3 class="section-title">
-            <i class="fas fa-chart-bar"></i>
+            <i class="fas fa-chart-bar" />
             월별 수금 현황
           </h3>
           <div class="chart-wrapper">
-            <canvas ref="monthlyChartRef"></canvas>
+            <canvas ref="monthlyChartRef" />
           </div>
         </div>
         <div class="chart-container">
           <h3 class="section-title">
-            <i class="fas fa-chart-pie"></i>
+            <i class="fas fa-chart-pie" />
             기성 진행 현황
           </h3>
           <div class="chart-wrapper donut">
-            <canvas ref="progressChartRef"></canvas>
+            <canvas ref="progressChartRef" />
           </div>
           <div class="chart-legend">
             <div class="legend-item">
-              <span class="legend-dot" style="background: #3b82f6;"></span>
+              <span class="legend-dot" style="background: #3b82f6;" />
               <span>진행중 ({{ statistics.activeCount || 0 }}건)</span>
             </div>
             <div class="legend-item">
-              <span class="legend-dot" style="background: #10b981;"></span>
+              <span class="legend-dot" style="background: #10b981;" />
               <span>완료 ({{ statistics.completedCount || 0 }}건)</span>
             </div>
           </div>
@@ -180,46 +216,72 @@
       <!-- 계약별 자금 현황 테이블 -->
       <div class="table-section">
         <h3 class="section-title">
-          <i class="fas fa-list"></i>
+          <i class="fas fa-list" />
           계약별 자금 현황
         </h3>
         <div class="table-container">
           <table class="data-table">
             <thead>
               <tr>
-                <th class="col-delivery-no">납품요구번호</th>
-                <th class="col-project-name">현장명</th>
-                <th class="col-amount">계약금액</th>
-                <th class="col-amount">수금액</th>
-                <th class="col-amount">미수금</th>
-                <th class="col-rate">수금률</th>
-                <th class="col-amount">OEM 지급</th>
-                <th class="col-amount">수익</th>
+                <th class="col-delivery-no">
+                  납품요구번호
+                </th>
+                <th class="col-project-name">
+                  현장명
+                </th>
+                <th class="col-amount">
+                  계약금액
+                </th>
+                <th class="col-amount">
+                  수금액
+                </th>
+                <th class="col-amount">
+                  미수금
+                </th>
+                <th class="col-rate">
+                  수금률
+                </th>
+                <th class="col-amount">
+                  OEM 지급
+                </th>
+                <th class="col-amount">
+                  수익
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="!statistics.fundDetails || statistics.fundDetails.length === 0">
-                <td colspan="8" class="no-data">자금 데이터가 없습니다.</td>
+                <td colspan="8" class="no-data">
+                  자금 데이터가 없습니다.
+                </td>
               </tr>
-              <tr v-else v-for="fund in statistics.fundDetails" :key="fund.fundId">
+              <tr v-for="fund in statistics.fundDetails" v-else :key="fund.fundId">
                 <td class="col-delivery-no">
-                  <a href="#" @click.prevent="goToFundDetail(fund.fundId)" class="link">
+                  <a href="#" class="link" @click.prevent="goToFundDetail(fund.fundId)">
                     {{ fund.deliveryRequestNo }}
                   </a>
                 </td>
                 <td class="col-project-name text-left" :title="fund.projectName">
                   {{ fund.projectName }}
                 </td>
-                <td class="col-amount text-right">{{ formatCurrency(fund.totalContractAmount) }}</td>
-                <td class="col-amount text-right text-success">{{ formatCurrency(fund.collected) }}</td>
-                <td class="col-amount text-right text-danger">{{ formatCurrency(fund.uncollected) }}</td>
+                <td class="col-amount text-right">
+                  {{ formatCurrency(fund.totalContractAmount) }}
+                </td>
+                <td class="col-amount text-right text-success">
+                  {{ formatCurrency(fund.collected) }}
+                </td>
+                <td class="col-amount text-right text-danger">
+                  {{ formatCurrency(fund.uncollected) }}
+                </td>
                 <td class="col-rate text-center">
                   <div class="mini-progress">
-                    <div class="mini-progress-bar" :style="{ width: fund.collectionRate + '%' }"></div>
+                    <div class="mini-progress-bar" :style="{ width: fund.collectionRate + '%' }" />
                   </div>
                   <span class="progress-text">{{ fund.collectionRate?.toFixed(1) || 0 }}%</span>
                 </td>
-                <td class="col-amount text-right">{{ formatCurrency(fund.oemPaid) }}</td>
+                <td class="col-amount text-right">
+                  {{ formatCurrency(fund.oemPaid) }}
+                </td>
                 <td class="col-amount text-right" :class="(fund.profit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
                   {{ formatCurrency(fund.profit ?? 0) }}
                 </td>
@@ -227,12 +289,24 @@
             </tbody>
             <tfoot v-if="statistics.fundDetails && statistics.fundDetails.length > 0">
               <tr>
-                <td colspan="2" class="text-right"><strong>합계</strong></td>
-                <td class="col-amount text-right"><strong>{{ formatCurrency(statistics.totalContractAmount) }}</strong></td>
-                <td class="col-amount text-right text-success"><strong>{{ formatCurrency(statistics.totalCollected) }}</strong></td>
-                <td class="col-amount text-right text-danger"><strong>{{ formatCurrency(statistics.totalOutstanding) }}</strong></td>
-                <td class="col-rate text-center"><strong>{{ getCollectionRate() }}%</strong></td>
-                <td class="col-amount text-right"><strong>{{ formatCurrency(statistics.totalOemPaid) }}</strong></td>
+                <td colspan="2" class="text-right">
+                  <strong>합계</strong>
+                </td>
+                <td class="col-amount text-right">
+                  <strong>{{ formatCurrency(statistics.totalContractAmount) }}</strong>
+                </td>
+                <td class="col-amount text-right text-success">
+                  <strong>{{ formatCurrency(statistics.totalCollected) }}</strong>
+                </td>
+                <td class="col-amount text-right text-danger">
+                  <strong>{{ formatCurrency(statistics.totalOutstanding) }}</strong>
+                </td>
+                <td class="col-rate text-center">
+                  <strong>{{ getCollectionRate() }}%</strong>
+                </td>
+                <td class="col-amount text-right">
+                  <strong>{{ formatCurrency(statistics.totalOemPaid) }}</strong>
+                </td>
                 <td class="col-amount text-right" :class="(statistics.currentProfit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
                   <strong>{{ formatCurrency(statistics.currentProfit ?? 0) }}</strong>
                 </td>
@@ -263,7 +337,7 @@ definePageMeta({
 const router = useRouter()
 
 // 현재 분기 계산 헬퍼
-function getCurrentQuarter(): number {
+function getCurrentQuarter (): number {
   return Math.ceil((new Date().getMonth() + 1) / 3)
 }
 
@@ -317,7 +391,7 @@ const loadStatistics = async () => {
   loading.value = true
   try {
     const params: FundStatisticsParams = {
-      periodType: periodType.value,
+      periodType: periodType.value
     }
 
     if (periodType.value === 'MONTHS') {
@@ -344,7 +418,7 @@ const loadStatistics = async () => {
 }
 
 const getCollectionRate = (): string => {
-  if (!statistics.value.totalContractAmount || statistics.value.totalContractAmount <= 0) return '0.0'
+  if (!statistics.value.totalContractAmount || statistics.value.totalContractAmount <= 0) { return '0.0' }
   const rate = (statistics.value.totalCollected / statistics.value.totalContractAmount) * 100
   return rate.toFixed(1)
 }
@@ -380,13 +454,13 @@ const renderCharts = async () => {
             label: '수금액',
             data: collectedData,
             backgroundColor: '#10b981',
-            borderRadius: 4,
+            borderRadius: 4
           },
           {
             label: '수익',
             data: profitData,
             backgroundColor: '#3b82f6',
-            borderRadius: 4,
+            borderRadius: 4
           }
         ]
       },
@@ -395,7 +469,7 @@ const renderCharts = async () => {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            position: 'top',
+            position: 'top'
           },
           tooltip: {
             callbacks: {
@@ -433,7 +507,7 @@ const renderCharts = async () => {
         datasets: [{
           data: [activeCount, completedCount],
           backgroundColor: ['#3b82f6', '#10b981'],
-          borderWidth: 0,
+          borderWidth: 0
         }]
       },
       options: {
@@ -441,7 +515,7 @@ const renderCharts = async () => {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false,
+            display: false
           },
           tooltip: {
             callbacks: {
@@ -451,7 +525,7 @@ const renderCharts = async () => {
             }
           }
         },
-        cutout: '60%',
+        cutout: '60%'
       }
     })
   }

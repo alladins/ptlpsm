@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div v-if="isOpen" class="error-popup-overlay">
       <!-- 배경 오버레이 -->
-      <div class="error-popup-backdrop"></div>
+      <div class="error-popup-backdrop" />
 
       <!-- 팝업 컨텐츠 -->
       <div class="error-popup-content">
@@ -17,20 +17,24 @@
 
         <!-- 팝업 헤더 -->
         <div class="error-header">
-          <h3 class="error-title">{{ title }}</h3>
-          <p class="error-message">{{ message }}</p>
+          <h3 class="error-title">
+            {{ title }}
+          </h3>
+          <p class="error-message">
+            {{ message }}
+          </p>
         </div>
 
         <!-- 관리자 문의 안내 -->
         <div class="error-notice">
           <p class="error-notice-text">
-            <i class="fas fa-info-circle"></i>
+            <i class="fas fa-info-circle" />
             관리자에게 문의 바랍니다.
           </p>
         </div>
 
         <!-- 확인 버튼 -->
-        <button @click="close" class="error-confirm-btn">
+        <button class="error-confirm-btn" @click="close">
           확인
         </button>
       </div>

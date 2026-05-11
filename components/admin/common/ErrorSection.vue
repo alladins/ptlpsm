@@ -1,6 +1,6 @@
 <template>
   <div class="error-section">
-    <i class="fas fa-exclamation-triangle"></i>
+    <i class="fas fa-exclamation-triangle" />
     <span>{{ message || '데이터를 찾을 수 없습니다.' }}</span>
   </div>
 </template>

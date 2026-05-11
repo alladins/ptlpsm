@@ -7,7 +7,7 @@
     >
       <template #actions>
         <button class="btn-action btn-secondary" @click="goBack">
-          <i class="fas fa-arrow-left"></i>
+          <i class="fas fa-arrow-left" />
           목록으로
         </button>
       </template>
@@ -40,14 +40,14 @@ definePageMeta({
 })
 
 const router = useRouter()
-const formRef = ref<{ setSaving: (value: boolean) => void } | null>(null)
+const formRef = ref<{ setSaving:(value: boolean) => void } | null>(null)
 
 // 권한
 const { canWrite } = usePermission()
 
 // 등록 처리
-async function handleCreate(data: CompanyCreateRequest) {
-  if (!formRef.value) return
+async function handleCreate (data: CompanyCreateRequest) {
+  if (!formRef.value) { return }
 
   try {
     formRef.value.setSaving(true)
@@ -57,7 +57,7 @@ async function handleCreate(data: CompanyCreateRequest) {
     alert('회사 정보가 등록되었습니다.')
 
     // 등록 성공 시 상세 페이지로 이동
-    router.push(`/admin/basic-info/company/detail/${response?.companyId}`)
+    router.push(`/admin/basic-info/company/detail/${response?.id}`)
   } catch (error: any) {
     console.error('Failed to create company:', error)
 
@@ -78,7 +78,7 @@ async function handleCreate(data: CompanyCreateRequest) {
 }
 
 // 취소 및 목록으로
-function goBack() {
+function goBack () {
   router.push('/admin/basic-info/company/list')
 }
 </script>

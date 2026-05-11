@@ -7,16 +7,18 @@
           <div class="ccm-modal-header">
             <div class="ccm-header-content">
               <div class="ccm-header-icon ccm-icon-blue">
-                <i class="fas fa-history"></i>
+                <i class="fas fa-history" />
               </div>
               <div class="ccm-header-text">
-                <h2 class="ccm-modal-title">원가 변경 이력</h2>
+                <h2 class="ccm-modal-title">
+                  원가 변경 이력
+                </h2>
                 <span class="ccm-modal-subtitle">{{ skuId }} - {{ oemCompanyName }}</span>
               </div>
             </div>
             <button class="ccm-close-button" @click="handleClose">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
               </svg>
             </button>
           </div>
@@ -26,7 +28,7 @@
             <!-- 현재 원가 정보 -->
             <div v-if="currentCost" class="current-cost-card">
               <div class="current-cost-header">
-                <i class="fas fa-won-sign"></i>
+                <i class="fas fa-won-sign" />
                 <span>현재 원가 정보</span>
               </div>
               <div class="current-cost-body">
@@ -55,29 +57,45 @@
               </div>
 
               <div v-if="isLoading" class="loading-container">
-                <div class="loading-spinner"></div>
+                <div class="loading-spinner" />
                 <span>이력 조회 중...</span>
               </div>
 
               <div v-else-if="historyList.length === 0" class="empty-state">
-                <i class="fas fa-inbox"></i>
+                <i class="fas fa-inbox" />
                 <span>변경 이력이 없습니다.</span>
               </div>
 
               <table v-else class="history-table">
                 <thead>
                   <tr>
-                    <th style="width: 130px">변경일시</th>
-                    <th style="width: 70px">유형</th>
-                    <th style="width: 100px" class="text-right">이전 원가</th>
-                    <th style="width: 100px" class="text-right">변경 원가</th>
-                    <th style="width: 80px">변경자</th>
+                    <th style="width: 130px">
+                      공급사명
+                    </th>
+                    <th style="width: 70px; text-align: center">
+                      유형
+                    </th>
+                    <th style="width: 100px" class="text-right">
+                      이전 원가
+                    </th>
+                    <th style="width: 100px" class="text-right">
+                      변경 원가
+                    </th>
+                    <th style="width: 90px">
+                      변경자
+                    </th>
+                    <th style="width: 150px">
+                      변경일시
+                    </th>
                     <th>사유</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="item in historyList" :key="item.id">
-                    <td>{{ formatDateTime(item.changedAt) }}</td>
+                    <td class="company-cell">
+                      {{ item.oemCompanyName || '-' }}
+                      <span v-if="item.costSourceType === 'LEADPOWER'" class="source-badge source-leadpower">본사</span>
+                    </td>
                     <td>
                       <span class="change-type-badge" :class="getChangeTypeClass(item.changeType)">
                         {{ getChangeTypeLabel(item.changeType) }}
@@ -90,7 +108,10 @@
                       {{ item.newCost ? formatCurrency(item.newCost) : '-' }}
                     </td>
                     <td>{{ item.changedByName || item.changedBy }}</td>
-                    <td class="reason-cell">{{ item.changeReason || '-' }}</td>
+                    <td>{{ formatDateTime(item.changedAt) }}</td>
+                    <td class="reason-cell">
+                      {{ item.changeReason || '-' }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -122,7 +143,7 @@ interface Props {
   oemCompanyId: number
   oemCompanyName: string
   currentCost?: OemCost | null
-  unitPrice?: number  // 마진율 계산용
+  unitPrice?: number // 마진율 계산용
 }
 
 const props = defineProps<Props>()
@@ -137,7 +158,7 @@ const historyList = ref<OemCostHistory[]>([])
 
 // 이력 로드
 const loadHistory = async () => {
-  if (!props.skuId) return
+  if (!props.skuId) { return }
 
   try {
     isLoading.value = true
@@ -162,7 +183,7 @@ const handleClose = () => {
 
 // 포맷팅 함수
 const formatCurrency = (amount: number | undefined | null): string => {
-  if (amount === undefined || amount === null) return '-'
+  if (amount === undefined || amount === null) { return '-' }
   return amount.toLocaleString('ko-KR') + '원'
 }
 
@@ -175,7 +196,7 @@ const formatDateRange = (cost: OemCost): string => {
 // 마진율
 const getMarginRateText = (cost: OemCost): string => {
   const rate = calculateMarginRate(props.unitPrice, cost.costPrice)
-  if (rate === null) return '-'
+  if (rate === null) { return '-' }
   return `${rate.toFixed(1)}%`
 }
 
@@ -229,7 +250,7 @@ watch(() => props.isOpen, (newVal) => {
   background: white;
   border-radius: 16px;
   width: 100%;
-  max-width: 700px;
+  max-width: 1020px;
   max-height: 90vh;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -492,10 +513,31 @@ watch(() => props.isOpen, (newVal) => {
 }
 
 .reason-cell {
-  max-width: 150px;
+  max-width: 120px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.company-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-weight: 500;
+}
+
+.source-badge {
+  display: inline-block;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.source-leadpower {
+  background: #fce7f3;
+  color: #9d174d;
 }
 
 /* 변경 유형 배지 */

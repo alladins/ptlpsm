@@ -39,19 +39,26 @@ export const useXxxStore = defineStore('xxx', () => {
 })
 ```
 
-### 서비스
+### 서비스 (신규 코드 — apiClient 사용 권장)
 ```typescript
+import { apiClient, type PageResponse } from '~/services/api/client'
+
 export const xxxService = {
-  async getList(params: SearchRequest): Promise<PageResponse<T>> {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    return response.json()
+  async getList(params: XxxSearchRequest): Promise<PageResponse<Xxx>> {
+    return apiClient.get<PageResponse<Xxx>>('/xxx', params)
+  },
+  async create(data: XxxCreateRequest): Promise<Xxx> {
+    return apiClient.post<Xxx>('/xxx', data)
   }
 }
 ```
+
+### 서비스 정책
+- **신규 service는 `apiClient` 사용 권장** (URLSearchParams 빌드, 응답 정규화, 타임아웃, 인증 헤더, 로거 자동 처리)
+- 기존 raw `fetch()` service 는 점진 변환. 한 번에 41개 일괄 변환은 회귀 위험으로 비권장
+- `apiClient.PageResponse<T>` 는 Spring Data 표준 (`number`, `size`, `totalElements`, `totalPages`, `first`, `last`)
+- `types/common.ts` 의 `PaginationResponse<T> { content, page: PageInfo }` 는 별도 레거시 패턴 — 신규 코드는 본 `PageResponse` 사용
+- UI 표시 페이지(1-indexed) ↔ API(0-indexed) 변환은 호출처(페이지·composable)에서
 
 ### 타입 + 상수
 ```typescript

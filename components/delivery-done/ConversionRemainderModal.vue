@@ -5,35 +5,37 @@
         <!-- 헤더 -->
         <div class="modal-header">
           <h3>
-            <i class="fas fa-calculator"></i>
+            <i class="fas fa-calculator" />
             환산잔량 처리
           </h3>
           <button class="modal-close" @click="closeModal">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
         <div class="modal-body">
           <!-- 로딩 -->
           <div v-if="loading" class="loading-container">
-            <i class="fas fa-spinner fa-spin"></i>
+            <i class="fas fa-spinner fa-spin" />
             <span>데이터를 불러오는 중...</span>
           </div>
 
           <!-- 후보 없음 -->
           <div v-else-if="candidates.length === 0" class="empty-container">
-            <i class="fas fa-check-circle"></i>
+            <i class="fas fa-check-circle" />
             <span>환산잔량 처리 대상 품목이 없습니다.</span>
           </div>
 
           <template v-else>
             <!-- 안내 문구 -->
             <div class="info-box">
-              <i class="fas fa-info-circle"></i>
+              <i class="fas fa-info-circle" />
               <div>
                 <p>짝수올림으로 발생한 잔여수량을 내부적으로 처리합니다.</p>
                 <p>처리 후 납품률이 100%가 되면 자동으로 서명대기 상태로 전환됩니다.</p>
-                <p class="info-warning">PDF 서류(납품완료계, 납품확인서)의 수량은 변경되지 않습니다.</p>
+                <p class="info-warning">
+                  PDF 서류(납품완료계, 납품확인서)의 수량은 변경되지 않습니다.
+                </p>
               </div>
             </div>
 
@@ -46,13 +48,23 @@
                       type="checkbox"
                       :checked="isAllSelected"
                       @change="toggleAll"
-                    />
+                    >
                   </th>
-                  <th style="width: 30%;">품목</th>
-                  <th style="width: 18%;" class="text-right">계약량(㎡)</th>
-                  <th style="width: 18%;" class="text-right">납품량(㎡)</th>
-                  <th style="width: 14%;" class="text-right">잔여량(㎡)</th>
-                  <th style="width: 15%;" class="text-right">환산잔량(㎡)</th>
+                  <th style="width: 30%;">
+                    품목
+                  </th>
+                  <th style="width: 18%;" class="text-right">
+                    계약량(㎡)
+                  </th>
+                  <th style="width: 18%;" class="text-right">
+                    납품량(㎡)
+                  </th>
+                  <th style="width: 14%;" class="text-right">
+                    잔여량(㎡)
+                  </th>
+                  <th style="width: 15%;" class="text-right">
+                    환산잔량(㎡)
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -61,13 +73,19 @@
                     <input
                       type="checkbox"
                       :checked="selectedSkuIds.has(item.skuId)"
-                      @change="toggleItem(item)"
                       :disabled="item.remainingQuantity > 4"
-                    />
+                      @change="toggleItem(item)"
+                    >
                   </td>
-                  <td class="text-left">{{ item.skuName }}</td>
-                  <td class="text-right">{{ formatNumber(item.orderedQuantity) }}</td>
-                  <td class="text-right">{{ formatNumber(item.deliveredQuantity) }}</td>
+                  <td class="text-left">
+                    {{ item.skuName }}
+                  </td>
+                  <td class="text-right">
+                    {{ formatNumber(item.orderedQuantity) }}
+                  </td>
+                  <td class="text-right">
+                    {{ formatNumber(item.deliveredQuantity) }}
+                  </td>
                   <td class="text-right">
                     <span :class="item.remainingQuantity > 4 ? 'text-danger' : 'text-warning'">
                       {{ formatNumber(item.remainingQuantity) }}
@@ -94,14 +112,16 @@
 
         <!-- 푸터 -->
         <div class="modal-footer">
-          <button class="btn-cancel" @click="closeModal">취소</button>
+          <button class="btn-cancel" @click="closeModal">
+            취소
+          </button>
           <button
             class="btn-confirm"
-            @click="handleProcess"
             :disabled="processing || selectedSkuIds.size === 0"
+            @click="handleProcess"
           >
-            <i v-if="processing" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-check"></i>
+            <i v-if="processing" class="fas fa-spinner fa-spin" />
+            <i v-else class="fas fa-check" />
             환산잔량 처리
           </button>
         </div>
@@ -121,11 +141,13 @@ import type { ConversionRemainderCandidate } from '~/types/delivery-done'
 interface Props {
   isOpen: boolean
   deliveryDoneId: number | null
+  threshold: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isOpen: false,
-  deliveryDoneId: null
+  deliveryDoneId: null,
+  threshold: 4
 })
 
 const emit = defineEmits<{
@@ -140,7 +162,7 @@ const selectedSkuIds = ref<Set<string>>(new Set())
 
 // 전체 선택 여부
 const selectableCandidates = computed(() =>
-  candidates.value.filter(c => c.remainingQuantity <= 4)
+  candidates.value.filter(c => c.remainingQuantity <= props.threshold)
 )
 
 const isAllSelected = computed(() =>
@@ -165,14 +187,14 @@ watch(() => props.isOpen, async (open) => {
   }
 })
 
-async function loadCandidates() {
-  if (!props.deliveryDoneId) return
+async function loadCandidates () {
+  if (!props.deliveryDoneId) { return }
   loading.value = true
   try {
     candidates.value = await getConversionRemainderCandidates(props.deliveryDoneId)
-    // 4㎡ 이하인 품목 자동 선택
+    // 임계값 이하인 품목 자동 선택
     selectedSkuIds.value = new Set(
-      candidates.value.filter(c => c.remainingQuantity <= 4).map(c => c.skuId)
+      candidates.value.filter(c => c.remainingQuantity <= props.threshold).map(c => c.skuId)
     )
   } catch (error) {
     console.error('환산잔량 후보 조회 실패:', error)
@@ -182,7 +204,7 @@ async function loadCandidates() {
   }
 }
 
-function toggleAll() {
+function toggleAll () {
   if (isAllSelected.value) {
     selectedSkuIds.value = new Set()
   } else {
@@ -190,7 +212,7 @@ function toggleAll() {
   }
 }
 
-function toggleItem(item: ConversionRemainderCandidate) {
+function toggleItem (item: ConversionRemainderCandidate) {
   const newSet = new Set(selectedSkuIds.value)
   if (newSet.has(item.skuId)) {
     newSet.delete(item.skuId)
@@ -200,8 +222,8 @@ function toggleItem(item: ConversionRemainderCandidate) {
   selectedSkuIds.value = newSet
 }
 
-async function handleProcess() {
-  if (selectedSkuIds.value.size === 0 || !props.deliveryDoneId) return
+async function handleProcess () {
+  if (selectedSkuIds.value.size === 0 || !props.deliveryDoneId) { return }
 
   if (!confirm('선택한 품목의 환산잔량을 처리하시겠습니까?\n처리 후 납품률이 100%가 되면 서명대기 상태로 전환됩니다.')) {
     return
@@ -228,12 +250,12 @@ async function handleProcess() {
   }
 }
 
-function closeModal() {
+function closeModal () {
   emit('close')
 }
 
-function formatNumber(value: number): string {
-  if (value == null) return '0'
+function formatNumber (value: number): string {
+  if (value == null) { return '0' }
   return Number(value).toLocaleString('ko-KR', { maximumFractionDigits: 2 })
 }
 </script>

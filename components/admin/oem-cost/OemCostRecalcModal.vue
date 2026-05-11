@@ -8,17 +8,19 @@
             <div class="ccm-header-content">
               <div class="ccm-header-icon ccm-icon-blue">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </div>
               <div class="ccm-header-text">
-                <h2 class="ccm-modal-title">OEM 원가 변경 - 영향받는 주문</h2>
+                <h2 class="ccm-modal-title">
+                  OEM 원가 변경 - 영향받는 주문
+                </h2>
                 <span class="ccm-modal-subtitle">선택한 주문만 현재 원가로 재계산합니다</span>
               </div>
             </div>
-            <button class="ccm-close-button" @click="handleClose" :disabled="isRecalculating">
+            <button class="ccm-close-button" :disabled="isRecalculating" @click="handleClose">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
               </svg>
             </button>
           </div>
@@ -43,24 +45,34 @@
             <div class="period-filter">
               <label class="period-label">조회 기간</label>
               <select v-model="selectedPeriod" class="period-select" @change="loadAffectedOrders">
-                <option value="1">최근 1개월</option>
-                <option value="3">최근 3개월</option>
-                <option value="6">최근 6개월</option>
-                <option value="12">최근 1년</option>
-                <option value="all">전체</option>
+                <option value="1">
+                  최근 1개월
+                </option>
+                <option value="3">
+                  최근 3개월
+                </option>
+                <option value="6">
+                  최근 6개월
+                </option>
+                <option value="12">
+                  최근 1년
+                </option>
+                <option value="all">
+                  전체
+                </option>
               </select>
             </div>
 
             <!-- 로딩 상태 -->
             <div v-if="isLoading" class="loading-state">
-              <div class="loading-spinner-large"></div>
+              <div class="loading-spinner-large" />
               <p>영향받는 주문을 조회하고 있습니다...</p>
             </div>
 
             <!-- 영향받는 주문 없음 -->
             <div v-else-if="affectedOrders.length === 0" class="empty-state">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
               <p>영향받는 주문이 없습니다.</p>
               <span class="empty-hint">해당 기간에 이 SKU + OEM 조합의 출하가 없습니다.</span>
@@ -76,7 +88,7 @@
                     :checked="isAllSelected"
                     :indeterminate="isIndeterminate"
                     @change="toggleSelectAll"
-                  />
+                  >
                   <span>전체 선택</span>
                 </label>
                 <span class="order-count">총 {{ affectedOrders.length }}건</span>
@@ -94,7 +106,7 @@
                     type="checkbox"
                     :checked="selectedIds.has(order.deliveryDoneId)"
                     @change="toggleOrder(order.deliveryDoneId)"
-                  />
+                  >
                   <div class="order-info">
                     <div class="order-header">
                       <span class="order-no">{{ order.deliveryRequestNo || '-' }}</span>
@@ -113,7 +125,9 @@
 
               <!-- 재계산 결과 (실행 후) -->
               <div v-if="recalcResults.length > 0" class="recalc-results">
-                <h4 class="results-title">재계산 결과</h4>
+                <h4 class="results-title">
+                  재계산 결과
+                </h4>
                 <div
                   v-for="result in recalcResults"
                   :key="result.deliveryDoneId"
@@ -138,8 +152,8 @@
             <button
               type="button"
               class="ccm-btn-secondary"
-              @click="handleClose"
               :disabled="isRecalculating"
+              @click="handleClose"
             >
               {{ recalcResults.length > 0 ? '닫기' : '나중에' }}
             </button>
@@ -147,10 +161,10 @@
               v-if="recalcResults.length === 0"
               type="button"
               class="ccm-btn-primary ccm-btn-blue"
-              @click="handleRecalculate"
               :disabled="selectedIds.size === 0 || isRecalculating"
+              @click="handleRecalculate"
             >
-              <span v-if="isRecalculating" class="loading-spinner"></span>
+              <span v-if="isRecalculating" class="loading-spinner" />
               <span v-else>선택 재계산 ({{ selectedIds.size }}건)</span>
             </button>
           </div>
@@ -225,7 +239,7 @@ const loadAffectedOrders = async () => {
     )
 
     // 기본적으로 전체 선택
-    affectedOrders.value.forEach(order => {
+    affectedOrders.value.forEach((order) => {
       selectedIds.value.add(order.deliveryDoneId)
     })
   } catch (error) {
@@ -258,10 +272,10 @@ const toggleOrder = (deliveryDoneId: number) => {
 
 // 재계산 실행
 const handleRecalculate = async () => {
-  if (selectedIds.value.size === 0 || isRecalculating.value) return
+  if (selectedIds.value.size === 0 || isRecalculating.value) { return }
 
   const confirmed = confirm(`선택한 ${selectedIds.value.size}건의 OEM 예정총액을 재계산합니다.\n진행하시겠습니까?`)
-  if (!confirmed) return
+  if (!confirmed) { return }
 
   isRecalculating.value = true
   try {
@@ -285,8 +299,8 @@ const getOrderNo = (deliveryDoneId: number): string => {
 // 차이 표시
 const getDiffClass = (result: RecalcResult): string => {
   const diff = result.newAmount - result.oldAmount
-  if (diff > 0) return 'diff-positive'
-  if (diff < 0) return 'diff-negative'
+  if (diff > 0) { return 'diff-positive' }
+  if (diff < 0) { return 'diff-negative' }
   return 'diff-zero'
 }
 
@@ -298,13 +312,13 @@ const getDiffText = (result: RecalcResult): string => {
 
 // 금액 포맷
 const formatCurrency = (amount: number | undefined | null): string => {
-  if (amount === undefined || amount === null) return '0원'
+  if (amount === undefined || amount === null) { return '0원' }
   return amount.toLocaleString('ko-KR') + '원'
 }
 
 // 닫기
 const handleClose = () => {
-  if (isRecalculating.value) return
+  if (isRecalculating.value) { return }
   emit('close')
 }
 

@@ -7,26 +7,30 @@
           src="/images/common/logo.png"
           alt="PTPLPSM 로고"
           class="logo"
-        />
-        <h1 class="title">통합 출하관리 시스템</h1>
-        <p class="subtitle">PTPLPSM Admin Login</p>
+        >
+        <h1 class="title">
+          통합 출하관리 시스템
+        </h1>
+        <p class="subtitle">
+          PTPLPSM Admin Login
+        </p>
       </div>
 
       <!-- 에러 메시지 -->
       <div v-if="errorMessage" class="error-message">
         <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         {{ errorMessage }}
       </div>
 
       <!-- 로그인 폼 -->
-      <form @submit.prevent="handleLogin" class="login-form">
+      <form class="login-form" @submit.prevent="handleLogin">
         <!-- 아이디 입력 -->
         <div class="form-group">
           <label for="loginId" class="form-label">
             <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
             아이디
           </label>
@@ -39,14 +43,14 @@
             required
             :disabled="isLoading"
             autocomplete="userName"
-          />
+          >
         </div>
 
         <!-- 비밀번호 입력 -->
         <div class="form-group">
           <label for="password" class="form-label">
             <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
             비밀번호
           </label>
@@ -59,7 +63,7 @@
             required
             :disabled="isLoading"
             autocomplete="current-password"
-          />
+          >
         </div>
 
         <!-- 로그인 유지 체크박스 -->
@@ -70,7 +74,7 @@
               type="checkbox"
               class="checkbox-input"
               :disabled="isLoading"
-            />
+            >
             <span class="checkbox-text">로그인 유지</span>
           </label>
         </div>
@@ -84,13 +88,20 @@
           <span v-if="!isLoading" class="button-content">
             로그인
             <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </span>
           <span v-else class="button-loading">
             <svg class="loading-spinner" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             로그인 중...
           </span>
@@ -101,7 +112,7 @@
       <div class="footer-links">
         <a href="/" class="footer-link">
           <svg class="footer-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           메인 페이지로 돌아가기
         </a>
@@ -136,7 +147,7 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 
 const handleLogin = async () => {
-  if (isLoading.value) return
+  if (isLoading.value) { return }
 
   errorMessage.value = ''
 

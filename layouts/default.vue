@@ -2,7 +2,7 @@
   <div :class="{ 'is-index': $route.path === '/' }">
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M7D836N4"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+      height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <header :class="['main-header', { 'scrolled': isScrolled }]">
       <AppHeader />
@@ -16,9 +16,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRoute } from '#imports'
 import AppHeader from '../components/AppHeader.vue'
 import AppFooter from '../components/AppFooter.vue'
+import { useRoute } from '#imports'
 
 const route = useRoute()
 const isScrolled = ref(false)
@@ -48,4 +48,3 @@ main.page-index {
   padding-top: 0;
 }
 </style>
-

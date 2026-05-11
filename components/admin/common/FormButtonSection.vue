@@ -1,10 +1,10 @@
 <template>
   <div class="button-section">
-    <button type="button" @click="$emit('cancel')" class="btn-secondary">
+    <button type="button" class="btn-secondary" @click="$emit('cancel')">
       {{ cancelLabel || '취소' }}
     </button>
     <button type="submit" :disabled="submitting" class="btn-primary">
-      <i v-if="submitting" class="fas fa-spinner fa-spin"></i>
+      <i v-if="submitting" class="fas fa-spinner fa-spin" />
       {{ submitLabel || '저장' }}
     </button>
   </div>

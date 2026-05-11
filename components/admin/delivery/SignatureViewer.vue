@@ -4,14 +4,14 @@
     <div
       v-if="hasSignature && fullPdfUrl"
       class="pdf-thumbnail"
-      @click="openPdfModal"
       title="PDF 미리보기"
+      @click="openPdfModal"
     >
       <div class="pdf-icon">
-        <i class="fas fa-file-pdf"></i>
+        <i class="fas fa-file-pdf" />
       </div>
       <div class="pdf-overlay">
-        <i class="fas fa-search-plus"></i>
+        <i class="fas fa-search-plus" />
       </div>
     </div>
   </div>
@@ -20,14 +20,14 @@
   <div v-else class="pdf-download-viewer">
     <!-- PDF 없을 때 -->
     <div v-if="!hasSignature || !fullPdfUrl" class="no-pdf">
-      <i class="fas fa-file-pdf"></i>
+      <i class="fas fa-file-pdf" />
       <span>PDF 없음</span>
     </div>
 
     <!-- PDF 있을 때 -->
     <div v-else class="pdf-download-container">
-      <button @click="openPdfModal" class="btn-preview-pdf">
-        <i class="fas fa-search"></i>
+      <button class="btn-preview-pdf" @click="openPdfModal">
+        <i class="fas fa-search" />
         PDF 미리보기
       </button>
     </div>
@@ -46,8 +46,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { getApiBaseUrl } from '~/services/api'
 import AdminDeliveryPdfPreviewModal from './PdfPreviewModal.vue'
+import { getApiBaseUrl } from '~/services/api'
 
 interface Props {
   pdfFileUrl?: string | null

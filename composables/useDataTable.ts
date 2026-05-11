@@ -230,12 +230,23 @@ export function useDataTable<T = any>(options: UseDataTableOptions = {}) {
   }
 
   /**
-   * 수동으로 데이터 설정 (API 호출 없이)
+   * 수동으로 데이터 설정 (API 호출 없이, 클라이언트 사이드 페이징)
    */
   function setData(data: T[], total?: number) {
-    items.value = data
-    totalElements.value = total ?? data.length
-    totalPages.value = Math.ceil(totalElements.value / pageSize.value)
+    const allCount = total ?? data.length
+    totalElements.value = allCount
+    totalPages.value = Math.ceil(allCount / pageSize.value)
+
+    // 현재 페이지가 범위를 벗어나면 첫 페이지로 리셋
+    if (currentPage.value >= totalPages.value && totalPages.value > 0) {
+      currentPage.value = 0
+    }
+
+    // 현재 페이지에 해당하는 데이터만 슬라이스
+    const start = currentPage.value * pageSize.value
+    const end = start + pageSize.value
+    items.value = data.slice(start, end)
+
     isFirstPage.value = currentPage.value === 0
     isLastPage.value = currentPage.value >= totalPages.value - 1
   }

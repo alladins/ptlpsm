@@ -4,10 +4,10 @@
       <!-- 발주 헤더 - 1줄 레이아웃 (캡처 이미지 기준) -->
       <div class="order-header" @click="toggleExpand">
         <button class="expand-btn" :class="{ expanded }" @click.stop="toggleExpand">
-          <i class="fas" :class="expanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+          <i class="fas" :class="expanded ? 'fa-chevron-down' : 'fa-chevron-right'" />
         </button>
 
-        <i class="fas fa-file-invoice order-icon"></i>
+        <i class="fas fa-file-invoice order-icon" />
 
         <span class="delivery-request-no">{{ order.deliveryRequestNo }}</span>
 
@@ -19,7 +19,7 @@
         <span class="separator narrow">|</span>
 
         <span class="client-name">
-          <i class="fas fa-building"></i>
+          <i class="fas fa-building" />
           {{ order.client }}
         </span>
 
@@ -48,7 +48,7 @@
           <!-- 출하가 있을 때 -->
           <div v-if="order.shipments && order.shipments.length > 0" class="shipments-container">
             <div class="shipments-header">
-              <i class="fas fa-truck-loading"></i>
+              <i class="fas fa-truck-loading" />
               <span>출하 목록 ({{ order.shipments.length }}건)</span>
             </div>
 
@@ -64,7 +64,7 @@
 
           <!-- 출하가 없을 때 -->
           <div v-else class="no-shipments">
-            <i class="fas fa-box-open"></i>
+            <i class="fas fa-box-open" />
             <span>출하 내역이 없습니다</span>
           </div>
         </div>
@@ -104,13 +104,13 @@ const getRateColorClass = () => {
 
 <style scoped>
 .order-tree-node {
-  margin-bottom: 0.75rem;  /* 기존: 1.25rem (40% 축소) */
+  margin-bottom: 0.375rem;
 }
 
 .order-card {
   background: white;
   border: 2px solid #3b82f6;
-  border-radius: 0.5rem;  /* 기존: 0.75rem (33% 축소) */
+  border-radius: 0.5rem;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
   transition: all 0.3s ease;
@@ -124,8 +124,8 @@ const getRateColorClass = () => {
 .order-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
   background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   cursor: pointer;
   transition: background 0.2s;
@@ -137,8 +137,8 @@ const getRateColorClass = () => {
 }
 
 .expand-btn {
-  width: 28px;   /* 기존: 32px (12% 축소) */
-  height: 28px;  /* 기존: 32px (12% 축소) */
+  width: 24px;
+  height: 24px;
   border: none;
   background: white;
   border-radius: 0.5rem;
@@ -164,17 +164,17 @@ const getRateColorClass = () => {
 }
 
 .expand-btn i {
-  font-size: 0.875rem;  /* 폰트 크기 유지 */
+  font-size: 0.875rem;
 }
 
 .order-icon {
-  font-size: 1.75rem;  /* 폰트 크기 유지 */
+  font-size: 1.25rem;
   color: #3b82f6;
   flex-shrink: 0;
 }
 
 .delivery-request-no {
-  font-size: 1.5rem;
+  font-size: 1.0625rem;
   font-weight: 800;
   color: #2563eb;
   letter-spacing: -0.025em;
@@ -194,7 +194,7 @@ const getRateColorClass = () => {
 }
 
 .date-label {
-  font-size: 0.875rem;  /* 폰트 크기 유지 */
+  font-size: 0.8125rem;
   font-weight: 600;
   color: #6b7280;
 }
@@ -209,7 +209,7 @@ const getRateColorClass = () => {
 .separator {
   color: #d1d5db;
   font-weight: 300;
-  font-size: 1rem;
+  font-size: 0.875rem;
   flex-shrink: 0;
 }
 
@@ -224,7 +224,7 @@ const getRateColorClass = () => {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
   flex-shrink: 0;
@@ -232,12 +232,12 @@ const getRateColorClass = () => {
 
 .client-name i {
   color: #3b82f6;
-  font-size: 1rem;
+  font-size: 0.875rem;
 }
 
 /* 프로젝트명 */
 .project-name {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   color: #4b5563;
   flex: 1;
@@ -249,7 +249,7 @@ const getRateColorClass = () => {
 
 /* 수량 정보 */
 .quantity-info {
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
   flex-shrink: 0;
@@ -262,7 +262,7 @@ const getRateColorClass = () => {
   align-items: center;
   padding: 0.25rem 0.5rem;
   border-radius: 0.375rem;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   background: #f3f4f6;
   color: #4b5563;
@@ -272,9 +272,9 @@ const getRateColorClass = () => {
 
 /* 납품율 뱃지 */
 .delivery-rate-badge {
-  padding: 0.375rem 0.875rem;
+  padding: 0.25rem 0.625rem;
   border-radius: 9999px;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 800;
   margin-left: auto;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -313,31 +313,31 @@ const getRateColorClass = () => {
 
 /* ===== 발주 본문 (확장 시) ===== */
 .order-body {
-  padding: 0.75rem 1rem;  /* 기존: 1.5rem 2rem (50% 축소) */
+  padding: 0.5rem 0.75rem;
   background: #f8fafc;
 }
 
 .shipments-container {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;  /* 기존: 1rem (50% 축소) */
+  gap: 0.5rem;
 }
 
 .shipments-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;            /* 기존: 0.75rem (33% 축소) */
-  padding: 0.5rem 0.75rem; /* 기존: 1rem 1.25rem (50% 축소) */
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
   background: white;
   border: 2px solid #e0e7ff;
   border-radius: 0.5rem;
-  font-size: 0.9375rem;  /* 폰트 크기 유지 */
+  font-size: 0.9375rem;
   font-weight: 700;
   color: #4338ca;
 }
 
 .shipments-header i {
-  font-size: 1.125rem;  /* 폰트 크기 유지 */
+  font-size: 1.125rem;
   color: #7c3aed;
 }
 
@@ -346,16 +346,16 @@ const getRateColorClass = () => {
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  padding: 2rem;  /* 기존: 3rem (33% 축소) */
+  padding: 2rem;
   background: white;
   border: 2px dashed #cbd5e1;
   border-radius: 0.5rem;
   color: #94a3b8;
-  font-size: 0.9375rem;  /* 폰트 크기 유지 */
+  font-size: 0.9375rem;
 }
 
 .no-shipments i {
-  font-size: 2.5rem;  /* 폰트 크기 유지 */
+  font-size: 2.5rem;
 }
 
 /* ===== 확장/축소 애니메이션 ===== */
@@ -423,17 +423,17 @@ const getRateColorClass = () => {
   }
 
   .delivery-rate-badge {
-    font-size: 1.125rem;
+    font-size: 0.875rem;
     padding: 0.25rem 0.625rem;
     order: 9;
   }
 
   .delivery-request-no {
-    font-size: 1.25rem;
+    font-size: 0.9375rem;
   }
 
   .order-icon {
-    font-size: 1.5rem;
+    font-size: 1.125rem;
   }
 
   .order-body {

@@ -3,27 +3,30 @@
     <!-- 페이지 헤더 -->
     <PageHeader
       :title="`자금 상세 - ${fundDetail?.deliveryRequestNo || ''}`"
+      icon="order"
+      icon-color="blue"
       description="납품요구별 자금 현황을 상세하게 확인합니다."
     >
       <template #actions>
         <button class="btn-action btn-secondary" @click="goBack">
-          <i class="fas fa-arrow-left"></i>
+          <i class="fas fa-arrow-left" />
           목록
         </button>
       </template>
     </PageHeader>
-
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-container">
-      <i class="fas fa-spinner fa-spin"></i>
+      <i class="fas fa-spinner fa-spin" />
       <p>데이터를 불러오는 중...</p>
     </div>
 
     <!-- 에러 상태 -->
     <div v-else-if="error" class="error-container">
-      <i class="fas fa-exclamation-triangle"></i>
+      <i class="fas fa-exclamation-triangle" />
       <p>{{ error }}</p>
-      <button class="btn-primary" @click="loadData">다시 시도</button>
+      <button class="btn-primary" @click="loadData">
+        다시 시도
+      </button>
     </div>
 
     <!-- 상세 내용 -->
@@ -31,7 +34,7 @@
       <!-- 기본 정보 카드 -->
       <div class="info-card">
         <div class="info-card-header">
-          <i class="fas fa-info-circle"></i>
+          <i class="fas fa-info-circle" />
           <h3>기본 정보</h3>
         </div>
         <div class="info-grid">
@@ -61,41 +64,61 @@
         <div class="summary-cards">
           <div class="summary-card">
             <div class="summary-icon" style="background: #dbeafe; color: #1d4ed8;">
-              <i class="fas fa-file-invoice-dollar"></i>
+              <i class="fas fa-file-invoice-dollar" />
             </div>
             <div class="summary-content">
-              <div class="summary-label">계약총액</div>
-              <div class="summary-value">{{ formatCurrency(fundDetail.contractTotalAmount) }}</div>
+              <div class="summary-label">
+                계약총액
+              </div>
+              <div class="summary-value">
+                {{ formatCurrency(fundDetail.contractTotalAmount) }}
+              </div>
             </div>
           </div>
           <div class="summary-card">
             <div class="summary-icon" style="background: #fef3c7; color: #d97706;">
-              <i class="fas fa-hand-holding-usd"></i>
+              <i class="fas fa-hand-holding-usd" />
             </div>
             <div class="summary-content">
-              <div class="summary-label">선급금</div>
-              <div class="summary-value">{{ formatCurrency(fundDetail.advancePaymentAmount || 0) }}</div>
-              <div class="summary-sub">{{ getAdvancePaymentRate().toFixed(1) }}%</div>
+              <div class="summary-label">
+                선급금
+              </div>
+              <div class="summary-value">
+                {{ formatCurrency(fundDetail.advancePaymentAmount || 0) }}
+              </div>
+              <div class="summary-sub">
+                {{ getAdvancePaymentRate().toFixed(1) }}%
+              </div>
             </div>
           </div>
           <div class="summary-card">
             <div class="summary-icon" style="background: #dcfce7; color: #16a34a;">
-              <i class="fas fa-coins"></i>
+              <i class="fas fa-coins" />
             </div>
             <div class="summary-content">
-              <div class="summary-label">기성금 누계</div>
-              <div class="summary-value">{{ formatCurrency(fundDetail.progressPaymentTotal) }}</div>
-              <div class="summary-sub">{{ progressOnlyPayments.length || 0 }}회</div>
+              <div class="summary-label">
+                기성금 누계
+              </div>
+              <div class="summary-value">
+                {{ formatCurrency(fundDetail.progressPaymentTotal) }}
+              </div>
+              <div class="summary-sub">
+                {{ progressOnlyPayments.length || 0 }}회
+              </div>
             </div>
           </div>
           <!-- 선급금 차감 현황 카드 -->
           <div v-if="hasAdvancePayment" class="summary-card">
             <div class="summary-icon" style="background: #fef3c7; color: #b45309;">
-              <i class="fas fa-balance-scale"></i>
+              <i class="fas fa-balance-scale" />
             </div>
             <div class="summary-content">
-              <div class="summary-label">선급금 차감</div>
-              <div class="summary-value">{{ formatCurrency(advanceSettledTotal) }}</div>
+              <div class="summary-label">
+                선급금 차감
+              </div>
+              <div class="summary-value">
+                {{ formatCurrency(advanceSettledTotal) }}
+              </div>
               <div class="summary-sub" :class="advanceUnsettledBalance > 0 ? 'text-warning' : 'text-success'">
                 미정산: {{ formatCurrency(advanceUnsettledBalance) }}
               </div>
@@ -103,11 +126,15 @@
           </div>
           <div class="summary-card">
             <div class="summary-icon" style="background: #fee2e2; color: #dc2626;">
-              <i class="fas fa-wallet"></i>
+              <i class="fas fa-wallet" />
             </div>
             <div class="summary-content">
-              <div class="summary-label">잔금</div>
-              <div class="summary-value">{{ formatCurrency(getRemainingBalance()) }}</div>
+              <div class="summary-label">
+                잔금
+              </div>
+              <div class="summary-value">
+                {{ formatCurrency(getRemainingBalance()) }}
+              </div>
             </div>
           </div>
         </div>
@@ -123,33 +150,33 @@
               class="progress-segment advance"
               :style="{ width: getAdvancePaymentRate() + '%' }"
               title="선급금"
-            ></div>
+            />
             <div
               class="progress-segment progress-payment"
               :style="{ width: getProgressPaymentRate() + '%' }"
               title="기성금"
-            ></div>
+            />
             <div
               class="progress-segment balance"
               :style="{ width: getBalancePaymentRate() + '%' }"
               title="잔금"
-            ></div>
+            />
           </div>
           <div class="progress-legend">
             <div class="legend-item">
-              <span class="legend-color advance"></span>
+              <span class="legend-color advance" />
               <span>선급금 ({{ getAdvancePaymentRate().toFixed(1) }}%)</span>
             </div>
             <div class="legend-item">
-              <span class="legend-color progress-payment"></span>
+              <span class="legend-color progress-payment" />
               <span>기성금 ({{ getProgressPaymentRate().toFixed(1) }}%)</span>
             </div>
             <div class="legend-item">
-              <span class="legend-color balance"></span>
+              <span class="legend-color balance" />
               <span>잔금 ({{ getBalancePaymentRate().toFixed(1) }}%)</span>
             </div>
             <div class="legend-item">
-              <span class="legend-color remaining"></span>
+              <span class="legend-color remaining" />
               <span>미수금 ({{ (100 - getCollectionRate()).toFixed(1) }}%)</span>
             </div>
           </div>
@@ -166,7 +193,7 @@
             :class="{ active: activeTab === tab.id }"
             @click="activeTab = tab.id"
           >
-            <i :class="tab.icon"></i>
+            <i :class="tab.icon" />
             <span>{{ tab.label }}</span>
           </button>
         </div>
@@ -236,7 +263,6 @@
           @open-bgrade-modal="openBgradeModal"
           @recalculate-oem-cost="handleRecalculateOemCost"
         />
-
       </div>
     </div>
 
@@ -317,7 +343,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from '#imports'
 import { useFundStore } from '~/stores/fund'
 import { formatCurrency } from '~/utils/format'
-import type { FundDetail, ProgressPaymentRequest, FundShipmentInfo } from '~/types/fund'
+import type { FundDetail, ProgressPaymentRequest, FundShipmentInfo, AdvancePdfType, AdvancePayment, OemPayment, OemCostRecalcPreview } from '~/types/fund'
 import ProgressPaymentModal from '~/components/fund/ProgressPaymentModal.vue'
 import FinalDeliveryModal from '~/components/fund/FinalDeliveryModal.vue'
 import AdvancePaymentModal from '~/components/fund/AdvancePaymentModal.vue'
@@ -332,10 +358,9 @@ import FundBalanceTab from '~/components/fund/FundBalanceTab.vue'
 import { baselineService } from '~/services/baseline.service'
 import { fundService } from '~/services/fund.service'
 import { advancePaymentService } from '~/services/advance-payment.service'
-import type { AdvancePdfType, AdvancePayment, OemPayment, OemCostRecalcPreview } from '~/types/fund'
 import { shipmentService, type ShipmentListItem } from '~/services/shipment.service'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
-import { useFundCalculations } from '~/composables/useFundCalculations'
+import { useFundCalculations } from '~/utils/fund-calculations'
 import { useFundModals } from '~/composables/useFundModals'
 import { useDeliveryButtons } from '~/composables/useDeliveryButtons'
 
@@ -366,8 +391,8 @@ const progressPayments = ref<ProgressPaymentRequest[]>([])
 const oemPayments = ref<OemPayment[]>([])
 
 // 기성청구 Validation용 상태
-const completedDeliveryCount = ref(0)  // 서명 완료된 출하 수
-const availableShipments = ref<any[]>([])  // 청구 가능한 출하 목록
+const completedDeliveryCount = ref(0) // 서명 완료된 출하 수
+const availableShipments = ref<any[]>([]) // 청구 가능한 출하 목록
 
 // 출하 목록 상태 (B급 조정 가능 여부 판단용)
 const shipments = ref<ShipmentListItem[]>([])
@@ -522,7 +547,7 @@ const advanceUnsettledBalance = computed(() => {
 
 /** 선급금 예상액 계산 */
 const expectedAdvanceAmount = computed(() => {
-  if (!fundDetail.value) return 0
+  if (!fundDetail.value) { return 0 }
   const rate = fundDetail.value.advancePaymentRate || 70
   return Math.floor((fundDetail.value.contractTotalAmount * rate) / 100)
 })
@@ -545,7 +570,7 @@ const maxProgressClaimCount = computed(() => {
   const unclaimed = totalUnclaimedCount.value
   // 미인수 미청구 출하가 있으면 전부 선택 가능 (미인수 건이 납품완료계용)
   const unclaimedUndelivered = unclaimed - available
-  if (unclaimedUndelivered > 0) return available
+  if (unclaimedUndelivered > 0) { return available }
   // 모두 인수완료이면 최소 1건은 남겨야 함
   return Math.max(0, available - 1)
 })
@@ -680,7 +705,7 @@ const loadData = async () => {
 
 /** 기성청구 버튼 Validation용 데이터 로드 */
 const loadValidationData = async () => {
-  if (!fundDetail.value?.orderId) return
+  if (!fundDetail.value?.orderId) { return }
 
   try {
     // 선급금 버튼 활성화 조건 확인
@@ -715,7 +740,7 @@ const loadValidationData = async () => {
 
 /** 출하 목록 조회 (B급 조정 가능 여부 판단용) */
 const loadShipments = async () => {
-  if (!fundDetail.value?.orderId) return
+  if (!fundDetail.value?.orderId) { return }
 
   shipmentsLoading.value = true
   try {
@@ -746,7 +771,7 @@ const handleDeleteAdvance = async (payment: AdvancePayment) => {
     '- 관련 PDF 문서 5종이 함께 삭제됩니다.\n' +
     '- 삭제 후 선급금을 다시 신청할 수 있습니다.'
   )
-  if (!confirmed) return
+  if (!confirmed) { return }
 
   try {
     await fundService.deleteAdvance(fundId.value, payment.advanceId)
@@ -776,11 +801,10 @@ const handleOpenBalanceConfirmModal = () => {
  * 잔여 잔금 계산 (미수금)
  */
 const getRemainingBalance = (): number => {
-  if (!fundDetail.value) return 0
+  if (!fundDetail.value) { return 0 }
   // 서버에서 balanceAmount 또는 outstandingAmount로 제공
   return fundDetail.value.balanceAmount || fundDetail.value.outstandingAmount || 0
 }
-
 
 // 납품확인/완료계 버튼 상태 조회 (orderId가 변경될 때)
 watch(() => fundDetail.value?.orderId, async (orderId) => {
@@ -806,15 +830,15 @@ watch(activeTab, async (newTab) => {
 
 // OEM 원가 재계산 실행
 const handleRecalculateOemCost = async () => {
-  if (!recalcPreview.value || recalcPreview.value.difference === 0) return
+  if (!recalcPreview.value || recalcPreview.value.difference === 0) { return }
 
   const confirmed = confirm(
-    `OEM 예정총액을 현재 원가 기준으로 재계산합니다.\n\n` +
+    'OEM 예정총액을 현재 원가 기준으로 재계산합니다.\n\n' +
     `현재: ${formatCurrency(recalcPreview.value.currentOemExpectedTotal)}\n` +
     `재계산: ${formatCurrency(recalcPreview.value.newOemExpectedTotal)}\n\n` +
-    `진행하시겠습니까?`
+    '진행하시겠습니까?'
   )
-  if (!confirmed) return
+  if (!confirmed) { return }
 
   try {
     isRecalculating.value = true

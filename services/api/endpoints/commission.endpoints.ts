@@ -171,6 +171,64 @@ export const COMMISSION_ENDPOINTS = {
     return `${baseUrl}/admin/commission/payments/${paymentId}/cancel`
   },
 
+  // ============ 통합 지급 (Unified Payments) ============
+
+  /** 통합 지급 목록 조회 (가지급금+일반 함께) */
+  paymentAll: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/payments/${year}/all`
+  },
+
+  /** 지급 수정 */
+  updatePayment: (paymentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/payments/${paymentId}`
+  },
+
+  /** 지급 삭제 */
+  deletePayment: (paymentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/payments/${paymentId}`
+  },
+
+  /** 지급이력 엑셀 내보내기 */
+  exportPayments: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/payments/${year}/all/export`
+  },
+
+  // ============ 정산이력 확장 ============
+
+  /** 정산이력 비고 수정 */
+  updateSettlementRemarks: (settlementId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/settlements/${settlementId}/remarks`
+  },
+
+  /** 월별 커미션 집계 조회 */
+  monthlySummary: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/settlements/year/${year}/monthly-summary`
+  },
+
+  /** 월별 커미션 집계 엑셀 내보내기 */
+  exportMonthlySummary: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/settlements/year/${year}/monthly-summary/export`
+  },
+
+  /** 정산이력 일괄 재계산 */
+  recalculateSettlements: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/settlements/year/${year}/recalculate`
+  },
+
+  /** 정산이력 엑셀 내보내기 */
+  exportSettlements: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/settlements/year/${year}/export`
+  },
+
   // ============ 중간정산 (Periodic Settlement) ============
 
   /**
@@ -199,5 +257,88 @@ export const COMMISSION_ENDPOINTS = {
   periodicSettlementDetail: (settlementId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/commission/periodic-settlements/${settlementId}`
+  },
+
+  // ============ 정산기간 (Periods) ============
+
+  /** 정산기간 목록 조회 */
+  periods: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/periods`
+  },
+
+  /** 활성 정산기간 조회 */
+  activePeriod: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/periods/active`
+  },
+
+  // ============ 월별 스냅샷 (Monthly Snapshots) ============
+
+  /** 정산기간별 월별 스냅샷 목록 */
+  monthlySnapshots: (periodId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/monthly-snapshots/${periodId}`
+  },
+
+  /** 월별 스냅샷 생성 */
+  generateMonthlySnapshot: (year: number, month: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/monthly-snapshots/${year}/${month}/generate`
+  },
+
+  /** 월별 스냅샷 확정 */
+  confirmMonthlySnapshot: (year: number, month: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/monthly-snapshots/${year}/${month}/confirm`
+  },
+
+  /** 월별 영업담당자별 정산 상세 */
+  monthlySnapshotDetails: (year: number, month: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/monthly-snapshots/${year}/${month}/details`
+  },
+
+  // ============ 가지급금 (Advance Payments) ============
+
+  /**
+   * 연도별 가지급금 목록 조회
+   * @param year - 연도
+   * @returns GET /admin/commission/payments/{year}/advance
+   */
+  advancePayments: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/payments/${year}/advance`
+  },
+
+  /**
+   * 가지급금 등록
+   * @returns POST /admin/commission/payments/advance
+   */
+  createAdvancePayment: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/payments/advance`
+  },
+
+  // ============ 연말정산 (Annual Final Settlement) ============
+
+  /**
+   * 연말정산 시뮬레이션
+   * @param year - 연도
+   * @returns GET /admin/commission/annual/{year}/simulate
+   */
+  simulateFinalSettlement: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/annual/${year}/simulate`
+  },
+
+  /**
+   * 연말정산 확정
+   * @param year - 연도
+   * @returns POST /admin/commission/annual/{year}/finalize
+   */
+  finalizeFinalSettlement: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/commission/annual/${year}/finalize`
   }
 } as const

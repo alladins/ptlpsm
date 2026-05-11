@@ -35,6 +35,25 @@ class CompanyService {
     }
 
     /**
+     * 회사 간편 등록 (회사명만으로 등록)
+     * POST /api/basic/company/quick
+     */
+    async quickCreateCompany(companyName: string, companyType: string = 'BUILDER'): Promise<Company | null> {
+        const params = new URLSearchParams({ companyName, companyType })
+        const response = await fetch(`${COMPANY_ENDPOINTS.create()}/quick?${params.toString()}`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        })
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => null)
+            throw new Error(errorBody?.message || `회사 간편 등록 실패: ${response.status}`)
+        }
+
+        return await response.json()
+    }
+
+    /**
      * 회사 정보 수정
      * PUT /api/basic/company/{id}
      */

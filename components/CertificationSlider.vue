@@ -1,6 +1,6 @@
 <template>
   <div class="relative w-full overflow-hidden h-[200px]">
-    <div 
+    <div
       class="flex transition-transform duration-500 ease-in-out h-full"
       :style="{ transform: `translateX(-${currentSlide * 100}%)` }"
     >
@@ -10,8 +10,12 @@
         :class="['flex-shrink-0 w-full h-full text-white px-8 py-6', slide.bgColor]"
       >
         <div class="container mx-auto">
-          <h2 class="text-3xl font-bold mb-4">{{ slide.title }}</h2>
-          <p class="text-lg">{{ slide.description }}</p>
+          <h2 class="text-3xl font-bold mb-4">
+            {{ slide.title }}
+          </h2>
+          <p class="text-lg">
+            {{ slide.description }}
+          </p>
         </div>
       </div>
     </div>
@@ -70,4 +74,3 @@ onUnmounted(() => {
   clearInterval(timer)
 })
 </script>
-

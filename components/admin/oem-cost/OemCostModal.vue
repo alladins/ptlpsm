@@ -9,11 +9,15 @@
               <div class="ccm-success-content">
                 <div class="ccm-success-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </div>
-                <h3 class="ccm-success-title">{{ isEditMode ? '원가 수정 완료' : '원가 등록 완료' }}</h3>
-                <p class="ccm-success-message">{{ getSuccessMessage() }}</p>
+                <h3 class="ccm-success-title">
+                  {{ isEditMode ? '원가 수정 완료' : '원가 등록 완료' }}
+                </h3>
+                <p class="ccm-success-message">
+                  {{ getSuccessMessage() }}
+                </p>
               </div>
             </div>
           </Transition>
@@ -23,17 +27,19 @@
             <div class="ccm-header-content">
               <div class="ccm-header-icon ccm-icon-purple">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
                 </svg>
               </div>
               <div class="ccm-header-text">
-                <h2 class="ccm-modal-title">{{ isEditMode ? 'OEM 원가 수정' : 'OEM 원가 등록' }}</h2>
-                <span class="ccm-modal-subtitle">{{ isEditMode ? '기존 원가 정보 수정' : '새로운 OEM 원가 등록' }}</span>
+                <h2 class="ccm-modal-title">
+                  {{ isEditMode ? '원가 수정' : '원가 등록' }}
+                </h2>
+                <span class="ccm-modal-subtitle">{{ isEditMode ? '기존 원가 정보 수정' : '공급원별 원가 등록' }}</span>
               </div>
             </div>
-            <button class="ccm-close-button" @click="handleClose" :disabled="isSubmitting">
+            <button class="ccm-close-button" :disabled="isSubmitting" @click="handleClose">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
               </svg>
             </button>
           </div>
@@ -47,7 +53,9 @@
                 <span class="sku-id">{{ skuInfo?.skuId }}</span>
               </div>
               <div class="sku-info-body">
-                <div class="sku-name">{{ skuInfo?.skuName || skuInfo?.itemName }}</div>
+                <div class="sku-name">
+                  {{ skuInfo?.skuName || skuInfo?.itemName }}
+                </div>
                 <div class="sku-detail">
                   <span v-if="skuInfo?.unitPrice" class="unit-price">
                     납품단가: {{ formatCurrency(skuInfo.unitPrice) }}
@@ -56,24 +64,27 @@
               </div>
             </div>
 
-            <!-- OEM 제조사 선택 -->
+            <!-- 공급원 선택 (OEM + 본사 통합) -->
             <div class="ccm-form-group">
               <label class="ccm-form-label required">
-                <i class="fas fa-industry"></i>
-                OEM 제조사
+                <i class="fas fa-industry" />
+                공급원
               </label>
               <select
                 v-model="form.oemCompanyId"
                 class="ccm-form-select"
                 :disabled="isSubmitting || isEditMode"
+                @change="onCompanyChange"
               >
-                <option :value="null">제조사를 선택하세요</option>
+                <option :value="null">
+                  공급원을 선택하세요
+                </option>
                 <option
-                  v-for="company in availableOemCompanies"
+                  v-for="company in allCompanies"
                   :key="company.id"
                   :value="company.id"
                 >
-                  {{ company.companyName }}
+                  {{ company.companyName }}{{ company.companyType === 'LEADPOWER' ? ' (본사)' : '' }}
                 </option>
               </select>
             </div>
@@ -82,45 +93,53 @@
             <div class="ccm-form-group">
               <div class="ccm-form-label-row">
                 <label class="ccm-form-label required">
-                  <i class="fas fa-won-sign"></i>
+                  <i class="fas fa-won-sign" />
                   원가
                 </label>
                 <div class="cost-percent-buttons">
                   <button
                     type="button"
                     class="percent-btn"
+                    :disabled="isSubmitting || !skuInfo?.unitPrice"
                     @click="applyPercentage(60)"
-                    :disabled="isSubmitting || !skuInfo?.unitPrice"
-                  >60%</button>
+                  >
+                    60%
+                  </button>
                   <button
                     type="button"
                     class="percent-btn"
+                    :disabled="isSubmitting || !skuInfo?.unitPrice"
                     @click="applyPercentage(61)"
-                    :disabled="isSubmitting || !skuInfo?.unitPrice"
-                  >61%</button>
+                  >
+                    61%
+                  </button>
                   <button
                     type="button"
                     class="percent-btn"
-                    @click="applyPercentage(64)"
                     :disabled="isSubmitting || !skuInfo?.unitPrice"
-                  >64%</button>
+                    @click="applyPercentage(64)"
+                  >
+                    64%
+                  </button>
                   <div class="custom-percent-input">
                     <input
-                      type="number"
                       v-model.number="customPercent"
+                      type="number"
                       class="percent-input"
                       placeholder="%"
                       min="0"
                       max="100"
                       :disabled="isSubmitting || !skuInfo?.unitPrice"
                       @keyup.enter="applyPercentage(customPercent)"
-                    />
+                    >
                     <button
                       type="button"
                       class="percent-apply-btn"
-                      @click="applyPercentage(customPercent)"
                       :disabled="isSubmitting || !skuInfo?.unitPrice || !customPercent"
-                    >적용</button>
+                      @click="applyPercentage(customPercent)"
+                    >
+                      적용
+                    </button>
                   </div>
                 </div>
               </div>
@@ -128,13 +147,13 @@
                 <div class="cost-input-container">
                   <span class="cost-prefix">₩</span>
                   <input
-                    type="text"
                     v-model="formattedCostPrice"
+                    type="text"
                     class="ccm-form-input cost-input"
                     placeholder="0"
                     :disabled="isSubmitting"
                     @input="handleCostInput"
-                  />
+                  >
                 </div>
                 <div class="margin-rate-display" :class="marginRateClass">
                   <span class="margin-label">마진율</span>
@@ -147,49 +166,49 @@
             <div class="ccm-form-row">
               <div class="ccm-form-group half">
                 <label class="ccm-form-label required">
-                  <i class="fas fa-calendar-alt"></i>
+                  <i class="fas fa-calendar-alt" />
                   적용 시작일
                 </label>
                 <input
-                  type="date"
                   v-model="form.effectiveDate"
+                  type="date"
                   class="ccm-form-input"
                   :disabled="isSubmitting"
-                />
+                >
               </div>
               <div class="ccm-form-group half">
                 <label class="ccm-form-label">
-                  <i class="fas fa-calendar-times"></i>
+                  <i class="fas fa-calendar-times" />
                   만료일 <span class="optional-tag">(선택)</span>
                 </label>
                 <input
-                  type="date"
                   v-model="form.expiryDate"
+                  type="date"
                   class="ccm-form-input"
                   :disabled="isSubmitting"
-                />
+                >
               </div>
             </div>
 
             <!-- 계약번호 -->
             <div class="ccm-form-group">
               <label class="ccm-form-label">
-                <i class="fas fa-file-contract"></i>
+                <i class="fas fa-file-contract" />
                 계약번호 <span class="optional-tag">(선택)</span>
               </label>
               <input
-                type="text"
                 v-model="form.contractNo"
+                type="text"
                 class="ccm-form-input"
                 placeholder="계약번호 입력"
                 :disabled="isSubmitting"
-              />
+              >
             </div>
 
             <!-- 비고 -->
             <div class="ccm-form-group">
               <label class="ccm-form-label">
-                <i class="fas fa-sticky-note"></i>
+                <i class="fas fa-sticky-note" />
                 비고 <span class="optional-tag">(선택)</span>
               </label>
               <textarea
@@ -198,22 +217,22 @@
                 rows="2"
                 placeholder="비고 입력"
                 :disabled="isSubmitting"
-              ></textarea>
+              />
             </div>
 
             <!-- 변경 사유 (수정 모드에서만) -->
             <div v-if="isEditMode" class="ccm-form-group">
               <label class="ccm-form-label">
-                <i class="fas fa-edit"></i>
+                <i class="fas fa-edit" />
                 변경 사유 <span class="optional-tag">(선택)</span>
               </label>
               <input
-                type="text"
                 v-model="form.changeReason"
+                type="text"
                 class="ccm-form-input"
                 placeholder="변경 사유 입력 (이력에 기록됨)"
                 :disabled="isSubmitting"
-              />
+              >
             </div>
           </div>
 
@@ -222,18 +241,18 @@
             <button
               type="button"
               class="ccm-btn-secondary"
-              @click="handleClose"
               :disabled="isSubmitting"
+              @click="handleClose"
             >
               취소
             </button>
             <button
               type="button"
               class="ccm-btn-primary ccm-btn-purple"
-              @click="handleSubmit"
               :disabled="!isFormValid || isSubmitting"
+              @click="handleSubmit"
             >
-              <span v-if="isSubmitting" class="loading-spinner"></span>
+              <span v-if="isSubmitting" class="loading-spinner" />
               <span v-else>{{ isEditMode ? '수정하기' : '등록하기' }}</span>
             </button>
           </div>
@@ -262,8 +281,8 @@ interface SkuInfo {
 interface Props {
   isOpen: boolean
   skuInfo: SkuInfo | null
-  editData?: OemCost | null  // 수정 모드에서 기존 데이터
-  existingOemCompanyIds?: number[]  // 이미 등록된 제조사 ID 목록 (제외할 목록)
+  editData?: OemCost | null // 수정 모드에서 기존 데이터
+  existingOemCompanyIds?: number[] // 이미 등록된 제조사 ID 목록 (제외할 목록)
 }
 
 const props = defineProps<Props>()
@@ -277,6 +296,7 @@ const emit = defineEmits<{
 const isSubmitting = ref(false)
 const isSuccess = ref(false)
 const oemCompanies = ref<CompanyInfoResponse[]>([])
+const leadpowerCompanies = ref<CompanyInfoResponse[]>([])
 const savedData = ref<OemCost | null>(null)
 
 // 이미 등록된 제조사를 제외한 선택 가능한 목록
@@ -291,9 +311,31 @@ const availableOemCompanies = computed(() => {
   )
 })
 
+// OEM + 본사 통합 회사 목록 (이미 등록된 회사 제외)
+const allCompanies = computed(() => {
+  const existingIds = props.existingOemCompanyIds || []
+  const currentOemId = props.editData?.oemCompanyId
+
+  // 본사도 동일하게 이미 등록된 회사 제외
+  const lpList = leadpowerCompanies.value.filter(company =>
+    !existingIds.includes(company.id) || company.id === currentOemId
+  )
+  const oemList = availableOemCompanies.value
+  return [...lpList, ...oemList]
+})
+
+// 회사 선택 시 costSourceType 자동 판별
+const onCompanyChange = () => {
+  const selected = allCompanies.value.find(c => c.id === form.value.oemCompanyId)
+  if (selected) {
+    form.value.costSourceType = selected.companyType === 'LEADPOWER' ? 'LEADPOWER' : 'OEM'
+  }
+}
+
 // 폼 데이터
 const form = ref({
   oemCompanyId: null as number | null,
+  costSourceType: 'OEM' as string,
   costPrice: 0,
   effectiveDate: '',
   expiryDate: '',
@@ -320,7 +362,7 @@ const marginRateClass = computed(() => {
 })
 
 const marginRateText = computed(() => {
-  if (marginRate.value === null) return '-'
+  if (marginRate.value === null) { return '-' }
   return `${marginRate.value.toFixed(1)}%`
 })
 
@@ -332,12 +374,13 @@ const isFormValid = computed(() => {
   )
 })
 
-// OEM 회사 목록 로드 (제조사 타입만 조회)
+// 회사 목록 로드 (제조사 + 본사)
 const loadOemCompanies = async () => {
   try {
     oemCompanies.value = await companyService.getManufacturers()
+    leadpowerCompanies.value = await companyService.getCompanies('LEADPOWER')
   } catch (error) {
-    console.error('OEM 회사 목록 조회 실패:', error)
+    console.error('회사 목록 조회 실패:', error)
   }
 }
 
@@ -354,7 +397,7 @@ const handleCostInput = (event: Event) => {
 
 // 퍼센트 적용 핸들러
 const applyPercentage = (percent: number | null) => {
-  if (!percent || !props.skuInfo?.unitPrice) return
+  if (!percent || !props.skuInfo?.unitPrice) { return }
   // 납품단가 * 퍼센트% 계산 (반올림)
   const calculatedCost = Math.round(props.skuInfo.unitPrice * (percent / 100))
   form.value.costPrice = calculatedCost
@@ -365,6 +408,7 @@ const applyPercentage = (percent: number | null) => {
 const resetForm = () => {
   form.value = {
     oemCompanyId: null,
+    costSourceType: 'OEM',
     costPrice: 0,
     effectiveDate: getLocalDateString(),
     expiryDate: '',
@@ -394,7 +438,7 @@ const loadEditData = () => {
 
 // 제출
 const handleSubmit = async () => {
-  if (!isFormValid.value || isSubmitting.value) return
+  if (!isFormValid.value || isSubmitting.value) { return }
 
   try {
     isSubmitting.value = true
@@ -416,6 +460,7 @@ const handleSubmit = async () => {
       const createData: OemCostCreateRequest = {
         skuId: props.skuInfo!.skuId,
         oemCompanyId: form.value.oemCompanyId!,
+        costSourceType: form.value.costSourceType as any,
         costPrice: form.value.costPrice,
         effectiveDate: form.value.effectiveDate,
         expiryDate: form.value.expiryDate || undefined,
@@ -439,7 +484,6 @@ const handleSubmit = async () => {
       emit('saved', savedData.value!, context)
       handleClose()
     }, 1500)
-
   } catch (error) {
     console.error('원가 저장 실패:', error)
     alert(error instanceof Error ? error.message : '원가 저장에 실패했습니다.')
@@ -450,7 +494,7 @@ const handleSubmit = async () => {
 
 // 닫기
 const handleClose = () => {
-  if (isSubmitting.value) return
+  if (isSubmitting.value) { return }
   isSuccess.value = false
   emit('close')
 }
@@ -463,7 +507,7 @@ const getSuccessMessage = () => {
 
 // 금액 포맷
 const formatCurrency = (amount: number | undefined): string => {
-  if (amount === undefined || amount === null) return '-'
+  if (amount === undefined || amount === null) { return '-' }
   return amount.toLocaleString('ko-KR') + '원'
 }
 
@@ -1047,4 +1091,5 @@ onMounted(() => {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
 </style>

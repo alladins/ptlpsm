@@ -158,7 +158,7 @@ export const useCommissionStore = defineStore('commission', () => {
 
       settlements.value = response.content
       settlementPagination.value = {
-        page: response.number,
+        page: response.page,
         size: response.size,
         total: response.totalElements,
         totalPages: response.totalPages

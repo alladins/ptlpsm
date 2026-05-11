@@ -4,11 +4,11 @@
       <h4>선급금 정보</h4>
       <button
         class="btn-primary"
-        @click="emit('openModal')"
         :disabled="!canRequestAdvance || hasAdvancePayment"
         :title="advanceButtonTooltip"
+        @click="emit('openModal')"
       >
-        <i class="fas fa-plus"></i>
+        <i class="fas fa-plus" />
         {{ hasAdvancePayment ? '선급금 신청완료' : '선급금 신청하기' }}
       </button>
     </div>
@@ -28,7 +28,7 @@
         <span class="status-badge status-pending">미신청</span>
       </div>
       <div class="advance-notice">
-        <i class="fas fa-info-circle"></i>
+        <i class="fas fa-info-circle" />
         <span>선급금을 신청하면 5종의 PDF 문서가 자동 생성됩니다.</span>
       </div>
     </div>
@@ -74,7 +74,7 @@
           class="btn-collection-confirm-lg"
           @click="emit('openCollectionConfirm', advanceDetail)"
         >
-          <i class="fas fa-check-circle"></i>
+          <i class="fas fa-check-circle" />
           입금 확인하기
         </button>
         <!-- 삭제 버튼 (입금확인 전 상태일 때) -->
@@ -82,7 +82,7 @@
           class="btn-delete-advance"
           @click="emit('deleteAdvance', advanceDetail!)"
         >
-          <i class="fas fa-trash-alt"></i>
+          <i class="fas fa-trash-alt" />
           선급금 삭제 (재신청 가능)
         </button>
       </div>
@@ -90,28 +90,28 @@
       <!-- PDF 문서 섹션 -->
       <div class="advance-documents">
         <h5>
-          <i class="fas fa-file-pdf"></i>
+          <i class="fas fa-file-pdf" />
           관련 문서
         </h5>
         <div class="document-list">
           <div v-for="doc in advanceDocuments" :key="doc.type" class="document-item">
             <div class="document-info">
-              <i :class="['fas', doc.icon, doc.iconColor]"></i>
+              <i :class="['fas', doc.icon, doc.iconColor]" />
               <span>{{ doc.label }}</span>
             </div>
             <div class="document-actions">
               <button class="btn-pdf-view" @click="emit('viewPdf', doc.type)">
-                <i class="fas fa-eye"></i>
+                <i class="fas fa-eye" />
                 보기
               </button>
               <button class="btn-pdf-download" @click="emit('downloadPdf', doc.type)">
-                <i class="fas fa-download"></i>
+                <i class="fas fa-download" />
               </button>
             </div>
           </div>
         </div>
         <button class="btn-download-all" @click="emit('downloadAllPdfs')">
-          <i class="fas fa-file-archive"></i>
+          <i class="fas fa-file-archive" />
           전체 문서 다운로드 (ZIP)
         </button>
       </div>

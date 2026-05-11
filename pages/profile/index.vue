@@ -8,8 +8,12 @@
         </svg>
       </div>
       <div class="header-text">
-        <h1 class="page-title">내 정보</h1>
-        <p class="page-description">내 계정 정보를 확인하고 수정할 수 있습니다.</p>
+        <h1 class="page-title">
+          내 정보
+        </h1>
+        <p class="page-description">
+          내 계정 정보를 확인하고 수정할 수 있습니다.
+        </p>
       </div>
     </div>
 
@@ -20,7 +24,9 @@
           <span class="avatar-text">{{ currentUser.userName?.charAt(0) || 'U' }}</span>
         </div>
         <div class="profile-summary">
-          <h2 class="profile-name">{{ currentUser.userName }}</h2>
+          <h2 class="profile-name">
+            {{ currentUser.userName }}
+          </h2>
           <p class="profile-role">
             <span class="role-badge" :class="getRoleClass(currentUser.role)">
               {{ getRoleName(currentUser.role) }}
@@ -29,7 +35,9 @@
               {{ currentUser.enabled ? '활성' : '비활성' }}
             </span>
           </p>
-          <p class="profile-company">{{ currentUser.companyName || '-' }}</p>
+          <p class="profile-company">
+            {{ currentUser.companyName || '-' }}
+          </p>
         </div>
         <button class="btn-edit" @click="openEditModal">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -48,7 +56,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
           </svg>
         </div>
-        <h2 class="section-title">기본 정보</h2>
+        <h2 class="section-title">
+          기본 정보
+        </h2>
       </div>
 
       <div class="info-grid">
@@ -158,7 +168,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 class="section-title">계정 정보</h2>
+        <h2 class="section-title">
+          계정 정보
+        </h2>
       </div>
 
       <div class="info-grid info-grid-2">
@@ -196,7 +208,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
           </svg>
         </div>
-        <h2 class="section-title">보안</h2>
+        <h2 class="section-title">
+          보안
+        </h2>
         <button class="btn-password" @click="openPasswordModal">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
@@ -212,8 +226,12 @@
           </svg>
         </div>
         <div class="security-content">
-          <h3 class="security-title">비밀번호</h3>
-          <p class="security-desc">정기적으로 비밀번호를 변경하여 계정을 보호하세요.</p>
+          <h3 class="security-title">
+            비밀번호
+          </h3>
+          <p class="security-desc">
+            정기적으로 비밀번호를 변경하여 계정을 보호하세요.
+          </p>
           <div class="security-meta">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -237,7 +255,9 @@
                 </svg>
               </div>
               <div class="ccm-header-text">
-                <h3 class="ccm-modal-title">내 정보 수정</h3>
+                <h3 class="ccm-modal-title">
+                  내 정보 수정
+                </h3>
                 <span class="ccm-modal-subtitle">개인정보를 수정합니다</span>
               </div>
             </div>
@@ -250,12 +270,19 @@
 
           <!-- 바디 -->
           <div class="ccm-modal-body">
-            <form @submit.prevent="submitProfileUpdate" class="ccm-form">
+            <form class="ccm-form" @submit.prevent="submitProfileUpdate">
               <!-- 사용자 ID & 이름 -->
               <div class="ccm-form-row">
                 <div class="ccm-form-group">
                   <label class="ccm-form-label">
-                    <svg class="ccm-label-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg
+                      class="ccm-label-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
                     </svg>
                     사용자 ID
@@ -270,7 +297,14 @@
                 </div>
                 <div class="ccm-form-group">
                   <label class="ccm-form-label required">
-                    <svg class="ccm-label-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg
+                      class="ccm-label-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     이름
@@ -295,7 +329,14 @@
               <div class="ccm-form-row">
                 <div class="ccm-form-group">
                   <label class="ccm-form-label">
-                    <svg class="ccm-label-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg
+                      class="ccm-label-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                     </svg>
                     이메일
@@ -315,7 +356,14 @@
                 </div>
                 <div class="ccm-form-group">
                   <label class="ccm-form-label required">
-                    <svg class="ccm-label-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg
+                      class="ccm-label-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
                     </svg>
                     연락처
@@ -340,7 +388,14 @@
               <div class="ccm-form-row">
                 <div class="ccm-form-group">
                   <label class="ccm-form-label">
-                    <svg class="ccm-label-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg
+                      class="ccm-label-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
                     </svg>
                     부서
@@ -355,7 +410,14 @@
                 </div>
                 <div class="ccm-form-group">
                   <label class="ccm-form-label">
-                    <svg class="ccm-label-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg
+                      class="ccm-label-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
                     </svg>
                     직급
@@ -374,7 +436,14 @@
               <div class="ccm-form-row">
                 <div class="ccm-form-group">
                   <label class="ccm-form-label">
-                    <svg class="ccm-label-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg
+                      class="ccm-label-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 8.25h15m-16.5 7.5h15m-1.8-13.5l-3.9 19.5m-2.1-19.5l-3.9 19.5" />
                     </svg>
                     사원번호
@@ -389,7 +458,14 @@
                 </div>
                 <div class="ccm-form-group">
                   <label class="ccm-form-label">
-                    <svg class="ccm-label-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg
+                      class="ccm-label-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
                     </svg>
                     소속회사
@@ -412,7 +488,15 @@
               취소
             </button>
             <button class="ccm-btn-confirm" @click="submitProfileUpdate">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+                width="18"
+                height="18"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
               </svg>
               저장
@@ -435,7 +519,9 @@
                 </svg>
               </div>
               <div class="ccm-header-text">
-                <h3 class="ccm-modal-title">비밀번호 변경</h3>
+                <h3 class="ccm-modal-title">
+                  비밀번호 변경
+                </h3>
                 <span class="ccm-modal-subtitle">계정 보안을 위해 비밀번호를 변경합니다</span>
               </div>
             </div>
@@ -456,10 +542,17 @@
               <p>새 비밀번호와 확인 비밀번호를 입력하세요.</p>
             </div>
 
-            <form @submit.prevent="submitPasswordChange" class="ccm-form">
+            <form class="ccm-form" @submit.prevent="submitPasswordChange">
               <div class="ccm-form-group">
                 <label class="ccm-form-label required">
-                  <svg class="ccm-label-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <svg
+                    class="ccm-label-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                   </svg>
                   새 비밀번호
@@ -482,7 +575,14 @@
 
               <div class="ccm-form-group">
                 <label class="ccm-form-label required">
-                  <svg class="ccm-label-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <svg
+                    class="ccm-label-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   새 비밀번호 확인
@@ -510,7 +610,15 @@
               취소
             </button>
             <button class="ccm-btn-confirm ccm-orange" @click="submitPasswordChange">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+                width="18"
+                height="18"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
               </svg>
               비밀번호 변경
@@ -523,16 +631,16 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-  layout: 'admin',
-  pageTitle: '내 정보'
-})
-
 // API 서비스
 import { userService } from '~/services/user.service'
 import { formatPhoneNumberInput, normalizeEmail } from '~/utils/format'
 import { isValidEmail, isValidPhone } from '~/utils/validators'
 import { getRoleName } from '~/types/user'
+
+definePageMeta({
+  layout: 'admin',
+  pageTitle: '내 정보'
+})
 
 // 반응형 데이터
 const currentUser = ref<any>({
@@ -618,7 +726,7 @@ const handleEmailBlur = (event: Event) => {
 // 실시간 유효성 검사
 const validateField = (field: string, value: string) => {
   validationErrors.value[field] = ''
-  
+
   switch (field) {
     case 'userName':
       if (!value.trim()) {
@@ -627,7 +735,7 @@ const validateField = (field: string, value: string) => {
         validationErrors.value.userName = '이름은 50자를 초과할 수 없습니다.'
       }
       break
-      
+
     case 'email':
       if (value && !isValidEmail(value)) {
         validationErrors.value.email = '올바른 이메일 형식이어야 합니다.'
@@ -635,7 +743,7 @@ const validateField = (field: string, value: string) => {
         validationErrors.value.email = '이메일은 100자를 초과할 수 없습니다.'
       }
       break
-      
+
     case 'phone':
       if (!value.trim()) {
         validationErrors.value.phone = '연락처는 필수입니다.'
@@ -649,14 +757,14 @@ const validateField = (field: string, value: string) => {
 // 비밀번호 변경 유효성 검사
 const validatePasswordField = (field: string, value: string) => {
   passwordValidationErrors.value[field] = ''
-  
+
   switch (field) {
     // case 'currentPassword': // 현재 비밀번호 필드 제거
     //   if (!value.trim()) {
     //     passwordValidationErrors.value.currentPassword = '현재 비밀번호를 입력하세요.'
     //   }
     //   break
-      
+
     case 'newPassword':
       if (!value.trim()) {
         passwordValidationErrors.value.newPassword = '새 비밀번호를 입력하세요.'
@@ -671,7 +779,7 @@ const validatePasswordField = (field: string, value: string) => {
         validatePasswordField('confirmPassword', passwordForm.value.confirmPassword)
       }
       break
-      
+
     case 'confirmPassword':
       if (!value.trim()) {
         passwordValidationErrors.value.confirmPassword = '비밀번호 확인을 입력하세요.'
@@ -687,7 +795,7 @@ const validatePasswordForm = () => {
   // validatePasswordField('currentPassword', passwordForm.value.currentPassword) // 현재 비밀번호 필드 제거
   validatePasswordField('newPassword', passwordForm.value.newPassword)
   validatePasswordField('confirmPassword', passwordForm.value.confirmPassword)
-  
+
   return !Object.values(passwordValidationErrors.value).some(error => error !== '')
 }
 
@@ -696,7 +804,7 @@ const validateProfileForm = () => {
   validateField('userName', profileForm.value.userName)
   validateField('email', profileForm.value.email)
   validateField('phone', profileForm.value.phone)
-  
+
   return !Object.values(validationErrors.value).some(error => error !== '')
 }
 
@@ -750,7 +858,7 @@ const submitProfileUpdate = async () => {
     showAlert('입력 정보를 확인해주세요.', 'error')
     return
   }
-  
+
   try {
     // 실제 API 호출 (PUT /api/common/users/me)
     const updateData: any = { ...profileForm.value }
@@ -758,7 +866,7 @@ const submitProfileUpdate = async () => {
 
     const updatedUser = await userService.updateProfile(updateData)
     currentUser.value = updatedUser
-    
+
     showAlert('내 정보가 수정되었습니다.', 'success')
     closeEditModal()
   } catch (error) {
@@ -803,7 +911,7 @@ const submitPasswordChange = async () => {
     showAlert('입력 정보를 확인해주세요.', 'error')
     return
   }
-  
+
   try {
     console.log('비밀번호 변경 시도')
 
@@ -813,13 +921,13 @@ const submitPasswordChange = async () => {
       confirmPassword: passwordForm.value.confirmPassword
     })
     console.log('비밀번호 변경 성공:', response)
-    
+
     showAlert(response.message || '비밀번호가 성공적으로 변경되었습니다.', 'success')
     closePasswordModal()
   } catch (error) {
     console.error('비밀번호 변경 실패:', error)
     let errorMessage = '비밀번호 변경에 실패했습니다.'
-    
+
     if (error instanceof Error) {
       errorMessage = error.message
     } else if (typeof error === 'string') {
@@ -827,7 +935,7 @@ const submitPasswordChange = async () => {
     } else if (error && typeof error === 'object' && 'message' in error) {
       errorMessage = String(error.message)
     }
-    
+
     showAlert(errorMessage, 'error')
   }
 }
@@ -835,20 +943,20 @@ const submitPasswordChange = async () => {
 // 유틸리티 메서드
 const getRoleClass = (roleCode: string) => {
   const roleClasses: { [key: string]: string } = {
-    'SYSTEM_ADMIN': 'role-admin',
-    'LEADPOWER_MANAGER': 'role-leadpower',
-    'OEM_MANAGER': 'role-oem',
-    'SITE_MANAGER': 'role-site',
-    'SITE_INSPECTOR': 'role-inspector',
-    'SALES_MANAGER': 'role-sales',
-    'DELIVERY_DRIVER': 'role-driver',
-    'READ_ONLY': 'role-readonly'
+    SYSTEM_ADMIN: 'role-admin',
+    LEADPOWER_MANAGER: 'role-leadpower',
+    OEM_MANAGER: 'role-oem',
+    SITE_MANAGER: 'role-site',
+    SITE_INSPECTOR: 'role-inspector',
+    SALES_MANAGER: 'role-sales',
+    DELIVERY_DRIVER: 'role-driver',
+    READ_ONLY: 'role-readonly'
   }
   return roleClasses[roleCode] || 'role-default'
 }
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return '-'
+  if (!dateString) { return '-' }
   const date = new Date(dateString)
   return date.toLocaleDateString('ko-KR')
 }

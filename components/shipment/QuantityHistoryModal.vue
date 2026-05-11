@@ -4,21 +4,21 @@
       <div class="modal-header">
         <h3>수량 변경 이력</h3>
         <button class="modal-close" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
         </button>
       </div>
 
       <div class="modal-body">
         <!-- 조회 기간 정보 -->
         <div class="period-info">
-          <i class="fas fa-calendar-alt"></i>
+          <i class="fas fa-calendar-alt" />
           <span>조회 기간: {{ periodStartDate }} 이후 변경분</span>
           <span v-if="baselineName" class="baseline-name">({{ baselineName }} 확정일 기준)</span>
         </div>
 
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-container">
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" />
           <p>데이터를 불러오는 중...</p>
         </div>
 
@@ -41,14 +41,20 @@
                 </thead>
                 <tbody>
                   <tr v-if="historyList.length === 0">
-                    <td colspan="7" class="no-data">수량 변경 이력이 없습니다.</td>
+                    <td colspan="7" class="no-data">
+                      수량 변경 이력이 없습니다.
+                    </td>
                   </tr>
-                  <tr v-else v-for="history in historyList" :key="history.historyId">
+                  <tr v-for="history in historyList" v-else :key="history.historyId">
                     <td>{{ formatDateTime(history.changedAt) }}</td>
                     <td>{{ history.shipmentNo || '-' }}</td>
                     <td>{{ history.itemName }}</td>
-                    <td class="text-right">{{ formatNumber(history.beforeQuantity) }}</td>
-                    <td class="text-right">{{ formatNumber(history.afterQuantity) }}</td>
+                    <td class="text-right">
+                      {{ formatNumber(history.beforeQuantity) }}
+                    </td>
+                    <td class="text-right">
+                      {{ formatNumber(history.afterQuantity) }}
+                    </td>
                     <td class="text-right">
                       <span :class="getDiffClass(history.difference)">
                         {{ getDiffText(history.difference) }}
@@ -78,11 +84,15 @@
                 </thead>
                 <tbody>
                   <tr v-if="itemSummary.length === 0">
-                    <td colspan="6" class="no-data">요약 데이터가 없습니다.</td>
+                    <td colspan="6" class="no-data">
+                      요약 데이터가 없습니다.
+                    </td>
                   </tr>
-                  <tr v-else v-for="item in itemSummary" :key="item.itemId">
+                  <tr v-for="item in itemSummary" v-else :key="item.itemId">
                     <td>{{ item.itemName }}</td>
-                    <td class="text-right">{{ formatNumber(item.baseQuantity) }}</td>
+                    <td class="text-right">
+                      {{ formatNumber(item.baseQuantity) }}
+                    </td>
                     <td class="text-right text-success">
                       <span v-if="item.increased > 0">+{{ formatNumber(item.increased) }}</span>
                       <span v-else>-</span>
@@ -96,13 +106,19 @@
                         {{ getNetChangeText(item.netChange) }}
                       </span>
                     </td>
-                    <td class="text-right font-bold">{{ formatNumber(item.currentQuantity) }}</td>
+                    <td class="text-right font-bold">
+                      {{ formatNumber(item.currentQuantity) }}
+                    </td>
                   </tr>
                 </tbody>
                 <tfoot v-if="itemSummary.length > 0">
                   <tr>
-                    <td class="text-right"><strong>합계</strong></td>
-                    <td class="text-right"><strong>{{ formatNumber(totalBaseQuantity) }}</strong></td>
+                    <td class="text-right">
+                      <strong>합계</strong>
+                    </td>
+                    <td class="text-right">
+                      <strong>{{ formatNumber(totalBaseQuantity) }}</strong>
+                    </td>
                     <td class="text-right text-success">
                       <strong>+{{ formatNumber(totalIncreased) }}</strong>
                     </td>
@@ -114,7 +130,9 @@
                         {{ getNetChangeText(totalNetChange) }}
                       </strong>
                     </td>
-                    <td class="text-right"><strong>{{ formatNumber(totalCurrentQuantity) }}</strong></td>
+                    <td class="text-right">
+                      <strong>{{ formatNumber(totalCurrentQuantity) }}</strong>
+                    </td>
                   </tr>
                 </tfoot>
               </table>
@@ -125,7 +143,7 @@
 
       <div class="modal-footer">
         <button class="btn-secondary" @click="closeModal">
-          <i class="fas fa-times"></i>
+          <i class="fas fa-times" />
           닫기
         </button>
       </div>
@@ -213,7 +231,7 @@ const closeModal = () => {
 }
 
 const loadData = async () => {
-  if (!props.orderId) return
+  if (!props.orderId) { return }
 
   loading.value = true
   try {
@@ -228,28 +246,27 @@ const loadData = async () => {
   }
 }
 
-
 const getDiffClass = (diff: number): string => {
-  if (diff > 0) return 'text-success'
-  if (diff < 0) return 'text-danger'
+  if (diff > 0) { return 'text-success' }
+  if (diff < 0) { return 'text-danger' }
   return ''
 }
 
 const getDiffText = (diff: number): string => {
-  if (diff > 0) return `+${formatNumber(diff)}`
-  if (diff < 0) return formatNumber(diff)
+  if (diff > 0) { return `+${formatNumber(diff)}` }
+  if (diff < 0) { return formatNumber(diff) }
   return '0'
 }
 
 const getNetChangeClass = (netChange: number): string => {
-  if (netChange > 0) return 'text-success'
-  if (netChange < 0) return 'text-danger'
+  if (netChange > 0) { return 'text-success' }
+  if (netChange < 0) { return 'text-danger' }
   return ''
 }
 
 const getNetChangeText = (netChange: number): string => {
-  if (netChange > 0) return `+${formatNumber(netChange)}`
-  if (netChange < 0) return formatNumber(netChange)
+  if (netChange > 0) { return `+${formatNumber(netChange)}` }
+  if (netChange < 0) { return formatNumber(netChange) }
   return '0'
 }
 

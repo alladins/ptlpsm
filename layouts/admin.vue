@@ -20,13 +20,13 @@
       <header class="admin-header">
         <div class="header-left">
           <button class="sidebar-toggle" @click="toggleSidebar">
-            <i class="fas fa-bars"></i>
+            <i class="fas fa-bars" />
           </button>
           <div class="breadcrumb">
             <span class="breadcrumb-item">{{ currentPageTitle }}</span>
           </div>
         </div>
-        
+
         <div class="header-right">
           <div class="header-actions">
             <button class="action-btn" @click="toggleNotifications">
@@ -41,7 +41,7 @@
 
       <!-- 페이지 콘텐츠 -->
       <main class="page-content">
-    <slot />
+        <slot />
       </main>
     </div>
 
@@ -49,7 +49,9 @@
     <div v-if="showNotifications" class="notification-dropdown">
       <div class="notification-header">
         <h3>알림</h3>
-        <button @click="markAllAsRead">모두 읽음</button>
+        <button @click="markAllAsRead">
+          모두 읽음
+        </button>
       </div>
       <div class="notification-list">
         <div
@@ -60,21 +62,26 @@
           @click="handleNotificationClick(notification)"
         >
           <div class="notification-icon" :class="'icon-' + notification.eventType.toLowerCase().replace(/_/g, '-')">
-            <i :class="getEventIcon(notification.eventType)"></i>
+            <i :class="getEventIcon(notification.eventType)" />
           </div>
           <div class="notification-content">
-            <div class="notification-title">{{ notification.title }}</div>
-            <div class="notification-message">{{ notification.message }}</div>
-            <div class="notification-time">{{ getRelativeTime(notification.createdAt) }}</div>
+            <div class="notification-title">
+              {{ notification.title }}
+            </div>
+            <div class="notification-message">
+              {{ notification.message }}
+            </div>
+            <div class="notification-time">
+              {{ getRelativeTime(notification.createdAt) }}
+            </div>
           </div>
         </div>
         <div v-if="notifications.length === 0" class="notification-empty">
-          <i class="fas fa-bell-slash"></i>
+          <i class="fas fa-bell-slash" />
           <p>알림이 없습니다.</p>
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -108,12 +115,12 @@ const currentPageTitle = computed(() => {
     '/admin/sales': '영업관리',
     '/admin/order': '주문관리',
     '/admin/shipping': '출하관리',
-    '/admin/transport': '출하관리',      // 출하관리 하위 메뉴
+    '/admin/transport': '출하관리', // 출하관리 하위 메뉴
     '/admin/purchase-order': '출하관리', // 발주서관리는 출하관리 하위
     '/admin/delivery': '납품관리',
     '/admin/delivery-done': '납품관리',
-    '/admin/funds': '납품관리',          // 기성청구는 납품관리 하위
-    '/admin/statistics': '통계',         // 기성통계(/admin/statistics/funds)도 여기에 포함
+    '/admin/funds': '납품관리', // 기성청구는 납품관리 하위
+    '/admin/statistics': '통계', // 기성통계(/admin/statistics/funds)도 여기에 포함
     '/admin/message': '문자관리',
     '/admin/basic-info': '기초정보',
     '/admin/inventory': '재고관리',
@@ -168,10 +175,10 @@ const getRelativeTime = (dateStr: string): string => {
   const diffHour = Math.floor(diffMs / 3600000)
   const diffDay = Math.floor(diffMs / 86400000)
 
-  if (diffMin < 1) return '방금 전'
-  if (diffMin < 60) return `${diffMin}분 전`
-  if (diffHour < 24) return `${diffHour}시간 전`
-  if (diffDay < 7) return `${diffDay}일 전`
+  if (diffMin < 1) { return '방금 전' }
+  if (diffMin < 60) { return `${diffMin}분 전` }
+  if (diffHour < 24) { return `${diffHour}시간 전` }
+  if (diffDay < 7) { return `${diffDay}일 전` }
   return date.toLocaleDateString('ko-KR')
 }
 
@@ -185,7 +192,7 @@ const toggleSidebar = () => {
   if (window.innerWidth <= 768) {
     // 모바일에서는 모바일 메뉴 토글
     isMobileMenuOpen.value = !isMobileMenuOpen.value
-    
+
     // 모바일 메뉴가 열릴 때 body 스크롤 방지
     if (isMobileMenuOpen.value) {
       document.body.style.overflow = 'hidden'
@@ -262,7 +269,7 @@ const handleRevertImpersonation = async () => {
 const handleLogout = async () => {
   try {
     const authStore = useAuthStore()
-    
+
     console.log('로그아웃 시작...', {
       userId: authStore.user?.userId,
       hasToken: !!authStore.accessToken
@@ -276,12 +283,12 @@ const handleLogout = async () => {
         await authService.logout(userId, loginId, authStore.accessToken)
       }
     }
-    
+
     // Store 및 localStorage 정리
     authStore.clearAuthData()
-    
+
     console.log('로그아웃 완료')
-    
+
     // 로그인 페이지로 이동
     await router.push('/login')
   } catch (error) {
@@ -340,7 +347,7 @@ onUnmounted(() => {
   .admin-layout {
     display: flex;
   }
-  
+
   .main-content {
     flex: 1;
     margin-left: 0;
@@ -349,6 +356,7 @@ onUnmounted(() => {
 
 .main-content {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   margin-left: 0;
@@ -686,16 +694,16 @@ onUnmounted(() => {
   .main-content {
     margin-left: 0;
   }
-  
+
   .main-content.sidebar-collapsed {
     margin-left: 0;
   }
-  
+
   /* 모바일에서 사이드바가 열려있을 때 메인 콘텐츠 조정 */
   .admin-layout.mobile-menu-open .main-content {
     margin-left: 0;
   }
-  
+
   /* 모바일 메뉴 오버레이 */
   .admin-layout::before {
     content: '';
@@ -711,13 +719,13 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     pointer-events: none;
   }
-  
+
   .admin-layout.mobile-menu-open::before {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
   }
-  
+
   /* 모바일에서 사이드바 토글 버튼 최적화 */
   .sidebar-toggle {
     width: 44px;
@@ -733,16 +741,16 @@ onUnmounted(() => {
     font-size: 18px;
     transition: all 0.3s ease;
   }
-  
+
   .sidebar-toggle:hover {
     background: #2563eb;
     transform: scale(1.05);
   }
-  
+
   .sidebar-toggle:active {
     transform: scale(0.95);
   }
-  
+
   .notification-dropdown {
     right: 10px;
     left: 10px;
@@ -767,6 +775,6 @@ onUnmounted(() => {
     font-size: 10px;
     padding: 2px 6px;
   }
-  
+
 }
-</style> 
+</style>

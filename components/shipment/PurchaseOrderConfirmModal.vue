@@ -5,7 +5,7 @@
         <div class="modal-header">
           <h3>발주서 생성</h3>
           <button class="modal-close" @click="closeModal">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times" />
           </button>
         </div>
 
@@ -13,39 +13,39 @@
           <!-- 발주 정보 -->
           <div class="form-section">
             <div class="section-header">
-              <i class="fas fa-calendar-alt"></i>
+              <i class="fas fa-calendar-alt" />
               <span>발주 정보</span>
             </div>
             <div class="form-grid">
               <div class="form-field">
                 <label class="form-label required">발주일자</label>
                 <input
-                  type="date"
                   v-model="formData.purchaseOrderDate"
+                  type="date"
                   class="form-input"
-                />
+                >
                 <span v-if="errors.purchaseOrderDate" class="error-message">{{ errors.purchaseOrderDate }}</span>
               </div>
               <div class="form-field">
                 <label class="form-label required">현장 도착 예정일시</label>
                 <div class="input-with-clear">
                   <input
-                    type="datetime-local"
                     v-model="formData.expectedArrivalAt"
+                    type="datetime-local"
                     class="form-input"
-                  />
+                  >
                   <button
                     type="button"
                     class="btn-clear-inline"
-                    @click="formData.expectedArrivalAt = ''"
                     :disabled="!formData.expectedArrivalAt"
                     title="초기화"
+                    @click="formData.expectedArrivalAt = ''"
                   >
                     초기화
                   </button>
                 </div>
                 <span class="field-hint datetime-hint">
-                  <i class="fas fa-info-circle"></i>
+                  <i class="fas fa-info-circle" />
                   날짜/시간 선택 후 달력 외부를 클릭하면 닫힙니다
                 </span>
                 <span v-if="errors.expectedArrivalAt" class="error-message">{{ errors.expectedArrivalAt }}</span>
@@ -56,7 +56,7 @@
           <!-- 배송지 정보 -->
           <div class="form-section">
             <div class="section-header">
-              <i class="fas fa-map-marker-alt"></i>
+              <i class="fas fa-map-marker-alt" />
               <span>배송지 정보</span>
             </div>
             <div class="form-grid">
@@ -64,20 +64,20 @@
                 <label class="form-label required">우편번호</label>
                 <div class="input-with-button">
                   <input
-                    type="text"
                     v-model="formData.zipcode"
+                    type="text"
                     class="form-input"
                     placeholder="우편번호"
                     maxlength="10"
                     readonly
-                  />
+                  >
                   <button
                     type="button"
                     class="btn-search"
-                    @click="openPostalSearch"
                     :disabled="isPostalSearchOpen"
+                    @click="openPostalSearch"
                   >
-                    <i class="fas fa-search"></i>
+                    <i class="fas fa-search" />
                     검색
                   </button>
                 </div>
@@ -86,22 +86,22 @@
               <div class="form-field full-width">
                 <label class="form-label required">배송지 주소</label>
                 <input
-                  type="text"
                   v-model="formData.deliveryAddress"
+                  type="text"
                   class="form-input"
                   placeholder="주소찾기를 이용하세요"
                   readonly
-                />
+                >
                 <span v-if="errors.deliveryAddress" class="error-message">{{ errors.deliveryAddress }}</span>
               </div>
               <div class="form-field full-width">
                 <label class="form-label">상세주소</label>
                 <input
-                  type="text"
                   v-model="formData.addressDetail"
+                  type="text"
                   class="form-input"
                   placeholder="상세주소 (선택)"
-                />
+                >
               </div>
             </div>
           </div>
@@ -109,13 +109,12 @@
           <!-- 현장 인수자 정보 -->
           <div class="form-section">
             <div class="section-header">
-              <i class="fas fa-user-hard-hat"></i>
+              <i class="fas fa-user-hard-hat" />
               <span>현장 인수자 정보</span>
               <span class="field-hint">
-                <i class="fas fa-info-circle"></i>
+                <i class="fas fa-info-circle" />
                 현장소장은 사전 등록해야 합니다.
               </span>
-
             </div>
             <div class="form-grid">
               <div class="form-field">
@@ -125,51 +124,55 @@
                   class="form-select"
                   @change="handleSiteManagerChange"
                 >
-                  <option :value="null">선택하세요</option>
+                  <option :value="null">
+                    선택하세요
+                  </option>
                   <option
                     v-for="manager in siteManagers"
                     :key="manager.userId"
                     :value="manager.userId"
                   >
                     {{ manager.userName }} ({{ manager.phone }})
-                    <template v-if="manager.companyName"> - {{ manager.companyName }}</template>
+                    <template v-if="manager.companyName">
+                      - {{ manager.companyName }}
+                    </template>
                   </option>
                 </select>
                 <span v-if="errors.siteManagerId" class="error-message">{{ errors.siteManagerId }}</span>
                 <span class="field-hint">
-                  <i class="fas fa-info-circle"></i>
+                  <i class="fas fa-info-circle" />
                   선택 시 인수자 정보가 자동 입력됩니다
                 </span>
               </div>
               <div class="form-field">
                 <label class="form-label">인수자명</label>
                 <input
-                  type="text"
                   v-model="formData.receiverName"
+                  type="text"
                   class="form-input"
                   placeholder="인수자명"
-                />
+                >
                 <span class="field-hint">
-                  <i class="fas fa-info-circle"></i>
+                  <i class="fas fa-info-circle" />
                   인수자가 다를경우 직접 수정/입력 하세요.
                 </span>
               </div>
               <div class="form-field">
                 <label class="form-label">인수자 연락처</label>
                 <input
-                  type="tel"
                   v-model="formData.receiverPhone"
+                  type="tel"
                   class="form-input"
                   placeholder="010-0000-0000"
                   @input="handlePhoneInput"
-                />
+                >
               </div>
             </div>
           </div>
 
           <!-- 경고 메시지 -->
           <div class="warning-box">
-            <i class="fas fa-exclamation-triangle"></i>
+            <i class="fas fa-exclamation-triangle" />
             <div>
               <strong>주의</strong>
               <p>발주서 생성 후에는 위 정보를 수정할 수 없습니다.</p>
@@ -178,8 +181,8 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn-secondary" @click="closeModal" :disabled="isSubmitting">
-            <i class="fas fa-times"></i>
+          <button class="btn-secondary" :disabled="isSubmitting" @click="closeModal">
+            <i class="fas fa-times" />
             취소
           </button>
           <button
@@ -187,8 +190,8 @@
             :disabled="!canSubmit || isSubmitting"
             @click="handleSubmit"
           >
-            <i v-if="isSubmitting" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-file-circle-plus"></i>
+            <i v-if="isSubmitting" class="fas fa-spinner fa-spin" />
+            <i v-else class="fas fa-file-circle-plus" />
             {{ isSubmitting ? '생성 중...' : '발주서 생성' }}
           </button>
         </div>
@@ -224,7 +227,7 @@ interface InitialData {
   siteManagerId: number | null
   receiverName: string
   receiverPhone: string
-  oemCompanyId: number | null  // OEM 제조사 ID
+  oemCompanyId: number | null // OEM 제조사 ID
 }
 
 interface Props {
@@ -325,15 +328,15 @@ const handlePhoneInput = () => {
 // 주소찾기 팝업 열기 (중복 방지)
 const openPostalSearch = () => {
   // 이미 팝업이 열려있으면 무시
-  if (isPostalSearchOpen.value) return
+  if (isPostalSearchOpen.value) { return }
 
   isPostalSearchOpen.value = true
 
   new window.daum.Postcode({
     oncomplete: (data: any) => {
-      formData.zipcode = data.zonecode        // 우편번호
-      formData.deliveryAddress = data.address  // 기본 주소
-      formData.addressDetail = ''              // 상세주소 초기화
+      formData.zipcode = data.zonecode // 우편번호
+      formData.deliveryAddress = data.address // 기본 주소
+      formData.addressDetail = '' // 상세주소 초기화
       isPostalSearchOpen.value = false
     },
     onclose: () => {
@@ -392,7 +395,7 @@ const validate = (): boolean => {
 
 // 제출 처리
 const handleSubmit = async () => {
-  if (!validate() || isSubmitting.value) return
+  if (!validate() || isSubmitting.value) { return }
 
   isSubmitting.value = true
 
@@ -407,7 +410,7 @@ const handleSubmit = async () => {
       siteManagerId: formData.siteManagerId!,
       receiverName: formData.receiverName,
       receiverPhone: formData.receiverPhone,
-      oemCompanyId: props.initialData.oemCompanyId  // OEM 제조사 ID 추가
+      oemCompanyId: props.initialData.oemCompanyId // OEM 제조사 ID 추가
     })
 
     if (!result.success) {

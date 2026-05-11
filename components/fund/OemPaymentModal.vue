@@ -9,11 +9,15 @@
               <div class="ccm-success-content">
                 <div class="ccm-success-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </div>
-                <h3 class="ccm-success-title">{{ isCompleteMode ? '지급 완료' : '지급 등록 완료' }}</h3>
-                <p class="ccm-success-message">{{ getSuccessMessage() }}</p>
+                <h3 class="ccm-success-title">
+                  {{ isCompleteMode ? '지급 완료' : '지급 등록 완료' }}
+                </h3>
+                <p class="ccm-success-message">
+                  {{ getSuccessMessage() }}
+                </p>
               </div>
             </div>
           </Transition>
@@ -23,11 +27,13 @@
             <div class="ccm-header-content">
               <div class="ccm-header-icon ccm-icon-orange">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                  <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
               <div class="ccm-header-text">
-                <h2 class="ccm-modal-title">{{ isCompleteMode ? 'OEM 지급 완료' : 'OEM 지급 등록' }}</h2>
+                <h2 class="ccm-modal-title">
+                  {{ isCompleteMode ? 'OEM 지급 완료' : 'OEM 지급 등록' }}
+                </h2>
                 <span class="ccm-modal-subtitle">{{ isCompleteMode ? '지급 완료 처리' : '새로운 지급 예정 등록' }}</span>
               </div>
             </div>
@@ -39,7 +45,9 @@
                 :disabled="isSubmitting"
                 @change="handleOemCompanyChange"
               >
-                <option :value="null">OEM 제조사 선택</option>
+                <option :value="null">
+                  OEM 제조사 선택
+                </option>
                 <option
                   v-for="company in oemCompanies"
                   :key="company.companyId"
@@ -52,15 +60,15 @@
             <!-- OEM 제조사가 없는 경우 헤더에 경고 표시 -->
             <div v-else-if="!isCompleteMode && oemCompanies.length === 0" class="oem-company-header-warning">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               <span>OEM 없음</span>
             </div>
-            <button class="ccm-close-button" @click="handleClose" :disabled="isSubmitting">
+            <button class="ccm-close-button" :disabled="isSubmitting" @click="handleClose">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
               </svg>
             </button>
           </div>
@@ -71,7 +79,7 @@
             <div v-if="!isCompleteMode && hasAdvancePayment && !linkedPayment && advanceOemNotFullyPaid" class="ccm-form-group">
               <label class="ccm-form-label">
                 <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
                 </svg>
                 OEM 선급금 지급
               </label>
@@ -104,8 +112,8 @@
                   <button
                     type="button"
                     class="advance-payment-btn"
-                    @click="applyRemainingAmount"
                     :disabled="isSubmitting || displayRemainingAmount <= 0"
+                    @click="applyRemainingAmount"
                   >
                     지급예정
                   </button>
@@ -118,7 +126,7 @@
             <div v-if="!isCompleteMode && !linkedPayment && !hasAdvancePayment && progressPayments.length === 0 && oemExpectedTotal > 0" class="ccm-form-group">
               <label class="ccm-form-label">
                 <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
                 </svg>
                 OEM 지급
               </label>
@@ -140,15 +148,15 @@
               <div class="oem-percent-buttons">
                 <span class="oem-percent-label">비율 선택</span>
                 <div class="oem-percent-group">
-                  <button type="button" class="oem-percent-btn" @click="setPercentAmountFromTotal(30)" :disabled="isSubmitting">
+                  <button type="button" class="oem-percent-btn" :disabled="isSubmitting" @click="setPercentAmountFromTotal(30)">
                     <span class="oem-percent-value">30%</span>
                     <span class="oem-percent-amount">{{ formatCurrencyShort((oemExpectedTotal || 0) * 0.3) }}</span>
                   </button>
-                  <button type="button" class="oem-percent-btn" @click="setPercentAmountFromTotal(61)" :disabled="isSubmitting">
+                  <button type="button" class="oem-percent-btn" :disabled="isSubmitting" @click="setPercentAmountFromTotal(61)">
                     <span class="oem-percent-value">61%</span>
                     <span class="oem-percent-amount">{{ formatCurrencyShort((oemExpectedTotal || 0) * 0.61) }}</span>
                   </button>
-                  <button type="button" class="oem-percent-btn" @click="setPercentAmountFromTotal(64)" :disabled="isSubmitting">
+                  <button type="button" class="oem-percent-btn" :disabled="isSubmitting" @click="setPercentAmountFromTotal(64)">
                     <span class="oem-percent-value">64%</span>
                     <span class="oem-percent-amount">{{ formatCurrencyShort((oemExpectedTotal || 0) * 0.64) }}</span>
                   </button>
@@ -160,9 +168,9 @@
             <div v-if="!isCompleteMode && !linkedPayment && progressPayments.length > 0" class="ccm-form-group">
               <label class="ccm-form-label">
                 <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-                  <rect x="9" y="3" width="6" height="4" rx="1"/>
-                  <path d="M9 12l2 2 4-4"/>
+                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                  <rect x="9" y="3" width="6" height="4" rx="1" />
+                  <path d="M9 12l2 2 4-4" />
                 </svg>
                 기준 기성금 선택
                 <span class="ccm-optional-tag">복수 선택</span>
@@ -182,7 +190,7 @@
                       :disabled="isSubmitting"
                       @click.stop
                       @change="togglePaymentSelection(payment.requestId || payment.paymentId || 0)"
-                    />
+                    >
                   </div>
                   <div class="oem-payment-info">
                     <span class="oem-payment-seq">{{ getPaymentLabel(payment) }}</span>
@@ -195,8 +203,8 @@
                 <div v-if="baseAmountForPercent > 0" class="oem-selected-summary">
                   <div class="oem-summary-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M9 12l2 2 4-4"/>
-                      <circle cx="12" cy="12" r="10"/>
+                      <path d="M9 12l2 2 4-4" />
+                      <circle cx="12" cy="12" r="10" />
                     </svg>
                   </div>
                   <div class="oem-summary-content">
@@ -210,7 +218,7 @@
             <!-- linkedPayment로 전달된 경우 정보 표시 -->
             <div v-if="!isCompleteMode && linkedPayment" class="ccm-linked-card">
               <div class="ccm-card-header">
-                <i class="fas fa-link"></i>
+                <i class="fas fa-link" />
                 <span>{{ linkedPayment.paymentType === 'BALANCE' ? '연결된 잔금' : '연결된 기성금' }}</span>
               </div>
               <div class="ccm-card-content">
@@ -228,7 +236,7 @@
             <!-- 지급 완료 모드: 기존 정보 표시 -->
             <div v-if="isCompleteMode && existingPayment" class="ccm-linked-card">
               <div class="ccm-card-header">
-                <i class="fas fa-info-circle"></i>
+                <i class="fas fa-info-circle" />
                 <span>지급 예정 정보</span>
               </div>
               <div class="ccm-card-content">
@@ -248,7 +256,7 @@
             </div>
 
             <!-- Form Fields -->
-            <form @submit.prevent="handleSubmit" class="ccm-form">
+            <form class="ccm-form" @submit.prevent="handleSubmit">
               <!-- 지급 금액 -->
               <div class="ccm-form-group">
                 <label class="ccm-form-label required">
@@ -257,16 +265,16 @@
                 </label>
                 <div class="ccm-input-wrapper ccm-amount-wrapper">
                   <input
-                    type="text"
                     v-model="displayAmount"
-                    @input="handleAmountInput"
-                    @focus="handleAmountFocus"
-                    @blur="handleAmountBlur"
+                    type="text"
                     class="ccm-form-input ccm-amount-input ccm-focus-orange"
                     placeholder="0"
                     required
                     :disabled="isSubmitting"
-                  />
+                    @input="handleAmountInput"
+                    @focus="handleAmountFocus"
+                    @blur="handleAmountBlur"
+                  >
                   <span class="ccm-input-suffix">원</span>
                 </div>
                 <Transition name="fade-slide">
@@ -276,8 +284,8 @@
                       <button
                         type="button"
                         class="oem-percent-btn"
-                        @click="setPercentAmount(10)"
                         :disabled="isSubmitting"
+                        @click="setPercentAmount(10)"
                       >
                         <span class="oem-percent-value">10%</span>
                         <span class="oem-percent-amount">{{ formatCurrencyShort(baseAmountForPercent * 0.1) }}</span>
@@ -285,8 +293,8 @@
                       <button
                         type="button"
                         class="oem-percent-btn"
-                        @click="setPercentAmount(30)"
                         :disabled="isSubmitting"
+                        @click="setPercentAmount(30)"
                       >
                         <span class="oem-percent-value">30%</span>
                         <span class="oem-percent-amount">{{ formatCurrencyShort(baseAmountForPercent * 0.3) }}</span>
@@ -294,8 +302,8 @@
                       <button
                         type="button"
                         class="oem-percent-btn"
-                        @click="setPercentAmount(61)"
                         :disabled="isSubmitting"
+                        @click="setPercentAmount(61)"
                       >
                         <span class="oem-percent-value">61%</span>
                         <span class="oem-percent-amount">{{ formatCurrencyShort(baseAmountForPercent * 0.61) }}</span>
@@ -303,8 +311,8 @@
                       <button
                         type="button"
                         class="oem-percent-btn"
-                        @click="setPercentAmount(64)"
                         :disabled="isSubmitting"
+                        @click="setPercentAmount(64)"
                       >
                         <span class="oem-percent-value">64%</span>
                         <span class="oem-percent-amount">{{ formatCurrencyShort(baseAmountForPercent * 0.64) }}</span>
@@ -316,8 +324,8 @@
                   <button
                     type="button"
                     class="ccm-amount-preset-btn ccm-orange"
-                    @click="setScheduledAmount"
                     :disabled="isSubmitting"
+                    @click="setScheduledAmount"
                   >
                     예정 금액 입력
                   </button>
@@ -329,21 +337,28 @@
               <div class="ccm-form-group">
                 <label class="ccm-form-label required">
                   <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
                   {{ isCompleteMode ? '실제 지급일' : '지급 예정일' }}
                 </label>
                 <div class="ccm-input-wrapper">
                   <input
-                    type="date"
                     v-model="formData.paymentDate"
+                    type="date"
                     class="ccm-form-input ccm-date-input ccm-focus-orange"
                     required
                     :disabled="isSubmitting"
-                  />
+                  >
                 </div>
                 <span v-if="errors.paymentDate" class="ccm-error-message">{{ errors.paymentDate }}</span>
               </div>
@@ -354,20 +369,27 @@
               <div class="ccm-form-group">
                 <label class="ccm-form-label">
                   <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10"/>
+                    <rect
+                      x="1"
+                      y="4"
+                      width="22"
+                      height="16"
+                      rx="2"
+                      ry="2"
+                    />
+                    <line x1="1" y1="10" x2="23" y2="10" />
                   </svg>
                   지급 계좌
                   <span class="ccm-optional-tag">선택</span>
                 </label>
                 <div class="ccm-input-wrapper">
                   <input
-                    type="text"
                     v-model="formData.bankAccount"
+                    type="text"
                     class="ccm-form-input ccm-focus-orange"
                     placeholder="예: 기업은행 123-456-789012"
                     :disabled="isSubmitting"
-                  />
+                  >
                 </div>
               </div>
 
@@ -375,10 +397,10 @@
               <div class="ccm-form-group">
                 <label class="ccm-form-label">
                   <svg class="ccm-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
                   </svg>
                   비고
                   <span class="ccm-optional-tag">선택</span>
@@ -390,7 +412,7 @@
                     placeholder="추가 메모를 입력하세요"
                     rows="3"
                     :disabled="isSubmitting"
-                  ></textarea>
+                  />
                 </div>
               </div>
             </form>
@@ -401,18 +423,18 @@
             <button
               type="button"
               class="ccm-btn-cancel"
-              @click="handleClose"
               :disabled="isSubmitting"
+              @click="handleClose"
             >
               취소
             </button>
             <button
               type="submit"
               class="ccm-btn-confirm ccm-orange"
-              @click="handleSubmit"
               :disabled="isSubmitting || !isFormValid"
+              @click="handleSubmit"
             >
-              <span v-if="isSubmitting" class="ccm-loading-spinner"></span>
+              <span v-if="isSubmitting" class="ccm-loading-spinner" />
               <span v-else>{{ isCompleteMode ? '지급 완료' : '등록하기' }}</span>
             </button>
           </div>
@@ -500,7 +522,7 @@ const isSuccess = ref(false)
 const displayAmount = ref('')
 const isAmountFocused = ref(false)
 const selectedPaymentIds = ref<number[]>([])
-const displayRemainingAmount = ref(0)  // 지급예정 버튼 옆 표시 금액 (클릭 시 0으로 변경)
+const displayRemainingAmount = ref(0) // 지급예정 버튼 옆 표시 금액 (클릭 시 0으로 변경)
 
 const formData = reactive({
   paymentDate: getLocalDateString(),
@@ -518,7 +540,7 @@ const isCompleteMode = computed(() => !!props.existingPayment)
 
 // 선택된 기성금들 (다중 선택)
 const selectedProgressPayments = computed(() => {
-  if (props.linkedPayment) return [props.linkedPayment]
+  if (props.linkedPayment) { return [props.linkedPayment] }
   return props.progressPayments?.filter(p =>
     selectedPaymentIds.value.includes(p.requestId || p.paymentId || 0)
   ) || []
@@ -532,7 +554,7 @@ const baseAmountForPercent = computed(() => {
 })
 
 const suggestedOemAmount = computed(() => {
-  if (baseAmountForPercent.value <= 0) return 0
+  if (baseAmountForPercent.value <= 0) { return 0 }
   return Math.floor((baseAmountForPercent.value * props.oemPaymentRate) / 100)
 })
 
@@ -541,9 +563,9 @@ const oemCompanies = computed(() => props.oemCompanies || [])
 
 const isFormValid = computed(() => {
   // 기본 검증: 날짜와 금액
-  if (!formData.paymentDate || formData.amount <= 0) return false
+  if (!formData.paymentDate || formData.amount <= 0) { return false }
   // OEM 제조사가 있으면 반드시 선택해야 함
-  if (!isCompleteMode.value && oemCompanies.value.length > 0 && !formData.oemCompanyId) return false
+  if (!isCompleteMode.value && oemCompanies.value.length > 0 && !formData.oemCompanyId) { return false }
   return true
 })
 
@@ -554,7 +576,7 @@ const advanceOemPaymentAmount = computed(() => {
 
 // OEM 선급금 미완납 여부 (선급금 지급 예정액보다 적게 등록된 경우, PENDING+PAID 포함)
 const advanceOemNotFullyPaid = computed(() => {
-  if (!props.hasAdvancePayment) return false
+  if (!props.hasAdvancePayment) { return false }
   const totalScheduled = props.oemTotalScheduled ?? (props.oemTotalPaid || 0)
   return totalScheduled < advanceOemPaymentAmount.value
 })
@@ -580,7 +602,7 @@ const getPaymentLabel = (payment: ProgressPaymentRequest): string => {
 
 // 축약형 금액 포맷 (비율 버튼용)
 const formatCurrencyShort = (value: number | undefined): string => {
-  if (!value) return '0'
+  if (!value) { return '0' }
   const rounded = Math.floor(value)
   if (rounded >= 100000000) {
     return (rounded / 100000000).toFixed(1).replace(/\.0$/, '') + '억'
@@ -626,7 +648,7 @@ const handleAmountBlur = () => {
 
 // 비율에 따른 금액 설정 (10%, 30%, 61%, 64%) - 기성금 선택 기준
 const setPercentAmount = (percent: number) => {
-  if (baseAmountForPercent.value <= 0) return
+  if (baseAmountForPercent.value <= 0) { return }
   const calculatedAmount = Math.floor((baseAmountForPercent.value * percent) / 100)
   formData.amount = calculatedAmount
   displayAmount.value = formatNumberInput(calculatedAmount.toString())
@@ -634,7 +656,7 @@ const setPercentAmount = (percent: number) => {
 
 // OEM 예정 총액 기준 비율 계산 (기본 모드용)
 const setPercentAmountFromTotal = (percent: number) => {
-  if ((props.oemExpectedTotal || 0) <= 0) return
+  if ((props.oemExpectedTotal || 0) <= 0) { return }
   const calculatedAmount = Math.floor((props.oemExpectedTotal || 0) * percent / 100)
   formData.amount = calculatedAmount
   displayAmount.value = formatNumberInput(calculatedAmount.toString())
@@ -649,7 +671,7 @@ const setScheduledAmount = () => {
 
 // 기성금 선택 토글
 const togglePaymentSelection = (paymentId: number) => {
-  if (isSubmitting.value) return
+  if (isSubmitting.value) { return }
   const index = selectedPaymentIds.value.indexOf(paymentId)
   if (index > -1) {
     selectedPaymentIds.value.splice(index, 1)
@@ -713,7 +735,7 @@ const getSuccessMessage = () => {
 }
 
 const handleSubmit = async () => {
-  if (!validateForm()) return
+  if (!validateForm()) { return }
 
   isSubmitting.value = true
 
@@ -745,7 +767,7 @@ const handleSubmit = async () => {
 }
 
 const handleClose = () => {
-  if (isSubmitting.value) return
+  if (isSubmitting.value) { return }
   resetForm()
   emit('close')
 }

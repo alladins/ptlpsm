@@ -1,30 +1,31 @@
 <template>
   <div class="admin-page-wrapper">
-    <!-- 페이지 헤더 -->
-    <PageHeader
-      title="제조사 원가 관리"
-      description="OEM 제조사별 SKU 원가를 관리합니다"
-    >
-      <template #actions>
+    <!-- 페이지 헤더 - 컴팩트 -->
+    <div class="page-header-compact">
+      <h1>원가 관리</h1>
+      <span class="page-description">OEM 제조사별 / 본사 SKU 원가를 관리합니다</span>
+      <div class="header-actions-right">
         <button v-if="isSkuFiltered" class="btn-back" @click="clearSkuFilter">
-          <i class="fas fa-arrow-left"></i>
+          <i class="fas fa-arrow-left" />
           전체 목록 보기
         </button>
         <button class="btn-refresh" @click="handleRefresh">
-          <i class="fas fa-sync-alt"></i>
+          <i class="fas fa-sync-alt" />
           새로고침
         </button>
-      </template>
-    </PageHeader>
+      </div>
+    </div>
 
     <!-- SKU 필터 배너 (품목관리에서 진입 시) -->
     <div v-if="isSkuFiltered && skuDetailInfo" class="sku-context-banner">
       <div class="sku-banner-content">
         <div class="sku-banner-icon">
-          <i class="fas fa-barcode"></i>
+          <i class="fas fa-barcode" />
         </div>
         <div class="sku-banner-info">
-          <div class="sku-banner-label">선택된 SKU</div>
+          <div class="sku-banner-label">
+            선택된 SKU
+          </div>
           <div class="sku-banner-title">
             <span class="sku-code">{{ searchForm.skuId }}</span>
             <span v-if="skuDetailInfo.skuName" class="sku-name">{{ skuDetailInfo.skuName }}</span>
@@ -40,8 +41,8 @@
           </div>
         </div>
       </div>
-      <button class="sku-banner-close" @click="clearSkuFilter" title="필터 해제">
-        <i class="fas fa-times"></i>
+      <button class="sku-banner-close" title="필터 해제" @click="clearSkuFilter">
+        <i class="fas fa-times" />
       </button>
     </div>
 
@@ -49,41 +50,57 @@
     <div class="stats-cards">
       <div class="stat-card">
         <div class="stat-icon stat-icon-purple">
-          <i class="fas fa-won-sign"></i>
+          <i class="fas fa-won-sign" />
         </div>
         <div class="stat-content">
-          <div class="stat-label">총 원가 설정</div>
-          <div class="stat-value">{{ statistics.totalCount.toLocaleString() }}건</div>
+          <div class="stat-label">
+            총 원가 설정
+          </div>
+          <div class="stat-value">
+            {{ statistics.totalCount.toLocaleString() }}건
+          </div>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon stat-icon-green">
-          <i class="fas fa-check-circle"></i>
+          <i class="fas fa-check-circle" />
         </div>
         <div class="stat-content">
-          <div class="stat-label">적용중</div>
-          <div class="stat-value">{{ statistics.activeCount.toLocaleString() }}건</div>
+          <div class="stat-label">
+            적용중
+          </div>
+          <div class="stat-value">
+            {{ statistics.activeCount.toLocaleString() }}건
+          </div>
         </div>
       </div>
 
       <div class="stat-card warning-card">
         <div class="stat-icon stat-icon-red">
-          <i class="fas fa-exclamation-triangle"></i>
+          <i class="fas fa-exclamation-triangle" />
         </div>
         <div class="stat-content">
-          <div class="stat-label">원가 미설정 SKU</div>
-          <div class="stat-value text-danger">{{ statistics.noOemCostCount.toLocaleString() }}건</div>
+          <div class="stat-label">
+            원가 미설정 SKU
+          </div>
+          <div class="stat-value text-danger">
+            {{ statistics.noOemCostCount.toLocaleString() }}건
+          </div>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon stat-icon-orange">
-          <i class="fas fa-clock"></i>
+          <i class="fas fa-clock" />
         </div>
         <div class="stat-content">
-          <div class="stat-label">30일내 만료</div>
-          <div class="stat-value">{{ statistics.expiringCount.toLocaleString() }}건</div>
+          <div class="stat-label">
+            30일내 만료
+          </div>
+          <div class="stat-value">
+            {{ statistics.expiringCount.toLocaleString() }}건
+          </div>
         </div>
       </div>
     </div>
@@ -92,9 +109,26 @@
     <div class="search-section-compact">
       <div class="search-row-single">
         <div class="search-item">
+          <label>유형:</label>
+          <select v-model="searchForm.costSourceType" class="status-select" @change="handleSearch">
+            <option value="">
+              전체
+            </option>
+            <option value="OEM">
+              제조사(OEM)
+            </option>
+            <option value="LEADPOWER">
+              본사
+            </option>
+          </select>
+        </div>
+
+        <div class="search-item">
           <label>OEM:</label>
           <select v-model="searchForm.oemCompanyId" class="status-select">
-            <option :value="undefined">전체</option>
+            <option :value="undefined">
+              전체
+            </option>
             <option
               v-for="company in oemCompanies"
               :key="company.id"
@@ -108,30 +142,30 @@
         <div class="search-item">
           <label>SKU:</label>
           <input
-            type="text"
             v-model="searchForm.skuId"
+            type="text"
             class="keyword-input"
             placeholder="SKU코드"
             @keyup.enter="handleSearch"
-          />
+          >
         </div>
 
         <div class="search-item">
           <label>SKU명:</label>
           <input
-            type="text"
             v-model="searchForm.keyword"
+            type="text"
             class="keyword-input"
             placeholder="SKU명 검색"
             @keyup.enter="handleSearch"
-          />
+          >
         </div>
 
         <button class="btn-search-inline" @click="handleSearch">
-          <i class="fas fa-search"></i> 검색
+          <i class="fas fa-search" /> 검색
         </button>
         <button class="btn-reset-inline" @click="handleReset">
-          <i class="fas fa-undo"></i> 초기화
+          <i class="fas fa-undo" /> 초기화
         </button>
       </div>
     </div>
@@ -143,16 +177,22 @@
           <span>총 {{ totalElements }}개 SKU</span>
         </div>
         <div class="table-actions">
-          <button class="btn-expand-all" @click="expandAll" title="모두 펼치기">
-            <i class="fas fa-expand-alt"></i> 모두 펼치기
+          <button class="btn-expand-all" title="모두 펼치기" @click="expandAll">
+            <i class="fas fa-expand-alt" /> 모두 펼치기
           </button>
-          <button class="btn-collapse-all" @click="collapseAll" title="모두 접기">
-            <i class="fas fa-compress-alt"></i> 모두 접기
+          <button class="btn-collapse-all" title="모두 접기" @click="collapseAll">
+            <i class="fas fa-compress-alt" /> 모두 접기
           </button>
           <select v-model="pageSize" class="page-size-select" @change="handlePageSizeChange">
-            <option :value="10">10개씩</option>
-            <option :value="20">20개씩</option>
-            <option :value="50">50개씩</option>
+            <option :value="10">
+              10개씩
+            </option>
+            <option :value="20">
+              20개씩
+            </option>
+            <option :value="50">
+              50개씩
+            </option>
           </select>
         </div>
       </div>
@@ -161,28 +201,48 @@
         <table class="data-table tree-table">
           <thead>
             <tr>
-              <th style="width: 40px"></th>
-              <th style="width: 120px">SKU코드</th>
-              <th style="width: 200px">SKU명 / OEM 제조사</th>
-              <th style="width: 100px" class="text-right">원가</th>
-              <th style="width: 100px" class="text-right">납품단가</th>
-              <th style="width: 80px" class="text-center">마진율</th>
-              <th style="width: 120px">적용기간</th>
-              <th style="width: 70px" class="text-center">상태</th>
-              <th style="width: 160px" class="text-center">액션</th>
+              <th style="width: 40px" />
+              <th style="width: 120px">
+                SKU코드
+              </th>
+              <th style="width: 200px">
+                SKU명 / OEM 제조사
+              </th>
+              <th style="width: 100px" class="text-right">
+                원가
+              </th>
+              <th style="width: 100px" class="text-right">
+                납품단가
+              </th>
+              <th style="width: 80px" class="text-center">
+                마진율
+              </th>
+              <th style="width: 120px">
+                적용기간
+              </th>
+              <th style="width: 70px" class="text-center">
+                상태
+              </th>
+              <th style="width: 160px" class="text-center">
+                액션
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="9" class="loading-cell">
-                <div class="loading-spinner"></div>
-                <span>데이터 조회 중...</span>
+              <td colspan="9">
+                <div class="loading-cell">
+                  <div class="loading-spinner" />
+                  <span>데이터 조회 중...</span>
+                </div>
               </td>
             </tr>
             <tr v-else-if="treeList.length === 0">
-              <td colspan="9" class="empty-cell">
-                <i class="fas fa-inbox"></i>
-                <span>데이터가 없습니다.</span>
+              <td colspan="9">
+                <div class="empty-cell">
+                  <i class="fas fa-inbox" />
+                  <span>데이터가 없습니다.</span>
+                </div>
               </td>
             </tr>
             <template v-else>
@@ -193,35 +253,41 @@
                     <i
                       class="fas fa-chevron-right expand-icon"
                       :class="{ expanded: expandedSkuIds.has(sku.skuId) }"
-                    ></i>
+                    />
                   </td>
-                  <td class="sku-id-cell">{{ sku.skuId }}</td>
+                  <td class="sku-id-cell">
+                    {{ sku.skuId }}
+                  </td>
                   <td>
                     <span class="sku-name-text">{{ sku.skuName || sku.itemName || '-' }}</span>
                   </td>
-                  <td class="text-right">-</td>
-                  <td class="text-right">{{ formatCurrency(sku.unitPrice) }}</td>
-                  <td class="text-center">-</td>
+                  <td class="text-right">
+                    -
+                  </td>
+                  <td class="text-right">
+                    {{ formatCurrency(sku.unitPrice) }}
+                  </td>
+                  <td class="text-center">
+                    -
+                  </td>
                   <td>-</td>
                   <td class="text-center">
                     <span class="oem-count-badge">{{ sku.oemCount }}개</span>
                   </td>
                   <td class="action-buttons">
                     <button
-                      class="btn-add-oem"
-                      @click.stop="openAddOemModal(sku)"
+                      class="btn-icon btn-add-oem"
                       title="OEM 원가 추가"
+                      @click.stop="openAddOemModal(sku)"
                     >
-                      <i class="fas fa-plus-circle"></i>
-                      <span>OEM추가</span>
+                      <i class="fas fa-plus-circle" />
                     </button>
                     <button
-                      class="btn-view"
-                      @click.stop="openSkuHistoryModal(sku)"
+                      class="btn-icon btn-view"
                       title="이력"
+                      @click.stop="openSkuHistoryModal(sku)"
                     >
-                      <i class="fas fa-history"></i>
-                      <span>이력</span>
+                      <i class="fas fa-history" />
                     </button>
                   </td>
                 </tr>
@@ -232,23 +298,27 @@
                     :key="oem.id"
                     class="oem-child-row"
                   >
-                    <td></td>
+                    <td />
                     <td class="oem-indent-cell">
-                      <span class="oem-branch-line"></span>
+                      <span class="oem-branch-line" />
                     </td>
                     <td>
                       <span class="oem-company-name">
-                        <i class="fas fa-industry oem-icon"></i>
+                        <i :class="['oem-icon', oem.costSourceType === 'LEADPOWER' ? 'fas fa-building' : 'fas fa-industry']" />
                         {{ oem.oemCompanyName || '-' }}
+                        <span v-if="oem.costSourceType === 'LEADPOWER'" class="source-badge source-leadpower">본사</span>
+                        <span v-else class="source-badge source-oem">OEM</span>
                       </span>
                     </td>
                     <td class="text-right">
                       <span v-if="oem.costPrice" class="cost-value">{{ formatCurrency(oem.costPrice) }}</span>
                       <span v-else class="cost-not-set">
-                        <i class="fas fa-exclamation-triangle"></i> 미설정
+                        <i class="fas fa-exclamation-triangle" /> 미설정
                       </span>
                     </td>
-                    <td class="text-right">{{ formatCurrency(oem.unitPrice) }}</td>
+                    <td class="text-right">
+                      {{ formatCurrency(oem.unitPrice) }}
+                    </td>
                     <td class="text-center">
                       <span
                         v-if="getMarginRate(oem) !== null"
@@ -271,28 +341,26 @@
                     </td>
                     <td class="action-buttons">
                       <button
-                        class="btn-edit"
-                        @click="openEditModal(oem)"
+                        class="btn-icon btn-edit"
                         title="수정"
+                        @click="openEditModal(oem)"
                       >
-                        <i class="fas fa-edit"></i>
-                        <span>수정</span>
+                        <i class="fas fa-edit" />
                       </button>
                       <button
-                        class="btn-view"
-                        @click="openHistoryModal(oem)"
+                        class="btn-icon btn-view"
                         title="이력"
+                        @click="openHistoryModal(oem)"
                       >
-                        <i class="fas fa-history"></i>
-                        <span>이력</span>
+                        <i class="fas fa-history" />
                       </button>
                     </td>
                   </tr>
                   <!-- OEM 원가가 없는 경우 -->
                   <tr v-if="sku.oemCosts.length === 0" class="oem-child-row oem-empty-row">
-                    <td></td>
+                    <td />
                     <td colspan="8" class="oem-empty-cell">
-                      <i class="fas fa-info-circle"></i>
+                      <i class="fas fa-info-circle" />
                       등록된 OEM 원가가 없습니다.
                     </td>
                   </tr>
@@ -345,7 +413,6 @@
       @close="showRecalcModal = false"
       @recalculated="loadData(); loadStatistics()"
     />
-
   </div>
 </template>
 
@@ -353,16 +420,6 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import PageHeader from '~/components/ui/PageHeader.vue'
-
-// 페이지 메타 설정 - admin 레이아웃 적용
-definePageMeta({
-  layout: 'admin',
-  pageTitle: '제조사 원가 관리'
-})
-
-useHead({
-  title: '제조사 원가 관리 - PTLPSM'
-})
 import Pagination from '~/components/ui/Pagination.vue'
 import OemCostModal from '~/components/admin/oem-cost/OemCostModal.vue'
 import OemCostHistoryModal from '~/components/admin/oem-cost/OemCostHistoryModal.vue'
@@ -383,6 +440,16 @@ import type {
   OemCostStatus
 } from '~/types/oem-cost'
 import type { CompanyInfoResponse } from '~/types/company'
+
+// 페이지 메타 설정 - admin 레이아웃 적용
+definePageMeta({
+  layout: 'admin',
+  pageTitle: '제조사 원가 관리'
+})
+
+useHead({
+  title: '제조사 원가 관리 - PTLPSM'
+})
 
 // 상태
 const isLoading = ref(false)
@@ -407,13 +474,14 @@ const searchForm = reactive({
   oemCompanyId: undefined as number | undefined,
   skuId: '',
   keyword: '',
-  status: '' as OemCostStatus | ''
+  status: '' as OemCostStatus | '',
+  costSourceType: '' as string
 })
 
 // SKU 필터 여부 및 상세 정보
 const isSkuFiltered = computed(() => !!searchForm.skuId)
 const skuDetailInfo = computed(() => {
-  if (!searchForm.skuId || treeList.value.length === 0) return null
+  if (!searchForm.skuId || treeList.value.length === 0) { return null }
   const firstSku = treeList.value[0]
   return {
     skuId: firstSku.skuId,
@@ -482,7 +550,7 @@ const loadData = async () => {
     isLoading.value = true
     const response = await oemCostService.getTreeList({
       ...searchForm,
-      page: currentPage.value - 1,  // API는 0-indexed
+      page: currentPage.value - 1, // API는 0-indexed
       size: pageSize.value
     })
 
@@ -528,6 +596,7 @@ const handleReset = () => {
   searchForm.skuId = ''
   searchForm.keyword = ''
   searchForm.status = ''
+  searchForm.costSourceType = ''
   currentPage.value = 1
   loadData()
 }
@@ -557,7 +626,7 @@ const getMarginRate = (oem: OemCostListItem): number | null => {
 
 // OEM 상태 계산
 const getOemStatus = (oem: OemCostListItem): OemCostStatus | null => {
-  if (!oem.effectiveDate) return null
+  if (!oem.effectiveDate) { return null }
   return calculateOemCostStatus(oem as OemCost)
 }
 
@@ -580,7 +649,7 @@ const openAddOemModal = (sku: OemCostTreeItem) => {
 // SKU 이력 모달 열기 (부모 행에서 SKU 전체 이력)
 const openSkuHistoryModal = (sku: OemCostTreeItem) => {
   historyTarget.skuId = sku.skuId
-  historyTarget.oemCompanyId = 0  // 전체 OEM
+  historyTarget.oemCompanyId = 0 // 전체 OEM
   historyTarget.oemCompanyName = ''
   historyTarget.currentCost = null
   historyTarget.unitPrice = sku.unitPrice || 0
@@ -645,12 +714,12 @@ const closeHistoryModal = () => {
 
 // 포맷팅
 const formatCurrency = (amount: number | undefined | null): string => {
-  if (amount === undefined || amount === null) return '-'
+  if (amount === undefined || amount === null) { return '-' }
   return amount.toLocaleString('ko-KR') + '원'
 }
 
 const formatDateRange = (item: OemCostListItem): string => {
-  if (!item.effectiveDate) return '-'
+  if (!item.effectiveDate) { return '-' }
   const start = item.effectiveDate
   const end = item.expiryDate || '무기한'
   return `${start} ~ ${end}`
@@ -672,7 +741,7 @@ const getStatusClass = (status: OemCostStatus): string => {
 
 // 마진율 클래스
 const getMarginRateClass = (rate: number | null | undefined): string => {
-  if (rate === null || rate === undefined) return 'margin-none'
+  if (rate === null || rate === undefined) { return 'margin-none' }
   return getMarginClass(rate)
 }
 
@@ -699,9 +768,7 @@ onMounted(() => {
 
 /* 페이지 래퍼 */
 .admin-page-wrapper {
-  padding: 1.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0;
 }
 
 /* 뒤로가기 버튼 */
@@ -1096,15 +1163,15 @@ onMounted(() => {
 /* 로딩/빈 상태 */
 .loading-cell,
 .empty-cell {
-  text-align: center;
-  padding: 3rem !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
   color: #9ca3af;
 }
 
 .loading-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 0.75rem;
 }
 
@@ -1308,5 +1375,26 @@ onMounted(() => {
   .search-row-single {
     flex-direction: column;
   }
+}
+
+/* 원가 유형 배지 */
+.source-badge {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  margin-left: 0.375rem;
+  vertical-align: middle;
+}
+
+.source-oem {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.source-leadpower {
+  background: #fce7f3;
+  color: #9d174d;
 }
 </style>

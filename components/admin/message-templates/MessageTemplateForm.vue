@@ -3,7 +3,9 @@
     <form @submit.prevent="handleSubmit">
       <!-- 기본 정보 -->
       <div class="form-section">
-        <h3 class="section-title">기본 정보</h3>
+        <h3 class="section-title">
+          기본 정보
+        </h3>
 
         <div class="form-row">
           <div class="form-group">
@@ -14,7 +16,7 @@
               placeholder="예: DELIVERY_RECEIPT_SITE_SUPERVISOR"
               :disabled="mode === 'edit'"
               required
-            />
+            >
             <span class="help-text">영문 대문자와 언더스코어(_)로 구성된 고유 코드</span>
           </div>
 
@@ -25,7 +27,7 @@
               type="text"
               placeholder="예: 납품확인서 서명 요청 (현장소장)"
               required
-            />
+            >
           </div>
         </div>
 
@@ -33,18 +35,30 @@
           <div class="form-group">
             <label class="required">메시지 타입</label>
             <select v-model="formData.messageType" required>
-              <option value="">선택</option>
-              <option value="SMS">SMS (단문, 최대 80자)</option>
-              <option value="LMS">LMS (장문, 최대 2,000자)</option>
-              <option value="MMS">MMS (멀티미디어)</option>
+              <option value="">
+                선택
+              </option>
+              <option value="SMS">
+                SMS (단문, 최대 80자)
+              </option>
+              <option value="LMS">
+                LMS (장문, 최대 2,000자)
+              </option>
+              <option value="MMS">
+                MMS (멀티미디어)
+              </option>
             </select>
           </div>
 
           <div class="form-group">
             <label class="required">사용 여부</label>
             <select v-model="formData.useYn" required>
-              <option value="Y">사용</option>
-              <option value="N">미사용</option>
+              <option value="Y">
+                사용
+              </option>
+              <option value="N">
+                미사용
+              </option>
             </select>
           </div>
         </div>
@@ -55,13 +69,15 @@
             v-model="formData.description"
             type="text"
             placeholder="템플릿에 대한 간단한 설명"
-          />
+          >
         </div>
       </div>
 
       <!-- 메시지 내용 -->
       <div class="form-section">
-        <h3 class="section-title">메시지 내용</h3>
+        <h3 class="section-title">
+          메시지 내용
+        </h3>
 
         <div v-if="formData.messageType === 'LMS' || formData.messageType === 'MMS'" class="form-group">
           <label :class="{ required: formData.messageType === 'LMS' || formData.messageType === 'MMS' }">
@@ -72,7 +88,7 @@
             type="text"
             placeholder="LMS/MMS 메시지 제목"
             :required="formData.messageType === 'LMS' || formData.messageType === 'MMS'"
-          />
+          >
         </div>
 
         <div class="form-group">
@@ -87,7 +103,7 @@
                 class="btn-small btn-secondary"
                 @click="showVariableHelper = !showVariableHelper"
               >
-                <i class="ri-code-s-slash-line"></i>
+                <i class="ri-code-s-slash-line" />
                 변수 삽입
               </button>
             </div>
@@ -99,17 +115,17 @@
             placeholder="메시지 내용을 입력하세요.&#10;&#10;변수는 {{변수명}} 형식으로 입력할 수 있습니다.&#10;예: {{납품요구번호}}, {{계약번호}}, {{서명URL}}"
             required
             :class="{ error: isContentTooLong }"
-          ></textarea>
+          />
 
           <div v-if="isContentTooLong" class="error-message">
-            <i class="ri-error-warning-line"></i>
+            <i class="ri-error-warning-line" />
             {{ formData.messageType }}는 최대 {{ maxLength }}자까지 입력할 수 있습니다
           </div>
 
           <!-- 미리보기 -->
           <div class="message-preview">
             <div class="preview-header">
-              <i class="ri-smartphone-line"></i>
+              <i class="ri-smartphone-line" />
               미리보기
             </div>
             <div class="preview-content">
@@ -130,7 +146,7 @@
       <!-- 액션 버튼 -->
       <div class="form-actions">
         <button type="button" class="btn-secondary" @click="handleCancel">
-          <i class="ri-close-line"></i>
+          <i class="ri-close-line" />
           취소
         </button>
         <button
@@ -139,8 +155,8 @@
           :disabled="isContentTooLong || isSubmitting || !canWrite"
           :title="!canWrite ? (mode === 'create' ? '등록 권한이 없습니다' : '수정 권한이 없습니다') : ''"
         >
-          <i v-if="isSubmitting" class="ri-loader-4-line animate-spin"></i>
-          <i v-else class="ri-save-line"></i>
+          <i v-if="isSubmitting" class="ri-loader-4-line animate-spin" />
+          <i v-else class="ri-save-line" />
           {{ mode === 'create' ? '등록' : '수정' }}
         </button>
       </div>
@@ -225,7 +241,7 @@ watch(
 // Methods
 const insertVariable = (variableKey: string) => {
   const textarea = document.querySelector('textarea') as HTMLTextAreaElement
-  if (!textarea) return
+  if (!textarea) { return }
 
   const start = textarea.selectionStart
   const end = textarea.selectionEnd
@@ -258,8 +274,8 @@ const handleSubmit = () => {
   // Clean data (remove empty fields for update)
   const submitData = { ...formData.value }
   if (props.mode === 'edit') {
-    if (!submitData.subject) delete (submitData as any).subject
-    if (!submitData.description) delete (submitData as any).description
+    if (!submitData.subject) { delete (submitData as any).subject }
+    if (!submitData.description) { delete (submitData as any).description }
   }
 
   emit('submit', submitData)
