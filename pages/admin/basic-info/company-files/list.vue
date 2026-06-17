@@ -198,11 +198,12 @@
       @sent="onEmailSent"
     />
 
-    <!-- 이력 모달 -->
+    <!-- 이력 모달 (그룹 키 = 카테고리 + 파일명) -->
     <CompanyFileHistoryModal
       :is-open="historyModalOpen"
       :category-cd="historyCategoryCd"
       :category-nm="historyCategoryNm"
+      :file-nm="historyFileNm"
       @close="historyModalOpen = false"
     />
 
@@ -292,10 +293,11 @@ const filter = ref({
   categoryCd: ''
 })
 
-// 이력 모달 상태
+// 이력 모달 상태 — 그룹 키는 (카테고리 + 파일명)
 const historyModalOpen = ref(false)
 const historyCategoryCd = ref('')
 const historyCategoryNm = ref('')
+const historyFileNm = ref('')
 
 // 카테고리 관리 모달 상태
 const categoryModalOpen = ref(false)
@@ -303,6 +305,7 @@ const categoryModalOpen = ref(false)
 const openHistoryModal = (file: CompanyFile) => {
   historyCategoryCd.value = file.categoryCd
   historyCategoryNm.value = file.categoryNm
+  historyFileNm.value = file.fileNm
   historyModalOpen.value = true
 }
 

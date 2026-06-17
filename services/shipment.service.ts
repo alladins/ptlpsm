@@ -90,6 +90,9 @@ export interface ShipmentSearchParams {
   startDate?: string
   endDate?: string
   deliveryRequestNo?: string
+  projectName?: string
+  client?: string
+  keyword?: string
   shipmentNo?: string
   orderId?: number | null
   status?: string
@@ -267,6 +270,30 @@ class ShipmentService {
   }
 
   // 출하 목록 조회
+  /**
+   * 출하 목록 엑셀 다운로드 (검색 조건 연동, 페이징 미적용 전체 행)
+   */
+  async exportExcel(params: Partial<ShipmentSearchParams> = {}): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+    if (params.startDate !== undefined) queryParams.append('startDate', params.startDate)
+    if (params.endDate !== undefined) queryParams.append('endDate', params.endDate)
+    if (params.deliveryRequestNo !== undefined) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
+    if (params.keyword !== undefined) queryParams.append('keyword', params.keyword)
+    if (params.orderId !== undefined && params.orderId !== null) queryParams.append('orderId', params.orderId.toString())
+    if (params.status !== undefined) queryParams.append('status', params.status)
+    if (params.sort) queryParams.append('sort', params.sort)
+
+    const url = `${SHIPMENT_ENDPOINTS.exportExcel()}?${queryParams.toString()}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+    return response.blob()
+  }
+
   async getShipments(params: ShipmentSearchParams): Promise<{
     content: ShipmentListItem[]
     totalElements: number
@@ -285,6 +312,9 @@ class ShipmentService {
       if (params.startDate !== undefined) queryParams.append('startDate', params.startDate)
       if (params.endDate !== undefined) queryParams.append('endDate', params.endDate)
       if (params.deliveryRequestNo !== undefined) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
+      if (params.projectName !== undefined) queryParams.append('projectName', params.projectName)
+      if (params.client !== undefined) queryParams.append('client', params.client)
+      if (params.keyword !== undefined) queryParams.append('keyword', params.keyword)
       if (params.shipmentNo !== undefined) queryParams.append('shipmentNo', params.shipmentNo)
       if (params.orderId !== undefined && params.orderId !== null) queryParams.append('orderId', params.orderId.toString())
       if (params.status !== undefined) queryParams.append('status', params.status)

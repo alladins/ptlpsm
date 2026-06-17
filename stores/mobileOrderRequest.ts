@@ -52,14 +52,14 @@ export const useMobileOrderRequestStore = defineStore('mobileOrderRequest', () =
   /** 전체 항목 수 */
   const totalElements = computed(() => pagination.value.total)
 
-  /** 대기중인 요청 수 */
+  /** 대기중인 요청 수 (v5: status 4종 PENDING/APPROVED/REJECTED/CANCELLED 로 통일) */
   const pendingCount = computed(() => {
-    return list.value.filter(item => item.status === 'REQUESTED').length
+    return list.value.filter(item => item.status === 'PENDING').length
   })
 
   /** 긴급 요청 수 */
   const urgentCount = computed(() => {
-    return list.value.filter(item => item.urgency === 'URGENT' && item.status === 'REQUESTED').length
+    return list.value.filter(item => item.urgency === 'URGENT' && item.status === 'PENDING').length
   })
 
   // ============ Actions (모바일) ============

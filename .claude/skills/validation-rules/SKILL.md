@@ -1,8 +1,10 @@
 ---
+name: validation-rules
 description: |
-  문서 품질 검증을 위한 규칙을 정의합니다.
-  완전성, 일관성, 정확성, 가독성 검사 규칙과
-  자동 수정 가능 여부를 명시합니다.
+  생성된 문서의 완전성·일관성·정확성·가독성 검사 규칙과 자동수정 가능 여부 정의. quality-validator 가
+  docs/generated/* 를 검증하고 validation-report.yaml 을 만들 때 반드시 이 스킬의 규칙을 사용한다.
+  엔티티/API 문서 필수 섹션 확인, 용어 일관성(terminology.yaml 대조), 상태값 정확성 검사가 필요하면
+  이 스킬을 로드할 것.
 ---
 
 # Validation Rules Skill

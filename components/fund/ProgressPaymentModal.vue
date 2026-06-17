@@ -89,7 +89,7 @@
                     <td>{{ formatDate(shipment.shipmentDate) }}</td>
                     <td>{{ shipment.itemSummary || '-' }}</td>
                     <td class="text-right">
-                      {{ formatNumber(shipment.totalQuantity) }}
+                      {{ formatNumber(shipment.totalQuantity) }}<span v-if="shipment.unit" class="unit-label">{{ shipment.unit }}</span>
                     </td>
                     <td class="text-right amount">
                       {{ formatCurrency(shipment.totalAmount) }}
@@ -103,7 +103,7 @@
                       <strong>선택 합계</strong>
                     </td>
                     <td class="text-right">
-                      <strong>{{ formatNumber(selectedTotalQuantity) }}</strong>
+                      <strong>{{ formatNumber(selectedTotalQuantity) }}<span v-if="displayUnit" class="unit-label">{{ displayUnit }}</span></strong>
                     </td>
                     <td class="text-right amount">
                       <strong>{{ formatCurrency(selectedTotalAmount) }}</strong>
@@ -126,9 +126,86 @@
                 <label>선택한 출하 수</label>
                 <span class="count">{{ selectedShipmentIds.length }}건</span>
               </div>
+              <div class="result-row">
+                <label>선택 출하 합계</label>
+                <span class="amount">{{ formatCurrency(selectedTotalAmount) }}</span>
+              </div>
+              <div v-if="reconcileDiff > 0" class="result-row deduction">
+                <label>(-) 원수량 정합 (전량 출하분)</label>
+                <span class="amount negative">- {{ formatCurrency(reconcileDiff) }}</span>
+              </div>
+              <div v-else-if="reconcileDiff < 0" class="result-row">
+                <label>(+) 원수량 정합</label>
+                <span class="amount">+ {{ formatCurrency(-reconcileDiff) }}</span>
+              </div>
               <div class="result-row highlight">
-                <label>청구 금액</label>
-                <span class="amount primary">{{ formatCurrency(selectedTotalAmount) }}</span>
+                <label>
+                  청구 금액
+                  <i v-if="previewLoading" class="fas fa-spinner fa-spin preview-spinner" />
+                </label>
+                <span class="amount primary">{{ formatCurrency(claimAmount) }}</span>
+              </div>
+            </div>
+
+            <!-- 품목별 금회 청구 (원수량 정합 미리보기) -->
+            <div v-if="reconciled.items.length > 0" class="result-section item-preview-section">
+              <div class="result-section-header">
+                품목별 금회 청구 (원수량 정합)
+              </div>
+              <div class="item-preview-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>품목</th>
+                      <th class="text-right">금회수량</th>
+                      <th class="text-right">잔여수량</th>
+                      <th class="text-right">금액</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(it, idx) in reconciled.items" :key="idx">
+                      <td>{{ it.itemName || it.itemId }}</td>
+                      <td class="text-right">{{ fmtQty(it.thisTimeQuantity) }}</td>
+                      <td class="text-right" :class="{ 'qty-zero': Number(it.remainingQuantity) === 0 }">{{ fmtQty(it.remainingQuantity) }}</td>
+                      <td class="text-right amount">{{ formatCurrency(it.thisTimeAmount) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="result-row hint-row">
+                <span class="hint-text">※ 전량 출하된 품목은 원수량으로 정합되어 출하수량(짝수보정)과 다를 수 있습니다.</span>
+              </div>
+            </div>
+
+            <!-- 다량납품할인 (자동 적용) 미리보기 -->
+            <div v-if="bulkPreSum > 0" class="result-section bulk-discount-section">
+              <div class="result-section-header">
+                <i class="fas fa-tags" /> 다량납품할인 (자동)
+              </div>
+              <div class="result-row">
+                <label>단가합 (룰 기준)</label>
+                <span class="amount">{{ formatCurrency(bulkPreSum) }}</span>
+              </div>
+              <div class="result-row">
+                <label>적용율</label>
+                <span class="rate" :class="{ 'rate-none': !bulkDiscountWillApply }">{{ bulkDiscountRateLabel }}</span>
+              </div>
+              <template v-if="bulkDiscountWillApply">
+                <div class="result-row">
+                  <label>할인 전 청구</label>
+                  <span class="amount">{{ formatCurrency(claimAmount) }}</span>
+                </div>
+                <div class="result-row deduction">
+                  <label>(-) 다량납품할인</label>
+                  <span class="amount negative">- {{ formatCurrency(bulkDiscountAmount) }}</span>
+                </div>
+                <div class="result-row highlight">
+                  <label>(=) 할인 후 청구액</label>
+                  <span class="amount actual">{{ formatCurrency(discountedClaimAmount) }}</span>
+                </div>
+              </template>
+              <div v-else class="result-row hint-row">
+                <span class="hint-text">※ 단가합 1억 미만 또는 비표준 발주로 할인 미적용</span>
               </div>
             </div>
 
@@ -209,6 +286,7 @@
 import { ref, computed, watch } from 'vue'
 import ProgressSignatureModal from './ProgressSignatureModal.vue'
 import { formatCurrency, formatNumber, formatDate, formatDateTime } from '~/utils/format'
+import { baselineService } from '~/services/baseline.service'
 import { useBaselineStore } from '~/stores/baseline'
 import { useFundStore } from '~/stores/fund'
 import type { BaselineListItem, AvailableShipment } from '~/types/baseline'
@@ -246,6 +324,18 @@ const remarks = ref('')
 const showSignatureModal = ref(false)
 const progressClaimData = ref<ProgressClaimData | null>(null)
 
+// 원수량 정합 미리보기 (백엔드 createItemSnapshots 재사용 → 저장될 실제 청구액과 동일)
+const reconciled = ref<{ totalAmount: number; totalCost: number; items: any[] }>({
+  totalAmount: 0,
+  totalCost: 0,
+  items: []
+})
+const previewLoading = ref(false)
+let previewTimer: ReturnType<typeof setTimeout> | null = null
+
+// 수량 표기 (소수점 2자리 보존 — 원수량 정합값 2,755.90 등)
+const fmtQty = (v: any) => Number(v ?? 0).toLocaleString('ko-KR', { maximumFractionDigits: 2 })
+
 // Computed - 청구 가능 출하 목록
 const availableShipments = computed<AvailableShipment[]>(() => {
   return baselineStore.availableShipments
@@ -253,6 +343,11 @@ const availableShipments = computed<AvailableShipment[]>(() => {
 
 const hasAvailableShipments = computed(() => {
   return baselineStore.hasAvailableShipments
+})
+
+// 수량 단위 (출하별 단위는 동일하므로 대표값 사용 - 합계 행 표기용)
+const displayUnit = computed(() => {
+  return availableShipments.value.find(s => s.unit)?.unit || ''
 })
 
 // 이전 차수 정보
@@ -325,6 +420,53 @@ const selectedTotalAmount = computed(() => {
     .reduce((sum, s) => sum + (s.totalAmount || 0), 0)
 })
 
+// 실제 청구 금액 = 원수량 정합(cap) 적용 합계. 미리보기 endpoint 결과(=저장값).
+// 전량 출하된 SKU는 원수량으로 정합되어 selectedTotalAmount(출하금액 단순합)와 차이가 날 수 있다.
+const claimAmount = computed(() => reconciled.value.totalAmount)
+// 출하금액 단순합 − 정합 청구액 (양수면 전량 출하분 원수량 정합 차감)
+const reconcileDiff = computed(() => selectedTotalAmount.value - claimAmount.value)
+
+// 다량납품할인 (자동 적용) 미리보기 계산
+// ※ 백엔드 BulkDiscountCalculator / ProgressPaymentService.createPayment 와 동일 규칙을 재현한 표시용 계산.
+//    실제 적용/저장은 백엔드가 수행하며, 여기서는 운영자에게 적용 결과를 미리 보여줄 뿐이다.
+
+/** 룰 판정 기준 금액 = 할인 전 단가합계 (백엔드 fund.preDiscountAmountTotal) */
+const bulkPreSum = computed(() => fundStore.detail?.preDiscountAmountTotal || 0)
+
+/** 자동 룰 적용 가능 여부 (비표준 발주 sku_id NULL 등은 false). 미세팅(undefined)이면 표준으로 간주 */
+const bulkApplicable = computed(() => fundStore.detail?.bulkDiscountApplicable !== false)
+
+/** 룰 적용율 (단가합 기준 0/2/3%) — BulkDiscountCalculator.getDiscountRate 와 동일 */
+const bulkDiscountRate = computed(() => {
+  const sum = bulkPreSum.value
+  if (sum >= 200000000) { return 0.03 }
+  if (sum >= 100000000) { return 0.02 }
+  return 0
+})
+
+/** 실제 할인이 적용되는가 (율 > 0 AND 표준 발주) */
+const bulkDiscountWillApply = computed(() => bulkDiscountRate.value > 0 && bulkApplicable.value)
+
+/** 적용율 표시 라벨 */
+const bulkDiscountRateLabel = computed(() => {
+  if (!bulkApplicable.value) { return '미적용 (비표준 발주)' }
+  if (bulkDiscountRate.value === 0) { return '0% (1억 미만)' }
+  const tier = bulkPreSum.value >= 200000000 ? '≥2억' : '≥1억'
+  return `${(bulkDiscountRate.value * 100).toFixed(0)}% (${tier})`
+})
+
+/** 다량납품할인액 = 청구액 − 할인 후 청구액 (조달청 표준 원단위 절사 = 10원 미만 버림).
+ *  ※ 백엔드 BulkDiscountCalculator.applyRate(setScale(-1, DOWN)) 와 동일 규칙. */
+const bulkDiscountAmount = computed(() => {
+  if (!bulkDiscountWillApply.value) { return 0 }
+  return claimAmount.value - Math.floor(claimAmount.value * (1 - bulkDiscountRate.value) / 10) * 10
+})
+
+/** 할인 후 실제 청구액 (백엔드 request_amount 와 동일). 미적용 시 청구액 그대로 */
+const discountedClaimAmount = computed(() => {
+  return claimAmount.value - bulkDiscountAmount.value
+})
+
 // 선급금 관련 계산
 /** 선급금 신청 여부 */
 const hasAdvancePayment = computed(() => {
@@ -343,21 +485,23 @@ const advanceUnsettledBalance = computed(() => {
   return Math.max(0, advanceAmount - deductedTotal)
 })
 
-/** 선급금 차감액 = MIN(청구금액 × 선급금율, 미정산잔액) */
+/** 선급금 차감액 = MIN(할인 후 청구금액 × 선급금율, 미정산잔액)
+ *  ※ 백엔드는 다량납품할인 적용된 청구액 기준으로 차감하므로 discountedClaimAmount 사용.
+ *    할인 미적용 발주는 discountedClaimAmount === selectedTotalAmount 라 기존과 동일(회귀 없음). */
 const advanceDeductionAmount = computed(() => {
   if (!hasAdvancePayment.value) { return 0 }
-  const calculated = Math.floor(selectedTotalAmount.value * (advancePaymentRate.value / 100))
+  const calculated = Math.floor(discountedClaimAmount.value * (advancePaymentRate.value / 100))
   return Math.min(calculated, advanceUnsettledBalance.value)
 })
 
-/** 실수금액 = 청구금액 - 선급금차감액 */
+/** 실수금액 = 할인 후 청구금액 - 선급금차감액 */
 const actualReceivableAmount = computed(() => {
-  return selectedTotalAmount.value - advanceDeductionAmount.value
+  return discountedClaimAmount.value - advanceDeductionAmount.value
 })
 
-// OEM 지급 예정 금액 (선급금 비율 기준)
+// OEM 지급 예정 금액 (선급금 비율 기준) — 원수량 정합 청구액 기준
 const oemPaymentAmount = computed(() => {
-  return Math.round(selectedTotalAmount.value * (advancePaymentRate.value / 100))
+  return Math.round(claimAmount.value * (advancePaymentRate.value / 100))
 })
 
 // 유효성 검사
@@ -378,6 +522,30 @@ const closeModal = () => {
   emit('close')
 }
 
+// 원수량 정합 미리보기 로드 (선택 출하 → 저장될 실제 청구 스냅샷)
+const loadPreview = async () => {
+  if (selectedShipmentIds.value.length === 0) {
+    reconciled.value = { totalAmount: 0, totalCost: 0, items: [] }
+    return
+  }
+  previewLoading.value = true
+  try {
+    reconciled.value = await baselineService.previewBaseline(props.orderId, selectedShipmentIds.value)
+  } catch (e) {
+    // 미리보기 실패 시 출하금액 단순합으로 임시 표시(저장은 백엔드가 정합 처리)
+    console.error('기성청구 미리보기 실패 — 출하금액 합으로 임시 표시', e)
+    reconciled.value = { totalAmount: selectedTotalAmount.value, totalCost: 0, items: [] }
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+// 출하 선택 변경 시 미리보기 갱신 (디바운스)
+watch(selectedShipmentIds, () => {
+  if (previewTimer) { clearTimeout(previewTimer) }
+  previewTimer = setTimeout(loadPreview, 250)
+}, { deep: true })
+
 const loadData = async () => {
   if (!props.orderId) { return }
 
@@ -385,6 +553,7 @@ const loadData = async () => {
   selectedShipmentIds.value = []
   remarks.value = ''
   validationError.value = null
+  reconciled.value = { totalAmount: 0, totalCost: 0, items: [] }
 
   // 청구 가능 출하 목록 로드
   await baselineStore.loadProgressPaymentDataV2(props.orderId)
@@ -397,30 +566,31 @@ const loadData = async () => {
   } else {
     selectedShipmentIds.value = availableShipments.value.map(s => s.shipmentId)
   }
+
+  // 초기 선택에 대한 정합 미리보기 즉시 로드 (watch 디바운스와 별개로 바로 표시)
+  await loadPreview()
 }
 
 const submitClaim = async () => {
   if (!isValid.value || isSubmitting.value) { return }
 
-  // API 호출 없이 데이터만 전달하여 서명 발송 모달 표시
-  // 실제 API 호출은 ProgressSignatureModal에서 통합 API로 처리
-  progressClaimData.value = {
-    orderId: props.orderId,
-    shipmentIds: selectedShipmentIds.value,
-    remarks: remarks.value || undefined,
-    deliveryRequestNo: fundStore.detail?.deliveryRequestNo || '',
-    demandOrganization: fundStore.detail?.client || '', // client가 수요기관
-    projectName: fundStore.detail?.projectName || fundStore.detail?.siteName || '',
-    totalAmount: selectedTotalAmount.value,
-    // 선급금 차감 관련 데이터
-    advancePaymentRate: advancePaymentRate.value,
-    advanceDeductionAmount: advanceDeductionAmount.value,
-    actualReceivableAmount: actualReceivableAmount.value,
-    advanceUnsettledBalance: advanceUnsettledBalance.value
+  // 서명 없이 즉시 발행: 차수 생성 + 서명란 공란 납품확인서 PDF 발행
+  isSubmitting.value = true
+  try {
+    await baselineService.createBaselineDirect({
+      orderId: props.orderId,
+      baselineType: 'PROGRESS',
+      shipmentIds: selectedShipmentIds.value,
+      remarks: remarks.value || undefined
+    })
+    alert('기성 청구가 완료되었습니다. 납품확인서 PDF를 다운로드할 수 있습니다.')
+    emit('submitted')
+    closeModal()
+  } catch (e: any) {
+    alert(e?.message || '기성 청구 처리 중 오류가 발생했습니다.')
+  } finally {
+    isSubmitting.value = false
   }
-
-  // 서명 발송 모달 표시
-  showSignatureModal.value = true
 }
 
 // 서명 발송 모달 닫기
@@ -690,6 +860,14 @@ watch(() => props.isOpen, (isOpen) => {
   font-weight: 600;
 }
 
+/* 수량 단위 표기 (예: m²) */
+.unit-label {
+  margin-left: 2px;
+  font-size: 0.8em;
+  font-weight: 400;
+  color: #6b7280;
+}
+
 .data-table tfoot td {
   background: #f9fafb;
   border-top: 2px solid #e5e7eb;
@@ -729,6 +907,73 @@ watch(() => props.isOpen, (isOpen) => {
 
 .oem-section {
   background: #f0fdf4;
+}
+
+/* 품목별 정합 미리보기 */
+.item-preview-section {
+  background: #f8fafc;
+}
+
+.item-preview-table {
+  overflow-x: auto;
+  margin-top: 0.25rem;
+}
+
+.item-preview-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.item-preview-table th {
+  padding: 0.4rem 0.5rem;
+  background: #eef2f7;
+  color: #374151;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.item-preview-table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1f2937;
+}
+
+.item-preview-table th.text-right,
+.item-preview-table td.text-right {
+  text-align: right;
+}
+
+.item-preview-table td.amount {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.item-preview-table td.qty-zero {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.preview-spinner {
+  margin-left: 0.35rem;
+  color: #3b82f6;
+  font-size: 0.8em;
+}
+
+/* 다량납품할인 미리보기 섹션 */
+.bulk-discount-section {
+  background: #eef2ff;
+}
+
+.bulk-discount-section .result-section-header i {
+  margin-right: 0.25rem;
+  color: #6366f1;
+}
+
+.result-row .rate.rate-none {
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .result-row {

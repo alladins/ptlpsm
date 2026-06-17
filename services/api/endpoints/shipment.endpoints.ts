@@ -46,6 +46,15 @@ export const SHIPMENT_ENDPOINTS = {
   },
 
   /**
+   * 출하 목록 엑셀 다운로드
+   * @returns GET /admin/shipments/export?params
+   */
+  exportExcel: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/shipments/export`
+  },
+
+  /**
    * 출하 상세 조회 (발주 정보 포함)
    * @param shipmentId - 출하 ID
    * @returns GET /admin/shipments/{shipmentId}

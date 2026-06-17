@@ -346,6 +346,8 @@ export interface AvailableShipment {
   itemSummary?: string
   /** 출하 총 수량 */
   totalQuantity: number
+  /** 수량 단위 (예: m², 장) */
+  unit?: string
   /** 출하 총 금액 */
   totalAmount: number
   /** 납품확인 상태 (항상 "COMPLETED") */

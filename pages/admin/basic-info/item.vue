@@ -36,6 +36,10 @@
               <i class="fas fa-search" /> 검색
             </button>
           </div>
+          <button class="btn-excel-inline" :disabled="exporting" @click="handleExportExcel">
+            <i v-if="exporting" class="fas fa-spinner fa-spin" />
+            <i v-else class="fas fa-file-excel" /> 엑셀
+          </button>
           <button class="btn-search-inline" style="background: #16a34a; color: white; border-color: #16a34a;" @click="openAddModal">
             <i class="fas fa-plus" /> 새 품목
           </button>
@@ -906,6 +910,41 @@ const searchItems = () => {
   search()
 }
 
+// 오늘 날짜 (YYYY-MM-DD, 파일명용)
+const getTodayDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 엑셀 다운로드 (현재 검색 조건 기준 전체 행)
+const exporting = ref(false)
+const handleExportExcel = async () => {
+  if (exporting.value) { return }
+  try {
+    exporting.value = true
+    const blob = await itemService.exportItems({
+      keyword: searchForm.value.keyword,
+      useYn: searchForm.value.useYn
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `품목목록_${getTodayDate()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('품목 엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
+}
+
 // 등록 모달 열기
 const openAddModal = () => {
   formData.value = {
@@ -1656,6 +1695,32 @@ onMounted(() => {
 
 .btn-primary-sm:hover {
   background: #2563eb;
+}
+
+/* 엑셀 다운로드 버튼 */
+.btn-excel-inline {
+  height: 32px;
+  padding: 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: #1d6f42;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-excel-inline:hover {
+  background: #15522f;
+}
+
+.btn-excel-inline:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 2단계: 검색 섹션 - 컴팩트 스타일 */

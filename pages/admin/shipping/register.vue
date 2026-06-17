@@ -1,5 +1,5 @@
 <template>
-  <div class="shipping-register">
+  <div class="shipping-register" :class="{ 'with-related-drawer': showRelatedDrawer }">
     <PageHeader
       title="출하 등록"
       icon="shipping"
@@ -42,6 +42,7 @@
                         v-model="formData.deliveryRequestNo"
                         type="text"
                         class="form-input-sm"
+                        style="width: 200px;"
                         placeholder="납품요구번호를 선택하세요"
                         readonly
                       >
@@ -124,6 +125,27 @@
                     >
                   </FormField>
                 </div>
+              </div>
+
+              <!-- 모바일 납품요청 미리보기 (좌측 컬럼 하단 — 1건 이상일 때만 노출) -->
+              <div
+                v-if="formData.orderId && (loadingRelatedRequests || relatedRequests.length > 0)"
+                class="related-requests-bar"
+              >
+                <div class="rr-info">
+                  <i class="fas fa-mobile-alt rr-icon" />
+                  <span class="rr-label">모바일 납품요청</span>
+                  <span v-if="loadingRelatedRequests" class="rr-loading">조회 중...</span>
+                  <span v-else class="rr-count">{{ relatedRequests.length }}건</span>
+                </div>
+                <button
+                  v-if="relatedRequests.length > 0"
+                  type="button"
+                  class="btn-view-requests"
+                  @click="showRelatedDrawer = true"
+                >
+                  <i class="fas fa-eye" /> 납품요청 확인
+                </button>
               </div>
             </div>
 
@@ -525,6 +547,14 @@
       @confirm="handleMergeConfirm"
       @skip="handleMergeSkip"
     />
+
+    <!-- 모바일 납품요청 사이드 드로어 (modeless — 품목추가 모달과 공존 가능) -->
+    <RelatedOrderRequestsDrawer
+      :open="showRelatedDrawer"
+      :requests="relatedRequests"
+      :loading="loadingRelatedRequests"
+      @close="showRelatedDrawer = false"
+    />
   </div>
 </template>
 
@@ -544,6 +574,9 @@ import { usePermission } from '~/composables/usePermission'
 import { useShippingFormData } from '~/composables/admin/useShippingFormData'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
+import RelatedOrderRequestsDrawer from '~/components/admin/shipping/RelatedOrderRequestsDrawer.vue'
+import { mobileOrderService } from '~/services/mobile-order.service'
+import type { MobileOrderRequest } from '~/types/mobile-order'
 
 definePageMeta({
   layout: 'admin',
@@ -1110,6 +1143,20 @@ const closeOrderSelectPopup = () => {
   showOrderSelectPopup.value = false
 }
 
+// 모바일 납품요청 (발주에 묶여 들어온 현장소장 요청 — 출하 입력 참고용)
+const relatedRequests = ref<MobileOrderRequest[]>([])
+const loadingRelatedRequests = ref(false)
+const showRelatedDrawer = ref(false)
+
+async function loadRelatedRequests(orderId: number) {
+  loadingRelatedRequests.value = true
+  try {
+    relatedRequests.value = await mobileOrderService.getRequestsByOrderId(orderId)
+  } finally {
+    loadingRelatedRequests.value = false
+  }
+}
+
 // 발주 선택 처리
 const handleOrderSelect = async (order: OrderDetailResponse) => {
   console.log('선택된 발주 정보:', order)
@@ -1123,6 +1170,9 @@ const handleOrderSelect = async (order: OrderDetailResponse) => {
     formData.clientNo = order.clientNo || ''
     formData.projectName = order.projectName || ''
     formData.clientManagerName = order.clientManagerName || ''
+
+    // 모바일 납품요청 자동 조회 (참고용 — 빨간 박스 영역에 건수 노출)
+    loadRelatedRequests(order.orderId)
 
     // 발주번호 기준 출하 현황 조회
     const shipmentStatus = await shipmentService.getShipmentStatusByOrder(order.deliveryRequestNo)
@@ -1480,6 +1530,53 @@ const handleSubmit = async () => {
 
 .btn-add-item:hover {
   background: #059669;
+}
+
+/* 모바일 납품요청 미리보기 바 */
+.related-requests-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 1rem;
+  margin: 0.25rem 0 0.5rem;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+.rr-info { display: inline-flex; align-items: center; gap: 0.5rem; color: #78350f; }
+.rr-icon { color: #f59e0b; }
+.rr-label { font-weight: 600; }
+.rr-loading { color: #92400e; font-size: 0.8rem; }
+.rr-count {
+  background: #f59e0b; color: #fff;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.btn-view-requests {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-view-requests:hover { background: #d97706; }
+
+/* 사이드 드로어 열림 시 본문 우측 여백 — 가로 스크롤 방지, 출하 등록 화면도 같이 보이게 */
+.shipping-register {
+  transition: padding-right 0.2s ease-out;
+}
+.shipping-register.with-related-drawer {
+  padding-right: 440px;
 }
 
 /* 합지 배지 */

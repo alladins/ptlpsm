@@ -486,6 +486,7 @@ class DeliveryService {
   async getDeliveryTree(params: {
     startDate?: string
     endDate?: string
+    searchKeyword?: string
     deliveryRequestNo?: string
     status?: string
     page: number
@@ -502,6 +503,7 @@ class DeliveryService {
       const queryParams = new URLSearchParams()
       if (params.startDate) queryParams.append('startDate', params.startDate)
       if (params.endDate) queryParams.append('endDate', params.endDate)
+      if (params.searchKeyword) queryParams.append('searchKeyword', params.searchKeyword)
       if (params.deliveryRequestNo) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
       if (params.status) queryParams.append('status', params.status)
       queryParams.append('sort', params.sort || 'delivery_request_date,desc')
@@ -531,6 +533,39 @@ class DeliveryService {
       console.error('납품 트리 조회 실패:', error)
       throw error
     }
+  }
+
+  /**
+   * 납품확인 목록 엑셀 다운로드 (검색 조건 연동, 출하 펼침, 페이징 미적용)
+   * - JWT 인증 헤더 필수 → blob 으로 직접 반환 (다운로드 트리거는 호출처에서)
+   */
+  async exportExcel(params: {
+    startDate?: string
+    endDate?: string
+    searchKeyword?: string
+    deliveryRequestNo?: string
+    status?: string
+    sort?: string
+  } = {}): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+    if (params.startDate) queryParams.append('startDate', params.startDate)
+    if (params.endDate) queryParams.append('endDate', params.endDate)
+    if (params.searchKeyword) queryParams.append('searchKeyword', params.searchKeyword)
+    if (params.deliveryRequestNo) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
+    if (params.status) queryParams.append('status', params.status)
+    if (params.sort) queryParams.append('sort', params.sort)
+
+    const url = `${DELIVERY_ENDPOINTS.treeExport()}?${queryParams.toString()}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+
+    return response.blob()
   }
 
   /**

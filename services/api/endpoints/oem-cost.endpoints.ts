@@ -17,6 +17,12 @@ export const OEM_COST_ENDPOINTS = {
     return `${baseUrl}/admin/oem-costs/tree`
   },
 
+  // 목록 엑셀 다운로드
+  exportExcel: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/oem-costs/export`
+  },
+
   // 상세 조회
   detail: (id: number) => {
     const baseUrl = getApiBaseUrl()

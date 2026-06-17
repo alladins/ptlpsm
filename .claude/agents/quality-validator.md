@@ -8,7 +8,7 @@ description: |
   - 가독성 (구조, 명확성)
   문제점을 보고하고 개선 사항을 제안합니다.
 tools: Read, Grep, Glob
-model: sonnet
+model: opus
 when_to_use: |
   Document Generator 완료 후 자동 호출됩니다.
   생성된 문서의 품질을 검증합니다.

@@ -137,6 +137,23 @@
               </div>
             </div>
           </div>
+          <!-- 다량납품할인 카드 (할인 적용 발주에서만 표시) -->
+          <div v-if="hasBulkDiscount" class="summary-card">
+            <div class="summary-icon" style="background: #ede9fe; color: #6d28d9;">
+              <i class="fas fa-percentage" />
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">
+                다량납품할인 ({{ (fundDetail.bulkDiscountRate || 0).toFixed(2) }}%)
+              </div>
+              <div class="summary-value">
+                -{{ formatCurrency(fundDetail.bulkDiscountAmount || 0) }}
+              </div>
+              <div class="summary-sub">
+                단가합 {{ formatCurrency(fundDetail.preDiscountAmountTotal || 0) }} → 품대계 {{ formatCurrency(fundDetail.contractTotalAmount) }}
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 프로그레스 바 -->
@@ -183,6 +200,34 @@
         </div>
       </div>
 
+      <!-- 계약 변경 이력 (변경계약이 있을 때만, 카드형 하단 / 기본 접힘) -->
+      <AccordionSection
+        v-if="contractHistory.length > 1"
+        title="계약 변경 이력"
+        :summary="`본계약 → 변경계약 ${contractHistory.length - 1}건`"
+        :default-expanded="false"
+        style="margin-bottom: 1rem;"
+      >
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>납품요구번호</th>
+              <th>계약일자</th>
+              <th style="text-align: right;">계약총액(품대계)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="h in contractHistory" :key="h.orderId">
+              <td>{{ contractTypeLabel(h.contractType) }}</td>
+              <td>{{ h.deliveryRequestNo }}</td>
+              <td>{{ h.contractDate || '-' }}</td>
+              <td style="text-align: right;">{{ formatCurrency(h.itemTotalAmount) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </AccordionSection>
+
       <!-- 탭 메뉴 -->
       <div class="tab-section">
         <div class="tab-navigation">
@@ -227,6 +272,7 @@
           @open-collection-confirm="(payment) => openCollectionConfirmModal('progress', payment)"
           @view-confirmation-pdf="viewConfirmationPdf"
           @view-photo-sheet-pdf="viewPhotoSheetPdf"
+          @scan-uploaded="handleProgressPaymentSubmitted"
         />
 
         <!-- 잔금 탭 -->
@@ -344,6 +390,7 @@ import { useRoute, useRouter } from '#imports'
 import { useFundStore } from '~/stores/fund'
 import { formatCurrency } from '~/utils/format'
 import type { FundDetail, ProgressPaymentRequest, FundShipmentInfo, AdvancePdfType, AdvancePayment, OemPayment, OemCostRecalcPreview } from '~/types/fund'
+import AccordionSection from '~/components/admin/forms/AccordionSection.vue'
 import ProgressPaymentModal from '~/components/fund/ProgressPaymentModal.vue'
 import FinalDeliveryModal from '~/components/fund/FinalDeliveryModal.vue'
 import AdvancePaymentModal from '~/components/fund/AdvancePaymentModal.vue'
@@ -389,6 +436,16 @@ const {
 const activeTab = ref('advance')
 const progressPayments = ref<ProgressPaymentRequest[]>([])
 const oemPayments = ref<OemPayment[]>([])
+// 계약 금액 변동 이력 (본계약-변경계약 family)
+const contractHistory = ref<any[]>([])
+const contractTypeLabel = (type?: string): string => {
+  switch (type) {
+    case 'ORIGINAL': return '본계약'
+    case 'AMENDMENT': return '변경계약'
+    case 'ADDITIONAL': case 'SEPARATE': return '추가계약'
+    default: return type || '-'
+  }
+}
 
 // 기성청구 Validation용 상태
 const completedDeliveryCount = ref(0) // 서명 완료된 출하 수
@@ -425,6 +482,12 @@ const error = computed(() => fundStore.error)
 
 /** 선급금 신청 여부 (1회성이므로 이미 신청했으면 버튼 비활성화) */
 const hasAdvancePayment = computed(() => fundStore.hasAdvancePayment)
+
+/** 다량납품할인 적용 여부 (할인액 > 0 인 발주에서만 카드 표시) */
+const hasBulkDiscount = computed(() => {
+  const amt = fundDetail.value?.bulkDiscountAmount
+  return amt !== undefined && amt !== null && amt > 0
+})
 
 /** 선급금 상세 정보 (첫 번째 선급금 이력) */
 const advanceDetail = computed<AdvancePayment | null>(() => fundStore.advances[0] || null)
@@ -571,7 +634,11 @@ const maxProgressClaimCount = computed(() => {
   // 미인수 미청구 출하가 있으면 전부 선택 가능 (미인수 건이 납품완료계용)
   const unclaimedUndelivered = unclaimed - available
   if (unclaimedUndelivered > 0) { return available }
-  // 모두 인수완료이면 최소 1건은 남겨야 함
+  // 발주가 아직 전부 납품되지 않았으면(재고 남음 → 추가 출하 예정) 전부 선택 가능
+  // (진짜 납품완료계는 미래의 출하건이 됨). 값이 없을 땐 기존 동작 유지(예약).
+  const rate = fundDetail.value?.deliveryCompletionRate
+  if (rate != null && Number(rate) < 100) { return available }
+  // 모두 출하·인수 완료 → 최소 1건은 남겨야 함
   return Math.max(0, available - 1)
 })
 
@@ -697,6 +764,9 @@ const loadData = async () => {
 
     // OEM 지급 목록 로드
     oemPayments.value = await fundService.getOemPayments(fundId)
+
+    // 계약 금액 변동 이력 로드 (본계약-변경계약 family)
+    contractHistory.value = await fundService.getContractHistory(fundId)
 
     // 기성청구 Validation용 데이터 로드
     await loadValidationData()
@@ -905,8 +975,9 @@ onMounted(() => {
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
+  /* 납품요구번호·상태는 고정 너비, 현장명은 넓게, 상태는 우측 끝 */
+  grid-template-columns: 180px minmax(0, 2fr) minmax(0, 1fr) 130px;
+  gap: 1.25rem;
   padding: 1.5rem;
 }
 
@@ -937,7 +1008,8 @@ onMounted(() => {
 
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -1271,6 +1343,7 @@ onMounted(() => {
   }
 
   .summary-cards {
+    grid-auto-flow: row;
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -1281,6 +1354,7 @@ onMounted(() => {
   }
 
   .summary-cards {
+    grid-auto-flow: row;
     grid-template-columns: 1fr;
   }
 

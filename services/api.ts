@@ -159,10 +159,12 @@ export const setEnvironment = (env: 'development' | 'production') => apiEnvironm
 /**
  * 공통 인증 헤더 생성
  * 모든 API 호출에서 사용
+ * - X-Client-Route: 현재 화면 경로. 서버 오류(500) 발생 시 "어느 화면에서 났는지" 기록용(오류 게시판).
  */
 export function getAuthHeaders(): HeadersInit {
   return {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${localStorage.getItem('auth_access_token')}`,
+    'X-Client-Route': typeof window !== 'undefined' ? window.location.pathname : '',
   }
 }

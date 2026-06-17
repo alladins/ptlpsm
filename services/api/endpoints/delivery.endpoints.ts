@@ -72,6 +72,15 @@ export const DELIVERY_ENDPOINTS = {
   },
 
   /**
+   * 납품확인 목록 엑셀 다운로드 (출하 펼침)
+   * @returns GET /admin/deliveries/tree/export?params
+   */
+  treeExport: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/deliveries/tree/export`
+  },
+
+  /**
    * 납품 상세 조회 (Admin용)
    * @param deliveryId - 납품 ID
    * @returns GET /admin/deliveries/{deliveryId}

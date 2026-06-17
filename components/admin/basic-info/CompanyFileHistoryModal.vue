@@ -5,7 +5,7 @@
         <div class="modal-header">
           <h3>
             <i class="fas fa-clock-rotate-left" />
-            {{ categoryNm || '파일' }} 이력
+            {{ categoryNm }} - {{ fileNm }} 이력
           </h3>
           <button type="button" class="modal-close" @click="close">
             <i class="fas fa-times" />
@@ -102,6 +102,7 @@ const props = defineProps<{
   isOpen: boolean
   categoryCd: string
   categoryNm: string
+  fileNm: string
 }>()
 
 const emit = defineEmits<{
@@ -118,11 +119,11 @@ const close = () => {
 }
 
 const loadHistory = async () => {
-  if (!props.categoryCd) { return }
+  if (!props.categoryCd || !props.fileNm) { return }
   loading.value = true
   errorMsg.value = null
   try {
-    history.value = await companyFileService.history(props.categoryCd)
+    history.value = await companyFileService.history(props.categoryCd, props.fileNm)
   } catch (err) {
     errorMsg.value = formatErrorMessage(err)
   } finally {

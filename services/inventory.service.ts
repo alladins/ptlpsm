@@ -27,6 +27,42 @@ class InventoryService {
    * @param filter - 검색 필터
    * @returns 페이지네이션된 재고 목록
    */
+  /**
+   * 재고현황 엑셀 다운로드 (품목 그룹 집계, 검색 조건 연동)
+   */
+  async exportInventoryExcel(filter: Partial<InventoryListFilter> = {}): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+    if (filter.warehouseId !== undefined && filter.warehouseId !== null) queryParams.append('warehouseId', filter.warehouseId.toString())
+    if (filter.oemCompanyId !== undefined && filter.oemCompanyId !== null) queryParams.append('oemCompanyId', filter.oemCompanyId.toString())
+    if (filter.keyword) queryParams.append('keyword', filter.keyword)
+
+    const url = `${INVENTORY_ENDPOINTS.exportInventory()}?${queryParams.toString()}`
+    const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+    return response.blob()
+  }
+
+  /**
+   * 입출고이력 엑셀 다운로드 (검색 조건 연동, 페이징 미적용)
+   */
+  async exportTransactionExcel(filter: Partial<InventoryTransactionFilter> = {}): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+    if (filter.warehouseId !== undefined && filter.warehouseId !== null) queryParams.append('warehouseId', filter.warehouseId.toString())
+    if (filter.skuId) queryParams.append('skuId', filter.skuId)
+    if (filter.transactionType) queryParams.append('transactionType', filter.transactionType)
+    if (filter.startDate) queryParams.append('startDate', filter.startDate)
+    if (filter.endDate) queryParams.append('endDate', filter.endDate)
+
+    const url = `${INVENTORY_ENDPOINTS.exportTransactions()}?${queryParams.toString()}`
+    const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+    return response.blob()
+  }
+
   async getInventoryList(filter: InventoryListFilter): Promise<{
     content: InventoryItem[]
     totalElements: number

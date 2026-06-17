@@ -1,6 +1,8 @@
 import { apiEnvironment, getAuthHeaders } from '~/services/api'
 import type { OrderDetailResponse } from '~/types/order'
+import type { MobileOrderRequest } from '~/types/mobile-order'
 import { ORDER_ENDPOINTS } from './api/endpoints/order.endpoints'
+import { getApiBaseUrl } from './api/config'
 
 // MIGRATED: 2025-01-25 - URL을 ORDER_ENDPOINTS로 이전
 
@@ -19,6 +21,7 @@ export interface OrderSearchRequest {
   client?: string
   projectName?: string  // 사업명 (프로젝트명) — 발주 선택 모달 검색용
   keyword?: string  // 검색어 (프로젝트명, 담당자명 등)
+  status?: string  // 주문 상태 (PENDING/IN_PROGRESS/PENDING_SIGNATURE/COMPLETED)
   salesId?: number
   page?: number
   size?: number
@@ -41,6 +44,7 @@ export const orderService = {
       if (params.client) queryParams.append('client', params.client)
       if (params.projectName) queryParams.append('projectName', params.projectName)
       if (params.keyword) queryParams.append('keyword', params.keyword)
+      if (params.status) queryParams.append('status', params.status)
       if (params.salesId) queryParams.append('salesId', params.salesId.toString())
       if (params.shippableOnly) queryParams.append('shippableOnly', 'true')
 
@@ -96,6 +100,33 @@ export const orderService = {
   },
 
   /**
+   * 납품요구 목록 엑셀 다운로드 (검색 조건 연동, 페이징 미적용 전체 행)
+   * - JWT 인증 헤더 필수 (getAuthHeaders) → blob 으로 직접 다운로드
+   */
+  async exportExcel(params: OrderSearchRequest = {}): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+    if (params.startDate) queryParams.append('startDate', params.startDate)
+    if (params.endDate) queryParams.append('endDate', params.endDate)
+    if (params.client) queryParams.append('client', params.client)
+    if (params.keyword) queryParams.append('keyword', params.keyword)
+    if (params.status) queryParams.append('status', params.status)
+    if (params.salesId) queryParams.append('salesId', params.salesId.toString())
+    if (params.sort) queryParams.append('sort', params.sort)
+
+    const url = `${ORDER_ENDPOINTS.exportExcel()}?${queryParams.toString()}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+
+    return response.blob()
+  },
+
+  /**
    * 납품요구 금액 합계 조회 (검색 조건 연동)
    */
   async getOrderSummary(params: OrderSearchRequest = {}): Promise<{ totalAmount: number }> {
@@ -106,6 +137,7 @@ export const orderService = {
       if (params.client) queryParams.append('client', params.client)
       if (params.projectName) queryParams.append('projectName', params.projectName)
       if (params.keyword) queryParams.append('keyword', params.keyword)
+      if (params.status) queryParams.append('status', params.status)
       if (params.salesId) queryParams.append('salesId', params.salesId.toString())
 
       const url = `${ORDER_ENDPOINTS.summary()}?${queryParams.toString()}`
@@ -122,6 +154,46 @@ export const orderService = {
     } catch (error) {
       console.error('❌ [getOrderSummary] 납품요구 금액 합계 조회 실패:', error)
       return { totalAmount: 0 }
+    }
+  },
+
+  /**
+   * 기준번호(base) family 목록 조회 (본계약-변경계약 트리 보강용)
+   * 현재 목록 페이지에 등장한 납품요구번호의 기준번호 집합을 받아 같은 family 전체를 반환한다.
+   */
+  async getOrdersByBases(bases: string[]): Promise<OrderDetailResponse[]> {
+    // 빈 배열이면 호출 생략
+    const uniqueBases = Array.from(new Set((bases || []).filter(Boolean)))
+    if (uniqueBases.length === 0) {
+      return []
+    }
+    try {
+      const queryParams = new URLSearchParams()
+      // Spring @RequestParam List<String> 은 콤마 구분 또는 반복 파라미터 모두 허용
+      queryParams.append('bases', uniqueBases.join(','))
+
+      const url = `${ORDER_ENDPOINTS.families()}?${queryParams.toString()}`
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      // 백엔드는 List<OrderResponse> 를 그대로 반환
+      if (Array.isArray(result)) {
+        return result as OrderDetailResponse[]
+      }
+      if (Array.isArray(result?.data)) {
+        return result.data as OrderDetailResponse[]
+      }
+      return []
+    } catch (error) {
+      console.error('❌ [getOrdersByBases] family 조회 실패:', error)
+      return []
     }
   },
 
@@ -188,6 +260,34 @@ export const orderService = {
         number: 1
       }
     }
+  },
+
+  /**
+   * 원본 조달청 발주서 PDF 를 새 탭에서 미리보기
+   * - 인증 헤더 필요로 직접 링크 불가 → fetch 후 Blob URL 생성
+   * - 404 시 사용자에게 "원본 PDF 미등록 발주" 안내
+   */
+  async openOriginalPdf(orderId: number): Promise<void> {
+    const url = ORDER_ENDPOINTS.originalPdf(orderId)
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    })
+    if (response.status === 404) {
+      throw new Error('이 발주에는 원본 PDF 가 등록되어 있지 않습니다.')
+    }
+    if (!response.ok) {
+      throw new Error(`원본 PDF 를 불러오지 못했습니다 (status ${response.status}).`)
+    }
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const opened = window.open(blobUrl, '_blank')
+    if (!opened) {
+      // 팝업 차단 시 같은 탭으로 폴백
+      window.location.href = blobUrl
+    }
+    // Blob URL 은 새 탭이 PDF 를 충분히 로드한 뒤 해제
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000)
   },
 
   /**

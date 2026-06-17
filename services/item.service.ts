@@ -170,6 +170,25 @@ export const searchItems = async (searchRequest: ItemSearchRequest): Promise<Pag
   }
 }
 
+// 품목 목록 엑셀 다운로드 (검색 조건 연동, 페이징 미적용 전체 행)
+export const exportItems = async (params: { keyword?: string; useYn?: string } = {}): Promise<Blob> => {
+  const queryParams = new URLSearchParams()
+  if (params.keyword) { queryParams.append('keyword', params.keyword) }
+  if (params.useYn) { queryParams.append('useYn', params.useYn) }
+
+  const url = `${ITEM_ENDPOINTS.exportExcel()}?${queryParams.toString()}`
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+
+  if (!response.ok) {
+    throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+  }
+
+  return response.blob()
+}
+
 // 품목 상세 조회
 export const getItemById = async (itemId: string): Promise<Item> => {
   try {
@@ -580,6 +599,7 @@ const getMockItems = (params: any): PageResponse<Item> => {
 export const itemService = {
   getItems,
   searchItems,
+  exportItems,
   getItemById,
   createItem,
   updateItem,

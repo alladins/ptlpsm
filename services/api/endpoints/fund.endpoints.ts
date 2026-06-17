@@ -30,6 +30,15 @@ export const FUND_ENDPOINTS = {
   },
 
   /**
+   * 기성청구 목록 엑셀 다운로드
+   * @returns GET /admin/funds/export?params
+   */
+  exportExcel: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/funds/export`
+  },
+
+  /**
    * 자금 상세 조회
    * @param fundId - 자금 ID
    * @returns GET /admin/funds/{fundId}
@@ -96,6 +105,16 @@ export const FUND_ENDPOINTS = {
   statistics: () => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/statistics/fund`
+  },
+
+  /**
+   * 계약 금액 변동 이력 조회 (본계약-변경계약 family)
+   * @param fundId - 자금 ID
+   * @returns GET /admin/funds/{fundId}/contract-history
+   */
+  contractHistory: (fundId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/funds/${fundId}/contract-history`
   },
 
   /**

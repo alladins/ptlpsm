@@ -255,6 +255,106 @@ export const baselineService = {
   },
 
   /**
+   * 기성/잔금 차수 생성 (서명 없이 즉시 발행)
+   * @description 차수 생성 + 서명란 공란 납품확인서 PDF 즉시 발행. 서명 절차 없음.
+   * @param data { orderId, baselineType: 'PROGRESS' | 'FINAL', shipmentIds, remarks? }
+   */
+  async createBaselineDirect(data: {
+    orderId: number
+    baselineType: string
+    shipmentIds: number[]
+    remarks?: string
+  }): Promise<any> {
+    try {
+      const url = BASELINE_ENDPOINTS.createWithoutSignature()
+      console.log('기성/잔금 차수 생성(서명없이) API 호출:', url, data)
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      return result.data || result
+    } catch (error) {
+      console.error('기성/잔금 차수 생성(서명없이) 실패:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 기성청구 미리보기 (저장 안 함)
+   * @description 선택한 출하로 실제 저장될 청구 스냅샷(원수량 cap 정합)을 계산해 반환.
+   *   전량 출하된 품목은 원수량으로 정합되어 "출하금액 단순합"과 차이가 날 수 있음.
+   * @param orderId - 주문 ID
+   * @param shipmentIds - 선택한 출하 ID 목록
+   */
+  async previewBaseline(orderId: number, shipmentIds: number[]): Promise<{
+    totalAmount: number
+    totalCost: number
+    items: any[]
+  }> {
+    try {
+      const url = BASELINE_ENDPOINTS.preview()
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ orderId, baselineType: 'PROGRESS', shipmentIds }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      const data = result.data || result
+      return {
+        totalAmount: Number(data.totalAmount ?? 0),
+        totalCost: Number(data.totalCost ?? 0),
+        items: Array.isArray(data.items) ? data.items : []
+      }
+    } catch (error) {
+      console.error('기성청구 미리보기 실패:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 납품확인서 서명본 스캔 PDF 업로드
+   * @description 서명받은 종이 납품확인서를 스캔한 PDF 업로드 (다운로드 시 우선 제공)
+   * @param baselineId - 차수 ID
+   * @param file - PDF 파일 (최대 20MB)
+   */
+  async uploadConfirmationScan(baselineId: number, file: File): Promise<void> {
+    const url = BASELINE_ENDPOINTS.confirmationScan(baselineId)
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    // multipart/form-data — Content-Type 은 브라우저가 boundary와 함께 자동 설정. 인증 헤더만 전달
+    const authHeaders = getAuthHeaders() as Record<string, string>
+    const headers: Record<string, string> = {}
+    for (const key of Object.keys(authHeaders)) {
+      if (key.toLowerCase() !== 'content-type') {
+        headers[key] = authHeaders[key]
+      }
+    }
+
+    const response = await fetch(url, { method: 'POST', headers, body: formData })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || `스캔본 업로드 실패: ${response.statusText}`)
+    }
+  },
+
+  /**
    * 현재 수량 스냅샷 조회
    * @description 기성 청구 모달에서 현재 시점의 납품/출하 수량 조회
    */

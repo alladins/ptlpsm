@@ -15,6 +15,9 @@ export interface TransportSearchParams {
   startDate?: string               // 생성일자 시작 (YYYY-MM-DD)
   endDate?: string                 // 생성일자 종료 (YYYY-MM-DD)
   deliveryRequestNo?: string       // 발주번호
+  projectName?: string            // 사업명 (부분 일치)
+  client?: string                 // 수요기관명 (부분 일치)
+  keyword?: string                // 통합 검색어 (사업명·수요기관·출하NO)
   shipmentNo?: string             // 출하 NO (부분 일치 검색)
   status?: string                 // 상태 (PENDING/IN_PROGRESS/COMPLETED/CANCELLED)
   page: number                    // 페이지 번호 (0부터 시작)
@@ -84,12 +87,38 @@ class TransportService {
   // }
 
   // 운송장 목록 조회
+  /**
+   * 운송장 목록 엑셀 다운로드 (검색 조건 연동, 페이징 미적용 전체 행)
+   */
+  async exportExcel(params: Partial<TransportSearchParams> = {}): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+    if (params.startDate) queryParams.append('startDate', params.startDate)
+    if (params.endDate) queryParams.append('endDate', params.endDate)
+    if (params.deliveryRequestNo) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
+    if (params.keyword) queryParams.append('keyword', params.keyword)
+    if (params.status) queryParams.append('status', params.status)
+    if (params.sort) queryParams.append('sort', params.sort)
+
+    const url = `${TRANSPORT_ENDPOINTS.exportExcel()}?${queryParams.toString()}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+    return response.blob()
+  }
+
   async getTransportList(params: TransportSearchParams): Promise<TransportListResponse> {
     try {
       const queryParams = new URLSearchParams()
       if (params.startDate) queryParams.append('startDate', params.startDate)
       if (params.endDate) queryParams.append('endDate', params.endDate)
       if (params.deliveryRequestNo) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
+      if (params.projectName) queryParams.append('projectName', params.projectName)
+      if (params.client) queryParams.append('client', params.client)
+      if (params.keyword) queryParams.append('keyword', params.keyword)
       if (params.shipmentNo) queryParams.append('shipmentNo', params.shipmentNo)
       if (params.status) queryParams.append('status', params.status)
       if (params.sort) queryParams.append('sort', params.sort)
@@ -101,20 +130,8 @@ class TransportService {
         throw new Error(`운송장 목록 조회 실패: ${response.status}`)
       }
 
-      const data = await response.json()
-
-      // 백엔드에서 비표준 배열을 직접 반환하는 경우에 대한 처리
-      if (Array.isArray(data)) {
-        return {
-          content: data,
-          totalElements: data.length,
-          totalPages: 1, // 페이지 정보를 알 수 없으므로 기본값 설정
-          size: params.size,
-          number: params.page
-        }
-      }
-
-      return data
+      // 백엔드는 항상 Spring Data Page 표준(content/totalElements/totalPages/...) 으로 응답한다.
+      return await response.json()
     } catch (error) {
       console.error('운송장 목록 조회 실패:', error)
       throw error

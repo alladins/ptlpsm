@@ -25,6 +25,24 @@ export const INVENTORY_ENDPOINTS = {
   },
 
   /**
+   * 재고현황 엑셀 다운로드
+   * @returns GET /admin/inventory/export
+   */
+  exportInventory: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/inventory/export`
+  },
+
+  /**
+   * 입출고이력 엑셀 다운로드
+   * @returns GET /admin/inventory/transactions/export
+   */
+  exportTransactions: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/inventory/transactions/export`
+  },
+
+  /**
    * SKU별 입출고 현황 요약
    * @returns GET /admin/inventory/sku-summary
    */

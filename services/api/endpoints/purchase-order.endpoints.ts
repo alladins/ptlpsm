@@ -35,6 +35,15 @@ export const PURCHASE_ORDER_ENDPOINTS = {
   },
 
   /**
+   * 발주서 목록 엑셀 다운로드
+   * @returns GET /admin/purchase-orders/export?params
+   */
+  exportExcel: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/purchase-orders/export`
+  },
+
+  /**
    * 발주서 상세 조회
    * @param poId - 발주서 ID
    * @returns GET /admin/purchase-orders/{poId}

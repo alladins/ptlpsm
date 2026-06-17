@@ -499,7 +499,7 @@ docs/generated/
 ## 통합 포인트
 
 - **입력:** `.claude/shared/data/synthesized-knowledge.yaml`
-- **템플릿:** `.claude/skills/document-templates.skill.md`
+- **템플릿:** `.claude/skills/document-templates/SKILL.md`
 - **출력:** `docs/generated/`
 - **다음 에이전트:** `quality-validator`
 

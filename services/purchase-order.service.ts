@@ -22,6 +22,28 @@ import type {
  */
 class PurchaseOrderService {
   /**
+   * 발주서 목록 엑셀 다운로드 (검색 조건 연동, 품목 펼침, 페이징 미적용)
+   */
+  async exportExcel(filter: Partial<PurchaseOrderListFilter> = {}): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+    if (filter.status !== undefined && filter.status !== '') queryParams.append('status', filter.status)
+    if (filter.oemCompanyId !== undefined && filter.oemCompanyId !== null) queryParams.append('oemCompanyId', filter.oemCompanyId.toString())
+    if (filter.startDate) queryParams.append('startDate', filter.startDate)
+    if (filter.endDate) queryParams.append('endDate', filter.endDate)
+    if (filter.keyword) queryParams.append('keyword', filter.keyword)
+
+    const url = `${PURCHASE_ORDER_ENDPOINTS.exportExcel()}?${queryParams.toString()}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+    return response.blob()
+  }
+
+  /**
    * 발주서 목록 조회
    * @param filter - 검색 필터
    * @returns 페이지네이션된 발주서 목록

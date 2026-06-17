@@ -13,6 +13,11 @@
           <i v-else class="fas fa-search" />
           검색
         </button>
+        <button class="btn-action" :disabled="exporting" @click="handleExportExcel">
+          <i v-if="exporting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          엑셀
+        </button>
         <button
           class="btn-action btn-primary"
           @click="goToRegister"
@@ -325,6 +330,35 @@ watch(
 // 검색
 const handleSearch = () => {
   search()
+}
+
+// 엑셀 다운로드 (현재 검색 조건 기준 전체 행, 품목 펼침)
+const exporting = ref(false)
+const handleExportExcel = async () => {
+  if (exporting.value) { return }
+  try {
+    exporting.value = true
+    const blob = await purchaseOrderService.exportExcel({
+      startDate: searchForm.value.startDate,
+      endDate: searchForm.value.endDate,
+      status: searchForm.value.status,
+      oemCompanyId: searchForm.value.oemCompanyId,
+      keyword: searchForm.value.keyword
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `발주서목록_${getTodayDate()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
 }
 
 // 페이지 변경

@@ -13,6 +13,11 @@
           <i v-else class="fas fa-search" />
           검색
         </button>
+        <button class="btn-action" :disabled="exporting" @click="handleExportExcel">
+          <i v-if="exporting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          엑셀
+        </button>
         <button
           class="btn-action btn-primary"
           :disabled="!canWrite"
@@ -47,16 +52,16 @@
             </button>
           </div>
 
-          <!-- 출하NO -->
-          <div class="search-item">
-            <label>출하NO:</label>
-            <input v-model="searchForm.shipmentNo" type="text" placeholder="출하NO" class="text-input" @keyup.enter="handleSearch">
+          <!-- 검색어 (수요기관·사업명·출하NO 통합) -->
+          <div class="search-item search-keyword">
+            <label>검색어:</label>
+            <input v-model="searchForm.keyword" type="text" placeholder="수요기관, 사업명, 출하NO" class="keyword-input" @keyup.enter="handleSearch">
           </div>
 
           <!-- 상태 -->
-          <div class="search-item search-keyword">
+          <div class="search-item">
             <label>상태:</label>
-            <select v-model="searchForm.status" class="keyword-input">
+            <select v-model="searchForm.status" class="keyword-input" style="width: 110px; min-width: 110px;">
               <option value="">
                 전체
               </option>
@@ -76,7 +81,7 @@
             <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
-            <select v-model="sortOption" class="form-select mr-2" @change="handleSortChange">
+            <select v-model="sortOption" class="page-size-select" style="margin-right: 8px;" @change="handleSortChange">
               <option value="createdAt,desc">
                 생성일자 ↓
               </option>
@@ -274,7 +279,7 @@ const searchForm = ref({
   startDate: getSixMonthsAgo(),
   endDate: getOneMonthLater(),
   deliveryRequestNo: '',
-  shipmentNo: '',
+  keyword: '',
   status: ''
 })
 
@@ -303,7 +308,7 @@ const {
       startDate: searchForm.value.startDate,
       endDate: searchForm.value.endDate,
       deliveryRequestNo: searchForm.value.deliveryRequestNo,
-      shipmentNo: searchForm.value.shipmentNo,
+      keyword: searchForm.value.keyword,
       status: searchForm.value.status,
       page: params.page || 0,
       size: params.size || 10,
@@ -354,6 +359,35 @@ watch(
 // 검색 기능
 const handleSearch = () => {
   search()
+}
+
+// 엑셀 다운로드 (현재 검색 조건 기준 전체 행)
+const exporting = ref(false)
+const handleExportExcel = async () => {
+  if (exporting.value) { return }
+  try {
+    exporting.value = true
+    const blob = await transportService.exportExcel({
+      startDate: searchForm.value.startDate,
+      endDate: searchForm.value.endDate,
+      deliveryRequestNo: searchForm.value.deliveryRequestNo,
+      keyword: searchForm.value.keyword,
+      status: searchForm.value.status
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `운송목록_${getTodayDate()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
 }
 
 // 검색 초기화

@@ -45,6 +45,14 @@ export type PaymentStatus = 'REQUESTED' | 'APPROVED' | 'PAID' | 'REJECTED'
  * @description 주문(납품요구)에 연결된 자금 관리 정보
  */
 export interface Fund extends BaseEntity {
+  /** 다량납품할인 — 할인 전 단가합계 (Σ unit_price × ordered_quantity, 추가수량 제외) */
+  preDiscountAmountTotal?: number
+  /** 다량납품할인 — 할인액 (preDiscountAmountTotal - contractTotalAmount). 0 이면 미적용 */
+  bulkDiscountAmount?: number
+  /** 다량납품할인 — 할인율 % (bulkDiscountAmount / preDiscountAmountTotal × 100) */
+  bulkDiscountRate?: number
+  /** 다량납품할인 — 자동 룰 적용 가능 여부 (비표준 발주 sku_id NULL 등은 false). 상세 조회에서만 세팅 */
+  bulkDiscountApplicable?: boolean
   /** 자금 ID (PK) */
   fundId: number
   /** 주문 ID (FK) */
@@ -112,10 +120,12 @@ export interface FundListItem {
    */
   advancePayment?: number
   progressPaymentTotal: number
-  /** 잔금 */
+  /** 잔금 (예정액 = 계약총액 − 선급금 − 기성금누계, 잔여분이라 수금 여부와 무관) */
   balanceAmount: number
   /** 잔금 (별칭) */
   balancePayment?: number
+  /** 실제 입금된 잔금 (fund_management.balance_paid_amount). 수금구성 '잔금' 뱃지 판정 기준 */
+  balancePaidAmount?: number
   status: FundStatus
   /** 주문(납품) 상태 */
   orderStatus?: OrderStatus
@@ -135,6 +145,8 @@ export interface FundListItem {
 export interface FundDetail extends Fund {
   /** 수금률 (%) */
   collectionRate: number
+  /** 납품 완료율 (%) - delivery_done 기준 */
+  deliveryCompletionRate?: number
   /** 현재 수익 */
   currentProfit: number
   /** 수익률 (%) */

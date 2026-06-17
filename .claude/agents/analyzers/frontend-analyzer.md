@@ -9,7 +9,7 @@ description: |
   - 폼 유효성 검사 규칙 및 제약조건
   구조화된 YAML 형식으로 Synthesizer 에이전트에 전달합니다.
 tools: Read, Grep, Glob
-model: sonnet
+model: opus
 when_to_use: |
   /analyze-codebase 또는 /generate-manual 커맨드 실행 시 자동 호출됩니다.
   프론트엔드 코드 분석이 필요할 때 사용합니다.

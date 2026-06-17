@@ -104,6 +104,56 @@ export const bankAccountService = {
   },
 
   /**
+   * 계좌 목록 엑셀 다운로드
+   * @param availOnly - 유효계좌만 조회 (1: 유효만, 0: 전체)
+   */
+  async exportAccounts (availOnly: number = 1): Promise<Blob> {
+    const url = `${BANK_ACCOUNT_ENDPOINTS.exportAccounts()}?availOnly=${availOnly}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+
+    return response.blob()
+  },
+
+  /**
+   * 거래내역 엑셀 다운로드 (기간별, 페이징 미적용 전체)
+   * @param bankAccountNum - 계좌번호
+   * @param params - 검색 파라미터 (startDate/endDate 는 YYYYMMDD)
+   */
+  async exportTransactions (
+    bankAccountNum: string,
+    params: { startDate: string; endDate: string; transDirection?: number; orderDirection?: number }
+  ): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+    queryParams.append('startDate', params.startDate)
+    queryParams.append('endDate', params.endDate)
+    if (params.transDirection !== undefined) {
+      queryParams.append('transDirection', params.transDirection.toString())
+    }
+    if (params.orderDirection !== undefined) {
+      queryParams.append('orderDirection', params.orderDirection.toString())
+    }
+
+    const url = `${BANK_ACCOUNT_ENDPOINTS.exportTransactions(bankAccountNum)}?${queryParams.toString()}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+
+    return response.blob()
+  },
+
+  /**
    * 일별 거래내역 조회
    * @param bankAccountNum - 계좌번호
    * @param params - 검색 파라미터

@@ -78,6 +78,10 @@ export interface ContractRegisterRequest {
   extractedContractInfo: ContractInfo
   extractedDeliveryItems: DeliveryItem[]
   createdBy: string
+  /** 저장된 PDF 파일 경로 (검증용) */
+  pdfFilePath?: string | null
+  /** 계약 유형 (ORIGINAL/AMENDMENT/ADDITIONAL) — 분할납품요구서 등록 모달 선택값 */
+  contractType?: string | null
 }
 
 /**
@@ -94,13 +98,17 @@ export interface ApiResponse<T = any> {
 
 /**
  * 중복 체크 응답 인터페이스
- * 서버 응답: { deliveryRequestNo, duplicate, message }
+ * 서버 응답: { deliveryRequestNo, duplicate, message, existingOrderId, existingStatus, hasShipments, deliveryCompletionRate }
  */
 export interface DuplicateCheckResponse {
   deliveryRequestNo: string
-  duplicate: boolean      // 서버 응답 필드명
-  isDuplicate?: boolean   // 호환성 유지
+  duplicate: boolean        // 서버 응답 필드명
+  isDuplicate?: boolean     // 호환성 유지
   message: string
+  existingOrderId?: number | null       // 기존 주문 ID (중복 시)
+  existingStatus?: string               // 기존 주문 상태 (중복 시)
+  hasShipments?: boolean                // 출하 진행 여부
+  deliveryCompletionRate?: number       // 납품 완료율 (0~100)
 }
 
 /**
@@ -191,6 +199,50 @@ export const contractService = {
       return result
     } catch (error) {
       console.error('❌ PDF 업로드 실패:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 기존 납품요구 재업로드(업데이트)
+   * @param orderId - 기존 주문 ID
+   * @param contractData - 등록과 동일한 계약 데이터
+   */
+  async reimportContract(orderId: number, contractData: ContractRegisterRequest): Promise<ApiResponse> {
+    try {
+      const url = CONTRACT_ENDPOINTS.reimport(orderId)
+
+      // createdBy가 없으면 현재 사용자로 설정
+      if (!contractData.createdBy) {
+        contractData.createdBy = getCurrentUserId()
+      }
+
+      console.log('📤 납품요구 재업로드 요청:', url)
+      console.log('📦 전송 데이터:', contractData)
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(contractData)
+      })
+
+      if (!response.ok) {
+        // 400 등 서버 에러의 경우 message 추출
+        const errBody = await response.json().catch(() => ({}))
+        throw new Error(errBody.message || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      console.log('✅ 납품요구 재업로드 응답:', result)
+
+      if (result.success === false) {
+        throw new Error(result.message || '납품요구 업데이트 실패')
+      }
+
+      return result
+    } catch (error) {
+      console.error('❌ 납품요구 재업로드 실패:', error)
       throw error
     }
   },

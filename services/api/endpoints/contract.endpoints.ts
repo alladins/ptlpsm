@@ -41,5 +41,15 @@ export const CONTRACT_ENDPOINTS = {
   checkDuplicate: (deliveryRequestNo: string) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/contract/check-duplicate?deliveryRequestNo=${encodeURIComponent(deliveryRequestNo)}`
+  },
+
+  /**
+   * 기존 납품요구 재업로드(업데이트)
+   * @param orderId - 기존 주문 ID
+   * @returns POST /admin/contract/{orderId}/reimport
+   */
+  reimport: (orderId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/contract/${orderId}/reimport`
   }
 } as const

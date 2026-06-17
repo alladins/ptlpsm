@@ -9,19 +9,19 @@
  * 납품완료계 상태
  */
 export enum DeliveryDoneStatus {
-  PENDING = 'PENDING',                    // 대기 (발주 생성 시)
-  IN_PROGRESS = 'IN_PROGRESS',            // 납품중 (첫 출하 시)
+  PENDING = 'PENDING', // 대기 (발주 생성 시)
+  IN_PROGRESS = 'IN_PROGRESS', // 납품중 (첫 출하 시)
   PENDING_SIGNATURE = 'PENDING_SIGNATURE', // 서명 대기 (모든 납품확인 완료 시)
-  COMPLETED = 'COMPLETED',                 // 완료 (서명 완료, 3 PDFs 생성)
-  SUBMITTED = 'SUBMITTED'                  // 조달청 제출완료
+  COMPLETED = 'COMPLETED', // 완료 (서명 완료, 3 PDFs 생성)
+  SUBMITTED = 'SUBMITTED' // 조달청 제출완료
 }
 
 /**
  * 서명 역할
  */
 export enum SignatureRole {
-  CONTRACTOR = 'CONTRACTOR',     // 시공사 대표 (인감)
-  SUPERVISOR = 'SUPERVISOR'      // 현장감리원 (서명)
+  CONTRACTOR = 'CONTRACTOR', // 시공사 대표 (인감)
+  SUPERVISOR = 'SUPERVISOR' // 현장감리원 (서명)
 }
 
 /**
@@ -36,10 +36,10 @@ export interface DeliveryDoneItem {
   orderedQuantity: number
   deliveredQuantity: number
   remainingQuantity: number
-  additionalQuantity?: number    // 추가수량
-  isAdditional?: boolean         // 추가 품목 여부 (true: 발주에 없던 신규 추가 품목)
+  additionalQuantity?: number // 추가수량
+  isAdditional?: boolean // 추가 품목 여부 (true: 발주에 없던 신규 추가 품목)
   remarks?: string | null
-  isComplete: boolean
+  isCompleted: boolean
   itemClassificationNumber: string | null
   itemIdentificationNumber: string | null
   unitPrice: number
@@ -58,9 +58,9 @@ export interface DeliveryDonePhoto {
   longitude: number | null
   photographerName: string | null
   photoDate: string
-  needsPageBreak?: boolean  // PDF 생성 시 페이지 구분용 (2장마다)
-  isSelectedForPdf?: boolean  // 사진대지 포함 여부
-  pdfDisplayOrder?: number | null  // 사진대지 표시 순서
+  needsPageBreak?: boolean // PDF 생성 시 페이지 구분용 (2장마다)
+  isSelectedForPdf?: boolean // 사진대지 포함 여부
+  pdfDisplayOrder?: number | null // 사진대지 표시 순서
 }
 
 /**
@@ -71,7 +71,7 @@ export interface ShipmentWithDelivery {
   shipmentDate: string
   shipmentNo: string | null
   completedAt: string | null
-  status: string  // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
+  status: string // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
   totalItemCount: number
   totalQuantity: number
 
@@ -107,16 +107,16 @@ export interface DeliveryDone {
   // 수량 정보
   totalOrderedQuantity: number
   totalDeliveredQuantity: number
-  totalDeliveryCount: number  // 총 출하 횟수
+  totalDeliveryCount: number // 총 출하 횟수
 
   // 상태 정보
   status: DeliveryDoneStatus
 
   // 건설사/OEM 정보
-  builderCompanyId: number | null      // 건설사 ID
-  builderCompanyName: string | null    // 건설사명
-  oemCompanyId: number | null          // OEM 업체 ID (제조사)
-  oemCompanyName: string | null        // OEM 업체명
+  builderCompanyId: number | null // 건설사 ID
+  builderCompanyName: string | null // 건설사명
+  oemCompanyId: number | null // OEM 업체 ID (제조사)
+  oemCompanyName: string | null // OEM 업체명
 
   // 시공사 정보
   contractorCompanyName: string
@@ -135,9 +135,21 @@ export interface DeliveryDone {
   supervisorSignedAt: string | null
 
   // PDF 파일 경로
-  confirmationDocumentPath: string | null   // 납품확인서 PDF 경로
-  completionReportPath: string | null       // 납품완료계 PDF 경로
-  photoCollectionPath: string | null        // 사진대지 PDF 경로
+  confirmationDocumentPath: string | null // 납품확인서 PDF 경로
+  completionReportPath: string | null // 납품완료계 PDF 경로
+  photoCollectionPath: string | null // 사진대지 PDF 경로
+
+  // 스캔본 PDF 경로 (수동완료 후 종이 서명본 업로드 시)
+  confirmationPdfScanPath?: string | null // 납품확인서 스캔본
+  completionPdfScanPath?: string | null // 납품완료계 스캔본
+
+  // 수동 완료 추적
+  isManualComplete?: boolean // 수동 완료 여부
+  manualCompleteAt?: string | null // 수동 완료 일시
+  manualCompleteBy?: string | null // 수동 완료 처리자
+
+  // 자금 상태
+  isBalancePaid?: boolean // 잔금 입금 완료 여부 (fund_management 기준)
 
   // 메타 정보
   createdAt: string
@@ -166,19 +178,23 @@ export interface DeliveryDoneListItem {
   totalDeliveredQuantity: number
   deliveryCompletionRate: number
   totalDeliveryCount: number
-  builderCompanyName?: string          // 건설사명 (백엔드 응답 필드)
-  contractorCompanyName: string        // 프론트엔드 표준 필드
-  siteSupervisorName: string | null    // 시공사 현장소장 이름
-  siteSupervisorPhone: string | null   // 시공사 현장소장 전화번호
-  supervisorName: string | null        // 현장감리원 이름
-  supervisorPhone: string | null       // 현장감리원 전화번호
-  hasManagerSignature: boolean              // ✅ Stage 1 시공사 현장소장 서명 여부
-  hasInspectorSignature: boolean            // ✅ Stage 1 현장감리원 서명 여부
-  hasCompletionInspectorSignature: boolean  // ✅ Stage 2 감리원 최종 서명 여부 (납품완료계)
-  hasContractorSignature?: boolean          // 시공사 서명 완료 여부
-  hasSupervisorSignature?: boolean          // 감독자 서명 완료 여부
-  totalConversionRemainder?: number         // 환산잔량 합계
-  hasConversionRemainder?: boolean          // 환산잔량 처리 여부
+  builderCompanyName?: string // 건설사명 (백엔드 응답 필드)
+  contractorCompanyName: string // 프론트엔드 표준 필드
+  siteSupervisorName: string | null // 시공사 현장소장 이름
+  siteSupervisorPhone: string | null // 시공사 현장소장 전화번호
+  supervisorName: string | null // 현장감리원 이름
+  supervisorPhone: string | null // 현장감리원 전화번호
+  hasManagerSignature: boolean // ✅ Stage 1 시공사 현장소장 서명 여부
+  hasInspectorSignature: boolean // ✅ Stage 1 현장감리원 서명 여부
+  hasCompletionInspectorSignature: boolean // ✅ Stage 2 감리원 최종 서명 여부 (납품완료계)
+  hasContractorSignature?: boolean // 시공사 서명 완료 여부
+  hasSupervisorSignature?: boolean // 감독자 서명 완료 여부
+  totalConversionRemainder?: number // 환산잔량 합계
+  hasConversionRemainder?: boolean // 환산잔량 처리 여부
+  confirmationPdfScanPath?: string | null // 납품확인서 스캔본 PDF (수동완료 후)
+  completionPdfScanPath?: string | null // 납품완료계 스캔본 PDF (수동완료 후)
+  isManualComplete?: boolean // 수동 완료 여부
+  isBalancePaid?: boolean // 잔금 입금 완료 여부 (fund_management 기준)
   createdAt: string
   updatedAt: string
 }
@@ -209,15 +225,16 @@ export interface ConversionRemainderRequest {
  * 납품완료계 검색 파라미터
  */
 export interface DeliveryDoneSearchParams {
-  startDate?: string           // 납품요구일자 시작
-  endDate?: string             // 납품요구일자 종료
-  deliveryRequestNo?: string   // 납품요구번호 (부분 검색)
-  contractNo?: string          // 계약번호 (부분 검색)
-  client?: string              // 수요기관 (부분 검색)
-  status?: DeliveryDoneStatus  // 상태 필터
-  page?: number                // 페이지 번호 (0부터 시작)
-  size?: number                // 페이지 크기
-  sort?: string                // 정렬 (예: 'deliveryRequestDate,desc')
+  startDate?: string // 납품요구일자 시작
+  endDate?: string // 납품요구일자 종료
+  searchKeyword?: string // 통합 검색어 (납품요구번호·수요기관·사업명·시공사)
+  deliveryRequestNo?: string // 납품요구번호 (부분 검색)
+  contractNo?: string // 계약번호 (부분 검색)
+  client?: string // 수요기관 (부분 검색)
+  status?: DeliveryDoneStatus // 상태 필터
+  page?: number // 페이지 번호 (0부터 시작)
+  size?: number // 페이지 크기
+  sort?: string // 정렬 (예: 'deliveryRequestDate,desc')
 }
 
 /**
@@ -257,7 +274,7 @@ export interface DeliveryDoneMobileInfo {
 
   // 서명 현황
   recipientType: RecipientType
-  builderCompanyName: string           // 건설사명
+  builderCompanyName: string // 건설사명
   representativeName: string
   hasContractorSignature: boolean
   supervisorName: string | null
@@ -283,7 +300,7 @@ export interface MobileShipmentInfo {
   shipmentId: number
   shipmentDate: string
   completedAt: string | null
-  status: string  // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
+  status: string // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
   totalItemCount: number
   totalQuantity: number
 }
@@ -294,7 +311,7 @@ export interface MobileShipmentInfo {
  */
 export interface SignatureSubmitData {
   recipientType: RecipientType
-  signatureImage: string  // Base64 encoded image (더 이상 사용 안 함)
+  signatureImage: string // Base64 encoded image (더 이상 사용 안 함)
 }
 
 /**
@@ -312,7 +329,7 @@ export type DocumentType = 'CONFIRMATION' | 'COMPLETION' | 'PHOTO_SHEET'
  */
 export interface SignatureRecipient {
   recipientType: RecipientType
-  recipientUserId: number          // 수신자 사용자 ID (DB 저장용)
+  recipientUserId: number // 수신자 사용자 ID (DB 저장용)
   recipientName: string
   recipientPhone: string
 }
@@ -416,7 +433,7 @@ export interface DeliveryPhotoInfo {
  */
 export interface UpdatePhotoSelectionRequest {
   deliveryId: number
-  photoIds: number[]  // 최대 2개
+  photoIds: number[] // 최대 2개
 }
 
 /**
@@ -426,4 +443,39 @@ export interface UpdatePhotoSelectionResponse {
   success: boolean
   message: string
   updatedCount: number
+}
+
+/**
+ * 사진 교체/추가 응답
+ * - version: 이미지 캐시버스팅용 토큰(교체 시각 millis). 동일 사진 URL 의 ?v= 값으로 사용.
+ */
+export interface PhotoReplaceResponse {
+  success: boolean
+  message: string
+  photoId: number
+  deliveryId: number
+  seq: number
+  version: number
+  photoSheetPath?: string
+}
+
+/**
+ * 납품완료 품목 수량 변경 이력
+ * 변경계약(대체)/추가계약(합산) 반영 시 품목 단위로 기록됨
+ */
+export interface DeliveryDoneItemHistory {
+  id: number
+  deliveryDoneId: number
+  skuId: string
+  itemName?: string
+  /** AMENDMENT(변경계약) | ADDITIONAL(추가계약) */
+  changeType: string
+  oldQuantity: number
+  newQuantity: number
+  deltaQuantity: number
+  relatedOrderId?: number
+  deliveryRequestNo?: string
+  changeReason?: string
+  changedBy?: string
+  changedAt?: string
 }

@@ -1,8 +1,10 @@
 ---
+name: code-analysis
 description: |
-  코드 분석을 위한 패턴 및 규칙을 정의합니다.
-  TypeScript, Vue, Java 코드에서 엔티티, 관계, 상태를 추출하는
-  정규식 패턴과 추론 규칙을 제공합니다.
+  TypeScript·Vue·Java 코드에서 엔티티/필드/관계/상태/enum 을 추출하는 정규식 패턴과
+  추론 규칙 모음. 분석기 에이전트(frontend/api/backend/database-analyzer)가 코드베이스를
+  스캔해 *-analysis.yaml 을 만들 때 반드시 이 스킬의 패턴을 사용한다. interface/type/enum
+  감지, ONE_TO_MANY/ONE_TO_ONE 관계 추론, 상태 필드 식별이 필요하면 이 스킬을 로드할 것.
 ---
 
 # Code Analysis Skill

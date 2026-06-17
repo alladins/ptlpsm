@@ -205,9 +205,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { formatCurrency, formatNumber } from '~/utils/format'
-import { getDeliveryDoneByOrderId, sendSignatureUrl } from '~/services/delivery-done.service'
+import { getDeliveryDoneByOrderId, completeManually } from '~/services/delivery-done.service'
 import { userService } from '~/services/user.service'
-import type { DeliveryDone, SignatureRecipient } from '~/types/delivery-done'
+import type { DeliveryDone } from '~/types/delivery-done'
 import type { UserByRole } from '~/types/user'
 
 // Props
@@ -241,17 +241,6 @@ const inspectorList = ref<UserByRole[]>([])
 // 납품완료계 데이터
 const deliveryDone = ref<DeliveryDone | null>(null)
 
-// 선택된 담당자 정보
-const selectedManagerInfo = computed(() => {
-  if (!selectedSiteManagerId.value) { return null }
-  return siteManagerList.value.find(m => m.userId === selectedSiteManagerId.value) || null
-})
-
-const selectedInspectorInfo = computed(() => {
-  if (!selectedInspectorId.value) { return null }
-  return inspectorList.value.find(i => i.userId === selectedInspectorId.value) || null
-})
-
 // 합계 계산
 const totalQuantity = computed(() => {
   if (!deliveryDone.value?.items) { return 0 }
@@ -270,12 +259,7 @@ const isValid = computed(() => {
     return false
   }
 
-  // 수신자 최소 1명 선택
-  if (!selectedSiteManagerId.value && !selectedInspectorId.value) {
-    return false
-  }
-
-  // 최종 확인 체크
+  // 최종 확인 체크 (서명 없이 발행 — 수신자 선택 불필요)
   if (!confirmFinalDelivery.value) {
     return false
   }
@@ -323,42 +307,17 @@ const submitFinalDelivery = async () => {
   if (!isValid.value || isSubmitting.value || !deliveryDone.value) { return }
 
   // 추가 확인
-  if (!confirm('납품완료 처리를 진행하시겠습니까?\n\n선택한 대상자에게 납품완료확인서 서명 URL이 발송됩니다.')) {
+  if (!confirm('납품완료(잔금) 처리를 진행하시겠습니까?\n\n서명 없이 납품확인서 PDF가 즉시 발행됩니다. 이후 서명본 스캔을 업로드할 수 있습니다.')) {
     return
   }
 
   isSubmitting.value = true
 
   try {
-    // 수신자 배열 구성
-    const recipients: SignatureRecipient[] = []
-    if (selectedManagerInfo.value) {
-      recipients.push({
-        recipientType: 'SITE_MANAGER',
-        recipientUserId: selectedManagerInfo.value.userId,
-        recipientName: selectedManagerInfo.value.userName,
-        recipientPhone: selectedManagerInfo.value.phone.replace(/[^0-9]/g, '')
-      })
-    }
-    if (selectedInspectorInfo.value) {
-      recipients.push({
-        recipientType: 'SITE_INSPECTOR',
-        recipientUserId: selectedInspectorInfo.value.userId,
-        recipientName: selectedInspectorInfo.value.userName,
-        recipientPhone: selectedInspectorInfo.value.phone.replace(/[^0-9]/g, '')
-      })
-    }
+    // 서명 없이 수동완료 처리 (서명란 공란 PDF 발행, 상태 COMPLETED)
+    await completeManually(deliveryDone.value.deliveryDoneId)
 
-    // 납품완료계 서명 URL 발송 (delivery-done API)
-    await sendSignatureUrl({
-      deliveryDoneId: deliveryDone.value.deliveryDoneId,
-      documentType: 'CONFIRMATION',
-      recipients,
-      messageType: 'LMS'
-    })
-
-    const names = recipients.map(r => r.recipientName).join(', ')
-    alert(`납품완료확인서 서명 URL이 ${names}님에게 발송되었습니다.`)
+    alert('납품완료 처리되었습니다. 납품확인서 PDF가 발행되었습니다.')
     emit('submitted')
     closeModal()
   } catch (error) {

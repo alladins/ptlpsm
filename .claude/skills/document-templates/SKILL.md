@@ -1,8 +1,10 @@
 ---
+name: document-templates
 description: |
-  문서 생성을 위한 템플릿을 정의합니다.
-  사용자 매뉴얼, API 문서, 상태 흐름도, 엔티티 문서 등
-  다양한 문서 유형의 표준 템플릿을 제공합니다.
+  사용자 매뉴얼·API 문서·상태 흐름도·엔티티 문서·비즈니스 규칙 문서의 표준 Markdown 템플릿과
+  변수 치환({{...}})·ASCII 다이어그램 규칙 모음. document-generator 가 synthesized-knowledge.yaml 을
+  문서로 변환할 때 반드시 이 스킬의 템플릿을 사용한다. 문서 출력 형식·다이어그램 양식·목차 구조가
+  필요하면 이 스킬을 로드할 것.
 ---
 
 # Document Templates Skill

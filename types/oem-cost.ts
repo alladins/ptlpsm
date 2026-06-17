@@ -124,6 +124,7 @@ export interface OemCostSearchParams {
   oemCompanyId?: number
   keyword?: string            // SKU코드 또는 SKU명 검색
   status?: OemCostStatus | ''
+  costSourceType?: string     // 원가 유형 필터 (OEM/LEADPOWER)
   page?: number
   size?: number
   sort?: string

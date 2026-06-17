@@ -27,7 +27,6 @@
             <th v-if="hasAdvancePayment" class="col-amount">
               실수금액
             </th>
-            <th>서명상태</th>
             <th>수금일</th>
             <th>상태</th>
             <th>PDF</th>
@@ -36,7 +35,7 @@
         </thead>
         <tbody>
           <tr v-if="filteredProgressPayments.length === 0">
-            <td :colspan="hasAdvancePayment ? 10 : 8" class="no-data">
+            <td :colspan="hasAdvancePayment ? 9 : 7" class="no-data">
               기성금 이력이 없습니다.
             </td>
           </tr>
@@ -52,11 +51,6 @@
             <td v-if="hasAdvancePayment" class="text-right actual-amount">
               {{ formatCurrency(payment.netPaymentAmount || payment.requestAmount) }}
             </td>
-            <td>
-              <span class="signature-status" :class="getSignatureStatusClass(payment.signatureStatus)">
-                {{ getSignatureStatusLabel(payment.signatureStatus) }}
-              </span>
-            </td>
             <td>{{ payment.paymentDate || payment.paidDate || '-' }}</td>
             <td>
               <span class="status-badge" :class="getPaymentStatusClass(payment.status)">
@@ -64,19 +58,12 @@
               </span>
             </td>
             <td>
-              <!-- 서명 미완료: 서명 대기중 표시 -->
-              <div v-if="!isSignatureCompleted(payment.signatureStatus)" class="pdf-actions">
-                <span class="signature-pending-badge">
-                  <i class="fas fa-clock" />
-                  서명 대기중
-                </span>
-              </div>
-              <!-- 서명 완료: PDF 버튼 표시 -->
-              <div v-else class="pdf-actions">
+              <!-- 서명 없이 발행: 납품확인서 PDF 상시 다운로드 + 서명본 스캔 업로드 -->
+              <div class="pdf-actions">
                 <button
                   class="btn-pdf-sm"
                   :disabled="!payment.baselineId"
-                  title="납품확인서"
+                  title="납품확인서 (서명란 공란)"
                   @click="emit('viewConfirmationPdf', payment.baselineId)"
                 >
                   <i class="fas fa-file-pdf" />
@@ -90,6 +77,15 @@
                 >
                   <i class="fas fa-images" />
                   사진대지
+                </button>
+                <button
+                  class="btn-pdf-sm btn-scan-upload"
+                  :disabled="!payment.baselineId || uploadingBaselineId === payment.baselineId"
+                  title="서명받은 납품확인서 스캔본 업로드"
+                  @click="triggerScanUpload(payment.baselineId)"
+                >
+                  <i :class="uploadingBaselineId === payment.baselineId ? 'fas fa-spinner fa-spin' : 'fas fa-upload'" />
+                  스캔업로드
                 </button>
               </div>
             </td>
@@ -114,14 +110,24 @@
         </tbody>
       </table>
     </div>
+
+    <!-- 서명본 스캔 업로드용 숨김 파일 입력 (PDF only) -->
+    <input
+      ref="scanInputRef"
+      type="file"
+      accept="application/pdf"
+      style="display: none"
+      @change="onScanFileSelected"
+    >
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { ProgressPaymentRequest } from '~/types/fund'
 import { formatCurrency } from '~/utils/format'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
+import { baselineService } from '~/services/baseline.service'
 
 interface Props {
   /** 기성금 이력 목록 */
@@ -152,15 +158,57 @@ const emit = defineEmits<{
   viewConfirmationPdf: [baselineId: number]
   /** 사진대지 PDF 보기 */
   viewPhotoSheetPdf: [baselineId: number]
+  /** 스캔본 업로드 완료 → 목록 갱신 */
+  scanUploaded: []
 }>()
+
+// 서명본 스캔 업로드
+const scanInputRef = ref<HTMLInputElement | null>(null)
+const pendingUploadBaselineId = ref<number | null>(null)
+const uploadingBaselineId = ref<number | null>(null)
+
+const triggerScanUpload = (baselineId: number) => {
+  if (!baselineId) { return }
+  pendingUploadBaselineId.value = baselineId
+  scanInputRef.value?.click()
+}
+
+const onScanFileSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  // 다음 선택을 위해 input 초기화
+  input.value = ''
+  if (!file || pendingUploadBaselineId.value == null) { return }
+
+  // MIME 또는 확장자(.pdf) 중 하나라도 PDF 이면 허용 (브라우저가 빈 type/octet-stream 보내는 경우 대비)
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+  if (!isPdf) {
+    alert('PDF 파일만 업로드할 수 있습니다.')
+    return
+  }
+  if (file.size > 20 * 1024 * 1024) {
+    alert('파일 크기는 20MB를 초과할 수 없습니다.')
+    return
+  }
+
+  const baselineId = pendingUploadBaselineId.value
+  uploadingBaselineId.value = baselineId
+  try {
+    await baselineService.uploadConfirmationScan(baselineId, file)
+    alert('서명본 스캔이 업로드되었습니다. 이후 다운로드 시 스캔본이 제공됩니다.')
+    emit('scanUploaded')
+  } catch (e: any) {
+    alert(e?.message || '스캔본 업로드 중 오류가 발생했습니다.')
+  } finally {
+    uploadingBaselineId.value = null
+    pendingUploadBaselineId.value = null
+  }
+}
 
 // 상태 포맷팅 함수
 const {
   getPaymentStatusClass,
-  getPaymentStatusLabel,
-  getSignatureStatusClass,
-  getSignatureStatusLabel,
-  isSignatureCompleted
+  getPaymentStatusLabel
 } = useFundStatusFormatters()
 </script>
 

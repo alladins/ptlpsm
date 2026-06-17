@@ -11,7 +11,7 @@ description: |
   참고: 현재는 스텁 상태입니다. 백엔드가 별도 저장소에 있어
   domain-rules.yaml을 Fallback으로 사용합니다.
 tools: Read, Grep, Glob
-model: sonnet
+model: opus
 when_to_use: |
   백엔드 저장소 경로가 설정된 경우에만 활성화됩니다.
   현재는 스텁으로 동작하며 knowledge-base를 참조합니다.

@@ -34,6 +34,20 @@ export const BANK_ACCOUNT_ENDPOINTS = {
     `${baseUrl}/common/bank-accounts/${encodeURIComponent(bankAccountNum)}/transactions`,
 
   /**
+   * 계좌 목록 엑셀 다운로드
+   * @returns GET /common/bank-accounts/export?availOnly={availOnly}
+   */
+  exportAccounts: () => `${baseUrl}/common/bank-accounts/export`,
+
+  /**
+   * 거래내역 엑셀 다운로드 (기간별)
+   * @param bankAccountNum - 계좌번호
+   * @returns GET /common/bank-accounts/{bankAccountNum}/transactions/export
+   */
+  exportTransactions: (bankAccountNum: string) =>
+    `${baseUrl}/common/bank-accounts/${encodeURIComponent(bankAccountNum)}/transactions/export`,
+
+  /**
    * 일별 입출금내역 조회
    * @param bankAccountNum - 계좌번호
    * @returns GET /common/bank-accounts/{bankAccountNum}/transactions/daily

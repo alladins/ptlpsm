@@ -9,6 +9,11 @@
           <i class="fas fa-arrow-left" />
           전체 목록 보기
         </button>
+        <button class="btn-excel" :disabled="exporting" @click="handleExportExcel">
+          <i v-if="exporting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          엑셀
+        </button>
         <button class="btn-refresh" @click="handleRefresh">
           <i class="fas fa-sync-alt" />
           새로고침
@@ -605,6 +610,43 @@ const handleReset = () => {
 const handleRefresh = () => {
   loadData()
   loadStatistics()
+}
+
+// 오늘 날짜 (YYYY-MM-DD, 파일명용)
+const getTodayDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 엑셀 다운로드 (현재 검색 조건 기준 전체 행)
+const exporting = ref(false)
+const handleExportExcel = async () => {
+  if (exporting.value) { return }
+  try {
+    exporting.value = true
+    const blob = await oemCostService.exportExcel({
+      costSourceType: searchForm.costSourceType,
+      oemCompanyId: searchForm.oemCompanyId,
+      skuId: searchForm.skuId,
+      keyword: searchForm.keyword
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `제조사원가목록_${getTodayDate()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('제조사 원가 엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
 }
 
 // 페이지 변경
@@ -1350,6 +1392,31 @@ onMounted(() => {
 
 .btn-refresh:hover {
   background: #e5e7eb;
+}
+
+/* 엑셀 다운로드 버튼 */
+.btn-excel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #1d6f42;
+  border: 1px solid #1d6f42;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-excel:hover {
+  background: #15522f;
+}
+
+.btn-excel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 페이지네이션 */

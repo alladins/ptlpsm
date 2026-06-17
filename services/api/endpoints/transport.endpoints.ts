@@ -34,6 +34,15 @@ export const TRANSPORT_ENDPOINTS = {
   },
 
   /**
+   * 운송장 목록 엑셀 다운로드
+   * @returns GET /admin/transport/export?params
+   */
+  exportExcel: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/transport/export`
+  },
+
+  /**
    * 운송장 상세 조회
    * @param transportId - 운송장 ID
    * @returns GET /admin/transport/{transportId}

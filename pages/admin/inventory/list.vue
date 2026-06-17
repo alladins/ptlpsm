@@ -93,6 +93,13 @@
             <div class="table-info">
               <span>총 <strong>{{ skuGroups.length }}</strong>개 품목</span>
             </div>
+            <div class="table-actions">
+              <button class="btn-action" :disabled="exportingInventory" @click="handleExportInventory">
+                <i v-if="exportingInventory" class="fas fa-spinner fa-spin" />
+                <i v-else class="fas fa-file-excel" />
+                엑셀
+              </button>
+            </div>
           </div>
 
           <!-- 로딩 -->
@@ -317,6 +324,11 @@
                 <i v-if="txLoading" class="fas fa-spinner fa-spin" />
                 <i v-else class="fas fa-search" />
                 검색
+              </button>
+              <button class="btn-action" :disabled="exportingTx" @click="handleExportTransaction">
+                <i v-if="exportingTx" class="fas fa-spinner fa-spin" />
+                <i v-else class="fas fa-file-excel" />
+                엑셀
               </button>
               <select v-model="txPageSize" class="page-size-select" @change="handleTxPageSizeChange">
                 <option :value="10">
@@ -804,6 +816,60 @@ const grandTotalOutbound = computed(() => {
 const handleSearch = () => {
   inventorySearch()
   loadSkuSummary()
+}
+
+// 재고현황 엑셀 다운로드 (품목 그룹 집계)
+const exportingInventory = ref(false)
+const handleExportInventory = async () => {
+  if (exportingInventory.value) { return }
+  try {
+    exportingInventory.value = true
+    const blob = await inventoryService.exportInventoryExcel({
+      warehouseId: inventoryFilter.value.warehouseId,
+      oemCompanyId: inventoryFilter.value.oemCompanyId,
+      keyword: inventoryFilter.value.keyword || undefined
+    })
+    downloadBlob(blob, `재고현황_${getTodayDate()}.xlsx`)
+  } catch (error) {
+    console.error('재고현황 엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exportingInventory.value = false
+  }
+}
+
+// 입출고이력 엑셀 다운로드
+const exportingTx = ref(false)
+const handleExportTransaction = async () => {
+  if (exportingTx.value) { return }
+  try {
+    exportingTx.value = true
+    const blob = await inventoryService.exportTransactionExcel({
+      warehouseId: txFilter.value.warehouseId,
+      skuId: txFilter.value.skuId || undefined,
+      transactionType: txFilter.value.transactionType || undefined,
+      startDate: txFilter.value.startDate,
+      endDate: txFilter.value.endDate
+    })
+    downloadBlob(blob, `입출고이력_${getTodayDate()}.xlsx`)
+  } catch (error) {
+    console.error('입출고이력 엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exportingTx.value = false
+  }
+}
+
+// Blob 다운로드 트리거
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
 }
 
 const handleInventoryPageChange = (page: number) => {

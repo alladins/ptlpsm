@@ -62,6 +62,16 @@ export const ORDER_ENDPOINTS = {
   },
 
   /**
+   * 원본 조달청 발주서 PDF 다운로드/미리보기
+   * @param orderId - 발주 ID
+   * @returns GET /admin/orders/{orderId}/original-pdf
+   */
+  originalPdf: (orderId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/orders/${orderId}/original-pdf`
+  },
+
+  /**
    * 발주 등록
    * @returns POST /admin/orders
    */
@@ -116,5 +126,23 @@ export const ORDER_ENDPOINTS = {
   summary: () => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/orders/summary`
+  },
+
+  /**
+   * 기준번호 family 목록 조회 (본계약-변경계약 트리 보강용)
+   * @returns GET /admin/orders/families?bases=A,B,C
+   */
+  families: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/orders/families`
+  },
+
+  /**
+   * 납품요구 목록 엑셀 다운로드
+   * @returns GET /admin/orders/export?params
+   */
+  exportExcel: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/orders/export`
   }
 } as const

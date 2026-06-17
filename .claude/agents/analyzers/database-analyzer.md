@@ -10,7 +10,7 @@ description: |
   참고: 현재는 스텁 상태입니다. DB 직접 접근이 불가하여
   terminology.yaml의 테이블 매핑을 참조합니다.
 tools: Read, Grep, Glob
-model: sonnet
+model: opus
 when_to_use: |
   DB 스키마 파일이 있거나 DB 연결이 설정된 경우에만 활성화됩니다.
   현재는 스텁으로 동작하며 knowledge-base를 참조합니다.

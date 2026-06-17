@@ -62,10 +62,41 @@ export const BASELINE_ENDPOINTS = {
    * 기성청구 생성 + 서명 URL 발송 통합 API
    * @description 기성 차수 생성과 서명 URL 발송을 한 번의 API 호출로 처리
    * @returns POST /admin/baselines/create-and-send-signature
+   * @deprecated 서명없이 발행으로 전환 — createWithoutSignature 사용
    */
   createAndSendSignature: () => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/baselines/create-and-send-signature`
+  },
+
+  /**
+   * 기성/잔금 차수 생성 (서명 없이 즉시 발행)
+   * @description 차수 생성 + 서명란 공란 납품확인서 PDF 즉시 발행
+   * @returns POST /admin/baselines/create
+   */
+  createWithoutSignature: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/baselines/create`
+  },
+
+  /**
+   * 기성청구 미리보기 (저장 안 함)
+   * @description 선택 출하로 저장될 실제 청구 스냅샷(원수량 cap 정합)을 계산해 반환
+   * @returns POST /admin/baselines/preview
+   */
+  preview: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/baselines/preview`
+  },
+
+  /**
+   * 납품확인서 서명본 스캔 PDF 업로드
+   * @param baselineId - 차수 ID
+   * @returns POST /admin/baselines/{baselineId}/confirmation-scan
+   */
+  confirmationScan: (baselineId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/baselines/${baselineId}/confirmation-scan`
   },
 
   /**

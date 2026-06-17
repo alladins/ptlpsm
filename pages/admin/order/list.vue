@@ -13,6 +13,11 @@
           <i v-else class="fas fa-search" />
           검색
         </button>
+        <button class="btn-action" :disabled="exporting" @click="handleExportExcel">
+          <i v-if="exporting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          엑셀
+        </button>
         <button
           v-if="showCreateButton"
           class="btn-action btn-primary"
@@ -88,6 +93,19 @@
             <label>검색어:</label>
             <input v-model="searchForm.keyword" type="text" placeholder="프로젝트명, 담당자명" class="keyword-input" @keyup.enter="handleSearch">
           </div>
+
+          <!-- 상태 -->
+          <div class="search-item">
+            <label>상태:</label>
+            <select v-model="searchForm.status" class="text-input" @change="handleSearch">
+              <option value="">
+                전체
+              </option>
+              <option v-for="(label, code) in ORDER_STATUS_LABELS" :key="code" :value="code">
+                {{ label }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -127,7 +145,7 @@
                 <th style="width: 40px;">
                   No
                 </th>
-                <th style="width: 150px;">
+                <th style="width: 210px;">
                   납품요구번호
                 </th>
                 <th style="width: 100px;">
@@ -293,12 +311,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { orderService } from '~/services/order.service'
 import { getCommissionPeriods } from '~/services/commission.service'
 import type { OrderDetailResponse, ContractType } from '~/types/order'
-import { CONTRACT_TYPE_LABELS } from '~/types/order'
+import { CONTRACT_TYPE_LABELS, ORDER_STATUS_LABELS } from '~/types/order'
 // 리팩토링: 공통 모듈 import
 import { formatNumber } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
@@ -364,6 +382,7 @@ const searchForm = ref({
   endDate: getOneMonthLater(),
   client: '',
   keyword: '',
+  status: '',
   sort: 'createdAt,desc'
 })
 
@@ -414,6 +433,7 @@ const {
       endDate: searchForm.value.endDate,
       client: searchForm.value.client,
       keyword: searchForm.value.keyword,
+      status: searchForm.value.status,
       salesId: 0,
       page: params.page || 0,
       size: params.size || 10,
@@ -456,7 +476,8 @@ const loadOrderSummary = async () => {
       startDate: searchForm.value.startDate,
       endDate: searchForm.value.endDate,
       client: searchForm.value.client,
-      keyword: searchForm.value.keyword
+      keyword: searchForm.value.keyword,
+      status: searchForm.value.status
     })
   } catch (error) {
     console.error('납품요구 금액 합계 조회 실패:', error)
@@ -471,6 +492,36 @@ const handleSearch = () => {
   loadOrderSummary()
 }
 
+// 엑셀 다운로드 (현재 검색 조건 기준 전체 행)
+const exporting = ref(false)
+const handleExportExcel = async () => {
+  if (exporting.value) { return }
+  try {
+    exporting.value = true
+    const blob = await orderService.exportExcel({
+      startDate: searchForm.value.startDate,
+      endDate: searchForm.value.endDate,
+      client: searchForm.value.client,
+      keyword: searchForm.value.keyword,
+      status: searchForm.value.status,
+      sort: searchForm.value.sort
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `납품요구목록_${getTodayDate()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
+}
+
 // 검색 초기화 — 기본 기간은 활성 정산기간(대시보드와 동일). 로드 실패 시 과거 6개월~미래 1개월.
 const handleReset = async () => {
   searchForm.value = {
@@ -478,6 +529,7 @@ const handleReset = async () => {
     endDate: getOneMonthLater(),
     client: '',
     keyword: '',
+    status: '',
     sort: 'createdAt,desc'
   }
   await applyDefaultDateRangeFromActivePeriod()
@@ -515,6 +567,22 @@ const editItem = (id: number) => {
 // 확장된 그룹 관리 (Set 사용)
 const expandedGroups = ref<Set<string>>(new Set())
 
+// 현재 페이지에 없는 family(본계약/형제 계약) 보강 행 — 표시 전용 (페이징/집계에는 미반영)
+const familyMembers = ref<OrderDetailResponse[]>([])
+
+/**
+ * 현재 페이지 행 + 보강된 family 행 병합 (표시 전용)
+ * - 페이지 원본 행을 앞에 두어 "그룹 내 첫 행 = 부모" 규칙을 유지 (검색 화면과 동일한 부모/자식 배치)
+ * - orderId 기준 중복 제거 (페이지 행 우선)
+ */
+const mergedOrderData = computed<OrderDetailResponse[]>(() => {
+  const base = orderData.value || []
+  if (familyMembers.value.length === 0) { return base }
+  const seen = new Set(base.map(o => o.orderId))
+  const extras = familyMembers.value.filter(o => !seen.has(o.orderId))
+  return [...base, ...extras]
+})
+
 /**
  * 납품요구번호에서 기준 번호 추출 (뒤 2자리 제외)
  * 예: "35-24-3-41787-01" → "35-24-3-41787"
@@ -544,12 +612,13 @@ interface OrderGroup {
 }
 
 const groupedOrderData = computed<OrderGroup[]>(() => {
-  if (!orderData.value || orderData.value.length === 0) { return [] }
+  const source = mergedOrderData.value
+  if (!source || source.length === 0) { return [] }
 
   // 기준 번호별로 그룹화
   const groupMap = new Map<string, { base: OrderDetailResponse | null; children: OrderDetailResponse[] }>()
 
-  orderData.value.forEach((order) => {
+  source.forEach((order) => {
     const baseNo = getBaseDeliveryRequestNo(order.deliveryRequestNo)
 
     if (!groupMap.has(baseNo)) {
@@ -591,6 +660,32 @@ const groupedOrderData = computed<OrderGroup[]>(() => {
 
   return result
 })
+
+/**
+ * 현재 페이지에 등장한 기준번호(base)의 family 전체를 백엔드에서 보강 조회한다.
+ * 기본 목록처럼 본계약과 변경계약이 서로 다른 페이지로 분리된 경우에도
+ * 트리(본계약-변경계약) 연결이 보이도록 한다.
+ */
+const backfillFamilies = async () => {
+  const rows = orderData.value || []
+  if (rows.length === 0) {
+    familyMembers.value = []
+    return
+  }
+  // 현재 페이지 행에서 distinct 기준번호 산출 (그룹핑과 동일한 파싱 규칙 사용)
+  const bases = Array.from(new Set(
+    rows.map(o => getBaseDeliveryRequestNo(o.deliveryRequestNo)).filter(Boolean)
+  ))
+  const family = await orderService.getOrdersByBases(bases)
+  // 페이지에 이미 있는 건은 제외하고 보강 행만 보관 (매 호출 시 새로 대체 → stale 방지)
+  const pageIds = new Set(rows.map(o => o.orderId))
+  familyMembers.value = family.filter(o => !pageIds.has(o.orderId))
+}
+
+// 페이지 로드/검색/페이지 이동 시마다 family 보강 (familyMembers는 orderData를 변경하지 않으므로 무한루프 없음)
+watch(orderData, () => {
+  backfillFamilies()
+}, { immediate: true })
 
 /**
  * 트리 확장/축소 토글

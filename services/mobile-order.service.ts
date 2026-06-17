@@ -123,17 +123,18 @@ export const mobileOrderService = {
     try {
       const queryParams = new URLSearchParams()
 
-      // 검색 파라미터 추가
-      if (params.search) queryParams.append('search', params.search)
+      // 검색 파라미터 추가 (백엔드 컨트롤러는 'keyword' 로 받음)
+      const keyword = (params as { keyword?: string }).keyword ?? params.search
+      if (keyword) queryParams.append('keyword', keyword)
       if (params.status) queryParams.append('status', params.status)
       if (params.urgency) queryParams.append('urgency', params.urgency)
       if (params.startDate) queryParams.append('startDate', params.startDate)
       if (params.endDate) queryParams.append('endDate', params.endDate)
 
-      // 페이징 파라미터
-      const page = params.page || 1
+      // 페이징 파라미터 (UI 1-indexed → API 0-indexed 변환 — CLAUDE.md 페이징 규칙)
+      const uiPage = params.page || 1
       const size = params.size || 20
-      queryParams.append('page', page.toString())
+      queryParams.append('page', Math.max(0, uiPage - 1).toString())
       queryParams.append('size', size.toString())
 
       // 정렬 파라미터
@@ -227,6 +228,34 @@ export const mobileOrderService = {
     } catch (error) {
       console.error('요청 승인 실패:', error)
       throw error
+    }
+  },
+
+  /**
+   * 발주(orderId) 기준 모바일 주문요청 목록 조회 (출하 등록 화면 참고용)
+   * 단순 헬퍼 — 페이징은 큰 사이즈로 한 번에 조회 (특정 발주에 묶인 요청 건수가 많지 않다는 전제)
+   */
+  async getRequestsByOrderId(orderId: number): Promise<MobileOrderRequest[]> {
+    try {
+      const queryParams = new URLSearchParams()
+      queryParams.append('orderId', String(orderId))
+      queryParams.append('page', '0')
+      queryParams.append('size', '100')
+      queryParams.append('sort', 'createdAt,desc')
+
+      const url = `${MOBILE_ORDER_ENDPOINTS.adminList()}?${queryParams.toString()}`
+      const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      const list = result?.content ?? result?.data?.content ?? result?.data ?? []
+      return Array.isArray(list) ? list : []
+    } catch (error) {
+      console.error('발주 기준 모바일 요청 조회 실패:', error)
+      return []
     }
   },
 

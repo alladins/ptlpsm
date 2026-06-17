@@ -49,7 +49,7 @@
 
     <div v-else class="content-section">
       <form class="edit-form" @submit.prevent="handleSubmit">
-        <FormSection title="출하 정보">
+        <AccordionSection title="출하 정보" :summary="shippingSummary" :default-expanded="true">
           <!-- 2열 레이아웃 컨테이너 -->
           <div class="two-column-layout">
             <!-- 좌측 컬럼 -->
@@ -60,12 +60,13 @@
                   <i class="fas fa-file-alt" />
                   <span>계약 정보</span>
                 </div>
-                <div class="info-grid grid-3">
+                <div class="info-grid grid-2">
                   <FormField label="납품요구번호">
                     <input
                       v-model="formData.deliveryRequestNo"
                       type="text"
                       class="form-input-sm"
+                      style="width: 100%;"
                       readonly
                     >
                   </FormField>
@@ -74,14 +75,18 @@
                       type="text"
                       :value="formData.deliveryRequestDate || '-'"
                       class="form-input-sm text-center"
+                      style="width: 100%;"
                       readonly
                     >
                   </FormField>
+                </div>
+                <div class="info-grid grid-1" style="margin-top: 0.5rem;">
                   <FormField label="사업명">
                     <input
                       type="text"
                       :value="formData.projectName || '-'"
                       class="form-input-xl"
+                      style="width: 100%;"
                       readonly
                     >
                   </FormField>
@@ -94,7 +99,8 @@
                   <i class="fas fa-truck" />
                   <span>출하 정보</span>
                 </div>
-                <div class="info-grid grid-3">
+                <!-- 가운데 열(출하상태·총출하수량) 좁게, 우측 열(현장담당자·총금액) 넓게 -->
+                <div class="info-grid grid-3" style="grid-template-columns: 1fr 0.7fr 1.6fr;">
                   <FormField label="출하일자" required :error="errors.shippingDate">
                     <input
                       v-model="formData.shippingDate"
@@ -247,15 +253,18 @@
                   <i class="fas fa-building" />
                   <span>수요기관 정보</span>
                 </div>
-                <div class="info-grid grid-3">
+                <div class="info-grid grid-1">
                   <FormField label="수요기관명">
                     <input
                       v-model="formData.client"
                       type="text"
-                      class="form-input-md text-center"
+                      class="form-input-md"
+                      style="width: 100%;"
                       readonly
                     >
                   </FormField>
+                </div>
+                <div class="info-grid grid-2" style="margin-top: 0.5rem;">
                   <FormField label="기관번호">
                     <input
                       type="text"
@@ -319,6 +328,15 @@
                   <span>배송지 정보</span>
                 </div>
                 <div class="info-grid grid-2">
+                  <FormField label="현장 도착 예정일시">
+                    <input
+                      type="text"
+                      :value="formatExpectedArrivalAt(formData.expectedArrivalAt)"
+                      class="form-input-md"
+                      placeholder="예정일시"
+                      readonly
+                    >
+                  </FormField>
                   <FormField label="우편번호">
                     <input
                       v-model="formData.zipcode"
@@ -329,6 +347,8 @@
                       :readonly="!canEditOemAndDelivery"
                     >
                   </FormField>
+                </div>
+                <div class="info-grid grid-2" style="margin-top: 0.5rem;">
                   <FormField label="배송지 주소">
                     <input
                       v-model="formData.deliveryAddress"
@@ -338,8 +358,6 @@
                       :readonly="!canEditOemAndDelivery"
                     >
                   </FormField>
-                </div>
-                <div class="info-grid grid-2" style="margin-top: 0.5rem;">
                   <FormField label="상세주소">
                     <input
                       v-model="formData.addressDetail"
@@ -347,15 +365,6 @@
                       class="form-input-xl"
                       placeholder="상세주소"
                       :readonly="!canEditOemAndDelivery"
-                    >
-                  </FormField>
-                  <FormField label="현장 도착 예정일시">
-                    <input
-                      type="text"
-                      :value="formatExpectedArrivalAt(formData.expectedArrivalAt)"
-                      class="form-input-md"
-                      placeholder="예정일시"
-                      readonly
                     >
                   </FormField>
                 </div>
@@ -382,9 +391,9 @@
               </div>
             </div>
           </div>
-        </FormSection>
+        </AccordionSection>
 
-        <FormSection style="margin-top: -20px">
+        <FormSection style="margin-top: 1rem">
           <div class="items-section-wrapper">
             <!-- 품목 정보 헤더 -->
             <div class="items-section-header">
@@ -615,6 +624,7 @@ import { useCommonStatus } from '~/composables/useCommonStatus'
 import { usePermission } from '~/composables/usePermission'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
+import AccordionSection from '~/components/admin/forms/AccordionSection.vue'
 import LoadingSection from '~/components/admin/common/LoadingSection.vue'
 import ErrorSection from '~/components/admin/common/ErrorSection.vue'
 import ResignRequiredModal from '~/components/shipment/ResignRequiredModal.vue'
@@ -896,6 +906,13 @@ const totalShippingQuantity = computed(() => {
 // 총 금액 (현재 편집 중인 수량 기준)
 const totalAmount = computed(() => {
   return items.value.reduce((sum, item) => sum + ((item.shippingQuantity || 0) * item.unitPrice), 0)
+})
+
+// 출하 정보(접힘) 헤더 요약: 납품요구번호 · 출하상태
+const shippingSummary = computed(() => {
+  const no = formData.deliveryRequestNo || '-'
+  const status = getStatusLabel(formData.status)
+  return `${no} · ${status}`
 })
 
 // B급 관련 헬퍼

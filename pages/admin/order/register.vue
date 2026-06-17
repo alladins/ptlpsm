@@ -316,6 +316,17 @@
       @confirm="handleContractTypeConfirm"
       @close="handleContractTypeCancel"
     />
+
+    <!-- 재업로드(업데이트) 모달 -->
+    <DuplicateUpdateModal
+      :is-open="showDuplicateModal"
+      :delivery-request-no="duplicateCheckInfo?.deliveryRequestNo || ''"
+      :existing-status="duplicateCheckInfo?.existingStatus || ''"
+      :has-shipments="duplicateCheckInfo?.hasShipments ?? false"
+      :delivery-completion-rate="duplicateCheckInfo?.deliveryCompletionRate ?? 0"
+      @confirm="handleDuplicateConfirm"
+      @close="handleDuplicateClose"
+    />
   </div>
 </template>
 
@@ -329,6 +340,7 @@ import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import ErrorPopup from '~/components/admin/common/ErrorPopup.vue'
 import ContractTypeSelectModal from '~/components/admin/order/ContractTypeSelectModal.vue'
+import DuplicateUpdateModal from '~/components/admin/order/DuplicateUpdateModal.vue'
 import type { OrderItemCreateRequest, ContractTypeCheckResult, ContractType } from '~/types/order'
 import type { CompanyInfoResponse } from '~/types/company'
 import { usePermission } from '~/composables/usePermission'
@@ -349,6 +361,12 @@ const submitting = ref(false)
 // 중복 체크 상태
 const isDuplicate = ref(false)
 const duplicateMessage = ref('')
+
+// 중복 체크 응답 상세 정보 (재업로드 모달용)
+const duplicateCheckInfo = ref<DuplicateCheckResponse | null>(null)
+
+// 재업로드 모달 표시 여부
+const showDuplicateModal = ref(false)
 
 // PDF 로딩 완료 상태 (PDF가 업로드되고 데이터 추출이 완료되었는지)
 const isPdfLoaded = ref(false)
@@ -623,14 +641,17 @@ const checkDuplicateDeliveryRequest = async (deliveryRequestNo: string) => {
     if (isDuplicateResult) {
       isDuplicate.value = true
       duplicateMessage.value = checkResult.message
-      uploadStatus.value = {
-        error: true,
-        message: `⚠️ ${checkResult.message} 목록으로 이동해주세요.`
-      }
+      duplicateCheckInfo.value = checkResult
+
+      // 재업로드 모달 표시 (배너는 모달 취소 후 폴백으로 동작)
+      showDuplicateModal.value = true
+
+      uploadStatus.value = null
       console.warn('⚠️ 중복된 납품요구번호:', deliveryRequestNo)
     } else {
       isDuplicate.value = false
       duplicateMessage.value = ''
+      duplicateCheckInfo.value = null
       console.log('✅ 등록 가능한 납품요구번호:', deliveryRequestNo)
     }
   } catch (error) {
@@ -638,7 +659,131 @@ const checkDuplicateDeliveryRequest = async (deliveryRequestNo: string) => {
     // 중복 체크 실패 시에도 등록은 허용 (서버에서 최종 검증)
     isDuplicate.value = false
     duplicateMessage.value = ''
+    duplicateCheckInfo.value = null
   }
+}
+
+// 계약 데이터 구성 (register / reimport 공통)
+const buildContractData = () => {
+  return {
+    extractedContractInfo: {
+      contractNumber: contractForm.value.contractNo,
+      contractDate: contractForm.value.contractDate,
+      salesRepresentative: null,
+      preNotificationNumber: contractForm.value.preNotificationNo || null,
+      deliveryRequestNumber: contractForm.value.deliveryRequestNo,
+      requestingAgency: contractForm.value.client,
+      requestingAgencyNumber: contractForm.value.clientNo,
+      requestingAgencyPhoneNumber: contractForm.value.clientPhoneNumber,
+      requestingAgencyFaxNumber: contractForm.value.clientFaxNumber,
+      requestingAgencyPostalCode: contractForm.value.clientPostalCode,
+      requestingAgencyAddress: contractForm.value.clientAddress,
+      requestingAgencyContactPerson: contractForm.value.clientManagerName,
+      phoneNumber: null,
+      faxNumber: null,
+      address: null,
+      naraJangteoNumber: contractForm.value.naraJangteoNo,
+      defectWarrantyPeriod: contractForm.value.warrantyPeriod,
+      paymentMethod: contractForm.value.paymentMethod,
+      deliveryRequestDate: contractForm.value.deliveryRequestDate,
+      businessName: contractForm.value.projectName,
+      progressStatus: null,
+      remark: null,
+      contractor: null,
+      representativeName: null,
+      businessRegistrationNumber: null,
+      businessRegistrationNumberDemand: contractForm.value.clientBizno || null,
+      businessRegistrationNumberSupplier: null,
+      itemTotalAmount: contractForm.value.itemTotalAmount,
+      commission: contractForm.value.commission,
+      totalAmount: contractForm.value.totalAmount,
+      quantityTotal: contractForm.value.quantityTotal,
+      preDiscountAmountTotal: contractForm.value.preDiscountAmountTotal,
+      partialDelivery: contractForm.value.partialDelivery,
+      inspectionAgency: contractForm.value.inspectionAgency,
+      acceptanceAgency: contractForm.value.acceptanceAgency,
+      siteManagerId: contractForm.value.siteManagerId,
+      builderCompanyId: contractForm.value.builderCompanyId,
+      builderCompany: contractForm.value.builderCompany || null,
+      oemCompanyId: null,
+      oemCompany: null
+    },
+    extractedDeliveryItems: items.value.map((item, index) => ({
+      sequenceNumber: index + 1,
+      optionItemNumber: item.optionItemNumber || '',
+      itemClassificationNumber: item.itemClassificationNumber || '',
+      itemIdentificationNumber: item.itemIdentificationNumber || '',
+      name: item.name,
+      specification: item.specification,
+      unit: item.unit,
+      unitPrice: String(item.unitPrice),
+      quantity: String(item.quantity),
+      totalAmount: String(item.totalAmount),
+      deliveryLocation: item.deliveryLocation,
+      deliveryDeadline: item.deliveryDeadline,
+      deliveryTerms: item.deliveryTerms,
+      inspectionExemption: item.inspectionExemption || 'N',
+      midTermCompetitionItem: item.midTermCompetitionItem || 'N'
+    })),
+    createdBy: '',
+    pdfFilePath: contractForm.value.pdfFilePath,
+    contractType: contractForm.value.contractType || null
+  }
+}
+
+// 재업로드 모달 확인 핸들러
+const handleDuplicateConfirm = async () => {
+  if (!duplicateCheckInfo.value?.existingOrderId) {
+    errorPopup.value = {
+      isOpen: true,
+      title: '업데이트 오류',
+      message: '기존 납품요구 ID를 확인할 수 없습니다. 목록에서 직접 수정해 주세요.'
+    }
+    return
+  }
+
+  showDuplicateModal.value = false
+  submitting.value = true
+
+  try {
+    // 납품기한 필수 검증
+    if (items.value.length > 0) {
+      const missingDeadline = items.value.some(item => !item.deliveryDeadline || item.deliveryDeadline.trim() === '')
+      if (missingDeadline) {
+        alert('모든 품목의 납품기한을 입력해주세요.')
+        submitting.value = false
+        return
+      }
+    }
+
+    const contractData = buildContractData()
+    const result = await contractService.reimportContract(
+      duplicateCheckInfo.value.existingOrderId,
+      contractData
+    )
+
+    if (result.success) {
+      alert('기존 납품요구가 업데이트되었습니다.')
+      router.push('/admin/order/list')
+    } else {
+      throw new Error(result.message || '업데이트에 실패했습니다.')
+    }
+  } catch (error) {
+    console.error('납품요구 재업로드 실패:', error)
+    errorPopup.value = {
+      isOpen: true,
+      title: '납품요구 업데이트 실패',
+      message: error instanceof Error ? error.message : '업데이트에 실패했습니다.'
+    }
+  } finally {
+    submitting.value = false
+  }
+}
+
+// 재업로드 모달 취소 핸들러 (배너 폴백 유지)
+const handleDuplicateClose = () => {
+  showDuplicateModal.value = false
+  // isDuplicate / duplicateMessage 는 유지 → 배너 + 등록버튼 disabled 폴백 동작
 }
 
 // 추출된 데이터로 폼 채우기
@@ -735,72 +880,7 @@ const register = async () => {
 
   submitting.value = true
   try {
-    const contractData = {
-      extractedContractInfo: {
-        contractNumber: contractForm.value.contractNo,
-        contractDate: contractForm.value.contractDate,
-        salesRepresentative: null,
-        preNotificationNumber: contractForm.value.preNotificationNo || null,
-        deliveryRequestNumber: contractForm.value.deliveryRequestNo,
-        requestingAgency: contractForm.value.client,
-        requestingAgencyNumber: contractForm.value.clientNo,
-        requestingAgencyPhoneNumber: contractForm.value.clientPhoneNumber,
-        requestingAgencyFaxNumber: contractForm.value.clientFaxNumber,
-        requestingAgencyPostalCode: contractForm.value.clientPostalCode,
-        requestingAgencyAddress: contractForm.value.clientAddress,
-        requestingAgencyContactPerson: contractForm.value.clientManagerName,
-        phoneNumber: null,
-        faxNumber: null,
-        address: null,
-        naraJangteoNumber: contractForm.value.naraJangteoNo,
-        defectWarrantyPeriod: contractForm.value.warrantyPeriod,
-        paymentMethod: contractForm.value.paymentMethod,
-        deliveryRequestDate: contractForm.value.deliveryRequestDate,
-        businessName: contractForm.value.projectName,
-        progressStatus: null,
-        remark: null,
-        contractor: null,
-        representativeName: null,
-        businessRegistrationNumber: null,
-        businessRegistrationNumberDemand: contractForm.value.clientBizno || null,
-        businessRegistrationNumberSupplier: null,
-        itemTotalAmount: contractForm.value.itemTotalAmount,
-        commission: contractForm.value.commission,
-        totalAmount: contractForm.value.totalAmount,
-        quantityTotal: contractForm.value.quantityTotal,
-        preDiscountAmountTotal: contractForm.value.preDiscountAmountTotal,
-        partialDelivery: contractForm.value.partialDelivery,
-        inspectionAgency: contractForm.value.inspectionAgency,
-        acceptanceAgency: contractForm.value.acceptanceAgency,
-        siteManagerId: contractForm.value.siteManagerId,
-        builderCompanyId: contractForm.value.builderCompanyId,
-        builderCompany: contractForm.value.builderCompany || null,
-        // OEM 제조사는 출하 등록 시 선택 (납품요구에서 제거됨)
-        oemCompanyId: null,
-        oemCompany: null
-      },
-      extractedDeliveryItems: items.value.map((item, index) => ({
-        sequenceNumber: index + 1,
-        optionItemNumber: item.optionItemNumber || '',
-        itemClassificationNumber: item.itemClassificationNumber || '',
-        itemIdentificationNumber: item.itemIdentificationNumber || '',
-        name: item.name,
-        specification: item.specification,
-        unit: item.unit,
-        unitPrice: String(item.unitPrice),
-        quantity: String(item.quantity),
-        totalAmount: String(item.totalAmount),
-        deliveryLocation: item.deliveryLocation,
-        deliveryDeadline: item.deliveryDeadline,
-        deliveryTerms: item.deliveryTerms,
-        inspectionExemption: item.inspectionExemption || 'N',
-        midTermCompetitionItem: item.midTermCompetitionItem || 'N'
-      })),
-      createdBy: '',
-      pdfFilePath: contractForm.value.pdfFilePath,
-      // 계약 유형 (ORIGINAL, AMENDMENT, ADDITIONAL)
-      contractType: contractForm.value.contractType || null
-    }
+    const contractData = buildContractData()
 
     const result = await contractService.registerContract(contractData)
 

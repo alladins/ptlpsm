@@ -5,6 +5,11 @@
       <h1>계좌조회</h1>
       <span class="page-description">등록된 계좌 정보와 입출금 내역을 조회합니다.</span>
       <div class="header-actions-right">
+        <button class="btn-excel" :disabled="exportingAccounts || accounts.length === 0" @click="handleExportAccounts">
+          <i v-if="exportingAccounts" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          계좌목록 엑셀
+        </button>
         <button class="btn-refresh" @click="loadAccounts">
           <i class="fas fa-sync-alt" />
           새로고침
@@ -146,6 +151,15 @@
             <button class="btn-search" @click="loadTransactions">
               <i class="fas fa-search" />
               조회
+            </button>
+            <button
+              class="btn-excel"
+              :disabled="exportingTrans || transData.transactions.length === 0"
+              @click="handleExportTransactions"
+            >
+              <i v-if="exportingTrans" class="fas fa-spinner fa-spin" />
+              <i v-else class="fas fa-file-excel" />
+              엑셀
             </button>
           </div>
         </div>
@@ -450,6 +464,67 @@ function resetTransSearch () {
 function handlePageChange (page: number) {
   transSearchForm.page = page
   loadTransactions()
+}
+
+// 오늘 날짜 (YYYY-MM-DD, 파일명용)
+function getTodayDate (): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Blob → 파일 다운로드 트리거
+function triggerDownload (blob: Blob, fileName: string) {
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+// 계좌 목록 엑셀 다운로드
+const exportingAccounts = ref(false)
+async function handleExportAccounts () {
+  if (exportingAccounts.value) { return }
+  try {
+    exportingAccounts.value = true
+    const blob = await bankAccountService.exportAccounts(availOnlyChecked.value ? 1 : 0)
+    triggerDownload(blob, `계좌목록_${getTodayDate()}.xlsx`)
+  } catch (error) {
+    console.error('계좌 목록 엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exportingAccounts.value = false
+  }
+}
+
+// 거래내역 엑셀 다운로드 (선택 계좌, 현재 검색 조건 기준 전체 행)
+const exportingTrans = ref(false)
+async function handleExportTransactions () {
+  if (exportingTrans.value || !selectedAccount.value) { return }
+  try {
+    exportingTrans.value = true
+    const blob = await bankAccountService.exportTransactions(
+      selectedAccount.value.bankAccountNum,
+      {
+        startDate: formatDateForApi(transSearchForm.startDate),
+        endDate: formatDateForApi(transSearchForm.endDate),
+        transDirection: transSearchForm.transDirection,
+        orderDirection: transSearchForm.orderDirection
+      }
+    )
+    triggerDownload(blob, `거래내역_${selectedAccount.value.bankAccountNum}_${getTodayDate()}.xlsx`)
+  } catch (error) {
+    console.error('거래내역 엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exportingTrans.value = false
+  }
 }
 
 // 상태 클래스
@@ -845,6 +920,31 @@ onMounted(async () => {
 
 .btn-search:hover {
   background: #1d4ed8;
+}
+
+/* 엑셀 다운로드 버튼 */
+.btn-excel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background: #1d6f42;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-excel:hover {
+  background: #15522f;
+}
+
+.btn-excel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-secondary-sm {

@@ -73,6 +73,30 @@ class OemCostService {
   }
 
   /**
+   * 원가 목록 엑셀 다운로드 (검색 조건 연동, 페이징 미적용 전체 행)
+   */
+  async exportExcel(params: OemCostSearchParams = {}): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+
+    if (params.skuId) { queryParams.append('skuId', params.skuId) }
+    if (params.oemCompanyId) { queryParams.append('oemCompanyId', params.oemCompanyId.toString()) }
+    if (params.keyword) { queryParams.append('skuName', params.keyword) }
+    if (params.costSourceType) { queryParams.append('costSourceType', params.costSourceType) }
+
+    const url = `${OEM_COST_ENDPOINTS.exportExcel()}?${queryParams.toString()}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+
+    return response.blob()
+  }
+
+  /**
    * 원가 상세 조회
    */
   async getDetail(id: number): Promise<OemCost> {

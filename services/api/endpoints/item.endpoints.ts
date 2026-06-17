@@ -42,6 +42,15 @@ export const ITEM_ENDPOINTS = {
   },
 
   /**
+   * 품목 목록 엑셀 다운로드
+   * @returns GET /basic/items/export?params
+   */
+  exportExcel: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/basic/items/export`
+  },
+
+  /**
    * 품목 상세 조회
    * @param itemId - 품목 ID
    * @returns GET /basic/items/{itemId}

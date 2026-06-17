@@ -44,6 +44,34 @@ import type {
 
 export const fundService = {
   /**
+   * 기성청구 목록 엑셀 다운로드 (검색 조건 연동, 페이징 미적용 전체 행)
+   * - JWT 인증 헤더 필수 → blob 으로 직접 반환 (다운로드 트리거는 호출처에서)
+   */
+  async exportExcel(params: FundSearchParams = {}): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+    if (params.search) queryParams.append('keyword', params.search)
+    if (params.deliveryRequestNo) queryParams.append('deliveryRequestNo', params.deliveryRequestNo)
+    const projectNameParam = params.projectName || params.siteName
+    if (projectNameParam) queryParams.append('projectName', projectNameParam)
+    if (params.status) queryParams.append('status', params.status)
+    if (params.startDate) queryParams.append('startDate', params.startDate)
+    if (params.endDate) queryParams.append('endDate', params.endDate)
+    if (params.sort) queryParams.append('sort', params.sort)
+
+    const url = `${FUND_ENDPOINTS.exportExcel()}?${queryParams.toString()}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    }
+
+    return response.blob()
+  },
+
+  /**
    * 자금 목록 조회
    */
   async getFunds(params: FundSearchParams = {}): Promise<FundListResponse> {
@@ -130,6 +158,28 @@ export const fundService = {
     } catch (error) {
       console.error('자금 상세 조회 실패:', error)
       return null
+    }
+  },
+
+  /**
+   * 계약 금액 변동 이력 조회 (본계약-변경계약 family)
+   */
+  async getContractHistory(fundId: number): Promise<any[]> {
+    try {
+      const url = FUND_ENDPOINTS.contractHistory(fundId)
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      })
+      if (!response.ok) {
+        if (response.status === 404) { return [] }
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const result = await response.json()
+      return result.data || result || []
+    } catch (error) {
+      console.error('계약 변동 이력 조회 실패:', error)
+      return []
     }
   },
 

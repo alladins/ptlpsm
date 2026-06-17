@@ -8,7 +8,7 @@ description: |
   - 인증 요구사항
   - API 문서화 주석
 tools: Read, Grep, Glob
-model: sonnet
+model: opus
 when_to_use: |
   /analyze-codebase 또는 /generate-manual 커맨드 실행 시 자동 호출됩니다.
   API 엔드포인트 분석이 필요할 때 사용합니다.

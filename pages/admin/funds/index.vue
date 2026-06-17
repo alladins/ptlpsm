@@ -13,6 +13,11 @@
           <i v-else class="fas fa-search" />
           검색
         </button>
+        <button class="btn-action" :disabled="exporting" @click="handleExportExcel">
+          <i v-if="exporting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          엑셀
+        </button>
       </template>
     </PageHeader>
 
@@ -261,7 +266,7 @@
                   <div class="collection-composition">
                     <span v-if="(item.advancePaymentAmount || item.advancePayment || 0) > 0" class="comp-item advance">선급금</span>
                     <span v-if="(item.progressPaymentTotal || 0) > 0" class="comp-item progress">기성금</span>
-                    <span v-if="(item.balancePayment || item.balanceAmount || 0) > 0" class="comp-item balance">잔금</span>
+                    <span v-if="(item.balancePaidAmount || 0) > 0" class="comp-item balance">잔금</span>
                     <span v-if="!hasAnyCollection(item)" class="no-collection">-</span>
                   </div>
                 </td>
@@ -381,6 +386,35 @@ watch(
     handleSearch()
   }
 )
+
+// 엑셀 다운로드 (현재 검색 조건 기준 전체 행)
+const exporting = ref(false)
+const handleExportExcel = async () => {
+  if (exporting.value) { return }
+  try {
+    exporting.value = true
+    const blob = await fundService.exportExcel({
+      startDate: searchForm.value.startDate || undefined,
+      endDate: searchForm.value.endDate || undefined,
+      deliveryRequestNo: searchForm.value.deliveryRequestNo || undefined,
+      projectName: searchForm.value.projectName || undefined,
+      status: searchForm.value.status || undefined
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `기성청구목록_${getTodayDate()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
+}
 
 // Methods
 const handleSearch = async () => {
@@ -509,8 +543,9 @@ const getOrderStatusClass = (status?: string): string => {
 const hasAnyCollection = (item: FundListItem): boolean => {
   const advance = item.advancePaymentAmount || item.advancePayment || 0
   const progress = item.progressPaymentTotal || 0
-  const balance = item.balancePayment || item.balanceAmount || 0
-  return advance > 0 || progress > 0 || balance > 0
+  // 잔금은 실제 입금액(balancePaidAmount) 기준 — 잔여 잔금(balanceAmount)은 항상 양수이므로 제외
+  const balancePaid = item.balancePaidAmount || 0
+  return advance > 0 || progress > 0 || balancePaid > 0
 }
 
 /**

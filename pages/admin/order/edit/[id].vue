@@ -8,6 +8,10 @@
       icon-color="purple"
     >
       <template #actions>
+        <button class="btn-action btn-secondary" :disabled="pdfLoading" @click="openOriginalPdf">
+          <i class="fas fa-file-pdf" />
+          {{ pdfLoading ? '여는 중...' : '원본 PDF' }}
+        </button>
         <button class="btn-action btn-secondary" @click="goBack">
           <i class="fas fa-list" />
           목록
@@ -36,32 +40,37 @@
 
       <!-- 기본정보 탭 -->
       <div v-show="activeTab === 'info'" class="tab-content">
-        <!-- 분할납품요구서 정보 -->
-        <FormSection title="분할납품요구서 정보">
+        <!-- 분할납품요구서 정보 (접기/펼치기, 기본 접힘) -->
+        <AccordionSection
+          title="분할납품요구서 정보"
+          :summary="splitInfoSummary"
+          :default-expanded="false"
+        >
+          <div class="split-info-grid">
           <!-- 1. 계약 정보 -->
           <div class="info-group">
             <div class="info-group-header">
               <i class="fas fa-file-alt" />
               <span>계약 정보</span>
             </div>
-            <div class="info-grid grid-5">
+            <!-- 1줄: 계약번호 / 계약일자 / 선고지번호 -->
+            <!-- 2줄: 납품요구번호 / 납품요구일자 / 주문상태 -->
+            <div class="info-grid grid-3">
               <FormField label="계약번호">
-                <input type="text" :value="orderData?.contractId || '-'" class="form-input-sm" readonly>
+                <input type="text" :value="orderData?.contractId || '-'" class="form-input-sm" style="width: 100%;" readonly>
               </FormField>
               <FormField label="계약일자">
-                <input type="text" :value="orderData?.contractDate || '-'" class="form-input-sm" readonly>
+                <input type="text" :value="orderData?.contractDate || '-'" class="form-input-sm" style="width: 100%;" readonly>
               </FormField>
               <FormField label="선고지번호">
-                <input type="text" :value="orderData?.preNotificationNo || '-'" class="form-input-xs" readonly>
+                <input type="text" :value="orderData?.preNotificationNo || '-'" class="form-input-xs" style="width: 100%;" readonly>
               </FormField>
               <FormField label="납품요구번호">
-                <input type="text" :value="orderData?.deliveryRequestNo || '-'" class="form-input-sm" readonly>
+                <input type="text" :value="orderData?.deliveryRequestNo || '-'" class="form-input-sm" style="width: 100%;" readonly>
               </FormField>
               <FormField label="납품요구일자">
-                <input type="text" :value="orderData?.deliveryRequestDate || '-'" class="form-input-sm" readonly>
+                <input type="text" :value="orderData?.deliveryRequestDate || '-'" class="form-input-sm" style="width: 100%;" readonly>
               </FormField>
-            </div>
-            <div class="info-grid grid-5">
               <FormField label="주문상태">
                 <span class="status-badge" :class="getOrderStatusClass(orderData?.status)">
                   {{ getOrderStatusLabel(orderData?.status) }}
@@ -92,8 +101,8 @@
               <span>수요기관 정보</span>
             </div>
             <div class="info-grid grid-4">
-              <FormField label="수요기관명">
-                <input type="text" :value="orderData?.client || '-'" class="form-input-md" readonly>
+              <FormField label="수요기관명" style="grid-column: span 2;">
+                <input type="text" :value="orderData?.client || '-'" class="form-input-md" style="width: 100%;" readonly>
               </FormField>
               <FormField label="기관번호">
                 <input type="text" :value="orderData?.clientNo || '-'" class="form-input-sm" readonly>
@@ -102,7 +111,7 @@
                 <input type="text" :value="orderData?.clientPostalCode || '-'" class="form-input-sm" readonly>
               </FormField>
               <FormField label="주소" full-width>
-                <input type="text" :value="orderData?.clientAddress || '-'" class="form-input-lg" readonly>
+                <input type="text" :value="orderData?.clientAddress || '-'" class="form-input-lg" style="width: 100%;" readonly>
               </FormField>
               <FormField label="전화번호">
                 <input type="text" :value="orderData?.clientPhoneNumber || '-'" class="form-input" readonly>
@@ -122,12 +131,13 @@
               <i class="fas fa-clipboard-list" />
               <span>기타 정보</span>
             </div>
-            <!-- 건설사 선택 (OEM 제조사는 출하 등록 시 선택) -->
-            <div class="info-grid grid-4">
+            <!-- 1줄: 건설사 / 분할납품 / 하자담보책임기간 -->
+            <div class="info-grid grid-3">
               <FormField label="건설사">
                 <select
                   v-model="formData.builderCompanyId"
                   class="form-input-sm"
+                  style="width: 100%;"
                   @change="handleBuilderChange"
                 >
                   <option :value="null">
@@ -142,20 +152,20 @@
                   </option>
                 </select>
               </FormField>
-            </div>
-            <!-- 기존 필드들 (readonly) -->
-            <div class="info-grid grid-4">
               <FormField label="분할납품">
-                <input type="text" :value="orderData?.partialDelivery || '-'" class="form-input-xs" readonly>
+                <input type="text" :value="orderData?.partialDelivery || '-'" class="form-input-xs" style="width: 100%;" readonly>
               </FormField>
               <FormField label="하자담보책임기간">
-                <input type="text" :value="orderData?.warrantyPeriod || '-'" class="form-input-xs" readonly>
+                <input type="text" :value="orderData?.warrantyPeriod || '-'" class="form-input-xs" style="width: 100%;" readonly>
               </FormField>
+            </div>
+            <!-- 2줄: 검사기관 / 인수기관 -->
+            <div class="info-grid grid-2">
               <FormField label="검사기관">
-                <input type="text" :value="orderData?.inspectionAgency || '-'" class="form-input-md" readonly>
+                <input type="text" :value="orderData?.inspectionAgency || '-'" class="form-input-md" style="width: 100%;" readonly>
               </FormField>
               <FormField label="인수기관">
-                <input type="text" :value="orderData?.acceptanceAgency || '-'" class="form-input-md" readonly>
+                <input type="text" :value="orderData?.acceptanceAgency || '-'" class="form-input-md" style="width: 100%;" readonly>
               </FormField>
             </div>
           </div>
@@ -166,23 +176,29 @@
               <i class="fas fa-won-sign" />
               <span>금액 정보</span>
             </div>
-            <!-- ★ 정책: 총 계약금액 = 품대계(item_total_amount). 고객 실수금 = 매출 기준.
-               수수료는 참고용으로만 표기하며 합계 계산에 포함하지 않는다. -->
+            <!-- 등록 화면과 동일한 3박스 구조 (품목총액 + 수수료 = 총 계약금액) -->
             <div class="amount-display">
-              <div class="amount-item total">
-                <label>총 계약금액</label>
+              <div class="amount-item">
+                <label>품목총액</label>
                 <span>{{ formatCurrency(orderData?.itemTotalAmount || 0) }}</span>
               </div>
-              <div class="amount-item" style="font-size: 0.85em; color: #888;">
-                <label>수수료 (참고)</label>
+              <span class="amount-operator">+</span>
+              <div class="amount-item">
+                <label>수수료</label>
                 <span>{{ formatCurrency(orderData?.commission || 0) }}</span>
+              </div>
+              <span class="amount-operator">=</span>
+              <div class="amount-item total">
+                <label>총 계약금액</label>
+                <span>{{ formatCurrency(orderData?.totalAmount || 0) }}</span>
               </div>
             </div>
           </div>
-        </FormSection>
+          </div>
+        </AccordionSection>
 
         <!-- 납품 목록 -->
-        <FormSection title="납품 목록" style="margin-top: -20px">
+        <FormSection title="납품 목록" style="margin-top: 1.5rem">
           <div class="table-wrapper">
             <table class="items-table">
               <thead>
@@ -478,6 +494,7 @@
       :file-name="currentPdfFileName"
       @close="showPdfModal = false"
     />
+
   </div>
 </template>
 
@@ -496,6 +513,7 @@ import { SIGNATURE_STATUS_LABELS, SIGNATURE_STATUS_CLASSES } from '~/types/basel
 import type { ProgressPaymentRequest, PaymentStatus } from '~/types/fund'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
+import AccordionSection from '~/components/admin/forms/AccordionSection.vue'
 import CollectionConfirmModal from '~/components/fund/CollectionConfirmModal.vue'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { usePermission } from '~/composables/usePermission'
@@ -521,6 +539,13 @@ const loading = ref(true)
 const submitting = ref(false)
 const orderData = ref<OrderDetailResponse | null>(null)
 const items = ref<any[]>([])
+
+// 분할납품요구서 정보(접힘) 헤더 요약: 납품요구번호 · 상태
+const splitInfoSummary = computed(() => {
+  const no = orderData.value?.deliveryRequestNo || '-'
+  const status = getOrderStatusLabel(orderData.value?.status)
+  return `${no} · ${status}`
+})
 
 // 탭 관련 상태
 const activeTab = ref('info')
@@ -748,6 +773,20 @@ const goBack = () => {
   }
 }
 
+// 원본 발주서 PDF 미리보기 (새 탭)
+const pdfLoading = ref(false)
+const openOriginalPdf = async () => {
+  if (!orderId.value || isNaN(orderId.value)) { return }
+  try {
+    pdfLoading.value = true
+    await orderService.openOriginalPdf(orderId.value)
+  } catch (error: any) {
+    alert(error?.message || '원본 PDF 를 여는 중 오류가 발생했습니다.')
+  } finally {
+    pdfLoading.value = false
+  }
+}
+
 // 기성금 데이터 로드 (자금관리와 동일한 API 사용)
 const loadProgressPayments = async () => {
   try {
@@ -890,6 +929,18 @@ onMounted(async () => {
  * - admin-forms.css: form-input-*, info-group, info-grid, grid-5
  * - admin-common.css: empty-row
  */
+
+/* 분할납품요구서 정보(아코디언) 내부 2열 그리드 — FormSection.form-grid 대체 */
+.split-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+@media (max-width: 768px) {
+  .split-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* Page-specific: Order edit page wrapper */
 .order-edit {

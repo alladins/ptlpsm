@@ -51,7 +51,11 @@
 
           <div class="info-banner">
             <i class="fas fa-info-circle" />
-            <span>기존 파일이 있으면 자동으로 이전 버전으로 보관됩니다.</span>
+            <span>
+              같은 카테고리에 <strong>동일한 파일명</strong>이 있으면 새 버전으로 등록되며,
+              기존 파일은 이전 버전으로 보관됩니다.
+              파일명이 다르면 같은 카테고리 안에 별개 파일로 추가됩니다.
+            </span>
           </div>
         </div>
 

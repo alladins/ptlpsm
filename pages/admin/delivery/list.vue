@@ -12,6 +12,11 @@
           <i class="fas fa-search" />
           검색
         </button>
+        <button class="btn-action" :disabled="exporting" @click="handleExportExcel">
+          <i v-if="exporting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          엑셀
+        </button>
       </template>
     </PageHeader>
 
@@ -27,14 +32,14 @@
             <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
-          <!-- 납품요구번호 (NEW) -->
+          <!-- 통합 검색어 (납품요구번호·수요기관·사업명) -->
           <div class="search-item">
-            <label>납품요구번호:</label>
+            <label>검색어:</label>
             <input
-              v-model="searchForm.deliveryRequestNo"
+              v-model="searchForm.searchKeyword"
               type="text"
-              placeholder="납품요구번호 검색"
-              class="text-input"
+              placeholder="납품요구번호·수요기관·사업명"
+              class="text-input search-keyword"
               @keyup.enter="handleSearch"
             >
           </div>
@@ -164,7 +169,7 @@ const getOneMonthLater = () => {
 const searchForm = ref({
   startDate: getSixMonthsAgo(),
   endDate: getOneMonthLater(),
-  deliveryRequestNo: '', // NEW field
+  searchKeyword: '', // 통합 검색어 (납품요구번호·수요기관·사업명)
   status: ''
 })
 
@@ -188,7 +193,7 @@ const {
     const response = await deliveryService.getDeliveryTree({
       startDate: searchForm.value.startDate,
       endDate: searchForm.value.endDate,
-      deliveryRequestNo: searchForm.value.deliveryRequestNo,
+      searchKeyword: searchForm.value.searchKeyword,
       status: searchForm.value.status,
       page: params.page || 0,
       size: params.size || 10,
@@ -214,12 +219,40 @@ const handleSearch = () => {
   search()
 }
 
+// 엑셀 다운로드 (현재 검색 조건 기준 전체 행, 출하 펼침)
+const exporting = ref(false)
+const handleExportExcel = async () => {
+  if (exporting.value) { return }
+  try {
+    exporting.value = true
+    const blob = await deliveryService.exportExcel({
+      startDate: searchForm.value.startDate,
+      endDate: searchForm.value.endDate,
+      searchKeyword: searchForm.value.searchKeyword,
+      status: searchForm.value.status
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `납품확인목록_${getTodayDate()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
+}
+
 // 초기화
 const handleReset = () => {
   searchForm.value = {
     startDate: getSixMonthsAgo(),
     endDate: getOneMonthLater(),
-    deliveryRequestNo: '',
+    searchKeyword: '',
     status: ''
   }
   reset()
@@ -309,6 +342,10 @@ onMounted(() => {
 
 .text-input {
   width: 200px;
+}
+
+.search-keyword {
+  width: 280px;
 }
 
 .date-input {

@@ -12,6 +12,11 @@
           <i class="fas fa-search" />
           검색
         </button>
+        <button class="btn-action" :disabled="exporting" @click="handleExportExcel">
+          <i v-if="exporting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          엑셀
+        </button>
       </template>
     </PageHeader>
 
@@ -27,14 +32,14 @@
             <input v-model="searchForm.endDate" type="date" class="date-input">
           </div>
 
-          <!-- 납품요구번호 -->
+          <!-- 통합 검색어 (납품요구번호·수요기관·사업명·시공사) -->
           <div class="search-item">
-            <label>납품요구번호:</label>
+            <label>검색어:</label>
             <input
-              v-model="searchForm.deliveryRequestNo"
+              v-model="searchForm.searchKeyword"
               type="text"
-              placeholder="납품요구번호 검색"
-              class="text-input"
+              placeholder="납품요구번호·수요기관·사업명·시공사"
+              class="text-input search-keyword"
               @keyup.enter="handleSearch"
             >
           </div>
@@ -107,10 +112,10 @@
                 <th style="width: 12%;">
                   납품요구번호
                 </th>
-                <th style="width: 16%;">
+                <th style="width: 14%;">
                   수요기관
                 </th>
-                <th style="width: 20%;">
+                <th style="width: 14%;">
                   사업명
                 </th>
                 <th style="width: 12%;">
@@ -130,6 +135,9 @@
                 </th>
                 <th style="width: 5%;">
                   문서보기
+                </th>
+                <th style="width: 8%;">
+                  관리
                 </th>
               </tr>
             </thead>
@@ -238,6 +246,48 @@
                     <span>PDF</span>
                   </button>
                 </td>
+
+                <!-- 관리: 수동완료 / 초기화 / 스캔본 -->
+                <td>
+                  <div class="admin-action-buttons">
+                    <button
+                      v-if="canCompleteManually(item)"
+                      class="btn-action-small btn-success-soft"
+                      title="디지털 서명 없이 PDF 3종 생성 후 완료 처리"
+                      @click.stop="openManualCompleteModal(item)"
+                    >
+                      <i class="fas fa-check-circle" />
+                      <span>수동완료</span>
+                    </button>
+                    <button
+                      v-if="canResetItem(item)"
+                      class="btn-action-small btn-danger-soft"
+                      title="서명·PDF 모두 초기화 (SYSTEM_ADMIN 전용)"
+                      @click.stop="openResetModal(item)"
+                    >
+                      <i class="fas fa-undo" />
+                      <span>초기화</span>
+                    </button>
+                    <button
+                      v-if="canRegeneratePdfsItem(item)"
+                      class="btn-action-small btn-info-soft"
+                      title="서명 보존하고 PDF 3종만 새 데이터로 재생성 (SYSTEM_ADMIN 전용)"
+                      @click.stop="openRegenerateModal(item)"
+                    >
+                      <i class="fas fa-redo" />
+                      <span>PDF재발행</span>
+                    </button>
+                    <button
+                      v-if="canUploadScan(item)"
+                      class="btn-action-small btn-info-soft"
+                      title="종이 서명본 스캔 PDF 업로드"
+                      @click.stop="openScanUploadModal(item)"
+                    >
+                      <i class="fas fa-upload" />
+                      <span>스캔</span>
+                    </button>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -287,6 +337,38 @@
       @close="showConversionRemainderModal = false"
       @updated="handleConversionUpdated"
     />
+
+    <!-- 수동 완료 모달 -->
+    <ManualCompleteModal
+      v-if="showManualCompleteModal && selectedAdminItem"
+      :delivery-done="selectedAdminItem"
+      @close="closeAdminModals"
+      @completed="handleAdminActionDone"
+    />
+
+    <!-- 초기화 모달 -->
+    <ResetConfirmModal
+      v-if="showResetModal && selectedAdminItem"
+      :delivery-done="selectedAdminItem"
+      @close="closeAdminModals"
+      @reset="handleAdminActionDone"
+    />
+
+    <!-- PDF 재발행 모달 (서명·상태 보존) -->
+    <RegeneratePdfConfirmModal
+      v-if="showRegenerateModal && selectedAdminItem"
+      :delivery-done="selectedAdminItem"
+      @close="closeAdminModals"
+      @regenerated="handleAdminActionDone"
+    />
+
+    <!-- 스캔본 업로드 모달 -->
+    <ScanUploadModal
+      v-if="showScanUploadModal && selectedAdminItem"
+      :delivery-done="selectedAdminItem"
+      @close="closeAdminModals"
+      @uploaded="handleAdminActionDone"
+    />
   </div>
 </template>
 
@@ -295,6 +377,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from '#imports'
 import {
   getDeliveryDoneList,
+  exportDeliveryDoneExcel,
   canDownloadPdf
 } from '~/services/delivery-done.service'
 import { systemSettingService } from '~/services/systemSetting.service'
@@ -305,6 +388,11 @@ import type {
 } from '~/types/delivery-done'
 import { formatDate } from '~/utils/format'
 import { useCommonStatus } from '~/composables/useCommonStatus'
+import { useAuthStore } from '~/stores/auth'
+import ManualCompleteModal from '~/components/admin/delivery-done/ManualCompleteModal.vue'
+import ResetConfirmModal from '~/components/admin/delivery-done/ResetConfirmModal.vue'
+import RegeneratePdfConfirmModal from '~/components/admin/delivery-done/RegeneratePdfConfirmModal.vue'
+import ScanUploadModal from '~/components/admin/delivery-done/ScanUploadModal.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -369,7 +457,7 @@ const getOneMonthLater = () => {
 const searchForm = ref<DeliveryDoneSearchParams>({
   startDate: getSixMonthsAgo(),
   endDate: getOneMonthLater(),
-  deliveryRequestNo: '',
+  searchKeyword: '',
   contractNo: '',
   client: '',
   status: undefined,
@@ -396,6 +484,20 @@ const selectedItem = ref<DeliveryDoneListItem | null>(null) // PDF용
 const showConversionRemainderModal = ref(false)
 const selectedConversionItem = ref<DeliveryDoneListItem | null>(null)
 const conversionRemainderThreshold = ref(4) // 기본값 4, API에서 갱신
+
+// 관리(수동완료/초기화/스캔본) 모달 상태
+const showManualCompleteModal = ref(false)
+const showResetModal = ref(false)
+const showRegenerateModal = ref(false)
+const showScanUploadModal = ref(false)
+const selectedAdminItem = ref<DeliveryDoneListItem | null>(null)
+
+// 권한 (역할 기반)
+const authStore = useAuthStore()
+const isSystemAdmin = computed(() => authStore.role === 'SYSTEM_ADMIN')
+const canAdminAction = computed(() =>
+  authStore.role === 'SYSTEM_ADMIN' || authStore.role === 'LEADPOWER_MANAGER'
+)
 
 // 계산된 값
 const startIndex = computed(() => {
@@ -443,6 +545,36 @@ watch(
 function handleSearch () {
   currentPage.value = 0
   loadData()
+}
+
+// 엑셀 다운로드 (현재 검색 조건 기준 전체 행)
+const exporting = ref(false)
+const handleExportExcel = async () => {
+  if (exporting.value) { return }
+  try {
+    exporting.value = true
+    const blob = await exportDeliveryDoneExcel({
+      startDate: searchForm.value.startDate,
+      endDate: searchForm.value.endDate,
+      searchKeyword: searchForm.value.searchKeyword,
+      contractNo: searchForm.value.contractNo,
+      status: searchForm.value.status,
+      sort: searchForm.value.sort
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `납품완료목록_${getTodayDate()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
 }
 
 // 초기화
@@ -561,6 +693,81 @@ function canSendCompletionMessage (item: DeliveryDoneListItem): boolean {
          item.status !== 'SUBMITTED'
 }
 
+// 관리(수동완료/초기화/스캔본) 활성화 조건
+function canCompleteManually (item: DeliveryDoneListItem): boolean {
+  // 권한: SYSTEM_ADMIN + LEADPOWER_MANAGER
+  // 사전 조건: SUBMITTED 아님 AND COMPLETED 아님 AND 납품률 100%
+  if (!canAdminAction.value) { return false }
+  if (item.status === 'SUBMITTED' || item.status === 'COMPLETED') { return false }
+  return (item.deliveryCompletionRate ?? 0) >= 100
+}
+
+function canResetItem (item: DeliveryDoneListItem): boolean {
+  // 권한: SYSTEM_ADMIN 전용. SUBMITTED 는 제외.
+  if (!isSystemAdmin.value) { return false }
+  if (item.status === 'SUBMITTED') { return false }
+  // 잔금 입금 완료 건은 회계 정합성 보호를 위해 차단 (백엔드 가드와 일치)
+  if (item.isBalancePaid) { return false }
+  // 서명/PDF/수동완료 흔적이 있을 때만 의미가 있음
+  return item.hasManagerSignature ||
+         item.hasInspectorSignature ||
+         item.hasCompletionInspectorSignature ||
+         item.status === 'COMPLETED' ||
+         !!item.isManualComplete ||
+         !!item.confirmationPdfScanPath ||
+         !!item.completionPdfScanPath
+}
+
+function canUploadScan (item: DeliveryDoneListItem): boolean {
+  // 권한: SYSTEM_ADMIN + LEADPOWER_MANAGER
+  // 수동완료된 건에 한해 스캔본 업로드 노출
+  if (!canAdminAction.value) { return false }
+  return !!item.isManualComplete
+}
+
+function openManualCompleteModal (item: DeliveryDoneListItem) {
+  selectedAdminItem.value = item
+  showManualCompleteModal.value = true
+}
+
+function openResetModal (item: DeliveryDoneListItem) {
+  selectedAdminItem.value = item
+  showResetModal.value = true
+}
+
+function canRegeneratePdfsItem (item: DeliveryDoneListItem): boolean {
+  // 권한: SYSTEM_ADMIN 전용. SUBMITTED 는 제외. 잔금 가드 없음 (회계 컬럼 미수정).
+  if (!isSystemAdmin.value) { return false }
+  if (item.status === 'SUBMITTED') { return false }
+  // PDF가 한 번이라도 만들어진 상태에서만 의미가 있음
+  return item.status === 'COMPLETED' ||
+         item.status === 'PENDING_SIGNATURE' ||
+         !!item.isManualComplete
+}
+
+function openRegenerateModal (item: DeliveryDoneListItem) {
+  selectedAdminItem.value = item
+  showRegenerateModal.value = true
+}
+
+function openScanUploadModal (item: DeliveryDoneListItem) {
+  selectedAdminItem.value = item
+  showScanUploadModal.value = true
+}
+
+function closeAdminModals () {
+  showManualCompleteModal.value = false
+  showResetModal.value = false
+  showRegenerateModal.value = false
+  showScanUploadModal.value = false
+  selectedAdminItem.value = null
+}
+
+function handleAdminActionDone () {
+  closeAdminModals()
+  loadData()
+}
+
 // 초기 로드
 onMounted(async () => {
   await loadStatusCodes() // 상태 코드 먼저 로드
@@ -627,6 +834,10 @@ onMounted(async () => {
 
 .text-input {
   width: 180px;
+}
+
+.search-keyword {
+  width: 280px;
 }
 
 .condition-select {
@@ -1007,5 +1218,60 @@ onMounted(async () => {
 .no-data-message p {
   font-size: 16px;
   margin: 0;
+}
+
+/* 관리 컬럼: 수동완료/초기화/스캔본 버튼 */
+.admin-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.btn-action-small {
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn-action-small i {
+  font-size: 10px;
+}
+
+.btn-success-soft {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.btn-success-soft:hover {
+  background: #dcfce7;
+}
+
+.btn-danger-soft {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.btn-danger-soft:hover {
+  background: #fee2e2;
+}
+
+.btn-info-soft {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.btn-info-soft:hover {
+  background: #dbeafe;
 }
 </style>

@@ -8,6 +8,10 @@
       description="납품요구 정보를 조회합니다."
     >
       <template #actions>
+        <button class="btn-action btn-secondary" :disabled="pdfLoading" @click="openOriginalPdf">
+          <i class="fas fa-file-pdf" />
+          {{ pdfLoading ? '여는 중...' : '원본 PDF' }}
+        </button>
         <button class="btn-action btn-secondary" @click="goBack">
           <i class="fas fa-list" />
           목록
@@ -19,6 +23,20 @@
     <ErrorSection v-else-if="!orderData" message="납품요구 정보를 찾을 수 없습니다." />
 
     <div v-else-if="orderData" class="content-section">
+      <!-- 연관계약 배너 (변경/추가계약인 경우) -->
+      <div v-if="isRelatedContract" class="related-contract-banner">
+        <i class="fas fa-link" />
+        <span
+          class="rcb-badge"
+          :class="isAmendmentContract ? 'ct-amendment' : 'ct-additional'"
+        >{{ contractTypeLabel }}</span>
+        <span class="rcb-text">
+          기준계약 <strong>{{ baseContractNo }}</strong> 의 연관 계약입니다.
+          <template v-if="isAmendmentContract">(기존 수량을 본 계약 수량으로 대체)</template>
+          <template v-else>(기존 수량에 본 계약 수량을 합산)</template>
+        </span>
+      </div>
+
       <!-- 분할납품요구서 정보 -->
       <FormSection title="분할납품요구서 정보">
         <!-- 1. 계약 정보 -->
@@ -223,6 +241,24 @@ const loading = ref(true)
 const orderData = ref<OrderDetailResponse | null>(null)
 const items = ref<any[]>([])
 
+// 계약유형 표기 (백엔드는 추가계약을 SEPARATE로 저장 → ADDITIONAL/SEPARATE 모두 "추가계약"으로 표시)
+const CONTRACT_TYPE_TEXT: Record<string, string> = {
+  ORIGINAL: '기준계약',
+  AMENDMENT: '변경계약',
+  ADDITIONAL: '추가계약',
+  SEPARATE: '추가계약'
+}
+const contractTypeLabel = computed(() => CONTRACT_TYPE_TEXT[orderData.value?.contractType || ''] || '')
+const isAmendmentContract = computed(() => orderData.value?.contractType === 'AMENDMENT')
+const isRelatedContract = computed(() =>
+  ['AMENDMENT', 'ADDITIONAL', 'SEPARATE'].includes(orderData.value?.contractType || '')
+)
+// 기준계약 납품요구번호 (-NN → -00)
+const baseContractNo = computed(() => {
+  const no = orderData.value?.deliveryRequestNo
+  return no ? no.replace(/-\d{2}$/, '-00') : ''
+})
+
 // 수량 합계
 const totalQuantity = computed(() => {
   return items.value.reduce((sum, item) => sum + (item.quantity || 0), 0)
@@ -269,6 +305,21 @@ const fetchOrderDetail = async () => {
 // 목록으로 돌아가기
 const goBack = () => {
   router.push('/admin/order/list')
+}
+
+// 원본 발주서 PDF 미리보기 (새 탭)
+const pdfLoading = ref(false)
+const openOriginalPdf = async () => {
+  const orderId = Number(route.params.id)
+  if (!orderId || isNaN(orderId)) { return }
+  try {
+    pdfLoading.value = true
+    await orderService.openOriginalPdf(orderId)
+  } catch (error: any) {
+    alert(error?.message || '원본 PDF 를 여는 중 오류가 발생했습니다.')
+  } finally {
+    pdfLoading.value = false
+  }
 }
 
 // 컴포넌트 마운트 시 데이터 로드
@@ -318,6 +369,49 @@ onMounted(() => {
 /* 규격 컬럼 input만 전체 너비 */
 .items-table td:nth-child(3) input {
   width: 100% !important;
+}
+
+/* 연관계약 배너 */
+.related-contract-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #f59e0b;
+  border-radius: 0.375rem;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.related-contract-banner .fa-link {
+  color: #94a3b8;
+}
+
+.rcb-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rcb-badge.ct-amendment {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.rcb-badge.ct-additional {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.rcb-text strong {
+  color: #1e293b;
 }
 
 /* Responsive - page specific adjustments */

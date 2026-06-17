@@ -13,6 +13,11 @@
           <i v-else class="fas fa-search" />
           검색
         </button>
+        <button class="btn-action" :disabled="exporting" @click="handleExportExcel">
+          <i v-if="exporting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          엑셀
+        </button>
         <button
           v-if="showCreateButton && !isOemManager"
           class="btn-action btn-primary"
@@ -40,35 +45,28 @@
           <!-- 납품요구번호 -->
           <div class="search-item">
             <label>납품요구번호:</label>
-            <input v-model="searchForm.deliveryRequestNo" type="text" placeholder="납품요구번호 입력 또는 조회" class="text-input" @keyup.enter="handleSearch">
+            <input v-model="searchForm.deliveryRequestNo" type="text" placeholder="납품요구번호 입력 또는 조회" class="text-input" style="min-width: 240px;" @keyup.enter="handleSearch">
             <button type="button" class="btn-search-inline" @click="openOrderSelectPopup">
               <i class="fas fa-search" />
               조회
             </button>
           </div>
 
+          <!-- 검색어 (수요기관·사업명·출하NO 통합) -->
+          <div class="search-item search-keyword">
+            <label>검색어:</label>
+            <input v-model="searchForm.keyword" type="text" placeholder="수요기관, 사업명, 출하NO" class="keyword-input" @keyup.enter="handleSearch">
+          </div>
+
           <!-- 상태 -->
           <div class="search-item">
             <label>상태:</label>
-            <select v-model="searchForm.status" class="status-select">
+            <select v-model="searchForm.status" class="status-select" style="width: 110px; min-width: 110px;">
               <option value="">
                 전체
               </option>
               <option v-for="option in statusOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
-              </option>
-            </select>
-          </div>
-
-          <!-- 정렬 -->
-          <div class="search-item">
-            <label>정렬:</label>
-            <select v-model="searchForm.sortOrder" class="status-select">
-              <option value="desc">
-                최근 출하순
-              </option>
-              <option value="asc">
-                과거 출하순
               </option>
             </select>
           </div>
@@ -83,6 +81,14 @@
             <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
+            <select v-model="searchForm.sortOrder" class="page-size-select" @change="handleSearch">
+              <option value="desc">
+                최근 출하순
+              </option>
+              <option value="asc">
+                과거 출하순
+              </option>
+            </select>
             <select v-model="pageSize" class="page-size-select" @change="handlePageSizeChange">
               <option :value="10">
                 10개씩
@@ -272,6 +278,7 @@ const searchForm = ref({
   endDate: getOneMonthLater(),
   orderId: null as number | null,
   deliveryRequestNo: '',
+  keyword: '',
   status: '',
   sortOrder: 'desc' as 'asc' | 'desc' // 기본값: 최근 출하순
 })
@@ -300,6 +307,7 @@ const {
       startDate: searchForm.value.startDate,
       endDate: searchForm.value.endDate,
       deliveryRequestNo: searchForm.value.deliveryRequestNo,
+      keyword: searchForm.value.keyword,
       orderId: searchForm.value.orderId,
       status: searchForm.value.status,
       page: params.page || 0,
@@ -401,6 +409,37 @@ watch(
 // 검색 기능
 const handleSearch = () => {
   search()
+}
+
+// 엑셀 다운로드 (현재 검색 조건 기준 전체 행)
+const exporting = ref(false)
+const handleExportExcel = async () => {
+  if (exporting.value) { return }
+  try {
+    exporting.value = true
+    const blob = await shipmentService.exportExcel({
+      startDate: searchForm.value.startDate,
+      endDate: searchForm.value.endDate,
+      deliveryRequestNo: searchForm.value.deliveryRequestNo,
+      keyword: searchForm.value.keyword,
+      orderId: searchForm.value.orderId,
+      status: searchForm.value.status,
+      sort: `shipmentId,${searchForm.value.sortOrder}`
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `출하목록_${getTodayDate()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
 }
 
 // 검색 초기화
