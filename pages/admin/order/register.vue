@@ -67,21 +67,23 @@
             <i class="fas fa-file-alt" />
             <span>계약 정보</span>
           </div>
-          <div class="info-grid grid-5">
+          <!-- 1줄: 계약번호 / 계약일자 / 선고지번호 -->
+          <!-- 2줄: 납품요구번호 / 납품요구일자 (등록 시점이므로 주문상태 없음) -->
+          <div class="info-grid grid-3">
             <FormField label="계약번호" required>
-              <input v-model="contractForm.contractNo" type="text" class="form-input-sm" readonly>
+              <input v-model="contractForm.contractNo" type="text" class="form-input-sm" style="width: 100%;" readonly>
             </FormField>
             <FormField label="계약일자" required>
-              <input v-model="contractForm.contractDate" type="text" class="form-input-sm" readonly>
+              <input v-model="contractForm.contractDate" type="text" class="form-input-sm" style="width: 100%;" readonly>
             </FormField>
             <FormField label="선고지번호">
-              <input v-model="contractForm.preNotificationNo" type="text" class="form-input-xs" readonly>
+              <input v-model="contractForm.preNotificationNo" type="text" class="form-input-xs" style="width: 100%;" readonly>
             </FormField>
             <FormField label="납품요구번호" required>
-              <input v-model="contractForm.deliveryRequestNo" type="text" class="form-input-sm" readonly>
+              <input v-model="contractForm.deliveryRequestNo" type="text" class="form-input-sm" style="width: 100%;" readonly>
             </FormField>
             <FormField label="납품요구일자" required>
-              <input v-model="contractForm.deliveryRequestDate" type="text" class="form-input-sm" readonly>
+              <input v-model="contractForm.deliveryRequestDate" type="text" class="form-input-sm" style="width: 100%;" readonly>
             </FormField>
           </div>
           <div class="info-group-header">
