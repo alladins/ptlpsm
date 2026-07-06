@@ -19,11 +19,16 @@ export default defineNuxtPlugin((nuxtApp) => {
    *   노이즈성 오류라 게시판 수집에서 제외한다.
    *   · AbortError: "Transition was skipped"
    *   · InvalidStateError: "Transition was aborted because of invalid state"
+   * - ResizeObserver loop 경고: 한 프레임 내 레이아웃이 여러 번 바뀔 때(차트/그리드
+   *   렌더 등) 브라우저가 남기는 양성 경고로 기능 영향이 없다. 게시판 수집에서 제외한다.
+   *   · "ResizeObserver loop completed with undelivered notifications."
+   *   · "ResizeObserver loop limit exceeded"
    */
   const isIgnorable = (errorName: string, message: string): boolean => {
     const msg = message || ''
     if (errorName === 'AbortError' && msg.includes('Transition was skipped')) { return true }
     if (errorName === 'InvalidStateError' && msg.includes('Transition was aborted')) { return true }
+    if (msg.includes('ResizeObserver loop')) { return true }
     return false
   }
 
