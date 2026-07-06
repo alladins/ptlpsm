@@ -499,9 +499,9 @@
                         {{ formatCurrency(item.shippingQuantity * item.unitPrice) }}
                       </td>
                       <td class="remark-cell">
-                        <template v-if="getRemarksBadges(item.remarks).length > 0">
+                        <template v-if="getRemarksBadges(item).length > 0">
                           <span
-                            v-for="(badge, idx) in getRemarksBadges(item.remarks)"
+                            v-for="(badge, idx) in getRemarksBadges(item)"
                             :key="idx"
                             class="merge-badge"
                             :style="{ backgroundColor: badge.color }"
@@ -556,6 +556,83 @@
                 </tfoot>
               </table>
             </div>
+          </div>
+        </FormSection>
+
+        <!-- 원계약 ↔ 실출하 금액 정합 (저장된 납품완료 기준) -->
+        <FormSection v-if="reconciliation" style="margin-top: 1rem">
+          <div class="recon-wrapper">
+            <div class="items-section-header" style="margin-bottom: 0.75rem">
+              <div class="header-left">
+                <i class="fas fa-balance-scale" />
+                <span>원계약 ↔ 실출하 금액 정합</span>
+              </div>
+            </div>
+            <div class="recon-summary" :class="reconciliation.amountMatched ? 'recon-ok' : 'recon-info'">
+              <span class="recon-badge">
+                <i :class="reconciliation.amountMatched ? 'fas fa-check-circle' : 'fas fa-info-circle'" />
+                {{ reconciliation.amountMatched ? '출고분 일치' : '출고분 차이(참고)' }}
+              </span>
+              <span class="recon-cell">원계약 <b>{{ formatCurrency(reconciliation.originalTotalAmount) }}</b></span>
+              <span class="recon-cell">실출하 <b>{{ formatCurrency(reconciliation.actualTotalAmount) }}</b></span>
+              <span class="recon-cell">차액
+                <b :class="reconciliation.amountDifference === 0 ? '' : (reconciliation.amountDifference > 0 ? 'text-additional' : 'text-minus')">
+                  {{ reconciliation.amountDifference > 0 ? '+' : '' }}{{ formatCurrency(reconciliation.amountDifference) }}
+                </b>
+              </span>
+            </div>
+            <div class="items-table-wrapper">
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2">품목</th>
+                    <th rowspan="2" class="text-right" style="width: 80px;">단가</th>
+                    <th rowspan="2" class="text-right" style="width: 80px;">원가</th>
+                    <th colspan="2" class="grp-orig">원거래내역 (원계약)</th>
+                    <th colspan="5" class="grp-actual">실거래내역 (실출하)</th>
+                  </tr>
+                  <tr>
+                    <th class="text-right grp-orig" style="width: 90px;">원계약 수량</th>
+                    <th class="text-right grp-orig" style="width: 110px;">원계약 금액</th>
+                    <th class="text-right grp-actual" style="width: 90px;">출고예정 수량</th>
+                    <th class="text-right grp-actual" style="width: 90px;">실출하 수량</th>
+                    <th class="text-right grp-actual" style="width: 110px;">실출하 금액</th>
+                    <th class="text-right grp-actual" style="width: 110px;">차액</th>
+                    <th class="grp-actual" style="width: 120px;">구분·관계</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="it in reconciliation.items" :key="it.skuId">
+                    <td>{{ it.skuName || it.itemName || it.skuId }}</td>
+                    <td class="text-right">{{ it.unitPrice != null ? formatCurrency(it.unitPrice) : '-' }}</td>
+                    <td class="text-right">{{ it.costPrice != null ? formatCurrency(it.costPrice) : '-' }}</td>
+                    <td class="text-right">{{ it.originalQuantity != null ? formatNumber(it.originalQuantity) : '-' }}</td>
+                    <td class="text-right">{{ it.originalAmount != null ? formatCurrency(it.originalAmount) : '-' }}</td>
+                    <td class="text-right">{{ it.pendingQuantity != null && it.pendingQuantity > 0 ? formatNumber(it.pendingQuantity) : '-' }}</td>
+                    <td class="text-right">{{ it.actualQuantity != null ? formatNumber(it.actualQuantity) : '-' }}</td>
+                    <td class="text-right">{{ it.actualAmount != null ? formatCurrency(it.actualAmount) : '-' }}</td>
+                    <td class="text-right">
+                      <span v-if="it.amountDifference == null" class="text-muted">-</span>
+                      <span v-else :class="it.amountDifference === 0 ? '' : (it.amountDifference > 0 ? 'text-additional' : 'text-minus')">
+                        {{ it.amountDifference > 0 ? '+' : '' }}{{ formatCurrency(it.amountDifference) }}
+                      </span>
+                    </td>
+                    <td>
+                      <span v-if="reconPrimaryBadge(it)" class="ct-badge" :class="reconBadgeClass(it)">
+                        {{ reconPrimaryBadge(it) }}
+                      </span>
+                      <div v-if="it.mergeRole" class="merge-rel">
+                        {{ mergeRelText(it) }}
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="recon-note">
+              ※ 출고(완료)된 출하수량 기준 참고 비교입니다. 청구·납품완료는 원계약 수량·금액으로 진행됩니다. (미출고 품목은 비교 제외)
+              <span v-if="!reconciliation.amountMatched"> 짝수 포장 반올림·대체로 출고량이 원계약과 다를 수 있습니다(참고).</span>
+            </p>
           </div>
         </FormSection>
       </form>
@@ -633,6 +710,8 @@ import InventoryShortageModal from '~/components/shipment/InventoryShortageModal
 import { dispatchRequestService } from '~/services/dispatch-request.service'
 import type { DispatchRequest, InventoryStatusResponse } from '~/types/dispatch-request'
 import { DISPATCH_STATUS_LABELS, DISPATCH_STATUS_COLORS } from '~/types/dispatch-request'
+import { getDeliveryDoneByOrderId, getAmountReconciliation } from '~/services/delivery-done.service'
+import type { AmountReconciliation, AmountReconciliationItem } from '~/types/delivery-done'
 
 definePageMeta({
   layout: 'admin',
@@ -659,6 +738,51 @@ interface OrderItem extends ShipmentItemWithOrder {
 // 원본 데이터 저장
 const shipmentData = ref<ShipmentDetailWithOrder | null>(null)
 const items = ref<OrderItem[]>([])
+
+// 원계약↔실출하 금액 정합 비교 (저장된 delivery_done 기준)
+const reconciliation = ref<AmountReconciliation | null>(null)
+
+// 금액 정합 비교 — 구분·관계 배지 라벨/클래스 (대체/합지=관계 라벨, 신규 추가=merge 없는 ADDED)
+const reconPrimaryBadge = (it: AmountReconciliationItem): string => {
+  if (it.mergeRole) { return it.mergeType || '대체' }
+  const f = it.changeFlag
+  if (f === 'ADDED') { return '신규 추가' }
+  if (f === 'CHANGED') { return '출고 차이' }
+  if (f === 'SCHEDULED') { return '출고예정' }
+  if (f === 'PENDING') { return '미출고' }
+  if (f === 'REMOVED') { return '대체 차감' }
+  return ''
+}
+const reconBadgeClass = (it: AmountReconciliationItem): string => {
+  if (it.mergeRole) { return it.mergeType === '합지' ? 'ct-merge' : 'ct-amendment' }
+  const f = it.changeFlag
+  if (f === 'ADDED') { return 'ct-additional' }
+  if (f === 'SCHEDULED') { return 'ct-scheduled' }
+  if (f === 'PENDING') { return 'ct-muted' }
+  return 'ct-amendment'
+}
+const mergeRelText = (it: AmountReconciliationItem): string => {
+  if (!it.mergeRole) { return '' }
+  const names = (it.mergeCounterparts || []).join(', ')
+  const arrow = it.mergeRole === 'TARGET' ? '←' : '→'
+  const qty = (it.mergeRole === 'TARGET' && it.mergeQuantity != null) ? ` (${formatNumber(it.mergeQuantity)})` : ''
+  return `${arrow} ${names}${qty}`
+}
+
+// 발주 ID로 금액 정합 비교 로드 (실패해도 본문 표시)
+const loadReconciliation = async (orderId: number) => {
+  try {
+    const dd = await getDeliveryDoneByOrderId(orderId)
+    if (dd && dd.deliveryDoneId) {
+      reconciliation.value = await getAmountReconciliation(dd.deliveryDoneId)
+    } else {
+      reconciliation.value = null
+    }
+  } catch (reconError) {
+    console.error('금액 정합 비교 조회 실패:', reconError)
+    reconciliation.value = null
+  }
+}
 
 // 수량 입력 시 원래 값 저장 (validation 실패 시 복원용)
 const originalQuantities = ref<Map<string, number>>(new Map())
@@ -708,6 +832,9 @@ const {
 
       console.log('[출하 수정] 데이터 검증 완료')
       shipmentData.value = data
+
+      // 원계약↔실출하 금액 정합 비교 로드 (저장 기준, 비차단)
+      loadReconciliation(data.orderId)
 
       // 품목 데이터 매핑
       // 서버에서 받은 수량 정보를 그대로 사용:
@@ -932,25 +1059,36 @@ const totalBgradeCostAdjustment = computed(() => {
   }, 0) || 0
 })
 
-// 비고(remarks)에서 합지 배지 정보 추출 (SKU ID 포함)
-const getRemarksBadges = (remarks: string | null | undefined): { label: string; color: string }[] => {
+// 비고(remarks)에서 합지/대체 배지 정보 추출 (SKU ID 포함)
+const getRemarksBadges = (item: any): { label: string; color: string }[] => {
+  const remarks: string | null | undefined = item?.remarks
   if (!remarks) { return [] }
 
-  // 합지 타겟 품목 (합지 결과물): "에서 이전" 또는 "에서 합지됨/병합됨" 또는 "추가 합지/병합" 포함
-  if (remarks.includes('에서 이전') || remarks.includes('에서 합지됨') || remarks.includes('에서 병합됨') || remarks.includes('추가 합지') || remarks.includes('추가 병합')) {
+  // 대체(품목 대체)는 '대체' 키워드로 구분, 그 외는 기존 '합지'
+  const word = remarks.includes('대체') ? '대체' : '합지'
+
+  // 타겟 품목 (결과물): "에서 이전" 또는 "에서 합지됨/병합됨/대체됨" 또는 "추가 합지/병합/대체" 포함
+  if (remarks.includes('에서 이전') || remarks.includes('에서 합지됨') || remarks.includes('에서 병합됨') || remarks.includes('에서 대체됨') || remarks.includes('추가 합지') || remarks.includes('추가 병합') || remarks.includes('추가 대체')) {
     // SKU ID 추출: "24547483, 24547485에서" 패턴
     const match = remarks.match(/([\d,\s]+)에서/)
     const skuIds = match ? match[1].trim() : ''
-    return [{ label: skuIds ? `합지 ← ${skuIds}` : '합지', color: '#3b82f6' }]
+    // 대체수량(목적지 증가분) = 이 행의 출하수량. ㎡ + 매(㎡÷2, 2㎡=1장) 병기.
+    const addQty = Number(item?.shippingQuantity ?? 0)
+    const qtyStr = addQty > 0 ? ` (+${formatQuantity(addQty)}㎡·${Math.round(addQty / 2)}매)` : ''
+    return [{ label: (skuIds ? `${word} ← ${skuIds}` : word) + qtyStr, color: '#3b82f6' }]
   }
 
-  // 합지 소스 품목 (원본): "로" + ("이전" 또는 "합지됨/병합됨") 포함
-  if ((remarks.includes('이전') || remarks.includes('합지됨') || remarks.includes('병합됨')) &&
+  // 소스 품목 (원본): "로" + ("이전" 또는 "합지됨/병합됨/대체됨") 포함
+  if ((remarks.includes('이전') || remarks.includes('합지됨') || remarks.includes('병합됨') || remarks.includes('대체됨')) &&
       (remarks.includes('로 ') || remarks.includes('로\n'))) {
     // SKU ID 추출: "24547481로" 패턴
     const match = remarks.match(/(\d+)로/)
     const skuId = match ? match[1] : ''
-    return [{ label: skuId ? `합지소스 → ${skuId}` : '합지 소스', color: '#8b5cf6' }]
+    // 차감수량 추출: "...로 10 이전" / "...로 10개 합지됨" 패턴의 숫자. ㎡ + 매(㎡÷2) 병기.
+    const qtyMatch = remarks.match(/로\s*([\d.]+)\s*개?\s*(?:이전|합지됨|병합됨|대체됨)/)
+    const deductQty = qtyMatch ? Number(qtyMatch[1]) : 0
+    const qtyStr = deductQty > 0 ? ` (−${formatQuantity(deductQty)}㎡·${Math.round(deductQty / 2)}매)` : ''
+    return [{ label: (skuId ? `${word}소스 → ${skuId}` : `${word} 소스`) + qtyStr, color: '#8b5cf6' }]
   }
 
   return []
@@ -1664,5 +1802,127 @@ const handleDelete = async () => {
 .bgrade-cost-value {
   color: #dc2626;
   font-weight: 600;
+}
+
+/* 원계약↔실출하 금액 정합 비교 */
+.recon-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.recon-ok {
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+}
+
+.recon-warn {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+
+.recon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.recon-ok .recon-badge {
+  color: #059669;
+}
+
+.recon-warn .recon-badge {
+  color: #b45309;
+}
+
+.recon-info {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+}
+
+.recon-info .recon-badge {
+  color: #1d4ed8;
+}
+
+.text-muted {
+  color: #9ca3af;
+}
+
+.ct-muted {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.ct-scheduled {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ct-merge {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+/* 대조 뷰 컬럼그룹 헤더 (원거래/실거래 구분) */
+.grp-orig {
+  background: #f0f9ff;
+  border-bottom: 2px solid #7dd3fc;
+}
+
+.grp-actual {
+  background: #f0fdf4;
+  border-bottom: 2px solid #86efac;
+}
+
+/* 대체/합지 관계 라벨 */
+.merge-rel {
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  color: #6d28d9;
+  white-space: nowrap;
+}
+
+.recon-cell b {
+  margin-left: 0.25rem;
+}
+
+.recon-note {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.text-additional {
+  color: #059669;
+}
+
+.text-minus {
+  color: #dc2626;
+}
+
+.ct-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ct-amendment {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.ct-additional {
+  background: #ffedd5;
+  color: #c2410c;
 }
 </style>

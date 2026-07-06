@@ -268,6 +268,25 @@
                 품목 추가
               </button>
             </div>
+            <!-- 대체 누적 차액 미리보기 (저장 전 균형 확인용) -->
+            <div
+              v-if="replaceSummary.count > 0"
+              class="replace-summary-banner"
+              :class="replaceSummary.diff === 0 ? 'rs-ok' : 'rs-warn'"
+            >
+              <span class="rs-badge">
+                <i :class="replaceSummary.diff === 0 ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'" />
+                대체 누적 ({{ replaceSummary.count }}건)
+              </span>
+              <span class="rs-cell">차감 합계 <b>{{ formatCurrency(replaceSummary.totalDeduct) }}</b></span>
+              <span class="rs-cell">대체 합계 <b>{{ formatCurrency(replaceSummary.totalAdd) }}</b></span>
+              <span class="rs-cell">차액
+                <b :class="replaceSummary.diff === 0 ? '' : (replaceSummary.diff > 0 ? 'text-additional' : 'text-minus')">
+                  {{ replaceSummary.diff > 0 ? '+' : '' }}{{ formatCurrency(replaceSummary.diff) }}
+                </b>
+              </span>
+              <span v-if="replaceSummary.diff !== 0" class="rs-note">차액 0이 되도록 대체수량 조정 권장 (저장은 가능)</span>
+            </div>
             <div class="items-table-wrapper">
               <table class="items-table">
                 <thead>
@@ -314,8 +333,8 @@
                     <th style="width: 120px">
                       비고
                     </th>
-                    <th style="width: 50px">
-                      삭제
+                    <th style="width: 80px">
+                      관리
                     </th>
                   </tr>
                 </thead>
@@ -392,8 +411,24 @@
                       </template>
                     </td>
                     <td class="text-center">
-                      <!-- 발주 품목은 삭제 불가 (추가수량이 있는 경우만 추가수량 취소 가능) -->
-                      <span class="text-muted" title="발주 품목은 삭제할 수 없습니다">-</span>
+                      <!-- 품목 대체: 잔여수량 일부를 다른 품목으로 이전 -->
+                      <button
+                        type="button"
+                        class="btn-replace"
+                        title="품목 대체 (잔여수량을 다른 품목으로 이전)"
+                        :disabled="getCalculatedRemainingQuantity(item) <= 0"
+                        @click="openReplaceModal(item)"
+                      >
+                        <i class="fas fa-exchange-alt" />
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-remove"
+                        title="삭제"
+                        @click="removeOrderItem(item.skuId)"
+                      >
+                        <i class="fas fa-trash-alt" />
+                      </button>
                     </td>
                   </tr>
                   <!-- 신규 추가 품목 -->
@@ -548,6 +583,28 @@
       @skip="handleMergeSkip"
     />
 
+    <!-- 품목 대체 모달 -->
+    <ItemReplaceModal
+      v-if="replaceSource"
+      :is-open="showReplaceModal"
+      :source="{
+        skuId: replaceSource.skuId,
+        itemName: replaceSource.itemName,
+        skuName: replaceSource.skuName,
+        specification: replaceSource.specification,
+        unit: replaceSource.unit,
+        unitPrice: replaceSource.unitPrice
+      }"
+      :max-deduct-quantity="getCalculatedRemainingQuantity(replaceSource)"
+      :destination-options="selectedOrderItems
+        .filter(i => i.skuId !== replaceSource.skuId
+          && !(i.mergeSourceSkuIds && i.mergeSourceSkuIds.length > 0))
+        .map(i => ({ skuId: i.skuId, skuName: i.skuName, itemName: i.itemName, unitPrice: i.unitPrice }))"
+      :existing-sku-ids="[...selectedOrderItems.map(i => i.skuId), ...newItems.map(i => i.skuId)]"
+      @close="handleReplaceClose"
+      @confirm="handleReplaceConfirm"
+    />
+
     <!-- 모바일 납품요청 사이드 드로어 (modeless — 품목추가 모달과 공존 가능) -->
     <RelatedOrderRequestsDrawer
       :open="showRelatedDrawer"
@@ -564,6 +621,7 @@ import { useRouter } from '#imports'
 import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
 import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
 import ItemMergeSelectModal from '~/components/shipment/ItemMergeSelectModal.vue'
+import ItemReplaceModal from '~/components/shipment/ItemReplaceModal.vue'
 import type { OrderDetailResponse } from '~/types/order'
 import type { Item, ItemSku } from '~/services/item.service'
 import { shipmentService } from '~/services/shipment.service'
@@ -611,6 +669,7 @@ interface OrderItem {
   remainingQuantity: number
   unitPrice: number
   amount: number
+  additionalQuantity?: number // 추가수량
   deliveryLocation?: string
   deliveryDeadline?: string
   deliveryTerms?: string
@@ -623,6 +682,8 @@ interface OrderItem {
   sortOrder?: number
   orderId: number
   orderItemId: string
+  mergeSourceSkuIds?: string[] // 합지/대체 출처 SKU ID 목록 (목적지 B에 설정)
+  mergeSourceQuantity?: number // 대체 시 출처에서 차감할 수량 (대체수량과 다를 수 있음)
 }
 
 // 신규 추가 품목 인터페이스
@@ -640,16 +701,21 @@ interface NewItem {
   quantity?: number // 병합 시 발주수량
   shippedQuantity?: number // 병합 시 기출하 (0)
   remainingQuantity?: number // 병합 시 잔여수량
-  mergeSourceSkuIds?: string[] // 병합 출처 SKU ID 목록
+  additionalQuantity?: number // 추가수량
+  mergeSourceSkuIds?: string[] // 병합/대체 출처 SKU ID 목록
+  mergeSourceQuantity?: number // 대체 시 출처에서 차감할 수량 (대체수량과 다를 수 있음)
 }
 
-// 합지 그룹 추적
+// 합지/대체 그룹 추적
 interface MergeGroupInfo {
   id: string // 고유 ID
-  targetSkuId: string // 합지 결과 품목 SKU ID
-  targetSkuName: string // 합지 결과 SKU 품명
+  targetSkuId: string // 합지/대체 결과 품목 SKU ID
+  targetSkuName: string // 합지/대체 결과 SKU 품명
   sources: { skuId: string; skuName: string; amount: number }[]
   colorIndex: number // 색상 인덱스 (0~4)
+  op?: 'merge' | 'replace' // 작업 구분 (대체 누적 차액 집계용)
+  deductAmount?: number // 대체: 출처 차감 금액 (단가A × 차감수량)
+  addAmount?: number // 대체: 목적지 추가 금액 (단가B × 대체수량)
 }
 
 const MERGE_GROUP_COLORS = [
@@ -780,49 +846,65 @@ const handleSkuSelected = (item: Item, sku: ItemSku) => {
   }
 }
 
-// 기존 발주 품목 삭제 (합지 관계 체크)
+// 기존 발주 품목 삭제 (합지/대체 관계 체크 — 소스이든 목적지이든 원복)
 const removeOrderItem = (skuId: string) => {
   const index = selectedOrderItems.value.findIndex(i => i.skuId === skuId)
   if (index === -1) { return }
 
-  // 합지 그룹에 속해 있는지 확인
+  // 이 품목이 소스 또는 목적지로 관여한 합지/대체 그룹
   const relatedGroups = mergeGroups.value.filter(g =>
-    g.sources.some(s => s.skuId === skuId)
+    g.targetSkuId === skuId || g.sources.some(s => s.skuId === skuId)
   )
 
   if (relatedGroups.length > 0) {
     const groupNames = relatedGroups.map(g => g.targetSkuName).join(', ')
-    if (!confirm(`이 품목은 합지 그룹에 속해 있습니다 (→ ${groupNames}).\n삭제하면 관련 합지도 해제됩니다. 계속하시겠습니까?`)) {
+    if (!confirm(`이 품목은 합지/대체 관계에 있습니다 (${groupNames}).\n삭제하면 관련 합지/대체가 해제되고 수량이 복구됩니다. 계속하시겠습니까?`)) {
       return
     }
 
-    // 관련 합지 그룹의 타겟 품목(신규) 삭제 + 다른 소스 품목 수량 복구
     relatedGroups.forEach((group) => {
-      // 타겟 신규 품목 삭제
-      const targetIdx = newItems.value.findIndex(ni => ni.skuId === group.targetSkuId)
-      if (targetIdx !== -1) {
-        const targetItem = newItems.value[targetIdx]
-        const mergeAmount = targetItem.quantity || 0
-
-        // 다른 소스 품목들의 수량 복구 (삭제 대상 제외)
-        group.sources.forEach((source) => {
-          if (source.skuId === skuId) { return } // 삭제 대상은 스킵
-          const srcIdx = selectedOrderItems.value.findIndex(i => i.skuId === source.skuId)
-          if (srcIdx !== -1) {
-            const srcItem = selectedOrderItems.value[srcIdx]
-            selectedOrderItems.value[srcIdx] = {
-              ...srcItem,
-              quantity: srcItem.quantity + source.amount,
-              remainingQuantity: srcItem.remainingQuantity + source.amount,
-              remark: undefined
-            }
+      // 1) 목적지 되돌리기
+      const newTargetIdx = newItems.value.findIndex(ni => ni.skuId === group.targetSkuId)
+      if (newTargetIdx !== -1) {
+        // 신규 목적지(합지/대체-신규B): 신규 품목 제거
+        newItems.value.splice(newTargetIdx, 1)
+      } else if (group.targetSkuId !== skuId) {
+        // 기존 목적지(대체-기존B): 더해줬던 수량만큼 되돌림 (삭제 대상 자신이면 어차피 splice되므로 스킵)
+        const tIdx = selectedOrderItems.value.findIndex(i => i.skuId === group.targetSkuId)
+        if (tIdx !== -1) {
+          const t = selectedOrderItems.value[tIdx]
+          // 대체 추가수량 = addAmount / 단가 (대체는 차감≠추가 가능), 합지/누락 시 차감수량 합으로 폴백
+          const addQuantity = (group.op === 'replace' && t.unitPrice)
+            ? (group.addAmount || 0) / t.unitPrice
+            : group.sources.reduce((s, src) => s + src.amount, 0)
+          selectedOrderItems.value[tIdx] = {
+            ...t,
+            quantity: t.quantity - addQuantity,
+            remainingQuantity: t.remainingQuantity - addQuantity,
+            shippingQuantity: Math.max(0, (t.shippingQuantity || 0) - addQuantity),
+            mergeSourceSkuIds: undefined,
+            mergeSourceQuantity: undefined,
+            remark: undefined
           }
-        })
-
-        newItems.value.splice(targetIdx, 1)
+        }
       }
 
-      // 합지 그룹 제거
+      // 2) 소스 수량 복구 (삭제 대상 제외 — 삭제 대상은 어차피 splice)
+      group.sources.forEach((source) => {
+        if (source.skuId === skuId) { return }
+        const srcIdx = selectedOrderItems.value.findIndex(i => i.skuId === source.skuId)
+        if (srcIdx !== -1) {
+          const srcItem = selectedOrderItems.value[srcIdx]
+          selectedOrderItems.value[srcIdx] = {
+            ...srcItem,
+            quantity: srcItem.quantity + source.amount,
+            remainingQuantity: srcItem.remainingQuantity + source.amount,
+            remark: undefined
+          }
+        }
+      })
+
+      // 3) 그룹 제거
       const gIdx = mergeGroups.value.findIndex(g => g.id === group.id)
       if (gIdx !== -1) { mergeGroups.value.splice(gIdx, 1) }
     })
@@ -852,10 +934,11 @@ const removeNewItem = (skuId: string) => {
       const srcIdx = selectedOrderItems.value.findIndex(i => i.skuId === sourceSkuId)
       if (srcIdx !== -1) {
         const srcItem = selectedOrderItems.value[srcIdx]
-        // 그룹에서 차감량 조회, 없으면 합지 품목의 quantity 사용
+        // 그룹에서 차감량 조회, 없으면 대체수량(mergeSourceQuantity) → 합지 quantity 순으로 폴백
+        // (대체 품목은 quantity=0 이므로 mergeSourceQuantity 기반 복구가 필수)
         const deductionAmount = group
           ? (group.sources.find(s => s.skuId === sourceSkuId)?.amount || 0)
-          : (item.quantity || 0)
+          : (item.mergeSourceQuantity ?? item.quantity ?? 0)
 
         selectedOrderItems.value[srcIdx] = {
           ...srcItem,
@@ -945,7 +1028,8 @@ const handleMergeConfirm = (result: MergeResult) => {
     sources: result.deductions.map(d => ({
       skuId: d.skuId, skuName: d.skuName, amount: d.amount
     })),
-    colorIndex: mergeGroups.value.length % MERGE_GROUP_COLORS.length
+    colorIndex: mergeGroups.value.length % MERGE_GROUP_COLORS.length,
+    op: 'merge'
   })
 
   showMergeModal.value = false
@@ -973,6 +1057,125 @@ const handleMergeSkip = (quantity?: number) => {
 const handleMergeClose = () => {
   showMergeModal.value = false
   pendingNewItem.value = null
+}
+
+// ===== 품목 대체 (출처 A 잔여수량 일부를 다른 품목 B로 이전) =====
+const showReplaceModal = ref(false)
+const replaceSource = ref<OrderItem | null>(null)
+
+// 신규 SKU 목적지 정보
+interface ReplaceNewDestination {
+  skuId: string
+  itemId: string
+  itemName: string
+  skuName: string
+  specification: string
+  unit: string
+  unitPrice: number
+}
+
+// 대체 결과 인터페이스
+interface ReplaceResult {
+  sourceSkuId: string
+  deductQuantity: number
+  destinationMode: 'existing' | 'new'
+  destination: string | ReplaceNewDestination
+  addQuantity: number
+}
+
+// 대체 모달 열기
+const openReplaceModal = (item: OrderItem) => {
+  replaceSource.value = item
+  showReplaceModal.value = true
+}
+
+// 대체 모달 닫기
+const handleReplaceClose = () => {
+  showReplaceModal.value = false
+  replaceSource.value = null
+}
+
+// 대체 확인 핸들러
+const handleReplaceConfirm = (result: ReplaceResult) => {
+  const srcIndex = selectedOrderItems.value.findIndex(i => i.skuId === result.sourceSkuId)
+  if (srcIndex === -1) { return }
+  const src = selectedOrderItems.value[srcIndex]
+
+  // 목적지(B) 표시 정보
+  let destSkuId = ''
+  let destSkuName = ''
+  let destUnitPrice = 0
+
+  if (result.destinationMode === 'existing') {
+    // (a) 기존 발주 품목으로 이전 — 수량 증가 + 출처 정보 기록
+    destSkuId = result.destination as string
+    const destIndex = selectedOrderItems.value.findIndex(i => i.skuId === destSkuId)
+    if (destIndex === -1) { return }
+    const dest = selectedOrderItems.value[destIndex]
+    destSkuName = dest.skuName
+    destUnitPrice = dest.unitPrice || 0
+    selectedOrderItems.value[destIndex] = {
+      ...dest,
+      quantity: dest.quantity + result.addQuantity,
+      remainingQuantity: dest.remainingQuantity + result.addQuantity,
+      shippingQuantity: (dest.shippingQuantity || 0) + result.addQuantity,
+      // 단일 대체 = 단일 소스로 처리 (기존 합산하지 않음)
+      mergeSourceSkuIds: [src.skuId],
+      mergeSourceQuantity: result.deductQuantity,
+      remark: `대체: ${src.skuName}에서 이전`
+    }
+  } else {
+    // (b) 신규 SKU 로 이전 — 신규 품목 추가
+    const dest = result.destination as ReplaceNewDestination
+    destSkuId = dest.skuId
+    destSkuName = dest.skuName
+    destUnitPrice = dest.unitPrice || 0
+    newItems.value.push({
+      skuId: dest.skuId,
+      itemId: dest.itemId,
+      itemName: dest.itemName,
+      skuName: dest.skuName,
+      specification: dest.specification,
+      unit: dest.unit,
+      unitPrice: dest.unitPrice,
+      quantity: 0,
+      shippedQuantity: 0,
+      remainingQuantity: 0,
+      shippingQuantity: result.addQuantity, // 대체 = 전량 출하 자동 세팅
+      isNew: true,
+      mergeSourceSkuIds: [src.skuId],
+      mergeSourceQuantity: result.deductQuantity,
+      remark: `대체: ${src.skuName}에서 이전`
+    })
+  }
+
+  // 출처(A) 차감 — 발주수량/잔여수량 감소, 출하수량은 발주수량 초과 방지
+  const newQuantity = src.quantity - result.deductQuantity
+  const newRemainingQuantity = src.remainingQuantity - result.deductQuantity
+  const maxShippingQuantity = newQuantity - src.shippedQuantity
+  const newShippingQuantity = Math.min(src.shippingQuantity, Math.max(0, maxShippingQuantity))
+  selectedOrderItems.value[srcIndex] = {
+    ...src,
+    quantity: newQuantity,
+    remainingQuantity: newRemainingQuantity,
+    shippingQuantity: newShippingQuantity,
+    remark: `대체: ${destSkuName}로 ${result.deductQuantity} 이전`
+  }
+
+  // 시각화 그룹 등록 (amount = 차감수량) + 대체 누적 차액 집계용 금액 기록
+  mergeGroups.value.push({
+    id: String(Date.now()),
+    targetSkuId: destSkuId,
+    targetSkuName: destSkuName,
+    sources: [{ skuId: src.skuId, skuName: src.skuName, amount: result.deductQuantity }],
+    colorIndex: mergeGroups.value.length % MERGE_GROUP_COLORS.length,
+    op: 'replace',
+    deductAmount: (src.unitPrice || 0) * result.deductQuantity,
+    addAmount: destUnitPrice * result.addQuantity
+  })
+
+  showReplaceModal.value = false
+  replaceSource.value = null
 }
 
 // 합지 그룹 헬퍼: SKU가 속한 합지 그룹들 조회
@@ -1034,7 +1237,10 @@ const {
         orderId: item.orderId,
         orderItemId: item.orderItemId,
         isNew: false,
-        itemMemo: item.remark || null
+        itemMemo: item.remark || null,
+        // 품목 대체: 기존 품목을 목적지로 이전받을 때(B) 소스 SKU 목록·차감수량 전달
+        mergeSourceSkuIds: item.mergeSourceSkuIds || null,
+        mergeSourceQuantity: item.mergeSourceQuantity ?? null
       }))
 
     // 신규 품목 중 수량이 있는 것 (출하수량 또는 추가수량)
@@ -1052,8 +1258,10 @@ const {
         amount: item.shippingQuantity * item.unitPrice,
         isNew: true,
         itemMemo: item.remark || null,
-        // 병합 출처 SKU ID 목록 (병합된 품목인 경우에만)
-        mergeSourceSkuIds: item.mergeSourceSkuIds || null
+        // 병합 출처 SKU ID 목록 (병합/대체된 품목인 경우에만)
+        mergeSourceSkuIds: item.mergeSourceSkuIds || null,
+        // 품목 대체: 소스 차감수량(대체수량과 다를 수 있음)
+        mergeSourceQuantity: item.mergeSourceQuantity ?? null
       }))
 
     const allItems = [...existingItems, ...newShippingItems]
@@ -1293,6 +1501,19 @@ const totalAmount = computed(() => {
   return existingTotal + newTotal
 })
 
+// 대체 누적 차액 미리보기 (이번 세션 대체 작업만 집계 — 저장 전 균형 확인용)
+const replaceSummary = computed(() => {
+  const replaceOps = mergeGroups.value.filter(g => g.op === 'replace')
+  const totalDeduct = replaceOps.reduce((sum, g) => sum + (g.deductAmount || 0), 0)
+  const totalAdd = replaceOps.reduce((sum, g) => sum + (g.addAmount || 0), 0)
+  return {
+    count: replaceOps.length,
+    totalDeduct,
+    totalAdd,
+    diff: totalAdd - totalDeduct
+  }
+})
+
 // 현장담당자 선택 시 건설사 자동 설정 (composable)
 setupBuilderAutoSet(formData)
 
@@ -1512,6 +1733,26 @@ const handleSubmit = async () => {
   background: #fee2e2;
 }
 
+/* 품목 대체 버튼 */
+.btn-replace {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.btn-replace:hover:not(:disabled) {
+  background: #eff6ff;
+}
+
+.btn-replace:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
 /* 품목 추가 버튼 */
 .btn-add-item {
   display: inline-flex;
@@ -1596,5 +1837,51 @@ const handleSubmit = async () => {
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 대체 누적 차액 미리보기 배너 */
+.replace-summary-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.625rem 1rem;
+  margin: 0.5rem 0;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.rs-ok {
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+}
+
+.rs-warn {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+
+.rs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.rs-ok .rs-badge {
+  color: #059669;
+}
+
+.rs-warn .rs-badge {
+  color: #b45309;
+}
+
+.rs-cell b {
+  margin-left: 0.25rem;
+}
+
+.rs-note {
+  font-size: 0.8rem;
+  color: #b45309;
 }
 </style>
