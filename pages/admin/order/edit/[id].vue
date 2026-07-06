@@ -365,6 +365,15 @@
                       <button
                         class="btn-pdf-sm"
                         :disabled="!payment.baselineId"
+                        title="공문(갑지)"
+                        @click="viewCoverPdf(payment.baselineId)"
+                      >
+                        <i class="fas fa-file-pdf" />
+                        공문
+                      </button>
+                      <button
+                        class="btn-pdf-sm"
+                        :disabled="!payment.baselineId"
                         title="납품확인서"
                         @click="viewConfirmationPdf(payment.baselineId)"
                       >
@@ -379,6 +388,15 @@
                       >
                         <i class="fas fa-images" />
                         사진대지
+                      </button>
+                      <button
+                        class="btn-pdf-sm"
+                        :disabled="!payment.baselineId"
+                        title="납품확인서·사진대지를 최신 양식으로 재생성"
+                        @click="regenerateBaselinePdfs(payment.baselineId)"
+                      >
+                        <i class="fas fa-redo" />
+                        재생성
                       </button>
                     </div>
                   </td>
@@ -854,11 +872,39 @@ const getOrderStatusLabel = (status?: string): string => {
   }
 }
 
-// PDF 보기 - 납품확인서
+// PDF 보기 - 갑지(공문). 수신자명 즉석 입력(입력 시 발주에 저장).
+const viewCoverPdf = (baselineId: number) => {
+  const defaultRecipient = orderData.value?.recipientName
+    || (orderData.value?.client ? `${orderData.value.client} 분임재무관 귀하` : '')
+  const input = window.prompt('공문 수신자명 (입력하면 발주에 저장됩니다)', defaultRecipient)
+  if (input === null) { return } // 취소
+  let url = baselineService.getCoverPdfUrl(baselineId)
+  if (input.trim()) {
+    url += `?recipientName=${encodeURIComponent(input.trim())}`
+  }
+  currentPdfUrl.value = url
+  currentPdfFileName.value = `공문_${baselineId}.pdf`
+  showPdfModal.value = true
+}
+
+// PDF 보기 - 납품확인서 (캐시버스터로 재생성 직후 최신본 보장)
 const viewConfirmationPdf = (baselineId: number) => {
-  currentPdfUrl.value = baselineService.getConfirmationPdfUrl(baselineId)
+  currentPdfUrl.value = `${baselineService.getConfirmationPdfUrl(baselineId)}?_t=${Date.now()}`
   currentPdfFileName.value = `납품확인서_${baselineId}.pdf`
   showPdfModal.value = true
+}
+
+// 기성청구 PDF 재생성 - 최신 양식(gov)으로 납품확인서·사진대지 다시 생성
+const regenerateBaselinePdfs = async (baselineId: number) => {
+  if (!window.confirm('납품확인서·사진대지를 최신 양식으로 다시 생성합니다. 진행할까요?')) { return }
+  try {
+    await baselineService.generatePdfs(baselineId)
+    alert('재생성이 완료되었습니다. 납품확인서를 다시 확인하세요.')
+    viewConfirmationPdf(baselineId)
+  } catch (error) {
+    console.error('기성청구 PDF 재생성 실패:', error)
+    alert('PDF 재생성에 실패했습니다.')
+  }
 }
 
 // PDF 보기 - 사진대지

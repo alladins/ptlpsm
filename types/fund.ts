@@ -250,6 +250,8 @@ export interface ProgressPaymentRequest extends BaseEntity {
   netPaymentAmount?: number
   /** 지급 유형 (PROGRESS: 기성금, BALANCE: 잔금) */
   paymentType?: string
+  /** 발주 출하횟수 (delivery_done.total_delivery_count) — 납품내역서 노출 조건용 */
+  shipmentCount?: number
 }
 
 /**

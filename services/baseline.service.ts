@@ -549,6 +549,15 @@ export const baselineService = {
   },
 
   /**
+   * 갑지(공문) PDF URL 반환
+   * @param baselineId - 차수 ID
+   * @returns PDF 다운로드 URL
+   */
+  getCoverPdfUrl(baselineId: number): string {
+    return BASELINE_ENDPOINTS.coverPdf(baselineId)
+  },
+
+  /**
    * 납품확인서 PDF URL 반환
    * @param baselineId - 차수 ID
    * @returns PDF 다운로드 URL
@@ -567,12 +576,97 @@ export const baselineService = {
   },
 
   /**
+   * 기성금청구 상세내역서 PDF URL 반환
+   * @param baselineId - 차수 ID
+   * @returns PDF 다운로드 URL
+   */
+  getBaselineDetailsPdfUrl(baselineId: number): string {
+    return BASELINE_ENDPOINTS.baselineDetailsPdf(baselineId)
+  },
+
+  /**
+   * 납품내역서 PDF URL 반환 (품목 × 납품일자 매트릭스)
+   * @param baselineId - 차수 ID
+   * @returns PDF 다운로드 URL
+   */
+  getDeliveryStatementPdfUrl(baselineId: number): string {
+    return BASELINE_ENDPOINTS.deliveryStatementPdf(baselineId)
+  },
+
+  /**
    * 전체 PDF ZIP 다운로드 URL 반환
    * @param baselineId - 차수 ID
    * @returns ZIP 다운로드 URL
    */
   getDownloadAllPdfUrl(baselineId: number): string {
     return BASELINE_ENDPOINTS.downloadAllPdf(baselineId)
+  },
+
+  /**
+   * 기성 차수 전체 PDF ZIP 다운로드 (공문·납품확인서·기성금청구내역·사진대지·납품내역서)
+   * - 인증 토큰 필요 → fetch + blob 방식으로 다운로드 트리거
+   * @param baselineId - 차수 ID
+   * @param recipientName - 공문 수신자명 즉석 입력값(선택)
+   */
+  async downloadAllPdfs(baselineId: number, recipientName?: string): Promise<void> {
+    let url = this.getDownloadAllPdfUrl(baselineId)
+    if (recipientName && recipientName.trim()) {
+      url += `?recipientName=${encodeURIComponent(recipientName.trim())}`
+    }
+
+    const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || `일괄 다운로드 실패: ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = `기성_${baselineId}.zip`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+  },
+
+  /**
+   * 합지 PDF 다운로드 URL 반환
+   * @param baselineId - 차수 ID
+   * @returns 합지 PDF 다운로드 URL
+   */
+  getDownloadMergedPdfUrl(baselineId: number): string {
+    return BASELINE_ENDPOINTS.downloadMergedPdf(baselineId)
+  },
+
+  /**
+   * 기성 차수 전체 PDF 합지 다운로드 (공문+납품확인서+기성금청구내역+사진대지+납품내역서 → 단일 PDF)
+   * - 인증 토큰 필요 → fetch + blob 방식으로 다운로드 트리거
+   * @param baselineId - 차수 ID
+   * @param recipientName - 공문 수신자명 즉석 입력값(선택)
+   */
+  async downloadMergedPdf(baselineId: number, recipientName?: string): Promise<void> {
+    let url = this.getDownloadMergedPdfUrl(baselineId)
+    if (recipientName && recipientName.trim()) {
+      url += `?recipientName=${encodeURIComponent(recipientName.trim())}`
+    }
+
+    const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || `합지 다운로드 실패: ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = `기성_${baselineId}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
   },
 
   // ============ 서명 관련 메서드 ============

@@ -268,10 +268,18 @@
           :has-advance-payment="hasAdvancePayment"
           :can-request-progress="canRequestProgress"
           :progress-button-tooltip="getProgressButtonTooltip()"
+          :client-name="fundDetail?.client || fundDetail?.builderCompanyName || ''"
+          :order-id="fundDetail?.orderId"
           @open-modal="openProgressPaymentModal"
           @open-collection-confirm="(payment) => openCollectionConfirmModal('progress', payment)"
           @view-confirmation-pdf="viewConfirmationPdf"
+          @view-baseline-details-pdf="viewBaselineDetailsPdf"
+          @view-delivery-statement-pdf="viewDeliveryStatementPdf"
           @view-photo-sheet-pdf="viewPhotoSheetPdf"
+          @view-cover-pdf="viewCoverPdf"
+          @regenerate-pdfs="regenerateBaselinePdfs"
+          @download-all-pdfs="downloadAllBaselinePdfs"
+          @download-merged-pdf="downloadMergedBaselinePdf"
           @scan-uploaded="handleProgressPaymentSubmitted"
         />
 
@@ -563,7 +571,13 @@ const {
   downloadAdvancePdf,
   downloadAllAdvancePdfs,
   viewConfirmationPdf,
+  viewBaselineDetailsPdf,
+  viewDeliveryStatementPdf,
   viewPhotoSheetPdf,
+  viewCoverPdf,
+  regenerateBaselinePdfs,
+  downloadAllBaselinePdfs,
+  downloadMergedBaselinePdf,
   // 잔금 등록 모달
   showBalanceRegisterModal,
   balanceRegisterAmount,

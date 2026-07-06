@@ -262,7 +262,7 @@
                     <button
                       v-if="canResetItem(item)"
                       class="btn-action-small btn-danger-soft"
-                      title="서명·PDF 모두 초기화 (SYSTEM_ADMIN 전용)"
+                      title="서명·PDF 모두 초기화 (SYSTEM_ADMIN, 담당자)"
                       @click.stop="openResetModal(item)"
                     >
                       <i class="fas fa-undo" />
@@ -271,7 +271,7 @@
                     <button
                       v-if="canRegeneratePdfsItem(item)"
                       class="btn-action-small btn-info-soft"
-                      title="서명 보존하고 PDF 3종만 새 데이터로 재생성 (SYSTEM_ADMIN 전용)"
+                      title="서명 보존하고 PDF 3종만 새 데이터로 재생성 (SYSTEM_ADMIN, 담당자)"
                       @click.stop="openRegenerateModal(item)"
                     >
                       <i class="fas fa-redo" />
@@ -494,7 +494,6 @@ const selectedAdminItem = ref<DeliveryDoneListItem | null>(null)
 
 // 권한 (역할 기반)
 const authStore = useAuthStore()
-const isSystemAdmin = computed(() => authStore.role === 'SYSTEM_ADMIN')
 const canAdminAction = computed(() =>
   authStore.role === 'SYSTEM_ADMIN' || authStore.role === 'LEADPOWER_MANAGER'
 )
@@ -703,8 +702,8 @@ function canCompleteManually (item: DeliveryDoneListItem): boolean {
 }
 
 function canResetItem (item: DeliveryDoneListItem): boolean {
-  // 권한: SYSTEM_ADMIN 전용. SUBMITTED 는 제외.
-  if (!isSystemAdmin.value) { return false }
+  // 권한: SYSTEM_ADMIN + LEADPOWER_MANAGER(담당자). SUBMITTED 는 제외.
+  if (!canAdminAction.value) { return false }
   if (item.status === 'SUBMITTED') { return false }
   // 잔금 입금 완료 건은 회계 정합성 보호를 위해 차단 (백엔드 가드와 일치)
   if (item.isBalancePaid) { return false }
@@ -736,8 +735,8 @@ function openResetModal (item: DeliveryDoneListItem) {
 }
 
 function canRegeneratePdfsItem (item: DeliveryDoneListItem): boolean {
-  // 권한: SYSTEM_ADMIN 전용. SUBMITTED 는 제외. 잔금 가드 없음 (회계 컬럼 미수정).
-  if (!isSystemAdmin.value) { return false }
+  // 권한: SYSTEM_ADMIN + LEADPOWER_MANAGER(담당자). SUBMITTED 는 제외. 잔금 가드 없음 (회계 컬럼 미수정).
+  if (!canAdminAction.value) { return false }
   if (item.status === 'SUBMITTED') { return false }
   // PDF가 한 번이라도 만들어진 상태에서만 의미가 있음
   return item.status === 'COMPLETED' ||

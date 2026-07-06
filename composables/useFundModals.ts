@@ -114,10 +114,10 @@ export function useFundModals(options: UseFundModalsOptions) {
     }
   }
 
-  /** 납품확인서 PDF 보기 */
+  /** 납품확인서 PDF 보기 (캐시버스터로 재생성 직후 최신본 보장) */
   const viewConfirmationPdf = (baselineId: number | undefined) => {
     if (!baselineId) return
-    currentPdfUrl.value = baselineService.getConfirmationPdfUrl(baselineId)
+    currentPdfUrl.value = `${baselineService.getConfirmationPdfUrl(baselineId)}?_t=${Date.now()}`
     currentPdfFileName.value = `납품확인서_${baselineId}.pdf`
     showPdfModal.value = true
   }
@@ -128,6 +128,72 @@ export function useFundModals(options: UseFundModalsOptions) {
     currentPdfUrl.value = baselineService.getPhotoSheetPdfUrl(baselineId)
     currentPdfFileName.value = `사진대지_${baselineId}.pdf`
     showPdfModal.value = true
+  }
+
+  /** 기성금청구 상세내역서 PDF 보기 (품목 × 계약/금회/전회/잔여) */
+  const viewBaselineDetailsPdf = (baselineId: number | undefined) => {
+    if (!baselineId) return
+    currentPdfUrl.value = `${baselineService.getBaselineDetailsPdfUrl(baselineId)}?_t=${Date.now()}`
+    currentPdfFileName.value = `기성금청구내역_${baselineId}.pdf`
+    showPdfModal.value = true
+  }
+
+  /** 납품내역서 PDF 보기 (품목 × 납품일자 매트릭스, 출하 2회 이상) */
+  const viewDeliveryStatementPdf = (baselineId: number | undefined) => {
+    if (!baselineId) return
+    currentPdfUrl.value = `${baselineService.getDeliveryStatementPdfUrl(baselineId)}?_t=${Date.now()}`
+    currentPdfFileName.value = `납품내역서_${baselineId}.pdf`
+    showPdfModal.value = true
+  }
+
+  /** 공문(갑지) PDF 보기 — 수신자명은 화면 상단 입력값을 사용(입력 시 발주에 저장) */
+  const viewCoverPdf = (baselineId: number | undefined, recipientName?: string) => {
+    if (!baselineId) return
+    // 갑지는 매 요청 즉석 생성(항상 최신) — 브라우저 캐시만 캐시버스터로 회피
+    let url = `${baselineService.getCoverPdfUrl(baselineId)}?_t=${Date.now()}`
+    if (recipientName && recipientName.trim()) {
+      url += `&recipientName=${encodeURIComponent(recipientName.trim())}`
+    }
+    currentPdfUrl.value = url
+    currentPdfFileName.value = `공문_${baselineId}.pdf`
+    showPdfModal.value = true
+  }
+
+  /** 기성청구 PDF 재생성 — 최신 양식(gov)으로 납품확인서·사진대지 다시 생성 */
+  const regenerateBaselinePdfs = async (baselineId: number | undefined) => {
+    if (!baselineId) return
+    if (!window.confirm('납품확인서·사진대지를 최신 양식으로 다시 생성합니다. 진행할까요?')) return
+    try {
+      await baselineService.generatePdfs(baselineId)
+      alert('재생성이 완료되었습니다. 납품확인서를 다시 확인하세요.')
+      // 재생성 직후 캐시버스터로 새 납품확인서 즉시 표시
+      viewConfirmationPdf(baselineId)
+    } catch (error) {
+      console.error('기성청구 PDF 재생성 실패:', error)
+      alert('PDF 재생성에 실패했습니다.')
+    }
+  }
+
+  /** 기성 차수 전체 PDF 일괄 다운로드(ZIP) — 공문·납품확인서·기성금청구내역·사진대지·납품내역서 */
+  const downloadAllBaselinePdfs = async (baselineId: number | undefined, recipientName?: string) => {
+    if (!baselineId) return
+    try {
+      await baselineService.downloadAllPdfs(baselineId, recipientName)
+    } catch (error) {
+      console.error('기성 전체 PDF 다운로드 실패:', error)
+      alert(error instanceof Error ? error.message : '전체 PDF 다운로드에 실패했습니다.')
+    }
+  }
+
+  /** 기성 차수 전체 PDF 합지 다운로드(단일 PDF) — 공문+납품확인서+기성금청구내역+사진대지+납품내역서 */
+  const downloadMergedBaselinePdf = async (baselineId: number | undefined, recipientName?: string) => {
+    if (!baselineId) return
+    try {
+      await baselineService.downloadMergedPdf(baselineId, recipientName)
+    } catch (error) {
+      console.error('기성 합지 PDF 다운로드 실패:', error)
+      alert(error instanceof Error ? error.message : '합지 PDF 다운로드에 실패했습니다.')
+    }
   }
 
   // ============ 잔금 등록 모달 ============
@@ -390,7 +456,13 @@ export function useFundModals(options: UseFundModalsOptions) {
     downloadAdvancePdf,
     downloadAllAdvancePdfs,
     viewConfirmationPdf,
+    viewBaselineDetailsPdf,
+    viewDeliveryStatementPdf,
     viewPhotoSheetPdf,
+    viewCoverPdf,
+    regenerateBaselinePdfs,
+    downloadAllBaselinePdfs,
+    downloadMergedBaselinePdf,
 
     // 잔금 등록 모달
     showBalanceRegisterModal,

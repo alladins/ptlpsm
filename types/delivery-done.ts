@@ -479,3 +479,52 @@ export interface DeliveryDoneItemHistory {
   changedBy?: string
   changedAt?: string
 }
+
+/** 원계약↔실출하 금액 정합 비교 — 품목별 대조 */
+export interface AmountReconciliationItem {
+  skuId: string
+  itemName?: string
+  skuName?: string
+  /** 단가 (order_items.unit_price) */
+  unitPrice?: number
+  /** 원가 (OEM 원가 스냅샷) */
+  costPrice?: number
+  /** 출고예정 수량 (PENDING 출하 합계) */
+  pendingQuantity?: number
+  originalQuantity?: number
+  originalAmount?: number
+  actualQuantity?: number
+  actualAmount?: number
+  /** 출고분 차액(실출하−원계약). 미출고(PENDING) 품목은 null → 비교 제외 */
+  amountDifference?: number | null
+  /** REMOVED(대체차감) | ADDED(대체추가/신규) | CHANGED(출고차이) | PENDING(미출고) | null(동일) */
+  changeFlag?: string | null
+  /** 대체/합지 역할: TARGET(늘어난/추가된 쪽) | SOURCE(차감된 원계약 쪽) | null */
+  mergeRole?: string | null
+  /** 관계 유형: 대체 | 합지 | null */
+  mergeType?: string | null
+  /** 관계 상대 SKU 품명 목록 */
+  mergeCounterparts?: string[] | null
+  /** 관계 수량 */
+  mergeQuantity?: number | null
+}
+
+/** 원계약↔실출하 금액 정합 비교 응답 */
+export interface AmountReconciliation {
+  deliveryDoneId: number
+  orderId: number
+  deliveryRequestNo?: string
+  /** 원계약 라인합 (Σ order_items.amount) */
+  originalTotalAmount: number
+  /** 실출하 라인합 (Σ delivery_done_items.total_amount) */
+  actualTotalAmount: number
+  /** 차액 (실출하 − 원계약), 0이면 가치 보존 */
+  amountDifference: number
+  /** 차액 == 0 */
+  amountMatched: boolean
+  /** 참고: 원계약 품대계 (할인 반영) */
+  contractItemTotalAmount: number
+  originalTotalQuantity: number
+  actualTotalQuantity: number
+  items: AmountReconciliationItem[]
+}

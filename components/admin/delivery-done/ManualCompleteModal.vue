@@ -43,6 +43,21 @@
             </ul>
           </div>
         </div>
+
+        <div class="basis-box">
+          <p class="basis-title">
+            <i class="fas fa-list-check" />
+            발행 기준 (완료계·납품확인서 품목표)
+          </p>
+          <label class="basis-option">
+            <input v-model="basis" type="radio" value="CONTRACT" :disabled="processing" >
+            <span><strong>원계약 기준</strong> — 원 계약 물량·금액. 대체/추가 품목 제외, 합계=품대계.</span>
+          </label>
+          <label class="basis-option">
+            <input v-model="basis" type="radio" value="ACTUAL" :disabled="processing" >
+            <span><strong>실거래 기준</strong> — 실제 납품 물량·금액. 대체/추가 품목 포함.</span>
+          </label>
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -60,7 +75,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { completeManually } from '~/services/delivery-done.service'
+import { completeManually, type PdfBasis } from '~/services/delivery-done.service'
 import type { DeliveryDoneListItem } from '~/types/delivery-done'
 
 const props = defineProps<{
@@ -73,11 +88,12 @@ const emit = defineEmits<{
 }>()
 
 const processing = ref(false)
+const basis = ref<PdfBasis>('CONTRACT')
 
 async function handleConfirm () {
   processing.value = true
   try {
-    await completeManually(props.deliveryDone.deliveryDoneId)
+    await completeManually(props.deliveryDone.deliveryDoneId, basis.value)
     alert('수동 완료 처리되었습니다. PDF 3종이 생성되었습니다.')
     emit('completed')
   } catch (error: any) {
@@ -128,6 +144,20 @@ async function handleConfirm () {
 .warning-title { font-weight: 600; color: #92400e; margin: 0 0 8px 0; }
 .warning-list { margin: 0; padding-left: 20px; color: #78350f; font-size: 13px; line-height: 1.7; }
 .warning-list li { margin-bottom: 4px; }
+.basis-box {
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;
+  padding: 14px; margin-top: 16px;
+}
+.basis-title {
+  margin: 0 0 10px 0; color: #166534; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.basis-option {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 13px; line-height: 1.5; color: #374151;
+  padding: 5px 0; cursor: pointer;
+}
+.basis-option input { margin-top: 3px; }
 .modal-footer {
   display: flex; justify-content: flex-end; gap: 10px;
   padding: 20px; border-top: 1px solid #e5e7eb;

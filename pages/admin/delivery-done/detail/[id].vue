@@ -81,13 +81,13 @@
           </div>
           <div class="info-grid grid-3">
             <FormField label="납품요구번호">
-              <input type="text" :value="data.deliveryRequestNo" class="form-input-sm" readonly>
+              <input type="text" :value="data.deliveryRequestNo" class="form-input-sm" style="width: 100%;" readonly>
             </FormField>
             <FormField label="계약번호">
-              <input type="text" :value="data.contractNo || '-'" class="form-input-sm" readonly>
+              <input type="text" :value="data.contractNo || '-'" class="form-input-sm" style="width: 100%;" readonly>
             </FormField>
             <FormField label="계약일자">
-              <input type="text" :value="formatDate(data.contractDate)" class="form-input-sm" readonly>
+              <input type="text" :value="formatDate(data.contractDate)" class="form-input-sm" style="width: 100%;" readonly>
             </FormField>
           </div>
           <div class="info-grid grid-1" style="margin-top: 0.5rem;">
@@ -378,6 +378,79 @@
         </div>
       </FormSection>
 
+      <!-- 원계약 ↔ 실출하 금액 정합 (품목 대체 검증) -->
+      <FormSection
+        v-if="reconciliation"
+        title="원계약 ↔ 실출하 금액 정합"
+        style="margin-top: -20px"
+      >
+        <div class="recon-summary" :class="reconciliation.amountMatched ? 'recon-ok' : 'recon-info'">
+          <span class="recon-badge">
+            <i :class="reconciliation.amountMatched ? 'fas fa-check-circle' : 'fas fa-info-circle'" />
+            {{ reconciliation.amountMatched ? '출고분 일치' : '출고분 차이(참고)' }}
+          </span>
+          <span class="recon-cell">원계약 <b>{{ formatCurrency(reconciliation.originalTotalAmount) }}</b></span>
+          <span class="recon-cell">실출하 <b>{{ formatCurrency(reconciliation.actualTotalAmount) }}</b></span>
+          <span class="recon-cell">차액
+            <b :class="reconciliation.amountDifference === 0 ? '' : (reconciliation.amountDifference > 0 ? 'text-additional' : 'text-minus')">
+              {{ reconciliation.amountDifference > 0 ? '+' : '' }}{{ formatCurrency(reconciliation.amountDifference) }}
+            </b>
+          </span>
+        </div>
+        <div class="table-wrapper">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th rowspan="2">품목</th>
+                <th rowspan="2" class="text-right" style="width: 80px;">단가</th>
+                <th rowspan="2" class="text-right" style="width: 80px;">원가</th>
+                <th colspan="2" class="grp-orig">원거래내역 (원계약)</th>
+                <th colspan="5" class="grp-actual">실거래내역 (실출하)</th>
+              </tr>
+              <tr>
+                <th class="text-right grp-orig" style="width: 90px;">원계약 수량</th>
+                <th class="text-right grp-orig" style="width: 110px;">원계약 금액</th>
+                <th class="text-right grp-actual" style="width: 90px;">출고예정 수량</th>
+                <th class="text-right grp-actual" style="width: 90px;">실출하 수량</th>
+                <th class="text-right grp-actual" style="width: 110px;">실출하 금액</th>
+                <th class="text-right grp-actual" style="width: 110px;">차액</th>
+                <th class="grp-actual" style="width: 120px;">구분·관계</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="it in reconciliation.items" :key="it.skuId">
+                <td>{{ it.skuName || it.itemName || it.skuId }}</td>
+                <td class="text-right">{{ it.unitPrice != null ? formatCurrency(it.unitPrice) : '-' }}</td>
+                <td class="text-right">{{ it.costPrice != null ? formatCurrency(it.costPrice) : '-' }}</td>
+                <td class="text-right">{{ it.originalQuantity != null ? formatNumber(it.originalQuantity) : '-' }}</td>
+                <td class="text-right">{{ it.originalAmount != null ? formatCurrency(it.originalAmount) : '-' }}</td>
+                <td class="text-right">{{ it.pendingQuantity != null && it.pendingQuantity > 0 ? formatNumber(it.pendingQuantity) : '-' }}</td>
+                <td class="text-right">{{ it.actualQuantity != null ? formatNumber(it.actualQuantity) : '-' }}</td>
+                <td class="text-right">{{ it.actualAmount != null ? formatCurrency(it.actualAmount) : '-' }}</td>
+                <td class="text-right">
+                  <span v-if="it.amountDifference == null" class="text-muted">-</span>
+                  <span v-else :class="it.amountDifference === 0 ? '' : (it.amountDifference > 0 ? 'text-additional' : 'text-minus')">
+                    {{ it.amountDifference > 0 ? '+' : '' }}{{ formatCurrency(it.amountDifference) }}
+                  </span>
+                </td>
+                <td>
+                  <span v-if="reconPrimaryBadge(it)" class="ct-badge" :class="reconBadgeClass(it)">
+                    {{ reconPrimaryBadge(it) }}
+                  </span>
+                  <div v-if="it.mergeRole" class="merge-rel">
+                    {{ mergeRelText(it) }}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="recon-note">
+          ※ 출고(완료)된 출하수량 기준 참고 비교입니다. 청구·납품완료는 원계약 수량·금액으로 진행됩니다. (미출고 품목은 비교 제외)
+          <span v-if="!reconciliation.amountMatched"> 짝수 포장 반올림·대체로 출고량이 원계약과 다를 수 있습니다(참고).</span>
+        </p>
+      </FormSection>
+
       <!-- 문서 미리보기 (접이식) -->
       <div class="doc-collapsible">
         <div class="doc-collapsible-header" @click="toggleDocSection">
@@ -580,14 +653,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from '#imports'
-import { getDeliveryDoneDetail, fetchHtmlPreview, getDeliveryDonePhotos, replaceDeliveryDonePhoto, addDeliveryDonePhoto, updateDeliveryDonePhotoSelection, getQuantityHistory, recalculateDeliveryDone } from '~/services/delivery-done.service'
+import { getDeliveryDoneDetail, fetchHtmlPreview, getDeliveryDonePhotos, replaceDeliveryDonePhoto, addDeliveryDonePhoto, updateDeliveryDonePhotoSelection, getQuantityHistory, getAmountReconciliation, recalculateDeliveryDone } from '~/services/delivery-done.service'
 import { getApiBaseUrl, getAuthHeaders } from '~/services/api'
 import { formatNumber, formatCurrency } from '~/utils/format'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import AccordionSection from '~/components/admin/forms/AccordionSection.vue'
-import type { DeliveryPhotoInfo, DeliveryDoneItemHistory } from '~/types/delivery-done'
+import type { DeliveryPhotoInfo, DeliveryDoneItemHistory, AmountReconciliation, AmountReconciliationItem } from '~/types/delivery-done'
 import { useAuthStore } from '~/stores/auth'
 import ManualCompleteModal from '~/components/admin/delivery-done/ManualCompleteModal.vue'
 import ResetConfirmModal from '~/components/admin/delivery-done/ResetConfirmModal.vue'
@@ -633,6 +706,37 @@ const baseInfoSummary = computed(() => {
 
 // 수량 변경 이력 (변경계약/추가계약 반영)
 const quantityHistory = ref<DeliveryDoneItemHistory[]>([])
+const reconciliation = ref<AmountReconciliation | null>(null)
+
+// 금액 정합 비교 — 구분·관계 배지 라벨/클래스
+//  · 대체/합지(merge_source 있음)는 mergeType 배지 + 관계 라벨(대체 ←/→)로 표기
+//  · 신규 추가(merge_source 없는 ADDED)는 '신규 추가'로 대체와 구분
+const reconPrimaryBadge = (it: AmountReconciliationItem): string => {
+  if (it.mergeRole) { return it.mergeType || '대체' }
+  const f = it.changeFlag
+  if (f === 'ADDED') { return '신규 추가' }
+  if (f === 'CHANGED') { return '출고 차이' }
+  if (f === 'SCHEDULED') { return '출고예정' }
+  if (f === 'PENDING') { return '미출고' }
+  if (f === 'REMOVED') { return '대체 차감' }
+  return ''
+}
+const reconBadgeClass = (it: AmountReconciliationItem): string => {
+  if (it.mergeRole) { return it.mergeType === '합지' ? 'ct-merge' : 'ct-amendment' }
+  const f = it.changeFlag
+  if (f === 'ADDED') { return 'ct-additional' }
+  if (f === 'SCHEDULED') { return 'ct-scheduled' }
+  if (f === 'PENDING') { return 'ct-muted' }
+  return 'ct-amendment'
+}
+// 관계 라벨: TARGET(늘어난/추가된 쪽) "← 소스(수량)", SOURCE(차감된 원계약 쪽) "→ 목적지"
+const mergeRelText = (it: AmountReconciliationItem): string => {
+  if (!it.mergeRole) { return '' }
+  const names = (it.mergeCounterparts || []).join(', ')
+  const arrow = it.mergeRole === 'TARGET' ? '←' : '→'
+  const qty = (it.mergeRole === 'TARGET' && it.mergeQuantity != null) ? ` (${formatNumber(it.mergeQuantity)})` : ''
+  return `${arrow} ${names}${qty}`
+}
 
 // 문서 미리보기 상태
 const docSectionOpen = ref(false)
@@ -738,7 +842,8 @@ const canCompleteManually = computed(() => {
 })
 
 const canResetItem = computed(() => {
-  if (!isSystemAdmin.value || !data.value) { return false }
+  // 권한: SYSTEM_ADMIN + LEADPOWER_MANAGER(담당자). SUBMITTED 는 제외.
+  if (!canAdminAction.value || !data.value) { return false }
   const status = data.value.status
   if (status === 'SUBMITTED') { return false }
   // 잔금 입금 완료 건은 회계 정합성 보호를 위해 차단 (백엔드 가드와 일치)
@@ -758,8 +863,8 @@ const canUploadScan = computed(() => {
 })
 
 const canRegeneratePdfs = computed(() => {
-  // 권한: SYSTEM_ADMIN 전용. SUBMITTED 는 제외. 잔금 가드 없음 (회계 컬럼 미수정).
-  if (!isSystemAdmin.value || !data.value) { return false }
+  // 권한: SYSTEM_ADMIN + LEADPOWER_MANAGER(담당자). SUBMITTED 는 제외. 잔금 가드 없음 (회계 컬럼 미수정).
+  if (!canAdminAction.value || !data.value) { return false }
   const status = data.value.status
   if (status === 'SUBMITTED') { return false }
   return status === 'COMPLETED' ||
@@ -849,6 +954,13 @@ async function fetchDetail () {
     } catch (historyError) {
       console.error('수량 변경 이력 조회 실패:', historyError)
       quantityHistory.value = []
+    }
+    // 원계약↔실출하 금액 정합 비교 로드 (실패해도 본문은 표시)
+    try {
+      reconciliation.value = await getAmountReconciliation(id)
+    } catch (reconError) {
+      console.error('금액 정합 비교 조회 실패:', reconError)
+      reconciliation.value = null
     }
   } catch (error) {
     console.error('납품완료 상세 조회 실패:', error)
@@ -1542,5 +1654,99 @@ onUnmounted(() => {
 .ct-additional {
   background: #ffedd5;
   color: #c2410c;
+}
+
+/* 원계약↔실출하 금액 정합 비교 */
+.recon-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.recon-ok {
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+}
+
+.recon-warn {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+
+.recon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.recon-ok .recon-badge {
+  color: #059669;
+}
+
+.recon-warn .recon-badge {
+  color: #b45309;
+}
+
+.recon-info {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+}
+
+.recon-info .recon-badge {
+  color: #1d4ed8;
+}
+
+.text-muted {
+  color: #9ca3af;
+}
+
+.ct-muted {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.ct-scheduled {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ct-merge {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+/* 대조 뷰 컬럼그룹 헤더 (원거래/실거래 구분) */
+.grp-orig {
+  background: #f0f9ff;
+  border-bottom: 2px solid #7dd3fc;
+}
+
+.grp-actual {
+  background: #f0fdf4;
+  border-bottom: 2px solid #86efac;
+}
+
+/* 대체/합지 관계 라벨 */
+.merge-rel {
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  color: #6d28d9;
+  white-space: nowrap;
+}
+
+.recon-cell b {
+  margin-left: 0.25rem;
+}
+
+.recon-note {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #6b7280;
 }
 </style>

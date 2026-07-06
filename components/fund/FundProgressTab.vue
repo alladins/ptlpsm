@@ -12,6 +12,31 @@
         기성 청구하기
       </button>
     </div>
+
+    <!-- 공문 수신자명 (입력 후 '저장' 버튼으로 발주에 저장). 공문/일괄/합지 다운로드에 공통 적용 -->
+    <div class="recipient-section">
+      <label class="recipient-label">공문 수신자명</label>
+      <div class="recipient-input-row">
+        <input
+          v-model="recipientName"
+          type="text"
+          class="recipient-input"
+          :placeholder="recipientPlaceholder"
+        >
+        <button
+          class="btn-recipient-save"
+          :disabled="savingRecipient || !orderId"
+          @click="saveRecipientName"
+        >
+          <i :class="savingRecipient ? 'fas fa-spinner fa-spin' : 'fas fa-save'" />
+          저장
+        </button>
+      </div>
+      <p class="recipient-hint">
+        공문은 이 수신자명으로 생성됩니다. '저장'을 누르면 발주에 저장됩니다. (미입력 시 저장값/자동값 사용)
+      </p>
+    </div>
+
     <div class="table-container">
       <table class="data-table">
         <thead>
@@ -63,11 +88,39 @@
                 <button
                   class="btn-pdf-sm"
                   :disabled="!payment.baselineId"
+                  title="공문(갑지) — 항상 최신 양식으로 즉석 생성"
+                  @click="emit('viewCoverPdf', payment.baselineId, recipientName)"
+                >
+                  <i class="fas fa-file-pdf" />
+                  공문
+                </button>
+                <button
+                  class="btn-pdf-sm"
+                  :disabled="!payment.baselineId"
                   title="납품확인서 (서명란 공란)"
                   @click="emit('viewConfirmationPdf', payment.baselineId)"
                 >
                   <i class="fas fa-file-pdf" />
                   납품확인서
+                </button>
+                <button
+                  class="btn-pdf-sm"
+                  :disabled="!payment.baselineId"
+                  title="기성금청구 상세내역서 (품목 × 계약/금회/전회/잔여)"
+                  @click="emit('viewBaselineDetailsPdf', payment.baselineId)"
+                >
+                  <i class="fas fa-file-pdf" />
+                  기성금청구내역
+                </button>
+                <button
+                  v-if="(payment.shipmentCount ?? 0) >= 2"
+                  class="btn-pdf-sm"
+                  :disabled="!payment.baselineId"
+                  title="납품내역서 (품목 × 납품일자 매트릭스, 출하 2회 이상)"
+                  @click="emit('viewDeliveryStatementPdf', payment.baselineId)"
+                >
+                  <i class="fas fa-file-pdf" />
+                  납품내역서
                 </button>
                 <button
                   class="btn-pdf-sm btn-pdf-photo"
@@ -86,6 +139,33 @@
                 >
                   <i :class="uploadingBaselineId === payment.baselineId ? 'fas fa-spinner fa-spin' : 'fas fa-upload'" />
                   스캔업로드
+                </button>
+                <button
+                  class="btn-pdf-sm"
+                  :disabled="!payment.baselineId"
+                  title="납품확인서·사진대지를 최신 양식으로 재생성"
+                  @click="emit('regeneratePdfs', payment.baselineId)"
+                >
+                  <i class="fas fa-redo" />
+                  재생성
+                </button>
+                <button
+                  class="btn-pdf-sm btn-merge-download"
+                  :disabled="!payment.baselineId"
+                  title="공문+납품확인서+기성금청구내역+사진대지+납품내역서를 하나의 PDF로 합쳐 다운로드"
+                  @click="emit('downloadMergedPdf', payment.baselineId, recipientName)"
+                >
+                  <i class="fas fa-file-pdf" />
+                  합지 다운로드
+                </button>
+                <button
+                  class="btn-pdf-sm btn-zip-download"
+                  :disabled="!payment.baselineId"
+                  title="공문·납품확인서·기성금청구내역·사진대지·납품내역서를 ZIP으로 일괄 다운로드"
+                  @click="emit('downloadAllPdfs', payment.baselineId, recipientName)"
+                >
+                  <i class="fas fa-file-archive" />
+                  일괄 다운로드
                 </button>
               </div>
             </td>
@@ -128,6 +208,7 @@ import type { ProgressPaymentRequest } from '~/types/fund'
 import { formatCurrency } from '~/utils/format'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
 import { baselineService } from '~/services/baseline.service'
+import { orderService } from '~/services/order.service'
 
 interface Props {
   /** 기성금 이력 목록 */
@@ -138,11 +219,42 @@ interface Props {
   canRequestProgress: boolean
   /** 기성금 버튼 툴팁 */
   progressButtonTooltip?: string
+  /** 수요기관명 — 공문 수신자명 placeholder 기본값 생성용 */
+  clientName?: string
+  /** 발주 ID — 공문 수신자명 저장용 */
+  orderId?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  progressButtonTooltip: ''
+  progressButtonTooltip: '',
+  clientName: '',
+  orderId: undefined
 })
+
+// 공문 수신자명 즉석 입력값 (미입력 시 백엔드가 저장값/자동값 사용)
+const recipientName = ref('')
+const recipientPlaceholder = computed(
+  () => `${props.clientName || '수요기관'} 분임재무관 귀하`
+)
+
+// 공문 수신자명 즉시 저장
+const savingRecipient = ref(false)
+const saveRecipientName = async () => {
+  if (!props.orderId) {
+    alert('발주 정보가 없어 저장할 수 없습니다.')
+    return
+  }
+  savingRecipient.value = true
+  try {
+    await orderService.updateRecipientName(props.orderId, recipientName.value)
+    alert('공문 수신자명이 저장되었습니다.')
+  } catch (error) {
+    console.error('수신자명 저장 실패:', error)
+    alert(error instanceof Error ? error.message : '수신자명 저장에 실패했습니다.')
+  } finally {
+    savingRecipient.value = false
+  }
+}
 
 // 기성금만 필터링 (BALANCE 타입 제외)
 const filteredProgressPayments = computed(() =>
@@ -156,8 +268,20 @@ const emit = defineEmits<{
   openCollectionConfirm: [payment: ProgressPaymentRequest]
   /** 납품확인서 PDF 보기 */
   viewConfirmationPdf: [baselineId: number]
+  /** 기성금청구 상세내역서 PDF 보기 */
+  viewBaselineDetailsPdf: [baselineId: number]
+  /** 납품내역서 PDF 보기 (품목 × 납품일자 매트릭스) */
+  viewDeliveryStatementPdf: [baselineId: number]
   /** 사진대지 PDF 보기 */
   viewPhotoSheetPdf: [baselineId: number]
+  /** 공문(갑지) PDF 보기 */
+  viewCoverPdf: [baselineId: number, recipientName: string]
+  /** 기성청구 PDF 재생성 (납품확인서·사진대지) */
+  regeneratePdfs: [baselineId: number]
+  /** 기성 차수 전체 PDF 일괄 다운로드(ZIP) */
+  downloadAllPdfs: [baselineId: number, recipientName: string]
+  /** 기성 차수 전체 PDF 합지 다운로드(단일 PDF) */
+  downloadMergedPdf: [baselineId: number, recipientName: string]
   /** 스캔본 업로드 완료 → 목록 갱신 */
   scanUploaded: []
 }>()
@@ -228,6 +352,72 @@ const {
   font-size: 1.125rem;
   font-weight: 600;
   color: #1f2937;
+}
+
+/* 공문 수신자명 입력 */
+.recipient-section {
+  margin-bottom: 1rem;
+}
+
+.recipient-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #374151;
+  margin-bottom: 0.375rem;
+}
+
+.recipient-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+  max-width: 620px;
+}
+
+.recipient-input {
+  flex: 1;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  box-sizing: border-box;
+}
+
+.recipient-input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.btn-recipient-save {
+  flex: 0 0 auto;
+  padding: 0 1rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  white-space: nowrap;
+}
+
+.btn-recipient-save:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-recipient-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.recipient-hint {
+  margin: 0.375rem 0 0 0;
+  font-size: 0.75rem;
+  color: #9ca3af;
 }
 
 /* 테이블 컨테이너 */
@@ -383,6 +573,22 @@ const {
 
 .btn-pdf-photo:hover:not(:disabled) {
   background: #2563eb;
+}
+
+.btn-zip-download {
+  background: #10b981;
+}
+
+.btn-zip-download:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-merge-download {
+  background: #7c3aed;
+}
+
+.btn-merge-download:hover:not(:disabled) {
+  background: #6d28d9;
 }
 
 /* 수금 확인 버튼 */

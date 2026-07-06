@@ -28,21 +28,45 @@
           </div>
         </div>
 
+        <!-- 공문 수신자명 (입력 후 '저장' 버튼으로 발주에 저장) -->
+        <div class="recipient-section">
+          <label class="recipient-label">공문 수신자명</label>
+          <div class="recipient-input-row">
+            <input
+              v-model="recipientName"
+              type="text"
+              class="recipient-input"
+              :placeholder="recipientPlaceholder"
+            >
+            <button
+              class="btn-recipient-save"
+              :disabled="savingRecipient"
+              @click="saveRecipientName"
+            >
+              <i :class="savingRecipient ? 'fas fa-spinner fa-spin' : 'fas fa-save'" />
+              저장
+            </button>
+          </div>
+          <p class="recipient-hint">
+            공문은 이 수신자명으로 생성됩니다. '저장'을 누르면 발주에 저장됩니다. (미입력 시 저장값/자동값 사용)
+          </p>
+        </div>
+
         <!-- PDF 다운로드 버튼들 -->
         <div class="pdf-section">
           <h4>개별 다운로드</h4>
           <div class="pdf-buttons">
-            <!-- 납품확인서 -->
+            <!-- 공문(갑지) -->
             <button
               class="pdf-button"
-              @click="openPdfPreview('confirmation')"
+              @click="openPdfPreview('cover')"
             >
               <div class="pdf-icon">
                 <i class="fas fa-file-pdf" />
               </div>
               <div class="pdf-info">
-                <h5>납품 확인서</h5>
-                <p>계약물품 및 납품내역</p>
+                <h5>공문 (갑지)</h5>
+                <p>납품완료보고서 표지</p>
               </div>
               <div class="pdf-action">
                 <i class="fas fa-eye" />
@@ -66,6 +90,23 @@
               </div>
             </button>
 
+            <!-- 납품확인서 -->
+            <button
+              class="pdf-button"
+              @click="openPdfPreview('confirmation')"
+            >
+              <div class="pdf-icon">
+                <i class="fas fa-file-pdf" />
+              </div>
+              <div class="pdf-info">
+                <h5>납품 확인서</h5>
+                <p>계약물품 및 납품내역</p>
+              </div>
+              <div class="pdf-action">
+                <i class="fas fa-eye" />
+              </div>
+            </button>
+
             <!-- 사진대지 -->
             <button
               class="pdf-button"
@@ -83,8 +124,27 @@
               </div>
             </button>
 
-            <!-- 납품내역서 엑셀 -->
+            <!-- 납품내역서 PDF — 기성 있으면 통합 장표, 없고 출하 2회 이상이면 품목×납품일자 매트릭스 -->
             <button
+              v-if="hasBaselines || hasMultipleShipments"
+              class="pdf-button"
+              @click="openDeliveryStatement"
+            >
+              <div class="pdf-icon">
+                <i class="fas fa-file-pdf" />
+              </div>
+              <div class="pdf-info">
+                <h5>납품내역서</h5>
+                <p>{{ hasBaselines ? '품목 × 출하일자 통합 (PDF)' : '품목 × 납품일자 매트릭스 (PDF)' }}</p>
+              </div>
+              <div class="pdf-action">
+                <i class="fas fa-eye" />
+              </div>
+            </button>
+
+            <!-- 납품내역서 엑셀 — 통합 장표(엑셀). 기성 차수가 있는 발주에서만 제공 -->
+            <button
+              v-if="hasBaselines"
               class="pdf-button"
               @click="downloadExcel"
             >
@@ -93,7 +153,7 @@
               </div>
               <div class="pdf-info">
                 <h5>납품내역서</h5>
-                <p>엑셀 다운로드</p>
+                <p>품목 × 출하일자 통합 (엑셀)</p>
               </div>
               <div class="pdf-action">
                 <i class="fas fa-download" />
@@ -101,8 +161,15 @@
             </button>
           </div>
 
-          <!-- 일괄 다운로드 -->
+          <!-- 일괄/합지 다운로드 -->
           <div class="batch-download">
+            <button
+              class="btn-merge-download"
+              @click="downloadMerged"
+            >
+              <i class="fas fa-file-pdf" />
+              모든 PDF 합지 다운로드 (단일 PDF)
+            </button>
             <button
               class="btn-batch-download"
               @click="downloadAll"
@@ -139,21 +206,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
   downloadAllPdfs,
+  downloadMergedPdf,
   getPdfDownloadUrl,
-  downloadBaselineInvoiceExcel
+  downloadBaselineInvoiceExcel,
+  getBaselineInvoicePdfUrl
 } from '~/services/delivery-done.service'
+import { baselineService } from '~/services/baseline.service'
+import { orderService } from '~/services/order.service'
 import type { DeliveryDoneListItem } from '~/types/delivery-done'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 
-type PdfType = 'confirmation' | 'completion' | 'photo-sheet'
+type PdfType = 'cover' | 'confirmation' | 'completion' | 'photo-sheet' | 'delivery-statement'
 
 const pdfTypeNames: Record<PdfType, string> = {
+  cover: '공문',
   confirmation: '납품확인서',
   completion: '납품완료계',
-  'photo-sheet': '사진대지'
+  'photo-sheet': '사진대지',
+  'delivery-statement': '납품내역서'
 }
 
 const props = defineProps<{
@@ -169,11 +242,78 @@ const showPdfPreview = ref(false)
 const previewPdfUrl = ref('')
 const previewFileName = ref('')
 
+// 공문 수신자명 즉석 입력값 (미입력 시 백엔드가 저장값/자동값 사용)
+const recipientName = ref('')
+const recipientPlaceholder = computed(
+  () => `${props.deliveryDone.client || '수요기관'} 분임재무관 귀하`
+)
+
+// 공문 수신자명 즉시 저장
+const savingRecipient = ref(false)
+async function saveRecipientName () {
+  if (!props.deliveryDone.orderId) {
+    alert('발주 정보가 없어 저장할 수 없습니다.')
+    return
+  }
+  savingRecipient.value = true
+  try {
+    await orderService.updateRecipientName(props.deliveryDone.orderId, recipientName.value)
+    alert('공문 수신자명이 저장되었습니다.')
+  } catch (error) {
+    console.error('수신자명 저장 실패:', error)
+    alert(error instanceof Error ? error.message : '수신자명 저장에 실패했습니다.')
+  } finally {
+    savingRecipient.value = false
+  }
+}
+
+// 출하 2회 이상 여부 — 기성 차수가 없어도 출하 2회 이상이면 납품내역서(품목×납품일자) 제공
+const hasMultipleShipments = computed(
+  () => (props.deliveryDone.totalDeliveryCount ?? 0) >= 2
+)
+
+// 기성 차수 존재 여부 — 있으면 통합 장표(PDF/엑셀), 없으면 매트릭스 PDF로 폴백
+const hasBaselines = ref(false)
+onMounted(async () => {
+  try {
+    const baselines = await baselineService.getBaselinesByOrderId(props.deliveryDone.orderId)
+    hasBaselines.value = Array.isArray(baselines) && baselines.length > 0
+  } catch (error) {
+    console.error('기성 차수 조회 실패:', error)
+    hasBaselines.value = false
+  }
+})
+
+/**
+ * 납품내역서(통합) PDF 미리보기 열기 — 기성 차수 기반 품목×출하일자 통합 장표
+ */
+function openBaselineInvoicePdf () {
+  if (!hasBaselines.value) { return }
+  previewPdfUrl.value = getBaselineInvoicePdfUrl(props.deliveryDone.orderId)
+  previewFileName.value = `납품내역서_${props.deliveryDone.deliveryRequestNo}.pdf`
+  showPdfPreview.value = true
+}
+
+/**
+ * 납품내역서 PDF 미리보기 — 기성 차수가 있으면 통합 장표, 없으면 품목×납품일자 매트릭스로 폴백
+ */
+function openDeliveryStatement () {
+  if (hasBaselines.value) {
+    openBaselineInvoicePdf()
+  } else {
+    openPdfPreview('delivery-statement')
+  }
+}
+
 /**
  * PDF 미리보기 모달 열기
  */
 function openPdfPreview (pdfType: PdfType) {
-  const url = getPdfDownloadUrl(props.deliveryDone.deliveryDoneId, pdfType)
+  let url = getPdfDownloadUrl(props.deliveryDone.deliveryDoneId, pdfType)
+  // 공문은 수신자명 즉석 입력값을 쿼리로 전달 (입력 시 발주에 저장됨)
+  if (pdfType === 'cover' && recipientName.value.trim()) {
+    url += `?recipientName=${encodeURIComponent(recipientName.value.trim())}`
+  }
   previewPdfUrl.value = url
   previewFileName.value = `${pdfTypeNames[pdfType]}_${props.deliveryDone.deliveryRequestNo}.pdf`
   showPdfPreview.value = true
@@ -203,14 +343,26 @@ async function downloadExcel () {
 }
 
 /**
- * 모든 PDF 일괄 다운로드
+ * 모든 PDF 일괄 다운로드 (ZIP)
  */
 async function downloadAll () {
   try {
-    await downloadAllPdfs(props.deliveryDone.deliveryDoneId)
+    await downloadAllPdfs(props.deliveryDone.deliveryDoneId, recipientName.value.trim() || undefined)
   } catch (error) {
     console.error('Failed to download all PDFs:', error)
     alert('일괄 다운로드 중 오류가 발생했습니다.')
+  }
+}
+
+/**
+ * 모든 PDF 합지 다운로드 (단일 PDF)
+ */
+async function downloadMerged () {
+  try {
+    await downloadMergedPdf(props.deliveryDone.deliveryDoneId, recipientName.value.trim() || undefined)
+  } catch (error) {
+    console.error('Failed to download merged PDF:', error)
+    alert(error instanceof Error ? error.message : '합지 다운로드 중 오류가 발생했습니다.')
   }
 }
 </script>
@@ -299,6 +451,70 @@ async function downloadAll () {
   color: #1f2937;
 }
 
+.recipient-section {
+  margin-bottom: 20px;
+}
+
+.recipient-label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.recipient-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.recipient-input {
+  flex: 1;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.recipient-input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.btn-recipient-save {
+  flex: 0 0 auto;
+  padding: 0 16px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn-recipient-save:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-recipient-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.recipient-hint {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
 .pdf-section h4 {
   margin: 0 0 15px 0;
   font-size: 16px;
@@ -328,6 +544,18 @@ async function downloadAll () {
 .pdf-button:hover {
   border-color: #2563eb;
   background: #eff6ff;
+}
+
+.pdf-button-disabled,
+.pdf-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pdf-button-disabled:hover,
+.pdf-button:disabled:hover {
+  border-color: #e5e7eb;
+  background: white;
 }
 
 .pdf-icon {
@@ -369,11 +597,15 @@ async function downloadAll () {
   background: #f9fafb;
   border-radius: 6px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
 }
 
-.btn-batch-download {
+.btn-batch-download,
+.btn-merge-download {
   padding: 12px 24px;
-  background: #10b981;
   color: white;
   border: none;
   border-radius: 6px;
@@ -382,15 +614,29 @@ async function downloadAll () {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   transition: all 0.2s;
+}
+
+.btn-batch-download {
+  background: #10b981;
 }
 
 .btn-batch-download:hover {
   background: #059669;
 }
 
-.btn-batch-download i {
+.btn-merge-download {
+  background: #7c3aed;
+}
+
+.btn-merge-download:hover {
+  background: #6d28d9;
+}
+
+.btn-batch-download i,
+.btn-merge-download i {
   font-size: 16px;
 }
 

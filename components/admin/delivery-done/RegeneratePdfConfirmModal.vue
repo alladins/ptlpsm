@@ -41,6 +41,21 @@
           </ul>
         </div>
 
+        <div class="basis-box">
+          <p class="basis-title">
+            <i class="fas fa-list-check" />
+            발행 기준 (완료계·납품확인서 품목표)
+          </p>
+          <label class="basis-option">
+            <input v-model="basis" type="radio" value="CONTRACT" :disabled="processing" >
+            <span><strong>원계약 기준</strong> — 원 계약 물량·금액. 대체/추가 품목 제외, 합계=품대계.</span>
+          </label>
+          <label class="basis-option">
+            <input v-model="basis" type="radio" value="ACTUAL" :disabled="processing" >
+            <span><strong>실거래 기준</strong> — 실제 납품 물량·금액. 대체/추가 품목 포함.</span>
+          </label>
+        </div>
+
         <div class="confirm-input">
           <label>계속 진행하려면 아래에 <strong>PDF 재발행</strong> 라고 입력하세요</label>
           <input
@@ -72,7 +87,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { regenerateDeliveryDonePdfs } from '~/services/delivery-done.service'
+import { regenerateDeliveryDonePdfs, type PdfBasis } from '~/services/delivery-done.service'
 import type { DeliveryDoneListItem } from '~/types/delivery-done'
 
 const props = defineProps<{
@@ -86,6 +101,7 @@ const emit = defineEmits<{
 
 const processing = ref(false)
 const confirmText = ref('')
+const basis = ref<PdfBasis>('CONTRACT')
 
 const canConfirm = computed(() => confirmText.value.trim() === 'PDF 재발행')
 
@@ -93,7 +109,7 @@ async function handleConfirm () {
   if (!canConfirm.value) { return }
   processing.value = true
   try {
-    await regenerateDeliveryDonePdfs(props.deliveryDone.deliveryDoneId)
+    await regenerateDeliveryDonePdfs(props.deliveryDone.deliveryDoneId, basis.value)
     alert('PDF 3종이 새 데이터로 재발행되었습니다.')
     emit('regenerated')
   } catch (error: any) {
@@ -149,6 +165,20 @@ async function handleConfirm () {
 .notice-list li { margin-bottom: 4px; }
 .notice-list li.ok { color: #065f46; }
 .notice-list li.warn { color: #92400e; }
+.basis-box {
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;
+  padding: 14px; margin-bottom: 16px;
+}
+.basis-title {
+  margin: 0 0 10px 0; color: #166534; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.basis-option {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 13px; line-height: 1.5; color: #374151;
+  padding: 5px 0; cursor: pointer;
+}
+.basis-option input { margin-top: 3px; }
 .confirm-input { margin-top: 12px; }
 .confirm-input label { display: block; font-size: 13px; color: #374151; margin-bottom: 6px; }
 .form-input {

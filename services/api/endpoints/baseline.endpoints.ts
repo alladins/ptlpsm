@@ -162,6 +162,16 @@ export const BASELINE_ENDPOINTS = {
   },
 
   /**
+   * 갑지(공문) PDF 다운로드
+   * @param baselineId - 차수 ID
+   * @returns GET /admin/baselines/{baselineId}/pdf/cover
+   */
+  coverPdf: (baselineId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/baselines/${baselineId}/pdf/cover`
+  },
+
+  /**
    * 납품확인서 PDF 다운로드
    * @param baselineId - 차수 ID
    * @returns GET /admin/baselines/{baselineId}/pdf/confirmation
@@ -182,6 +192,26 @@ export const BASELINE_ENDPOINTS = {
   },
 
   /**
+   * 기성금청구 상세내역서 PDF 다운로드 (품목 × 계약/금회/전회/잔여)
+   * @param baselineId - 차수 ID
+   * @returns GET /admin/baselines/{baselineId}/pdf/baseline-details
+   */
+  baselineDetailsPdf: (baselineId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/baselines/${baselineId}/pdf/baseline-details`
+  },
+
+  /**
+   * 납품내역서 PDF 다운로드 (품목 × 납품일자 매트릭스, 출하 2회 이상)
+   * @param baselineId - 차수 ID
+   * @returns GET /admin/baselines/{baselineId}/pdf/delivery-statement
+   */
+  deliveryStatementPdf: (baselineId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/baselines/${baselineId}/pdf/delivery-statement`
+  },
+
+  /**
    * 전체 PDF ZIP 다운로드
    * @param baselineId - 차수 ID
    * @returns GET /admin/baselines/{baselineId}/pdf/download-all
@@ -189,6 +219,16 @@ export const BASELINE_ENDPOINTS = {
   downloadAllPdf: (baselineId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/baselines/${baselineId}/pdf/download-all`
+  },
+
+  /**
+   * 전체 PDF 합지 다운로드 (단일 PDF)
+   * @param baselineId - 차수 ID
+   * @returns GET /admin/baselines/{baselineId}/pdf/download-merged
+   */
+  downloadMergedPdf: (baselineId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/baselines/${baselineId}/pdf/download-merged`
   },
 
   // ============ 서명 관련 엔드포인트 ============

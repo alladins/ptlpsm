@@ -271,7 +271,7 @@ export async function submitToNara (
  */
 export function getPdfDownloadUrl (
   deliveryDoneId: number,
-  pdfType: 'confirmation' | 'completion' | 'photo-sheet'
+  pdfType: 'cover' | 'confirmation' | 'completion' | 'photo-sheet' | 'delivery-statement'
 ): string {
   return `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/pdf/${pdfType}`
 }
@@ -305,6 +305,13 @@ export async function downloadPhotoSheetPdf (deliveryDoneId: number): Promise<vo
  */
 export function getBaselineInvoiceExcelUrl (orderId: number): string {
   return `${getApiBaseUrl()}/admin/delivery-done/order/${orderId}/excel/baseline-invoice`
+}
+
+/**
+ * 기성청구내역서(통합) PDF 다운로드 URL 생성 (엑셀과 동일 레이아웃, 가로)
+ */
+export function getBaselineInvoicePdfUrl (orderId: number): string {
+  return `${getApiBaseUrl()}/admin/delivery-done/order/${orderId}/pdf/baseline-invoice`
 }
 
 /**
@@ -348,9 +355,12 @@ export async function downloadBaselineInvoiceExcel (orderId: number): Promise<vo
 /**
  * 모든 PDF 일괄 다운로드
  */
-export async function downloadAllPdfs (deliveryDoneId: number): Promise<void> {
+export async function downloadAllPdfs (deliveryDoneId: number, recipientName?: string): Promise<void> {
   try {
-    const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/pdf/download-all`
+    let url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/pdf/download-all`
+    if (recipientName) {
+      url += `?recipientName=${encodeURIComponent(recipientName)}`
+    }
     const response = await fetch(url, {
       method: 'GET'
     })
@@ -373,6 +383,35 @@ export async function downloadAllPdfs (deliveryDoneId: number): Promise<void> {
     console.error('Error downloading all PDFs:', error)
     throw error
   }
+}
+
+/**
+ * 모든 PDF 합지 다운로드 (공문+납품완료계+납품확인서+사진대지+납품내역서+기성청구내역서 → 단일 PDF)
+ */
+export async function downloadMergedPdf (deliveryDoneId: number, recipientName?: string): Promise<void> {
+  let url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/pdf/download-merged`
+  if (recipientName) {
+    url += `?recipientName=${encodeURIComponent(recipientName)}`
+  }
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null)
+    throw new Error(errorData?.message || `합지 다운로드 실패: ${response.status}`)
+  }
+
+  const blob = await response.blob()
+  const downloadUrl = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = downloadUrl
+  link.download = `delivery-done-${deliveryDoneId}.pdf`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(downloadUrl)
 }
 
 // ==================== 모바일 API (토큰 기반) ====================
@@ -675,6 +714,31 @@ export async function getQuantityHistory (
 }
 
 /**
+ * 원계약↔실출하 금액 정합 비교 조회
+ * 품목 대체로 출하 구성이 바뀌어도 원계약 금액대와 실출하 금액대가 일치하는지 확인.
+ */
+export async function getAmountReconciliation (
+  deliveryDoneId: number
+): Promise<import('~/types/delivery-done').AmountReconciliation> {
+  try {
+    const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/amount-reconciliation`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch amount reconciliation: ${response.statusText}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching amount reconciliation:', error)
+    throw error
+  }
+}
+
+/**
  * 사진 선택 업데이트 (출하별 최대 2장)
  */
 export async function updatePhotoSelection (
@@ -709,12 +773,18 @@ export async function updatePhotoSelection (
 // ==================== 수동 완료 / 초기화 / 스캔본 API ====================
 
 /**
+ * 발행 기준: CONTRACT(원계약) / ACTUAL(실거래)
+ */
+export type PdfBasis = 'CONTRACT' | 'ACTUAL'
+
+/**
  * 수동 완료 처리
  * - 디지털 서명 없이 PDF 3종 생성 + 상태 COMPLETED 전환
  * - 권한: SYSTEM_ADMIN, LEADPOWER_MANAGER
+ * - basis: 완료계·납품확인서 품목표 기준 (원계약/실거래, 기본 원계약)
  */
-export async function completeManually (deliveryDoneId: number): Promise<void> {
-  const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/complete-manually`
+export async function completeManually (deliveryDoneId: number, basis: PdfBasis = 'CONTRACT'): Promise<void> {
+  const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/complete-manually?basis=${basis}`
   const response = await fetch(url, {
     method: 'POST',
     headers: getAuthHeaders()
@@ -746,12 +816,13 @@ export async function resetDeliveryDone (deliveryDoneId: number): Promise<void> 
 
 /**
  * PDF 재발행 (서명·상태 보존, PDF 3종만 새 데이터로 재생성)
- * - 권한: SYSTEM_ADMIN 전용
+ * - 권한: SYSTEM_ADMIN, LEADPOWER_MANAGER
  * - 기존 PDF 디스크 파일은 _backup 폴더로 이동
  * - 본사 정보·품목 등 현재 DB 값으로 새 PDF 생성, 서명/스캔본/상태/수동완료 플래그 모두 보존
+ * - basis: 완료계·납품확인서 품목표 기준 (원계약/실거래, 기본 원계약)
  */
-export async function regenerateDeliveryDonePdfs (deliveryDoneId: number): Promise<void> {
-  const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/regenerate-pdfs`
+export async function regenerateDeliveryDonePdfs (deliveryDoneId: number, basis: PdfBasis = 'CONTRACT'): Promise<void> {
+  const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/regenerate-pdfs?basis=${basis}`
   const response = await fetch(url, {
     method: 'POST',
     headers: getAuthHeaders()
