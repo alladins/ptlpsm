@@ -1,5 +1,5 @@
 import { apiEnvironment, getAuthHeaders } from '~/services/api'
-import type { OrderDetailResponse } from '~/types/order'
+import type { OrderDetailResponse, LowRemainingOrder, LowRemainingSearchRequest } from '~/types/order'
 import type { MobileOrderRequest } from '~/types/mobile-order'
 import { ORDER_ENDPOINTS } from './api/endpoints/order.endpoints'
 import { getApiBaseUrl } from './api/config'
@@ -8,6 +8,14 @@ import { getApiBaseUrl } from './api/config'
 
 export interface OrderSearchResponse {
   content: OrderDetailResponse[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+}
+
+export interface LowRemainingSearchResponse {
+  content: LowRemainingOrder[]
   totalElements: number
   totalPages: number
   size: number
@@ -30,6 +38,23 @@ export interface OrderSearchRequest {
 }
 
 export const orderService = {
+  /**
+   * 공문 수신자명 저장 (orders.recipient_name)
+   * - 공문/일괄/합지 생성 시 자동 저장과 별개로, '저장' 버튼으로 즉시 저장하는 용도
+   */
+  async updateRecipientName(orderId: number, recipientName: string): Promise<void> {
+    const url = `${getApiBaseUrl()}/admin/orders/${orderId}/recipient-name`
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ recipientName: (recipientName || '').trim() })
+    })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || `수신자명 저장 실패: ${response.status}`)
+    }
+  },
+
   /**
    * 발주 목록 조회
    */
@@ -465,5 +490,47 @@ export const orderService = {
       console.error('변경계약 생성 실패:', error)
       throw error
     }
+  },
+
+  /**
+   * 출하 임박 사업 현황 목록 조회 (남은수량 임계치 이하·>0)
+   */
+  async getLowRemainingOrders(params: LowRemainingSearchRequest = {}): Promise<LowRemainingSearchResponse> {
+    const queryParams = new URLSearchParams()
+    if (params.threshold !== undefined && params.threshold !== null) {
+      queryParams.append('threshold', params.threshold.toString())
+    }
+    if (params.client) queryParams.append('client', params.client)
+    if (params.keyword) queryParams.append('keyword', params.keyword)
+    if (params.status) queryParams.append('status', params.status)
+    queryParams.append('page', (params.page ?? 0).toString())
+    queryParams.append('size', (params.size || 10).toString())
+
+    const url = `${ORDER_ENDPOINTS.lowRemaining()}?${queryParams.toString()}`
+    const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const result = await response.json()
+    if (result.content && typeof result.totalElements !== 'undefined') {
+      return result as LowRemainingSearchResponse
+    }
+    if (result.data) return result.data
+    throw new Error('알 수 없는 API 응답 구조입니다.')
+  },
+
+  /**
+   * 출하 임박 사업 건수 조회 (메인 대시보드 요약 카드)
+   */
+  async getLowRemainingCount(threshold = 500): Promise<number> {
+    const queryParams = new URLSearchParams()
+    queryParams.append('threshold', threshold.toString())
+    const url = `${ORDER_ENDPOINTS.lowRemainingCount()}?${queryParams.toString()}`
+    const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const result = await response.json()
+    return result?.count ?? result?.data?.count ?? 0
   }
 }

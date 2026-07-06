@@ -100,6 +100,8 @@ export interface OrderSearchRequest {
 
 export interface OrderDetailResponse extends OrderResponse {
   preNotificationNo?: string
+  /** 공문(갑지) 수신자명 (즉석 입력 저장값, 없으면 자동값) */
+  recipientName?: string
   clientNo?: string
   clientPostalCode?: string
   clientAddress?: string
@@ -204,4 +206,27 @@ export interface OrderItemCreateRequest {
   inspectionExemption?: string
   midTermCompetitionItem?: string
   sortOrder?: number
+}
+
+// 출하 임박 사업 현황 — 행 1건
+export interface LowRemainingOrder {
+  orderId: number
+  deliveryRequestNo: string
+  client: string
+  projectName: string
+  status: string
+  totalQuantity: number       // 총수량 (회배/㎡)
+  remainingQuantity: number   // 남은수량 (회배/㎡)
+  itemTotalAmount: number     // 총 계약금액 (품대계)
+  collectedAmount: number     // 수금된금액
+}
+
+// 출하 임박 사업 현황 — 검색 요청
+export interface LowRemainingSearchRequest {
+  threshold?: number          // 남은수량 임계값 (기본 500)
+  client?: string
+  keyword?: string
+  status?: string
+  page?: number
+  size?: number
 }

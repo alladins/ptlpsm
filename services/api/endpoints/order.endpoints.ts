@@ -144,5 +144,23 @@ export const ORDER_ENDPOINTS = {
   exportExcel: () => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/orders/export`
+  },
+
+  /**
+   * 출하 임박 사업 현황 목록
+   * @returns GET /admin/orders/low-remaining?params
+   */
+  lowRemaining: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/orders/low-remaining`
+  },
+
+  /**
+   * 출하 임박 사업 건수 (대시보드 요약 카드)
+   * @returns GET /admin/orders/low-remaining/count?threshold=500
+   */
+  lowRemainingCount: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/orders/low-remaining/count`
   }
 } as const

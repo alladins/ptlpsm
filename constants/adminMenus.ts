@@ -388,6 +388,18 @@ export const ADMIN_MENUS: MenuWithAuth[] = [
         visible: 'Y',
         useYn: 'Y',
         children: []
+      },
+      {
+        menuId: 77,
+        menuCode: 'STAT_LOW_REMAINING',
+        menuName: '사업종료 직전 현황',
+        menuUrl: '/admin/statistics/low-remaining',
+        menuIcon: 'fas fa-hourglass-half',
+        menuLevel: 2,
+        sortOrder: 7,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
       }
     ]
   },
