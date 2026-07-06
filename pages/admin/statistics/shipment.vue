@@ -145,41 +145,7 @@
               기간별 납품요구/출하 추이
             </h2>
             <div v-if="statistics.periodTrend.length > 0" class="chart-content">
-              <div class="trend-chart">
-                <div
-                  v-for="item in statistics.periodTrend"
-                  :key="item.period"
-                  class="trend-bar-group"
-                >
-                  <div class="trend-bar-container">
-                    <div
-                      class="trend-bar order-bar"
-                      :style="{ height: getBarHeight(item.orderAmount) + '%' }"
-                      :title="`납품요구: ${formatCurrency(item.orderAmount)}`"
-                    >
-                      <span class="bar-value">{{ formatCompactNumber(item.orderAmount) }}</span>
-                    </div>
-                    <div
-                      class="trend-bar shipment-bar"
-                      :style="{ height: getBarHeight(item.shipmentAmount) + '%' }"
-                      :title="`출하: ${formatCurrency(item.shipmentAmount)}`"
-                    >
-                      <span class="bar-value">{{ formatCompactNumber(item.shipmentAmount) }}</span>
-                    </div>
-                  </div>
-                  <div class="trend-label">
-                    {{ formatPeriodLabel(item.period) }}
-                  </div>
-                  <div class="trend-info">
-                    <span>{{ item.orderCount }}건</span>
-                    <span>{{ item.completionRate.toFixed(0) }}%</span>
-                  </div>
-                </div>
-              </div>
-              <div class="trend-legend">
-                <span class="legend-item"><span class="legend-dot order-dot" />납품요구</span>
-                <span class="legend-item"><span class="legend-dot shipment-dot" />출하</span>
-              </div>
+              <TopChartPanel :data="trendMatrix" initial-type="bar" :toolbar="['bar', 'line', 'area', 'stacked-bar', '100-stacked-bar']" />
             </div>
             <div v-else class="chart-placeholder">
               <i class="fas fa-chart-bar" />
@@ -194,11 +160,8 @@
               상태별 현황
             </h2>
             <div class="status-chart">
-              <div class="status-donut" :style="{ background: donutGradient }">
-                <div class="donut-center">
-                  <span class="donut-total">{{ getTotalStatusCount }}</span>
-                  <span class="donut-label">전체</span>
-                </div>
+              <div class="status-donut-chart">
+                <TopChartPanel :data="statusMatrix" initial-type="doughnut" :toolbar="['doughnut', 'pie', 'funnel']" legend="none" :colors="statusChartColors" />
               </div>
               <div class="status-legend">
                 <div class="legend-item">
@@ -242,25 +205,7 @@
               지역별 출하 현황
             </h2>
             <div v-if="statistics.regionBreakdown.length > 0" class="region-chart">
-              <div
-                v-for="item in statistics.regionBreakdown"
-                :key="item.region"
-                class="region-item"
-              >
-                <div class="region-info">
-                  <span class="region-name">{{ item.region }}</span>
-                  <span class="region-count">{{ item.orderCount }}건</span>
-                </div>
-                <div class="region-bar-container">
-                  <div
-                    class="region-bar"
-                    :style="{ width: getRegionBarWidth(item.shipmentAmount) + '%' }"
-                  />
-                </div>
-                <div class="region-amount">
-                  {{ formatCompactCurrency(item.shipmentAmount) }}
-                </div>
-              </div>
+              <TopChartPanel :data="shipRegionMatrix" initial-type="bar" :toolbar="['bar', 'pie', 'doughnut', 'treemap']" />
             </div>
             <div v-else class="chart-placeholder">
               <i class="fas fa-map-marker-alt" />
@@ -538,16 +483,6 @@ function handleSearch () {
 }
 
 // 포맷 함수들
-function formatCompactNumber (value: number): string {
-  if (value >= 100000000) {
-    return (value / 100000000).toFixed(1) + '억'
-  }
-  if (value >= 10000) {
-    return (value / 10000).toFixed(0) + '만'
-  }
-  return value.toLocaleString('ko-KR')
-}
-
 function formatCompactCurrency (value: number): string {
   if (value >= 100000000) {
     return (value / 100000000).toFixed(1) + '억원'
@@ -580,71 +515,51 @@ function formatPeriodLabel (period: string): string {
   return period
 }
 
-// 차트 헬퍼 함수
-function getBarHeight (amount: number): number {
-  const maxAmount = Math.max(
-    ...statistics.value.periodTrend.map(t => Math.max(t.shipmentAmount, t.orderAmount ?? 0))
-  )
-  if (maxAmount === 0) { return 0 }
-  return (amount / maxAmount) * 100
-}
+// topgrid 차트 매트릭스 (기간별 납품요구/출하 추이 — 그룹 막대)
+const trendMatrix = computed(() => {
+  const pt = statistics.value.periodTrend
+  return {
+    categories: pt.map(t => formatPeriodLabel(t.period)),
+    series: [
+      { name: '납품요구', values: pt.map(t => t.orderAmount), color: '#a5b4fc' },
+      { name: '출하', values: pt.map(t => t.shipmentAmount), color: '#3b82f6' }
+    ]
+  }
+})
 
-function getRegionBarWidth (amount: number): number {
-  const maxAmount = Math.max(...statistics.value.regionBreakdown.map(r => r.shipmentAmount))
-  if (maxAmount === 0) { return 0 }
-  return (amount / maxAmount) * 100
-}
+// topgrid 차트 매트릭스 (상태별 도넛) — 상세 범례는 템플릿 우측에 별도 표기(내부 범례 숨김)
+const statusChartItems = computed(() => {
+  const s = statistics.value.summary.statusCount
+  return [
+    { name: '대기', value: s.pending, color: '#fbbf24' },
+    { name: '진행중', value: s.inProgress, color: '#3b82f6' },
+    { name: '서명대기', value: s.pendingSignature, color: '#d946ef' },
+    { name: '납품완료', value: s.completed, color: '#10b981' },
+    { name: '취소', value: s.cancelled, color: '#ef4444' }
+  ].filter(d => d.value > 0)
+})
+
+const statusMatrix = computed(() => ({
+  categories: statusChartItems.value.map(d => d.name),
+  series: [{ name: '건수', values: statusChartItems.value.map(d => d.value) }]
+}))
+
+// 도넛 조각 색 — 템플릿 우측 범례 색과 일치
+const statusChartColors = computed(() => statusChartItems.value.map(d => d.color))
+
+// topgrid 차트 매트릭스 (지역별 출하 막대)
+const shipRegionMatrix = computed(() => {
+  const rb = statistics.value.regionBreakdown
+  return {
+    categories: rb.map(r => r.region),
+    series: [{ name: '출하금액', values: rb.map(r => r.shipmentAmount), color: '#3b82f6' }]
+  }
+})
 
 // 상태 관련
 const getTotalStatusCount = computed(() => {
   const { pending, inProgress, pendingSignature, completed, cancelled } = statistics.value.summary.statusCount
   return pending + inProgress + pendingSignature + completed + cancelled
-})
-
-// 도넛 차트 그라데이션 (데이터 기반 동적 생성)
-const donutGradient = computed(() => {
-  const total = getTotalStatusCount.value
-  if (total === 0) { return '#e5e7eb' } // 데이터 없으면 회색
-
-  const { pending, inProgress, pendingSignature, completed, cancelled } = statistics.value.summary.statusCount
-
-  // 각 상태별 비율 계산 (도 단위, 360도 기준)
-  const pendingDeg = (pending / total) * 360
-  const inProgressDeg = (inProgress / total) * 360
-  const pendingSignatureDeg = (pendingSignature / total) * 360
-  const completedDeg = (completed / total) * 360
-  const cancelledDeg = (cancelled / total) * 360
-
-  // 누적 각도 계산
-  let currentDeg = 0
-  const segments: string[] = []
-
-  // 대기 (노란색)
-  if (pending > 0) {
-    segments.push(`#fbbf24 ${currentDeg}deg ${currentDeg + pendingDeg}deg`)
-    currentDeg += pendingDeg
-  }
-  // 진행중 (파란색)
-  if (inProgress > 0) {
-    segments.push(`#3b82f6 ${currentDeg}deg ${currentDeg + inProgressDeg}deg`)
-    currentDeg += inProgressDeg
-  }
-  // 서명대기 (보라색)
-  if (pendingSignature > 0) {
-    segments.push(`#d946ef ${currentDeg}deg ${currentDeg + pendingSignatureDeg}deg`)
-    currentDeg += pendingSignatureDeg
-  }
-  // 납품완료 (초록색)
-  if (completed > 0) {
-    segments.push(`#10b981 ${currentDeg}deg ${currentDeg + completedDeg}deg`)
-    currentDeg += completedDeg
-  }
-  // 취소 (빨간색)
-  if (cancelled > 0) {
-    segments.push(`#ef4444 ${currentDeg}deg ${currentDeg + cancelledDeg}deg`)
-  }
-
-  return segments.length > 0 ? `conic-gradient(${segments.join(', ')})` : '#e5e7eb'
 })
 
 function getStatusPercent (status: 'pending' | 'inProgress' | 'pendingSignature' | 'completed' | 'cancelled'): string {
@@ -881,7 +796,7 @@ onMounted(() => {
 /* 차트 섹션 */
 .chart-section {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
 }
 
@@ -1029,8 +944,13 @@ onMounted(() => {
 /* 상태별 현황 */
 .status-chart {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 1rem;
+}
+
+.status-donut-chart {
+  flex: 1;
+  min-width: 0;
 }
 
 .status-donut {
@@ -1070,6 +990,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 180px;
+  flex-shrink: 0;
 }
 
 .legend-item {
@@ -1339,6 +1261,15 @@ onMounted(() => {
 
   .trend-chart {
     overflow-x: auto;
+  }
+
+  .status-chart {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .status-legend {
+    width: 100%;
   }
 
   .data-table th:nth-child(3),

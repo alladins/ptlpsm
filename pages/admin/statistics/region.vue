@@ -105,14 +105,21 @@
         <div class="chart-card">
           <h2>지역별 출하현황</h2>
           <div class="chart-wrapper">
-            <canvas ref="regionBarChartRef" />
+            <TopChartPanel :data="regionBarMatrix" initial-type="bar" :toolbar="['bar', 'line', 'pie', 'doughnut', 'treemap']" height="100%" />
           </div>
         </div>
 
         <div class="chart-card">
           <h2>지역별 고객 분포</h2>
           <div class="chart-wrapper">
-            <canvas ref="regionPieChartRef" />
+            <TopChartPanel
+              :data="regionPieMatrix"
+              initial-type="doughnut"
+              :toolbar="['doughnut', 'pie', 'bar', 'treemap']"
+              legend="right"
+              :colors="regionColors"
+              height="100%"
+            />
           </div>
         </div>
       </div>
@@ -157,7 +164,6 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick } from 'vue'
 import { getLocalDateString } from '~/utils/format'
 import { getShipmentStatistics } from '~/services/statistics.service'
 import type { RegionBreakdownItem, ShipmentStatisticsRequest } from '~/types/statistics'
@@ -167,16 +173,7 @@ definePageMeta({
   pageTitle: '지역별통계'
 })
 
-// Chart.js dynamic import
-let Chart: any = null
-
-// 차트 refs
-const regionBarChartRef = ref<HTMLCanvasElement | null>(null)
-const regionPieChartRef = ref<HTMLCanvasElement | null>(null)
-let regionBarChart: any = null
-let regionPieChart: any = null
-
-// 차트 색상 팔레트
+// 차트 색상 팔레트 (지역별 도넛 조각)
 const regionColors = [
   '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
   '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
@@ -213,6 +210,25 @@ const topRegion = computed(() => {
   return { name: top.region, amount: top.shipmentAmount }
 })
 
+// topgrid 차트 매트릭스 (지역별 출하금액 막대)
+const regionBarMatrix = computed(() => ({
+  categories: regionData.value.map(d => d.region),
+  series: [{
+    name: '출하금액',
+    values: regionData.value.map(d => d.shipmentAmount),
+    color: '#3b82f6'
+  }]
+}))
+
+// topgrid 차트 매트릭스 (지역별 고객 분포 도넛)
+const regionPieMatrix = computed(() => ({
+  categories: regionData.value.map(d => d.region),
+  series: [{
+    name: '납품요구 건수',
+    values: regionData.value.map(d => d.orderCount)
+  }]
+}))
+
 // 기본 날짜 설정 (최근 1년)
 function getDefaultStartDate (): string {
   const date = new Date()
@@ -234,16 +250,11 @@ async function loadStatistics () {
   try {
     const response = await getShipmentStatistics(searchParams.value)
 
-    // 지역별 데이터에 평균 금액 계산 추가
+    // 지역별 데이터에 평균 금액 계산 추가 (차트는 computed matrix → TopChartPanel이 반응형 렌더)
     regionData.value = response.regionBreakdown.map(item => ({
       ...item,
       averageAmount: item.orderCount > 0 ? Math.round(item.shipmentAmount / item.orderCount) : 0
     }))
-
-    await nextTick()
-    renderCharts()
-
-    console.log('📊 지역별 통계 로드 완료:', regionData.value)
   } catch (error) {
     console.error('❌ 지역별 통계 조회 실패:', error)
     alert('지역별 통계를 불러오는데 실패했습니다.')
@@ -262,89 +273,6 @@ function getSuccessRateClass (rate: number): string {
   if (rate >= 80) { return 'high' }
   if (rate >= 70) { return 'medium' }
   return 'low'
-}
-
-// 차트 렌더링
-async function renderCharts () {
-  if (!Chart) {
-    const chartModule = await import('chart.js/auto')
-    Chart = chartModule.default
-  }
-
-  // 수평 Bar 차트: 지역별 출하현황
-  if (regionBarChartRef.value) {
-    if (regionBarChart) { regionBarChart.destroy() }
-    regionBarChart = new Chart(regionBarChartRef.value, {
-      type: 'bar',
-      data: {
-        labels: regionData.value.map(d => d.region),
-        datasets: [{
-          label: '출하금액',
-          data: regionData.value.map(d => d.shipmentAmount),
-          backgroundColor: regionColors.slice(0, regionData.value.length),
-          borderRadius: 4
-        }]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (ctx: any) => `출하금액: ₩${ctx.raw.toLocaleString()}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            beginAtZero: true,
-            ticks: {
-              callback: (v: any) => `₩${Number(v).toLocaleString()}`
-            }
-          }
-        }
-      }
-    })
-  }
-
-  // 도넛 차트: 지역별 고객 분포
-  if (regionPieChartRef.value) {
-    if (regionPieChart) { regionPieChart.destroy() }
-    regionPieChart = new Chart(regionPieChartRef.value, {
-      type: 'doughnut',
-      data: {
-        labels: regionData.value.map(d => d.region),
-        datasets: [{
-          data: regionData.value.map(d => d.orderCount),
-          backgroundColor: regionColors.slice(0, regionData.value.length),
-          borderWidth: 2,
-          borderColor: '#ffffff'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'right',
-            labels: { boxWidth: 12, padding: 16, font: { size: 12 } }
-          },
-          tooltip: {
-            callbacks: {
-              label: (ctx: any) => {
-                const total = ctx.dataset.data.reduce((a: number, b: number) => a + b, 0)
-                const pct = ((ctx.raw / total) * 100).toFixed(1)
-                return `${ctx.label}: ${ctx.raw}건 (${pct}%)`
-              }
-            }
-          }
-        },
-        cutout: '55%'
-      }
-    })
-  }
 }
 
 // 초기 로드

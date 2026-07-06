@@ -155,6 +155,62 @@
         </div>
       </div>
 
+      <!-- 출하 임박 사업 (남은수량 500㎡ 이하·완료 제외) — 상위 5건, 클릭 시 통계 화면 이동 -->
+      <div class="content-card low-remaining-card" @click="goToLowRemaining">
+        <div class="card-header">
+          <h2>
+            <i class="fas fa-hourglass-half" />
+            사업종료 직전 납품요구
+            <span class="low-remaining-sub">남은수량 {{ formatNumber(LOW_REMAINING_THRESHOLD) }}㎡ 이하</span>
+          </h2>
+          <span class="low-remaining-more">
+            전체 {{ formatNumber(lowRemainingTotal) }}건 보기
+            <i class="fas fa-chevron-right" />
+          </span>
+        </div>
+
+        <div v-if="lowRemainingItems.length > 0" class="low-remaining-table-wrap">
+          <table class="low-remaining-table">
+            <thead>
+              <tr>
+                <th>납품요구번호</th>
+                <th>수요기관</th>
+                <th>사업명</th>
+                <th class="num">
+                  남은수량(㎡)
+                </th>
+                <th class="num">
+                  총 계약금액
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in lowRemainingItems" :key="row.orderId">
+                <td class="mono">
+                  {{ row.deliveryRequestNo }}
+                </td>
+                <td class="ellipsis">
+                  {{ row.client }}
+                </td>
+                <td class="ellipsis">
+                  {{ row.projectName }}
+                </td>
+                <td class="num remaining">
+                  {{ formatNumber(row.remainingQuantity) }}
+                </td>
+                <td class="num">
+                  {{ formatNumber(row.itemTotalAmount) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else class="chart-placeholder">
+          <i class="fas fa-hourglass-half" />
+          <p>사업종료 직전 납품요구가 없습니다</p>
+        </div>
+      </div>
+
       <!-- 차트 영역 -->
       <div class="chart-section">
         <!-- OEM 제조사별 월별 제조원가 -->
@@ -164,28 +220,7 @@
             OEM 제조사별 월별 제조원가
           </h2>
           <div v-if="oemChartData.length > 0" class="chart-content">
-            <div class="oem-chart">
-              <div
-                v-for="monthData in oemChartData"
-                :key="monthData.month"
-                class="oem-month-group"
-              >
-                <div class="oem-bars-container">
-                  <div
-                    v-for="item in monthData.data"
-                    :key="item.oemId"
-                    class="oem-bar"
-                    :style="{ height: getOemBarHeight(item.manufacturingCost) + '%' }"
-                    :title="`${item.oemName}: ${formatCurrency(item.manufacturingCost)}`"
-                  >
-                    <span class="oem-bar-value">{{ formatCompactNumber(item.manufacturingCost) }}</span>
-                  </div>
-                </div>
-                <div class="oem-label">
-                  {{ formatOemMonth(monthData.month) }}
-                </div>
-              </div>
-            </div>
+            <TopChartPanel :data="oemMatrix" initial-type="bar" :toolbar="['bar', 'stacked-bar', 'line']" :height="280" />
           </div>
           <div v-else class="chart-placeholder">
             <i class="fas fa-industry" />
@@ -194,82 +229,22 @@
         </div>
 
         <!-- 기간별 출하 추이 -->
-        <div class="chart-card chart-main">
+        <div class="chart-card">
           <h2>
             <i class="fas fa-chart-bar" />
             기간별 출하 추이
           </h2>
           <div v-if="statistics.periodTrend.length > 0" class="chart-content">
-            <div class="trend-chart">
-              <div
-                v-for="item in statistics.periodTrend"
-                :key="item.period"
-                class="trend-bar-group"
-              >
-                <div class="trend-bar-container">
-                  <div
-                    class="trend-bar"
-                    :style="{ height: getBarHeight(item.shipmentAmount) + '%' }"
-                    :title="`${formatCurrency(item.shipmentAmount)}`"
-                  >
-                    <span class="bar-value">{{ formatCompactNumber(item.shipmentAmount) }}</span>
-                  </div>
-                </div>
-                <div class="trend-label">
-                  {{ formatPeriodLabel(item.period) }}
-                </div>
-                <div class="trend-info">
-                  <span>{{ item.orderCount }}건</span>
-                </div>
-              </div>
-            </div>
+            <TopChartPanel :data="trendMatrix" initial-type="bar" :toolbar="['bar', 'line', 'area']" :height="280" />
           </div>
           <div v-else class="chart-placeholder">
             <i class="fas fa-chart-bar" />
             <p>데이터가 없습니다</p>
           </div>
         </div>
-
-        <!-- 상태별 현황 -->
-        <div class="chart-card">
-          <h2>
-            <i class="fas fa-chart-pie" />
-            상태별 현황
-          </h2>
-          <div class="status-chart">
-            <div class="status-donut">
-              <div class="donut-center">
-                <span class="donut-total">{{ getTotalStatusCount }}</span>
-                <span class="donut-label">전체</span>
-              </div>
-            </div>
-            <div class="status-legend">
-              <div class="legend-item">
-                <span class="legend-color pending" />
-                <span class="legend-label">대기</span>
-                <span class="legend-value">{{ statistics.summary.statusCount.pending }}건</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-color in-progress" />
-                <span class="legend-label">진행중</span>
-                <span class="legend-value">{{ statistics.summary.statusCount.inProgress }}건</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-color pending-signature" />
-                <span class="legend-label">서명대기</span>
-                <span class="legend-value">{{ statistics.summary.statusCount.pendingSignature }}건</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-color completed" />
-                <span class="legend-label">납품완료</span>
-                <span class="legend-value">{{ statistics.summary.statusCount.completed }}건</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
-      <!-- 지역별 현황 + 최근 활동 (2컬럼) -->
+      <!-- 지역별 현황 + 상태별 현황 + 최근 활동 (3컬럼) -->
       <div class="region-activity-section">
         <!-- 지역별 출하 현황 -->
         <div class="content-card">
@@ -303,6 +278,46 @@
           </div>
         </div>
 
+        <!-- 상태별 현황 -->
+        <div class="chart-card">
+          <h2>
+            <i class="fas fa-chart-pie" />
+            상태별 현황
+          </h2>
+          <div class="status-chart">
+            <TopChartPanel
+              :data="statusMatrix"
+              initial-type="doughnut"
+              :toolbar="['doughnut', 'pie']"
+              legend="none"
+              :colors="statusChartColors"
+              :height="220"
+            />
+            <div class="status-legend">
+              <div class="legend-item">
+                <span class="legend-color pending" />
+                <span class="legend-label">대기</span>
+                <span class="legend-value">{{ statistics.summary.statusCount.pending }}건</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color in-progress" />
+                <span class="legend-label">진행중</span>
+                <span class="legend-value">{{ statistics.summary.statusCount.inProgress }}건</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color pending-signature" />
+                <span class="legend-label">서명대기</span>
+                <span class="legend-value">{{ statistics.summary.statusCount.pendingSignature }}건</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color completed" />
+                <span class="legend-label">납품완료</span>
+                <span class="legend-value">{{ statistics.summary.statusCount.completed }}건</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 최근 활동 -->
         <div class="content-card">
           <div class="card-header">
@@ -330,7 +345,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { getOemMonthlyChart, getShipmentStatistics } from '~/services/statistics.service'
 import { getCommissionPeriods } from '~/services/commission.service'
+import { orderService } from '~/services/order.service'
 import type { ShipmentStatisticsResponse, OemChartData } from '~/types/statistics'
+import type { LowRemainingOrder } from '~/types/order'
 
 // 레이아웃 설정
 definePageMeta({
@@ -522,6 +539,32 @@ async function loadOemChartData () {
   }
 }
 
+// 출하 임박 사업 (남은수량 500㎡ 이하·완료 제외) — 상위 5건 미리보기
+const LOW_REMAINING_THRESHOLD = 500
+const LOW_REMAINING_PREVIEW_SIZE = 5
+const lowRemainingItems = ref<LowRemainingOrder[]>([])
+const lowRemainingTotal = ref(0)
+
+async function loadLowRemainingPreview () {
+  try {
+    const res = await orderService.getLowRemainingOrders({
+      threshold: LOW_REMAINING_THRESHOLD,
+      page: 0,
+      size: LOW_REMAINING_PREVIEW_SIZE
+    })
+    lowRemainingItems.value = res.content || []
+    lowRemainingTotal.value = res.totalElements ?? 0
+  } catch (error) {
+    console.error('출하 임박 사업 미리보기 로드 실패:', error)
+    lowRemainingItems.value = []
+    lowRemainingTotal.value = 0
+  }
+}
+
+function goToLowRemaining () {
+  router.push('/admin/statistics/low-remaining')
+}
+
 // 대시보드 데이터 로드 (기간 필터 연동)
 async function loadDashboardData () {
   try {
@@ -546,16 +589,6 @@ function formatNumber (value: number): string {
 
 function formatCurrency (value: number): string {
   return value.toLocaleString('ko-KR') + '원'
-}
-
-function formatCompactNumber (value: number): string {
-  if (value >= 100000000) {
-    return (value / 100000000).toFixed(1) + '억'
-  }
-  if (value >= 10000) {
-    return (value / 10000).toFixed(0) + '만'
-  }
-  return value.toLocaleString('ko-KR')
 }
 
 function formatCompactCurrency (value: number): string {
@@ -587,24 +620,49 @@ function formatPeriodLabel (period: string): string {
   return period
 }
 
-// 차트 헬퍼 함수
-function getBarHeight (amount: number): number {
-  const maxAmount = Math.max(...statistics.value.periodTrend.map(t => t.shipmentAmount))
-  if (maxAmount === 0) { return 0 }
-  return (amount / maxAmount) * 100
-}
+// topgrid 차트 매트릭스 (OEM 제조사별 월별 제조원가 — 제조사 시리즈 × 월)
+const oemMatrix = computed(() => {
+  const oemNames = [...new Set(oemChartData.value.flatMap(m => m.data.map(d => d.oemName)))]
+  return {
+    categories: oemChartData.value.map(m => formatOemMonth(m.month)),
+    series: oemNames.map(name => ({
+      name,
+      values: oemChartData.value.map(m => m.data.find(d => d.oemName === name)?.manufacturingCost || 0)
+    }))
+  }
+})
+
+// topgrid 차트 매트릭스 (기간별 출하 추이)
+const trendMatrix = computed(() => ({
+  categories: statistics.value.periodTrend.map(t => formatPeriodLabel(t.period)),
+  series: [{
+    name: '출하금액',
+    values: statistics.value.periodTrend.map(t => t.shipmentAmount),
+    color: '#3b82f6'
+  }]
+}))
+
+// topgrid 차트 매트릭스 (상태별 도넛) — 조각 색은 하단 범례 색과 일치
+const statusChartItems = computed(() => {
+  const s = statistics.value.summary.statusCount
+  return [
+    { name: '대기', value: s.pending, color: '#fbbf24' },
+    { name: '진행중', value: s.inProgress, color: '#3b82f6' },
+    { name: '서명대기', value: s.pendingSignature, color: '#d946ef' },
+    { name: '납품완료', value: s.completed, color: '#10b981' },
+    { name: '취소', value: s.cancelled, color: '#ef4444' }
+  ].filter(d => d.value > 0)
+})
+
+const statusMatrix = computed(() => ({
+  categories: statusChartItems.value.map(d => d.name),
+  series: [{ name: '건수', values: statusChartItems.value.map(d => d.value) }]
+}))
+
+const statusChartColors = computed(() => statusChartItems.value.map(d => d.color))
 
 function getRegionBarWidth (amount: number): number {
   const maxAmount = Math.max(...statistics.value.regionBreakdown.map(r => r.shipmentAmount))
-  if (maxAmount === 0) { return 0 }
-  return (amount / maxAmount) * 100
-}
-
-// OEM 차트 헬퍼 함수
-function getOemBarHeight (amount: number): number {
-  if (oemChartData.value.length === 0) { return 0 }
-  const allAmounts = oemChartData.value.flatMap(m => m.data.map(d => d.manufacturingCost))
-  const maxAmount = Math.max(...allAmounts)
   if (maxAmount === 0) { return 0 }
   return (amount / maxAmount) * 100
 }
@@ -614,12 +672,6 @@ function formatOemMonth (month: string): string {
   const parts = month.split('-')
   return `${parseInt(parts[1])}월`
 }
-
-// 상태 관련
-const getTotalStatusCount = computed(() => {
-  const { pending, inProgress, pendingSignature, completed, cancelled } = statistics.value.summary.statusCount
-  return pending + inProgress + pendingSignature + completed + cancelled
-})
 
 // 네비게이션
 const goToSales = () => router.push('/admin/sales/list')
@@ -632,6 +684,7 @@ onMounted(async () => {
   await loadPeriods()
   loadDashboardData()
   loadOemChartData()
+  loadLowRemainingPreview()
 })
 </script>
 
@@ -681,8 +734,18 @@ onMounted(async () => {
 /* 지역별 현황 + 최근 활동 2컬럼 */
 .region-activity-section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+}
+
+@media (max-width: 1200px) {
+  .chart-section {
+    grid-template-columns: 1fr;
+  }
+
+  .region-activity-section {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 기간 필터 */
@@ -798,6 +861,90 @@ onMounted(async () => {
   color: #16a34a;
 }
 
+/* ===== 출하 임박 사업 미리보기 영역 (대시보드) ===== */
+.low-remaining-card {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.low-remaining-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.low-remaining-card .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.low-remaining-card .card-header h2 i {
+  color: #ea580c;
+}
+
+.low-remaining-sub {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.low-remaining-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ea580c;
+  white-space: nowrap;
+}
+
+.low-remaining-table-wrap {
+  overflow-x: auto;
+}
+
+.low-remaining-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.low-remaining-table thead th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.low-remaining-table tbody td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+.low-remaining-table .num {
+  text-align: right;
+}
+
+.low-remaining-table .mono {
+  white-space: nowrap;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.low-remaining-table .remaining {
+  font-weight: 700;
+  color: #c2410c;
+}
+
+.low-remaining-table .ellipsis {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .stat-content h3 {
   font-size: 0.75rem;
   color: #6b7280;
@@ -848,7 +995,7 @@ onMounted(async () => {
 /* 차트 섹션 */
 .chart-section {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
 }
 
@@ -890,113 +1037,24 @@ onMounted(async () => {
   margin-bottom: 0.5rem;
 }
 
-/* 기간별 추이 차트 */
-.trend-chart {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
-  height: 180px;
-  padding-top: 16px;
-}
-
-.trend-bar-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  max-width: 60px;
-}
-
-.trend-bar-container {
-  height: 130px;
-  width: 32px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.trend-bar {
-  width: 100%;
-  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
-  border-radius: 3px 3px 0 0;
-  position: relative;
-  min-height: 4px;
-  transition: height 0.3s ease;
-}
-
-.bar-value {
-  position: absolute;
-  top: -18px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: #374151;
-  white-space: nowrap;
-}
-
-.trend-label {
-  font-size: 0.6875rem;
-  color: #6b7280;
-  margin-top: 0.375rem;
-  font-weight: 500;
-}
-
-.trend-info {
-  font-size: 0.625rem;
-  color: #9ca3af;
-}
-
-/* 상태별 현황 */
+/* 상태별 현황 — 좌: 도넛 / 우: 범례 */
 .status-chart {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.status-donut {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background: conic-gradient(
-    #fbbf24 0deg 45deg,
-    #3b82f6 45deg 90deg,
-    #d946ef 90deg 120deg,
-    #10b981 120deg 324deg,
-    #ef4444 324deg 360deg
-  );
-  display: flex;
   align-items: center;
-  justify-content: center;
-  margin: 0 auto;
+  gap: 1rem;
 }
 
-.donut-center {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.donut-total {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.donut-label {
-  font-size: 0.625rem;
-  color: #6b7280;
+.status-chart .top-chart-panel {
+  flex: 1;
+  min-width: 0;
 }
 
 .status-legend {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
+  width: 150px;
+  flex-shrink: 0;
 }
 
 .legend-item {
@@ -1087,62 +1145,6 @@ onMounted(async () => {
   font-weight: 600;
   color: #1f2937;
   text-align: right;
-}
-
-/* OEM 차트 */
-.oem-chart {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
-  height: 180px;
-  padding-top: 16px;
-}
-
-.oem-month-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  max-width: 80px;
-}
-
-.oem-bars-container {
-  height: 130px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 2px;
-}
-
-.oem-bar {
-  width: 16px;
-  background: linear-gradient(180deg, #8b5cf6, #6d28d9);
-  border-radius: 2px 2px 0 0;
-  position: relative;
-  min-height: 4px;
-  transition: height 0.3s ease;
-}
-
-.oem-bar:hover {
-  opacity: 0.8;
-}
-
-.oem-bar-value {
-  position: absolute;
-  top: -18px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.5rem;
-  font-weight: 600;
-  color: #374151;
-  white-space: nowrap;
-}
-
-.oem-label {
-  font-size: 0.6875rem;
-  color: #6b7280;
-  margin-top: 0.375rem;
-  font-weight: 500;
 }
 
 .content-card {
@@ -1247,27 +1249,18 @@ onMounted(async () => {
 }
 
 /* 반응형 */
-@media (max-width: 1200px) {
-  .chart-section {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .chart-card.chart-main {
-    grid-column: span 2;
-  }
-}
-
 @media (max-width: 768px) {
-  .chart-section {
-    grid-template-columns: 1fr;
-  }
-
-  .chart-card.chart-main {
-    grid-column: span 1;
-  }
-
   .region-activity-section {
     grid-template-columns: 1fr;
+  }
+
+  .status-chart {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .status-legend {
+    width: 100%;
   }
 
   .stats-grid {

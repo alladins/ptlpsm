@@ -189,7 +189,7 @@
             월별 수금 현황
           </h3>
           <div class="chart-wrapper">
-            <canvas ref="monthlyChartRef" />
+            <TopChartPanel :data="monthlyMatrix" initial-type="bar" :toolbar="['bar', 'stacked-bar', 'line', 'area', 'radar']" height="100%" />
           </div>
         </div>
         <div class="chart-container">
@@ -198,7 +198,14 @@
             기성 진행 현황
           </h3>
           <div class="chart-wrapper donut">
-            <canvas ref="progressChartRef" />
+            <TopChartPanel
+              :data="progressMatrix"
+              initial-type="doughnut"
+              :toolbar="['doughnut', 'pie', 'bar']"
+              legend="none"
+              :colors="['#3b82f6', '#10b981']"
+              height="100%"
+            />
           </div>
           <div class="chart-legend">
             <div class="legend-item">
@@ -320,14 +327,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { fundService } from '~/services/fund.service'
 import { formatCurrency } from '~/utils/format'
 import type { FundStatistics, FundStatisticsParams, PeriodType } from '~/types/fund'
-
-// Chart.js dynamic import
-let Chart: any = null
 
 definePageMeta({
   layout: 'admin',
@@ -374,17 +378,32 @@ const statistics = ref<FundStatistics>({
   monthlyData: []
 })
 
-// Chart refs
-const monthlyChartRef = ref<HTMLCanvasElement | null>(null)
-const progressChartRef = ref<HTMLCanvasElement | null>(null)
-let monthlyChart: any = null
-let progressChart: any = null
-
 // Available years (최근 5년)
 const availableYears = computed(() => {
   const currentYear = new Date().getFullYear()
   return Array.from({ length: 5 }, (_, i) => currentYear - i)
 })
+
+// topgrid 차트 매트릭스 (월별 수금/수익 그룹 막대)
+const monthlyMatrix = computed(() => {
+  const md = statistics.value.monthlyData || []
+  return {
+    categories: md.map(d => `${d.month}월`),
+    series: [
+      { name: '수금액', values: md.map(d => d.receivedAmount || 0), color: '#10b981' },
+      { name: '수익', values: md.map(d => d.profitAmount || 0), color: '#3b82f6' }
+    ]
+  }
+})
+
+// topgrid 차트 매트릭스 (기성 진행 도넛) — 범례는 템플릿 우측에 별도 표기
+const progressMatrix = computed(() => ({
+  categories: ['진행중', '완료'],
+  series: [{
+    name: '기성 진행',
+    values: [statistics.value.activeCount || 0, statistics.value.completedCount || 0]
+  }]
+}))
 
 // Methods
 const loadStatistics = async () => {
@@ -411,9 +430,7 @@ const loadStatistics = async () => {
     console.error('통계 조회 실패:', error)
   } finally {
     loading.value = false
-    // loading이 false가 된 후 DOM이 업데이트되면 차트 렌더링
-    await nextTick()
-    renderCharts()
+    // 차트는 computed matrix → TopChartPanel이 반응형 렌더 (수동 렌더 불필요)
   }
 }
 
@@ -425,110 +442,6 @@ const getCollectionRate = (): string => {
 
 const goToFundDetail = (fundId: number) => {
   router.push(`/admin/funds/${fundId}`)
-}
-
-const renderCharts = async () => {
-  // Dynamic import Chart.js
-  if (!Chart) {
-    const chartModule = await import('chart.js/auto')
-    Chart = chartModule.default
-  }
-
-  // Monthly Bar Chart
-  if (monthlyChartRef.value) {
-    if (monthlyChart) {
-      monthlyChart.destroy()
-    }
-
-    const monthlyData = statistics.value.monthlyData || []
-    const labels = monthlyData.map(d => `${d.month}월`)
-    const collectedData = monthlyData.map(d => d.receivedAmount || 0)
-    const profitData = monthlyData.map(d => d.profitAmount || 0)
-
-    monthlyChart = new Chart(monthlyChartRef.value, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: '수금액',
-            data: collectedData,
-            backgroundColor: '#10b981',
-            borderRadius: 4
-          },
-          {
-            label: '수익',
-            data: profitData,
-            backgroundColor: '#3b82f6',
-            borderRadius: 4
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top'
-          },
-          tooltip: {
-            callbacks: {
-              label: (context: any) => {
-                return `${context.dataset.label}: ${formatCurrency(context.raw)}`
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value: any) => formatCurrency(value)
-            }
-          }
-        }
-      }
-    })
-  }
-
-  // Progress Donut Chart
-  if (progressChartRef.value) {
-    if (progressChart) {
-      progressChart.destroy()
-    }
-
-    const activeCount = statistics.value.activeCount || 0
-    const completedCount = statistics.value.completedCount || 0
-
-    progressChart = new Chart(progressChartRef.value, {
-      type: 'doughnut',
-      data: {
-        labels: ['진행중', '완료'],
-        datasets: [{
-          data: [activeCount, completedCount],
-          backgroundColor: ['#3b82f6', '#10b981'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: (context: any) => {
-                return `${context.label}: ${context.raw}건`
-              }
-            }
-          }
-        },
-        cutout: '60%'
-      }
-    })
-  }
 }
 
 // Lifecycle
@@ -767,6 +680,12 @@ onMounted(() => {
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-container .section-title {
+  flex-shrink: 0;
 }
 
 .chart-wrapper {
@@ -775,7 +694,9 @@ onMounted(() => {
 }
 
 .chart-wrapper.donut {
-  height: 200px;
+  height: auto;
+  flex: 1;
+  min-height: 200px;
 }
 
 .chart-legend {
@@ -783,6 +704,7 @@ onMounted(() => {
   justify-content: center;
   gap: 1.5rem;
   margin-top: 1rem;
+  flex-shrink: 0;
 }
 
 .legend-item {

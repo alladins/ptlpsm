@@ -249,7 +249,9 @@ export default defineNuxtConfig({
       ],
       // 사이트 설정 (환경변수에서 로드)
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-      siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'PTLPSM'
+      siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'PTLPSM',
+      // topgrid Pro 차트 라이선스 키 (도메인 바인딩 — 환경별 .env 에서 주입, 미설정 시 워터마크만 표시)
+      topgridLicenseKey: process.env.NUXT_PUBLIC_TOPGRID_LICENSE_KEY || ''
     }
   },
 

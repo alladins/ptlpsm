@@ -109,7 +109,14 @@
         </div>
         <div class="share-content">
           <div class="share-chart-wrapper">
-            <canvas ref="shareChartRef" />
+            <TopChartPanel
+              :data="shareMatrix"
+              initial-type="doughnut"
+              :toolbar="['doughnut', 'pie']"
+              legend="none"
+              :colors="stakeholderColors"
+              :height="220"
+            />
           </div>
           <div class="share-legend">
             <div
@@ -138,7 +145,7 @@
             월별 매출 및 배분 현황
           </h3>
           <div class="chart-wrapper">
-            <canvas ref="monthlyChartRef" />
+            <TopChartPanel :data="monthlyMatrix" initial-type="stacked-bar" :toolbar="['stacked-bar', 'bar', '100-stacked-bar', 'line', 'area']" height="100%" />
           </div>
         </div>
 
@@ -149,7 +156,7 @@
             지분자별 총 배분
           </h3>
           <div class="chart-wrapper bar">
-            <canvas ref="stakeholderChartRef" />
+            <TopChartPanel :data="stakeholderMatrix" initial-type="stacked-bar" :toolbar="['stacked-bar', 'bar', '100-stacked-bar']" height="100%" />
           </div>
         </div>
       </div>
@@ -303,7 +310,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { formatCurrency } from '~/utils/format'
 import { useCommissionFilter } from '~/composables/admin/useCommissionFilter'
 import type {
@@ -315,21 +322,10 @@ import type {
 } from '~/types/commission'
 import { getAnnualCommissionSummary, getMonthlySummary, getCommissionPeriods } from '~/services/commission.service'
 
-// Chart.js dynamic import
-let Chart: any = null
-
 definePageMeta({
   layout: 'admin',
   pageTitle: '수익 배분 대시보드'
 })
-
-// 페이지 고유 상태
-const monthlyChartRef = ref<HTMLCanvasElement | null>(null)
-const shareChartRef = ref<HTMLCanvasElement | null>(null)
-const stakeholderChartRef = ref<HTMLCanvasElement | null>(null)
-let monthlyChart: any = null
-let shareChart: any = null
-let stakeholderChart: any = null
 
 // API에서 가져온 데이터
 const apiData = ref<AnnualDistributionSummary | null>(null)
@@ -413,7 +409,7 @@ const currentMaintenanceRate = computed(() => {
 })
 
 // 공통 필터 (연도, 로딩, 데이터 로드)
-const { selectedYear, loading, minYear, maxYear, changeYear, loadData: loadDashboardData } = useCommissionFilter({
+const { selectedYear, loading, loadData: loadDashboardData } = useCommissionFilter({
   loadFunction: async () => {
     try {
       const [annualResponse, monthlyResponse] = await Promise.all([
@@ -427,8 +423,7 @@ const { selectedYear, loading, minYear, maxYear, changeYear, loadData: loadDashb
       console.error('대시보드 조회 실패:', error)
       apiData.value = null
     }
-    await nextTick()
-    renderCharts()
+    // 차트는 computed matrix → TopChartPanel이 반응형 렌더
   }
 })
 
@@ -605,169 +600,49 @@ const transformApiResponse = (response: any, monthlyRawData: any[] = []): Annual
   }
 }
 
-const renderCharts = async () => {
-  // Dynamic import Chart.js
-  if (!Chart) {
-    const chartModule = await import('chart.js/auto')
-    Chart = chartModule.default
+// 지분자 스택 키(월별 스택막대용)
+const stakeholderKeys: [Stakeholder, string, number][] = [
+  ['MANUFACTURER', '제조사', 0],
+  ['HEADQUARTERS', '본사', 1],
+  ['AGENT', '대리점', 2],
+  ['PARTNER', '협력사', 3],
+  ['CERTIFICATION', '인증관리', 4],
+  ['MAINTENANCE', '유지보수', 5]
+]
+
+// topgrid 차트 매트릭스 (지분율 도넛) — 범례는 템플릿 우측에 별도 표기
+const shareMatrix = computed(() => {
+  const dists = summary.value.totalDistributions || []
+  return {
+    categories: dists.map(d => d.name),
+    series: [{ name: '지분율(%)', values: dists.map(d => d.rate) }]
   }
+})
 
-  // 지분율 도넛 차트
-  if (shareChartRef.value) {
-    if (shareChart) { shareChart.destroy() }
-
-    const data = summary.value.totalDistributions?.map(d => d.rate) || []
-    const labels = summary.value.totalDistributions?.map(d => d.name) || []
-
-    shareChart = new Chart(shareChartRef.value, {
-      type: 'doughnut',
-      data: {
-        labels,
-        datasets: [{
-          data,
-          backgroundColor: stakeholderColors,
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (context: any) => `${context.label}: ${context.raw}%`
-            }
-          }
-        },
-        cutout: '65%'
-      }
-    })
+// topgrid 차트 매트릭스 (월별 매출/배분 스택 막대)
+const monthlyMatrix = computed(() => {
+  const md = monthlyData.value
+  return {
+    categories: md.map(d => `${d.month}월`),
+    series: stakeholderKeys.map(([key, name, ci]) => ({
+      name,
+      values: md.map(d => getDistributionAmount(d, key)),
+      color: stakeholderColors[ci]
+    }))
   }
+})
 
-  // 월별 매출 차트 (Stacked Bar)
-  if (monthlyChartRef.value) {
-    if (monthlyChart) { monthlyChart.destroy() }
-
-    const labels = monthlyData.value.map(d => `${d.month}월`)
-
-    monthlyChart = new Chart(monthlyChartRef.value, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: '제조사',
-            data: monthlyData.value.map(d => getDistributionAmount(d, 'MANUFACTURER')),
-            backgroundColor: stakeholderColors[0],
-            stack: 'distribution'
-          },
-          {
-            label: '본사',
-            data: monthlyData.value.map(d => getDistributionAmount(d, 'HEADQUARTERS')),
-            backgroundColor: stakeholderColors[1],
-            stack: 'distribution'
-          },
-          {
-            label: '대리점',
-            data: monthlyData.value.map(d => getDistributionAmount(d, 'AGENT')),
-            backgroundColor: stakeholderColors[2],
-            stack: 'distribution'
-          },
-          {
-            label: '협력사',
-            data: monthlyData.value.map(d => getDistributionAmount(d, 'PARTNER')),
-            backgroundColor: stakeholderColors[3],
-            stack: 'distribution'
-          },
-          {
-            label: '인증관리',
-            data: monthlyData.value.map(d => getDistributionAmount(d, 'CERTIFICATION')),
-            backgroundColor: stakeholderColors[4],
-            stack: 'distribution'
-          },
-          {
-            label: '유지보수',
-            data: monthlyData.value.map(d => getDistributionAmount(d, 'MAINTENANCE')),
-            backgroundColor: stakeholderColors[5],
-            stack: 'distribution'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top' },
-          tooltip: {
-            callbacks: {
-              label: (context: any) => `${context.dataset.label}: ${formatCurrency(context.raw)}`
-            }
-          }
-        },
-        scales: {
-          x: { stacked: true },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            ticks: {
-              callback: (value: any) => formatCurrency(value)
-            }
-          }
-        }
-      }
-    })
+// topgrid 차트 매트릭스 (지분자별 지급완료/미지급 스택 막대)
+const stakeholderMatrix = computed(() => {
+  const dists = summary.value.totalDistributions || []
+  return {
+    categories: dists.map(d => d.name),
+    series: [
+      { name: '지급완료', values: dists.map(d => d.paidAmount), color: '#10b981' },
+      { name: '미지급', values: dists.map(d => d.unpaidAmount), color: '#f59e0b' }
+    ]
   }
-
-  // 지분자별 배분 수평 막대 차트
-  if (stakeholderChartRef.value) {
-    if (stakeholderChart) { stakeholderChart.destroy() }
-
-    const distributions = summary.value.totalDistributions || []
-
-    stakeholderChart = new Chart(stakeholderChartRef.value, {
-      type: 'bar',
-      data: {
-        labels: distributions.map(d => d.name),
-        datasets: [
-          {
-            label: '지급완료',
-            data: distributions.map(d => d.paidAmount),
-            backgroundColor: '#10b981'
-          },
-          {
-            label: '미지급',
-            data: distributions.map(d => d.unpaidAmount),
-            backgroundColor: '#f59e0b'
-          }
-        ]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top' },
-          tooltip: {
-            callbacks: {
-              label: (context: any) => `${context.dataset.label}: ${formatCurrency(context.raw)}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            stacked: true,
-            beginAtZero: true,
-            ticks: {
-              callback: (value: any) => formatCurrency(value)
-            }
-          },
-          y: { stacked: true }
-        }
-      }
-    })
-  }
-}
+})
 
 // Lifecycle
 onMounted(async () => {
@@ -952,13 +827,12 @@ onMounted(async () => {
 
 .share-content {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 280px 1fr;
   gap: 2rem;
   align-items: center;
 }
 
 .share-chart-wrapper {
-  height: 180px;
   position: relative;
 }
 
@@ -1037,6 +911,12 @@ onMounted(async () => {
   border-radius: 16px;
   padding: 1.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card .chart-title {
+  flex-shrink: 0;
 }
 
 .chart-title {
@@ -1054,12 +934,13 @@ onMounted(async () => {
 }
 
 .chart-wrapper {
-  height: 300px;
+  flex: 1;
+  min-height: 260px;
   position: relative;
 }
 
 .chart-wrapper.bar {
-  height: 250px;
+  min-height: 260px;
 }
 
 /* 상세 테이블 */
@@ -1241,7 +1122,7 @@ onMounted(async () => {
   }
 
   .share-content {
-    grid-template-columns: 160px 1fr;
+    grid-template-columns: 240px 1fr;
   }
 }
 
@@ -1255,7 +1136,7 @@ onMounted(async () => {
   }
 
   .share-chart-wrapper {
-    max-width: 200px;
+    max-width: 280px;
     margin: 0 auto;
   }
 
