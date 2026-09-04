@@ -281,6 +281,7 @@
           @download-all-pdfs="downloadAllBaselinePdfs"
           @download-merged-pdf="downloadMergedBaselinePdf"
           @scan-uploaded="handleProgressPaymentSubmitted"
+          @baseline-cancelled="handleProgressPaymentSubmitted"
         />
 
         <!-- 잔금 탭 -->

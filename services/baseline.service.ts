@@ -355,6 +355,29 @@ export const baselineService = {
   },
 
   /**
+   * 기성 차수 취소 (수금 확인 전, 마지막 차수만)
+   * @description 물량 추가 후 재청구 등의 사유로 발행된 기성 차수를 되돌린다.
+   *              차수·품목 스냅샷·출하 연결·기성금 요청이 함께 정리되고 발행 PDF 는 백업 폴더로 이동한다.
+   *              취소 후 재청구 시 같은 차수 번호가 다시 부여된다.
+   * @param baselineId - 차수 ID
+   * @param reason - 취소 사유 (필수)
+   */
+  async cancelBaseline(baselineId: number, reason: string): Promise<void> {
+    const url = BASELINE_ENDPOINTS.cancel(baselineId)
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ reason })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || `기성 차수 취소 실패: ${response.statusText}`)
+    }
+  },
+
+  /**
    * 현재 수량 스냅샷 조회
    * @description 기성 청구 모달에서 현재 시점의 납품/출하 수량 조회
    */

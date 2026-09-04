@@ -100,6 +100,16 @@ export const BASELINE_ENDPOINTS = {
   },
 
   /**
+   * 기성 차수 취소 (수금 확인 전, 마지막 차수만)
+   * @param baselineId - 차수 ID
+   * @returns POST /admin/baselines/{baselineId}/cancel
+   */
+  cancel: (baselineId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/baselines/${baselineId}/cancel`
+  },
+
+  /**
    * 차수 상세 조회 (스냅샷 포함)
    * @param baselineId - 차수 ID
    * @returns GET /admin/baselines/{baselineId}

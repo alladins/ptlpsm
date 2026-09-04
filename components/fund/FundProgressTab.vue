@@ -55,7 +55,7 @@
             <th>수금일</th>
             <th>상태</th>
             <th>PDF</th>
-            <th>수금확인</th>
+            <th>관리</th>
           </tr>
         </thead>
         <tbody>
@@ -169,22 +169,35 @@
                 </button>
               </div>
             </td>
-            <!-- 수금확인 열 -->
+            <!-- 관리 열 (수금확인 + 차수 취소) -->
             <td>
-              <button
-                v-if="payment.status === 'APPROVED'"
-                class="btn-collection-confirm"
-                title="수금 확인"
-                @click="emit('openCollectionConfirm', payment)"
-              >
-                <i class="fas fa-check-circle" />
-                수금확인
-              </button>
-              <span v-else-if="payment.status === 'PAID'" class="collection-completed">
-                <i class="fas fa-check" />
-                완료
-              </span>
-              <span v-else class="collection-pending">-</span>
+              <div class="collection-actions">
+                <button
+                  v-if="payment.status === 'APPROVED'"
+                  class="btn-collection-confirm"
+                  title="수금 확인"
+                  @click="emit('openCollectionConfirm', payment)"
+                >
+                  <i class="fas fa-check-circle" />
+                  수금확인
+                </button>
+                <span v-else-if="payment.status === 'PAID'" class="collection-completed">
+                  <i class="fas fa-check" />
+                  완료
+                </span>
+                <span v-else class="collection-pending">-</span>
+
+                <!-- 차수 취소 (수금 확인 전 + 마지막 차수만) -->
+                <button
+                  v-if="isCancellable(payment)"
+                  class="btn-baseline-cancel"
+                  title="이 기성 차수를 취소합니다. 물량 추가 후 같은 차수로 다시 청구할 수 있습니다."
+                  @click="openCancelModal(payment)"
+                >
+                  <i class="fas fa-ban" />
+                  취소
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -199,6 +212,58 @@
       style="display: none"
       @change="onScanFileSelected"
     >
+
+    <!-- 기성 차수 취소 확인 모달 -->
+    <div v-if="cancelTarget" class="cancel-modal-overlay" @click.self="closeCancelModal">
+      <div class="cancel-modal">
+        <div class="cancel-modal-header">
+          <h5>
+            <i class="fas fa-exclamation-triangle" />
+            {{ cancelTarget.paymentSeq }}차 기성청구 취소
+          </h5>
+        </div>
+
+        <div class="cancel-modal-body">
+          <p class="cancel-summary">
+            청구금액 <strong>{{ formatCurrency(cancelTarget.requestAmount) }}</strong> ·
+            청구일 {{ cancelTarget.requestDate }}
+          </p>
+
+          <ul class="cancel-notice">
+            <li>차수 · 품목 스냅샷 · 출하 연결 · 기성금 요청이 함께 삭제됩니다.</li>
+            <li>연결된 출하는 다시 <strong>기성 청구 가능</strong> 상태로 돌아갑니다.</li>
+            <li>물량 추가 후 재청구하면 <strong>같은 {{ cancelTarget.paymentSeq }}차</strong>로 다시 부여됩니다.</li>
+            <li>발행된 PDF 는 삭제하지 않고 백업 폴더로 이동합니다.</li>
+            <li class="cancel-warning">
+              <i class="fas fa-exclamation-circle" />
+              이미 수요기관에 발송된 서류는 시스템에서 회수되지 않습니다. 별도 폐기·재송부가 필요합니다.
+            </li>
+          </ul>
+
+          <label class="cancel-reason-label">취소 사유 <span class="required">*</span></label>
+          <textarea
+            v-model="cancelReason"
+            class="cancel-reason-input"
+            rows="3"
+            placeholder="예) 물량 추가 후 재청구 예정"
+          />
+        </div>
+
+        <div class="cancel-modal-footer">
+          <button class="btn-cancel-close" :disabled="cancelling" @click="closeCancelModal">
+            닫기
+          </button>
+          <button
+            class="btn-cancel-confirm"
+            :disabled="cancelling || !cancelReason.trim()"
+            @click="confirmCancel"
+          >
+            <i :class="cancelling ? 'fas fa-spinner fa-spin' : 'fas fa-ban'" />
+            차수 취소
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -284,7 +349,65 @@ const emit = defineEmits<{
   downloadMergedPdf: [baselineId: number, recipientName: string]
   /** 스캔본 업로드 완료 → 목록 갱신 */
   scanUploaded: []
+  /** 기성 차수 취소 완료 → 목록 갱신 */
+  baselineCancelled: []
 }>()
+
+// ============ 기성 차수 취소 ============
+
+// 마지막 차수 번호 — 중간 차수를 지우면 이후 차수의 누계(전회기성)가 어긋나므로 마지막만 취소 허용
+const lastPaymentSeq = computed(() => {
+  const seqs = filteredProgressPayments.value
+    .map(p => p.paymentSeq)
+    .filter((s): s is number => typeof s === 'number')
+  return seqs.length > 0 ? Math.max(...seqs) : null
+})
+
+/**
+ * 취소 가능 여부 — 수금 확인 전 + 마지막 차수만
+ * @description 수금 확인 시 자금 누계·선급금 정산·커미션이 함께 반영되어 역산이 불가능하다.
+ *              백엔드에도 동일 가드가 있으며 여기서는 버튼 노출만 제어한다.
+ */
+const isCancellable = (payment: ProgressPaymentRequest) => {
+  if (!payment.baselineId) { return false }
+  if (payment.status === 'PAID') { return false }
+  if (payment.paymentDate) { return false }
+  return payment.paymentSeq === lastPaymentSeq.value
+}
+
+const cancelTarget = ref<ProgressPaymentRequest | null>(null)
+const cancelReason = ref('')
+const cancelling = ref(false)
+
+const openCancelModal = (payment: ProgressPaymentRequest) => {
+  cancelTarget.value = payment
+  cancelReason.value = ''
+}
+
+const closeCancelModal = () => {
+  if (cancelling.value) { return }
+  cancelTarget.value = null
+  cancelReason.value = ''
+}
+
+const confirmCancel = async () => {
+  const target = cancelTarget.value
+  const reason = cancelReason.value.trim()
+  if (!target?.baselineId || !reason) { return }
+
+  cancelling.value = true
+  try {
+    await baselineService.cancelBaseline(target.baselineId, reason)
+    alert(`${target.paymentSeq}차 기성청구가 취소되었습니다. 물량 추가 후 다시 청구할 수 있습니다.`)
+    cancelTarget.value = null
+    cancelReason.value = ''
+    emit('baselineCancelled')
+  } catch (e: any) {
+    alert(e?.message || '기성 차수 취소 중 오류가 발생했습니다.')
+  } finally {
+    cancelling.value = false
+  }
+}
 
 // 서명본 스캔 업로드
 const scanInputRef = ref<HTMLInputElement | null>(null)
@@ -623,6 +746,174 @@ const {
 
 .collection-pending {
   color: #9ca3af;
+}
+
+/* 수금확인/취소 버튼 묶음 — 가로 배치 (취소는 수금확인 오른쪽) */
+.collection-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.375rem;
+  white-space: nowrap;
+}
+
+/* 기성 차수 취소 버튼 (수금 확인 전 + 마지막 차수만 노출) */
+.btn-baseline-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  background: white;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-baseline-cancel:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+}
+
+/* ===== 기성 차수 취소 모달 ===== */
+.cancel-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.cancel-modal {
+  width: min(520px, calc(100vw - 2rem));
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+.cancel-modal-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cancel-modal-header h5 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.cancel-modal-body {
+  padding: 1.25rem;
+}
+
+.cancel-summary {
+  margin: 0 0 0.875rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.cancel-notice {
+  margin: 0 0 1rem;
+  padding-left: 1.125rem;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: #4b5563;
+}
+
+.cancel-notice .cancel-warning {
+  margin-top: 0.5rem;
+  color: #b45309;
+  list-style: none;
+  margin-left: -1.125rem;
+  padding: 0.5rem 0.625rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 4px;
+}
+
+.cancel-reason-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.cancel-reason-label .required {
+  color: #dc2626;
+}
+
+.cancel-reason-input {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.cancel-reason-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.cancel-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-cancel-close {
+  padding: 0.5rem 0.875rem;
+  background: white;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-cancel-close:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.btn-cancel-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-cancel-confirm:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.btn-cancel-confirm:disabled,
+.btn-cancel-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 버튼 스타일 */
