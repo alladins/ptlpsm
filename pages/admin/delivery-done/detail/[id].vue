@@ -515,7 +515,7 @@
                 <div class="photo-group-title">
                   <span>출하 #{{ group.deliveryId }} <span class="photo-count">({{ group.photos.length }}/5, 대지 {{ (pendingSelection[group.deliveryId] || []).length }}/2)</span></span>
                   <button
-                    v-if="canEditPhotos"
+                    v-if="canManagePhotos"
                     class="photo-save-select-btn"
                     :disabled="busySaveDeliveryId === group.deliveryId"
                     @click="saveSelection(group.deliveryId)"
@@ -536,13 +536,13 @@
                         <input
                           type="checkbox"
                           :checked="isPhotoSelected(photo)"
-                          :disabled="!canEditPhotos"
+                          :disabled="!canManagePhotos"
                           @change="togglePhotoSelect(photo)"
                         >
                         대지
                       </label>
                     </div>
-                    <label class="photo-btn replace" :class="{ disabled: busyPhotoId === photo.photoId }">
+                    <label v-if="canManagePhotos" class="photo-btn replace" :class="{ disabled: busyPhotoId === photo.photoId }">
                       <i v-if="busyPhotoId === photo.photoId" class="fas fa-spinner fa-spin" />
                       <template v-else><i class="fas fa-sync-alt" /> 교체</template>
                       <input
@@ -557,7 +557,7 @@
 
                   <!-- 추가 슬롯 (출하당 5장 미만일 때) -->
                   <label
-                    v-if="group.photos.length < 5"
+                    v-if="group.photos.length < 5 && canManagePhotos"
                     class="photo-add-slot"
                     :class="{ disabled: busyDeliveryId === group.deliveryId }"
                   >
@@ -657,6 +657,7 @@ import { getDeliveryDoneDetail, fetchHtmlPreview, getDeliveryDonePhotos, replace
 import { getApiBaseUrl, getAuthHeaders } from '~/services/api'
 import { formatNumber, formatCurrency } from '~/utils/format'
 import { useCommonStatus } from '~/composables/useCommonStatus'
+import { useDemoMode } from '~/composables/useDemoMode'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import AccordionSection from '~/components/admin/forms/AccordionSection.vue'
@@ -674,6 +675,9 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
+
+// 데모 모드: 관람 화면 내부의 파괴적/실행성 버튼을 숨기기 위한 빌드 플래그 (검증 H1)
+const isDemoMode = useDemoMode()
 
 // DB 기반 상태 관리
 const { loadStatusCodes, getStatusLabel, getStatusClass: getStatusBadgeClass } = useCommonStatus()
@@ -771,6 +775,8 @@ const photoGroups = computed(() => {
 
 // 제출완료(SUBMITTED) 건은 사진 변경 불가
 const canEditPhotos = computed(() => !!data.value && data.value.status !== 'SUBMITTED')
+// 사진 교체/추가/대지선택 저장(파괴적: 사진대지 PDF 재생성)은 데모 모드에서 숨김 — 조회는 유지
+const canManagePhotos = computed(() => canEditPhotos.value && !isDemoMode)
 
 // 품목 합계 계산
 const totalOrderedQty = computed(() => {
@@ -834,6 +840,8 @@ const canAdminAction = computed(() =>
 )
 
 const canCompleteManually = computed(() => {
+  // 데모 모드에서는 파괴적 액션 숨김 (관람 전용)
+  if (isDemoMode) { return false }
   if (!canAdminAction.value || !data.value) { return false }
   const status = data.value.status
   if (status === 'SUBMITTED' || status === 'COMPLETED') { return false }
@@ -842,6 +850,8 @@ const canCompleteManually = computed(() => {
 })
 
 const canResetItem = computed(() => {
+  // 데모 모드에서는 파괴적 액션 숨김 (관람 전용)
+  if (isDemoMode) { return false }
   // 권한: SYSTEM_ADMIN + LEADPOWER_MANAGER(담당자). SUBMITTED 는 제외.
   if (!canAdminAction.value || !data.value) { return false }
   const status = data.value.status
@@ -858,11 +868,15 @@ const canResetItem = computed(() => {
 })
 
 const canUploadScan = computed(() => {
+  // 데모 모드에서는 파괴적 액션 숨김 (관람 전용)
+  if (isDemoMode) { return false }
   if (!canAdminAction.value || !data.value) { return false }
   return !!data.value.isManualComplete
 })
 
 const canRegeneratePdfs = computed(() => {
+  // 데모 모드에서는 파괴적 액션 숨김 (관람 전용)
+  if (isDemoMode) { return false }
   // 권한: SYSTEM_ADMIN + LEADPOWER_MANAGER(담당자). SUBMITTED 는 제외. 잔금 가드 없음 (회계 컬럼 미수정).
   if (!canAdminAction.value || !data.value) { return false }
   const status = data.value.status
@@ -873,6 +887,8 @@ const canRegeneratePdfs = computed(() => {
 })
 
 const canRecalculate = computed(() => {
+  // 데모 모드에서는 파괴적 액션 숨김 (관람 전용)
+  if (isDemoMode) { return false }
   // 권한: SYSTEM_ADMIN 전용. SUBMITTED 는 제외. (출하 재배정/추가수량 정정 후 보정용)
   if (!isSystemAdmin.value || !data.value) { return false }
   return data.value.status !== 'SUBMITTED'

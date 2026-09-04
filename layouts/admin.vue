@@ -82,6 +82,9 @@
         </div>
       </div>
     </div>
+
+    <!-- 데모 전용 플로팅 문의 CTA (퍼널 약한 CTA, D2) — 데모 빌드에서만 노출 -->
+    <DemoFloatingCta v-if="isDemoMode" />
   </div>
 </template>
 
@@ -92,12 +95,17 @@ import { useAuthStore } from '~/stores/auth'
 import { authService } from '~/services/auth.service'
 import SidebarMenu from '~/components/admin/SidebarMenu.vue'
 import ImpersonationBanner from '~/components/admin/common/ImpersonationBanner.vue'
+import DemoFloatingCta from '~/components/demo/DemoFloatingCta.vue'
 import { notificationService } from '~/services/notification.service'
 import { EVENT_ICON_MAP } from '~/types/notification'
 import type { Notification } from '~/types/notification'
+import { useDemoMode } from '~/composables/useDemoMode'
 
 // Stores
 const authStore = useAuthStore()
+
+// 데모 모드: 플로팅 문의 CTA 조건부 렌더 (D2)
+const isDemoMode = useDemoMode()
 
 // Reactive data
 const sidebarCollapsed = ref(false)

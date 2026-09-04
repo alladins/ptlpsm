@@ -149,7 +149,9 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter } from '#imports'
+import { useDemoMode } from '~/composables/useDemoMode'
 
 useHead({
   title: 'PTPLPSM - 통합 출하관리 시스템',
@@ -160,11 +162,14 @@ useHead({
 
 const router = useRouter()
 
-const showAlert = (message: string) => {
-  if (process.client) {
-    alert(message)
+// 데모 빌드: 마케팅 홈(루트) 대신 데모 랜딩(로그인 = "데모 시작")으로 유도.
+// 데모 도메인 루트가 곧 데모 시작점이 되도록 하며, dev/prod 에서는 isDemoMode=false 라 동작 안 함.
+const isDemoMode = useDemoMode()
+onMounted(() => {
+  if (isDemoMode) {
+    router.replace('/login')
   }
-}
+})
 
 const goToAdmin = () => {
   // 로그인 페이지로 이동

@@ -24,8 +24,43 @@
         {{ errorMessage }}
       </div>
 
-      <!-- 로그인 폼 -->
-      <form class="login-form" @submit.prevent="handleLogin">
+      <!-- 데모 안내 랜딩 (데모 빌드 전용) -->
+      <div v-if="isDemoMode" class="demo-landing">
+        <p class="demo-intro">
+          가입 없이 바로 체험하는 <strong>플랫트리 출하관리 데모</strong>입니다.<br>
+          아래 버튼을 누르면 데모 계정으로 자동 입장합니다.
+        </p>
+        <button
+          type="button"
+          class="login-button demo-start-button"
+          :disabled="isLoading"
+          @click="startDemo"
+        >
+          <span v-if="!isLoading" class="button-content">
+            데모 시작
+            <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </span>
+          <span v-else class="button-loading">
+            <svg class="loading-spinner" fill="none" viewBox="0 0 24 24">
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            입장 중...
+          </span>
+        </button>
+      </div>
+
+      <!-- 로그인 폼 (데모 빌드에서는 숨김) -->
+      <form v-if="!isDemoMode" class="login-form" @submit.prevent="handleLogin">
         <!-- 아이디 입력 -->
         <div class="form-group">
           <label for="loginId" class="form-label">
@@ -126,6 +161,7 @@ import { ref } from 'vue'
 import { useRouter } from '#imports'
 import { useAuthStore } from '~/stores/auth'
 import { authService } from '~/services/auth.service'
+import { useDemoMode } from '~/composables/useDemoMode'
 
 useHead({
   title: '로그인 - PTPLPSM 통합 출하관리 시스템',
@@ -137,6 +173,10 @@ useHead({
 const router = useRouter()
 const authStore = useAuthStore()
 
+// 데모 모드: 랜딩을 "데모 시작" 버튼(고정 계정 자동 로그인)으로 대체 (D4·D5)
+const isDemoMode = useDemoMode()
+const runtimeConfig = useRuntimeConfig()
+
 const form = ref({
   loginId: '',
   password: '',
@@ -145,6 +185,17 @@ const form = ref({
 
 const isLoading = ref(false)
 const errorMessage = ref('')
+
+// 데모 시작: 고정 데모 계정(.env.demo)으로 자동 로그인 후 대시보드 진입
+const startDemo = async () => {
+  form.value.loginId = String(runtimeConfig.public.demoLoginId || '')
+  form.value.password = String(runtimeConfig.public.demoLoginPw || '')
+  if (!form.value.loginId || !form.value.password) {
+    errorMessage.value = '데모 계정이 설정되지 않았습니다. 관리자에게 문의해주세요.'
+    return
+  }
+  await handleLogin()
+}
 
 const handleLogin = async () => {
   if (isLoading.value) { return }
@@ -351,6 +402,25 @@ onMounted(async () => {
 .checkbox-text {
   font-size: 0.875rem;
   color: #374151;
+}
+
+/* 데모 안내 랜딩 */
+.demo-landing {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.demo-intro {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #374151;
+  text-align: center;
+  margin: 0;
+}
+
+.demo-start-button {
+  margin-top: 0.5rem;
 }
 
 /* 로그인 버튼 */

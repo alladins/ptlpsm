@@ -258,6 +258,7 @@ import UiMobileSignatureCanvas from '~/components/ui/mobile/SignatureCanvas.vue'
 import UiMobilePhotoUploader from '~/components/ui/mobile/PhotoUploader.vue'
 import DeliveryGuideModal from '~/components/ui/mobile/DeliveryGuideModal.vue'
 import { useDeliveryGuide } from '~/composables/useDeliveryGuide'
+import { useDemoMode } from '~/composables/useDemoMode'
 
 definePageMeta({
   layout: false, // 모바일 전용 레이아웃이므로 기본 레이아웃 사용 안 함
@@ -266,6 +267,10 @@ definePageMeta({
 
 const route = useRoute()
 const token = route.params.token as string
+
+// 데모 모드(D1): 서명·완료 UI 연출은 그대로 재현하되 실제 상태변경 API 는 호출하지 않는다.
+// → 데모 서명 건이 COMPLETED 로 전이되지 않아 방문자 간 무한 재사용 가능(토큰 소진·간섭 해소).
+const isDemoMode = useDemoMode()
 
 // signature 모드: ?mode=signature 일 때 사진 섹션 숨기고 서명만 요구
 const mode = computed(() => (route.query.mode === 'signature' ? 'signature' : 'full'))
@@ -300,6 +305,11 @@ const closePhotoViewer = () => {
 // 조회 섹션의 사진 삭제 (배달기사 모드에서만 호출)
 const handleRemoveReceivedPhoto = async (tempPhotoId: string) => {
   if (!confirm('이 사진을 삭제하시겠습니까?')) { return }
+  // 데모(D1): deleteTempPhoto 미호출 — 화면상에서만 제거(서버 시드 사진 보존)
+  if (isDemoMode) {
+    receivedPhotos.value = receivedPhotos.value.filter(p => p.tempPhotoId !== tempPhotoId)
+    return
+  }
   try {
     await deliveryService.deleteTempPhoto(token, tempPhotoId)
     receivedPhotos.value = receivedPhotos.value.filter(p => p.tempPhotoId !== tempPhotoId)
@@ -394,26 +404,33 @@ const handleSignatureSave = async (blob: Blob) => {
   try {
     console.log('서명 저장:', blob)
 
-    // 서명 저장 시 GPS 정보도 함께 수집
-    let latitude: number | undefined
-    let longitude: number | undefined
+    let result: { message: string }
 
-    if (navigator.geolocation) {
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 5000
+    if (isDemoMode) {
+      // 데모(D1): uploadSignature 미호출 — GPS 수집·서버 저장 없이 저장 연출만 재현
+      result = { message: '서명이 저장되었습니다. (데모 체험)' }
+    } else {
+      // 서명 저장 시 GPS 정보도 함께 수집
+      let latitude: number | undefined
+      let longitude: number | undefined
+
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 5000
+            })
           })
-        })
-        latitude = position.coords.latitude
-        longitude = position.coords.longitude
-        console.log('서명 시 위치 정보:', latitude, longitude)
-      } catch (gpsErr) {
-        console.log('위치 정보 획득 실패 (선택사항이므로 계속 진행)')
+          latitude = position.coords.latitude
+          longitude = position.coords.longitude
+          console.log('서명 시 위치 정보:', latitude, longitude)
+        } catch (gpsErr) {
+          console.log('위치 정보 획득 실패 (선택사항이므로 계속 진행)')
+        }
       }
-    }
 
-    const result = await deliveryService.uploadSignature(token, blob, { latitude, longitude })
+      result = await deliveryService.uploadSignature(token, blob, { latitude, longitude })
+    }
 
     // 서버 응답 성공 시 컴포넌트를 저장 완료 상태로 변경
     signatureRef.value?.markAsSaved()
@@ -478,8 +495,10 @@ const handleSubmit = async () => {
     // 사진은 이미 temp에 업로드 완료됨 (촬영 시 즉시 업로드)
     // GPS 정보는 서명 저장 시 이미 수집됨
 
-    // 납품 완료 처리
-    const result = await deliveryService.confirmDelivery(token, {})
+    // 납품 완료 처리 — 데모(D1)에서는 confirmDelivery 미호출, 완료 연출만 재현
+    const result = isDemoMode
+      ? { confirmedAt: new Date().toISOString() }
+      : await deliveryService.confirmDelivery(token, {})
 
     console.log('납품 완료:', result)
 

@@ -251,7 +251,14 @@ export default defineNuxtConfig({
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
       siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'PTLPSM',
       // topgrid Pro 차트 라이선스 키 (도메인 바인딩 — 환경별 .env 에서 주입, 미설정 시 워터마크만 표시)
-      topgridLicenseKey: process.env.NUXT_PUBLIC_TOPGRID_LICENSE_KEY || ''
+      topgridLicenseKey: process.env.NUXT_PUBLIC_TOPGRID_LICENSE_KEY || '',
+      // 데모 모드 플래그 (검증 H1) — .env.demo(generate:demo)에서만 true. 기본값 false 로 dev/prod 빌드 영향 없음.
+      demoMode: process.env.NUXT_PUBLIC_DEMO_MODE === 'true',
+      // 데모 공용 계정 (D4) — 랜딩 "데모 시작" 자동 로그인용. 데모 빌드에서만 채워짐(그 외 공란).
+      demoLoginId: process.env.NUXT_PUBLIC_DEMO_LOGIN_ID || '',
+      demoLoginPw: process.env.NUXT_PUBLIC_DEMO_LOGIN_PW || '',
+      // 문의 CTA 링크 (D2) — 플랫트리 홈페이지 문의 페이지 base URL. 데모 빌드에서만 채워짐.
+      inquiryUrl: process.env.NUXT_PUBLIC_INQUIRY_URL || ''
     }
   },
 
@@ -287,7 +294,13 @@ export default defineNuxtConfig({
 
   experimental: {
     payloadExtraction: true,
-    viewTransition: true
+    // View Transitions API 비활성화
+    // 켜두면 라우트 전환마다 document.startViewTransition() 을 쓰는데,
+    // DOM 업데이트가 브라우저 타임아웃(약 4초) 안에 안 끝나면
+    // "TimeoutError: Transition was aborted because of timeout in DOM update" 가 발생한다.
+    // 대시보드처럼 초기 조회가 무거운 화면에서 간헐적으로 터져 오류게시판에 노이즈로 쌓였다.
+    // 관리자 화면에서 전환 애니메이션 이득이 크지 않아 끈다.
+    viewTransition: false
   },
 
   devServer: {
