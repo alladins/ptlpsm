@@ -164,6 +164,38 @@ const response = await fetch(url, { headers: getAuthHeaders() })
 - **Memory**: 정적 빌드 시 4GB 할당 (`--max-old-space-size=4096`)
 - **Language**: 한국어 (`lang: 'ko'`)
 
+## 시간대(타임존) 규칙 (중요!)
+
+### 원칙: 저장은 UTC, 화면 표시만 KST
+
+백엔드는 **모든 시각을 UTC로 저장·응답**한다(JVM·DB 세션·Jackson 모두 UTC 강제).
+프론트가 **표시 시점에 KST로 변환**하는 것이 이 프로젝트의 유일한 변환 지점이다.
+
+### 반드시 공통 유틸을 사용할 것
+
+```typescript
+// ✅ 올바른 예시 — parseUtcDate + timeZone: 'Asia/Seoul' 내장
+import { formatDate, formatDateTime } from '~/utils/format'
+
+formatDateTime(log.accessTime)
+```
+
+```typescript
+// ❌ 금지 — 서비스/컴포넌트에서 자체 포맷 구현
+new Date(dateString).toLocaleString('ko-KR', { year: 'numeric', ... })
+```
+
+`toLocaleString`에 `timeZone`을 지정하지 않으면 브라우저 로컬 시각으로 해석되어
+**변환이 일어나지 않고 9시간 이른 시각이 조용히 표시된다**. 에러가 나지 않아 발견이 늦다.
+
+> 실제 사례: 접근로그 화면이 `access-log.service.ts`에 자체 `formatDateTime`을 두어
+> 전 기간 로그가 9시간 이르게 표시됨 (2026-08-25 수정).
+
+### 날짜 검색 조건
+
+검색 파라미터의 날짜는 KST 기준으로 보내고, 백엔드가 UTC 범위로 변환해 조회한다.
+프론트에서 별도 보정하지 않는다. 필요 시 `formatDateForApi`, `toUtcIsoString` 유틸 사용.
+
 ## 페이징 규칙 (중요!)
 
 ### API 페이징 (0-indexed)

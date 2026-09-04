@@ -411,9 +411,13 @@ const loadData = async () => {
     totalElements.value = response.totalElements || 0
     totalPages.value = response.totalPages || 0
 
-    // 통계 계산
-    const stats = accessLogService.calculateStatistics(logs.value)
-    Object.assign(statistics, stats)
+    // 통계는 백엔드 집계값 사용 (현재 페이지가 아닌 전체 데이터 기준)
+    try {
+      const stats = await accessLogService.getStatistics()
+      Object.assign(statistics, stats)
+    } catch (statError) {
+      console.error('접근로그 통계 조회 실패:', statError)
+    }
   } catch (error) {
     console.error('접근로그 조회 실패:', error)
     logs.value = []

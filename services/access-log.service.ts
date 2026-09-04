@@ -3,11 +3,10 @@
  * @description 접근로그 조회 및 통계 관련 서비스
  */
 
-import { getLocalDateString } from '~/utils/format'
+import { formatDate } from '~/utils/format'
 import { ACCESS_LOG_ENDPOINTS } from './api/endpoints/access-log.endpoints'
 import { getAuthHeaders } from './api'
 import type {
-  AccessLog,
   AccessLogSearchParams,
   AccessLogListResponse,
   AccessLogStatistics
@@ -54,28 +53,24 @@ export const accessLogService = {
   },
 
   /**
-   * 접근로그 통계 계산 (프론트엔드에서 계산)
-   * @param logs - 접근로그 목록
-   * @returns 통계 정보
+   * 접근로그 요약 통계 조회 (백엔드 집계)
+   *
+   * 과거에는 현재 페이지에 불러온 로그(기본 20건)만으로 프론트에서 계산해
+   * 전체 수치와 맞지 않았다. DB 에서 집계한 값을 사용한다.
+   * 기준일은 KST 오늘(00:00~24:00) — 백엔드가 UTC 범위로 변환해 집계한다.
    */
-  calculateStatistics(logs: AccessLog[]): AccessLogStatistics {
-    const today = getLocalDateString()
-    const todayLogs = logs.filter(log => log.accessTime.startsWith(today))
+  async getStatistics(): Promise<AccessLogStatistics> {
+    const response = await fetch(ACCESS_LOG_ENDPOINTS.statistics(), {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    })
 
-    // 오늘 접속자 수 (고유 사용자)
-    const uniqueUsers = new Set(todayLogs.map(l => l.username))
-
-    // 로그인 관련 로그
-    const loginLogs = todayLogs.filter(l =>
-      l.accessUrl.includes('/login') || l.accessUrl.includes('/auth')
-    )
-
-    return {
-      todayVisitors: uniqueUsers.size,
-      successLogins: loginLogs.filter(l => l.statusCode === 200).length,
-      failedLogins: loginLogs.filter(l => l.statusCode !== 200).length,
-      errorCount: todayLogs.filter(l => l.statusCode >= 400).length
+    if (!response.ok) {
+      throw new Error(`접근로그 통계 조회 실패: ${response.statusText}`)
     }
+
+    return response.json()
   },
 
   /**
@@ -105,14 +100,20 @@ export const accessLogService = {
    */
   formatDateTime(dateString: string): string {
     if (!dateString) return '-'
-    const date = new Date(dateString)
-    return date.toLocaleString('ko-KR', {
+
+    // ⚠️ 백엔드는 시각을 UTC 로 저장·응답한다(JVM·DB 세션 모두 UTC).
+    //    타임존 표기가 없는 문자열이라 new Date() 로 파싱하면 브라우저 로컬시각으로
+    //    해석되어 변환이 일어나지 않고, 화면에 9시간 이른 시각이 찍힌다.
+    //    → 공통 유틸(parseUtcDate + timeZone: 'Asia/Seoul')을 사용해 KST 로 변환한다.
+    return formatDate(dateString, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Seoul'
     })
   },
 
