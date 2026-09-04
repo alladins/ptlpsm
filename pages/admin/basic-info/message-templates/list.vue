@@ -183,7 +183,7 @@
       v-if="templates.length > 0"
       :current-page="currentPage"
       :total-pages="totalPages"
-      @change-page="changePage"
+      @change="changePage"
     />
   </div>
 </template>
