@@ -69,22 +69,25 @@
               <table v-else class="history-table">
                 <thead>
                   <tr>
-                    <th style="width: 130px">
+                    <th style="width: 125px">
                       공급사명
                     </th>
-                    <th style="width: 70px; text-align: center">
+                    <th style="width: 64px; text-align: center">
                       유형
                     </th>
-                    <th style="width: 100px" class="text-right">
+                    <th style="width: 92px" class="text-right">
                       이전 원가
                     </th>
-                    <th style="width: 100px" class="text-right">
+                    <th style="width: 92px" class="text-right">
                       변경 원가
                     </th>
-                    <th style="width: 90px">
+                    <th style="width: 180px">
+                      적용기간
+                    </th>
+                    <th style="width: 84px" class="nowrap-cell">
                       변경자
                     </th>
-                    <th style="width: 150px">
+                    <th style="width: 150px" class="nowrap-cell">
                       변경일시
                     </th>
                     <th>사유</th>
@@ -107,9 +110,12 @@
                     <td class="text-right cost-value">
                       {{ item.newCost ? formatCurrency(item.newCost) : '-' }}
                     </td>
-                    <td>{{ item.changedByName || item.changedBy }}</td>
-                    <td>{{ formatDateTime(item.changedAt) }}</td>
-                    <td class="reason-cell">
+                    <td class="period-cell" :title="`적용기간 변경: ${formatPeriodChange(item)}`">
+                      {{ formatAppliedPeriod(item) }}
+                    </td>
+                    <td class="nowrap-cell">{{ item.changedByName || item.changedBy }}</td>
+                    <td class="nowrap-cell">{{ formatDateTime(item.changedAt) }}</td>
+                    <td class="reason-cell" :title="item.changeReason || ''">
                       {{ item.changeReason || '-' }}
                     </td>
                   </tr>
@@ -132,7 +138,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { formatDateTime } from '~/utils/format'
+import { formatDateTime, utcToKstDateString } from '~/utils/format'
 import { oemCostService } from '~/services/oem-cost.service'
 import { calculateMarginRate, getMarginRateClass, COST_CHANGE_TYPE_LABELS } from '~/types/oem-cost'
 import type { OemCost, OemCostHistory, CostChangeType } from '~/types/oem-cost'
@@ -191,6 +197,118 @@ const formatDateRange = (cost: OemCost): string => {
   const start = cost.effectiveDate || '-'
   const end = cost.expiryDate || '무기한'
   return `${start} ~ ${end}`
+}
+
+// 이력의 적용기간 변경 표기 (변경 전 → 변경 후) — 툴팁용 원본 표기
+// effective_date/expiry_date 는 DATE 컬럼(yyyy-MM-dd)이라 타임존 변환 대상이 아니다.
+// V3.13.0 이전 이력은 4개 필드가 모두 null 이므로 '-' 로 표시된다.
+const formatHistoryPeriod = (from: string | null, to: string | null): string => {
+  if (!from && !to) { return '-' }
+  return `${from || '-'} ~ ${to || '무기한'}`
+}
+
+const formatPeriodChange = (item: OemCostHistory): string => {
+  const before = formatHistoryPeriod(item.oldEffectiveDate, item.oldExpiryDate)
+  const after = formatHistoryPeriod(item.newEffectiveDate, item.newExpiryDate)
+  if (before === '-' && after === '-') { return '-' }
+  if (before === after) { return after }
+  return `${before} → ${after}`
+}
+
+/**
+ * yyyy-MM-dd 문자열에서 하루 전 날짜를 구한다.
+ * Date.UTC 로 다뤄 로컬 타임존 영향을 받지 않게 한다(DATE 값이라 시각 개념이 없다).
+ */
+const minusOneDay = (dateStr: string): string => {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  if (!y || !m || !d) { return dateStr }
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  dt.setUTCDate(dt.getUTCDate() - 1)
+  return dt.toISOString().slice(0, 10)
+}
+
+/**
+ * 각 이력 행이 "그 변경으로 적용된 원가 구간"을 나타내도록 재구성한다.
+ *
+ * 마스터(item_sku_oem_cost)는 SKU+공급사당 1행만 유지하므로 과거 구간이 물리적으로 없다.
+ * 따라서 이력 목록 안에서 구간을 파생 계산한다.
+ *  - 시작일 = new_effective_date (없으면 old_effective_date → 이후 이력의 시작일 → 현재 원가 시작일 순 폴백)
+ *  - 종료일 = 이후 이력 중 시작일이 자기보다 뒤인 첫 값의 "하루 전" (= 다음 구간이 시작되며 닫힘)
+ *            없으면 자기 만료일, 그것도 없으면 무기한
+ *  - 삭제(DELETE) 이력은 그 시점에 구간이 끝난 것으로 본다.
+ * 공급사(+원가유형)가 섞여 오는 SKU 전체 이력 조회를 위해 그룹별로 계산한다.
+ */
+const appliedPeriodMap = computed<Record<number, string>>(() => {
+  const result: Record<number, string> = {}
+  const groups = new Map<string, OemCostHistory[]>()
+
+  for (const item of historyList.value) {
+    const key = `${item.oemCompanyId ?? ''}_${item.costSourceType ?? ''}`
+    if (!groups.has(key)) { groups.set(key, []) }
+    groups.get(key)!.push(item)
+  }
+
+  const currentKey = props.currentCost
+    ? `${props.currentCost.oemCompanyId ?? ''}_${props.currentCost.costSourceType ?? ''}`
+    : null
+
+  for (const [groupKey, rows] of groups.entries()) {
+    // 오래된 순 정렬 (동일 시각이면 id 순)
+    const asc = [...rows].sort((a, b) => {
+      const t = String(a.changedAt).localeCompare(String(b.changedAt))
+      return t !== 0 ? t : a.id - b.id
+    })
+
+    // 1) 각 행의 시작일 후보
+    const starts: (string | null)[] = asc.map(r => r.newEffectiveDate || r.oldEffectiveDate || null)
+
+    // 2) 시작일이 없는 과거 이력(V3.13.0 이전)은 뒤쪽 이력에서 역산한다.
+    //    이후 이력의 old_effective_date(= 그 시점에 적용 중이던 구간의 시작일)를 최우선으로 쓰고,
+    //    없으면 이후 이력의 시작일 → 현재 원가의 시작일 순으로 폴백한다.
+    const tailFallback = (currentKey && currentKey === groupKey)
+      ? (props.currentCost?.effectiveDate || null)
+      : null
+    let laterOldEffective: string | null = null
+    for (let i = starts.length - 1; i >= 0; i--) {
+      if (!starts[i]) {
+        const nextStart = i + 1 < starts.length ? starts[i + 1] : null
+        starts[i] = laterOldEffective || nextStart || tailFallback
+      }
+      if (asc[i].oldEffectiveDate) { laterOldEffective = asc[i].oldEffectiveDate }
+    }
+
+    // 3) 종료일 계산
+    asc.forEach((row, i) => {
+      const start = starts[i]
+      let end: string | null = null
+
+      if (row.changeType === 'DELETE') {
+        end = utcToKstDateString(row.changedAt) || null
+      } else {
+        for (let j = i + 1; j < asc.length; j++) {
+          if (asc[j].changeType === 'DELETE') {
+            end = utcToKstDateString(asc[j].changedAt) || null
+            break
+          }
+          const nextStart = starts[j]
+          if (nextStart && start && nextStart > start) {
+            // 다음 구간 시작일 당일부터 새 원가가 적용되므로 이전 구간은 그 하루 전에 끝난다
+            end = minusOneDay(nextStart)
+            break
+          }
+        }
+        if (!end) { end = row.newExpiryDate || null }
+      }
+
+      result[row.id] = start ? `${start} ~ ${end || '무기한'}` : '-'
+    })
+  }
+
+  return result
+})
+
+const formatAppliedPeriod = (item: OemCostHistory): string => {
+  return appliedPeriodMap.value[item.id] || '-'
 }
 
 // 마진율
@@ -482,10 +600,13 @@ watch(() => props.isOpen, (newVal) => {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+  /* th 의 width 를 그대로 지키게 한다(auto 면 내용에 따라 제멋대로 재배분된다).
+     마지막 '사유' 컬럼이 남은 폭을 전부 가져가고, 셀 말줄임도 이때만 정상 동작한다. */
+  table-layout: fixed;
 }
 
 .history-table th {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.625rem;
   text-align: left;
   font-weight: 600;
   color: #6b7280;
@@ -494,7 +615,7 @@ watch(() => props.isOpen, (newVal) => {
 }
 
 .history-table td {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.625rem;
   border-bottom: 1px solid #e5e7eb;
   background: white;
 }
@@ -512,18 +633,30 @@ watch(() => props.isOpen, (newVal) => {
   color: #1f2937;
 }
 
+/* 사유는 폭이 정해진 다른 컬럼이 쓰고 남은 공간을 전부 차지한다.
+   max-width 를 걸면 남는 공간이 있어도 그 폭에서 잘리므로 걸지 않는다
+   (기존 120px 고정 탓에 사유가 실제보다 훨씬 일찍 잘렸다).
+   길면 말줄임 + title 툴팁으로 전문을 보여준다. */
 .reason-cell {
-  max-width: 120px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .company-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
+  /* td 에 display:flex 를 걸면 셀이 테이블 박스 모델에서 빠져 익명 셀이 생기고
+     이름 아래에 빈 줄이 생긴다. 배지는 inline-block 이라 flex 가 필요 없다. */
   font-weight: 500;
+  vertical-align: middle;
+}
+
+.company-cell .source-badge {
+  margin-left: 0.375rem;
+}
+
+/* 변경자·변경일시는 줄바꿈되면 읽기 어려워 한 줄 고정 */
+.nowrap-cell {
+  white-space: nowrap;
 }
 
 .source-badge {
@@ -609,5 +742,14 @@ watch(() => props.isOpen, (newVal) => {
 .modal-enter-from .history-modal,
 .modal-leave-to .history-modal {
   transform: scale(0.95) translateY(-20px);
+}
+
+/* 적용기간 변경 셀 - 날짜가 길어 줄바꿈 허용 */
+.period-cell {
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.35;
+  /* "2026-01-01 ~ 2026-06-15" 가 두 줄로 꺾이지 않도록 한 줄 유지 */
+  white-space: nowrap;
 }
 </style>

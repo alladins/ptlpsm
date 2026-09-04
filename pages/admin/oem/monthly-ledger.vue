@@ -13,6 +13,11 @@
           <i v-else class="fas fa-search" />
           조회
         </button>
+        <button class="btn-action" :disabled="exporting || !ledgerData" @click="handleExportExcel">
+          <i v-if="exporting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          엑셀
+        </button>
       </template>
     </PageHeader>
 
@@ -142,15 +147,18 @@
           <table class="data-table ledger-table">
             <colgroup>
               <col style="width: 50px;">
+              <col v-if="selectedOemCompanyId === 0" style="width: 120px;">
               <col style="width: 120px;">
-              <col style="width: 100px;">
-              <col style="width: 120px;">
-              <col style="width: auto; min-width: 140px;">
-              <col style="width: auto; min-width: 180px;">
               <col style="width: 90px;">
+              <col style="width: 90px;">
+              <col style="width: 130px;">
+              <col style="width: auto; min-width: 180px;">
+              <col style="width: auto; min-width: 160px;">
+              <col style="width: 80px;">
+              <col style="width: 110px;">
+              <col style="width: 140px;">
               <col style="width: 100px;">
               <col style="width: 120px;">
-              <col style="width: 140px;">
             </colgroup>
             <thead>
               <tr>
@@ -162,6 +170,7 @@
                 </th>
                 <th>발주서번호</th>
                 <th>발주일자</th>
+                <th>출하일자</th>
                 <th>수요기관</th>
                 <th>사업명</th>
                 <th>규격</th>
@@ -169,10 +178,13 @@
                   수량
                 </th>
                 <th class="text-right">
-                  단가
+                  원가
                 </th>
                 <th class="text-right">
-                  금액
+                  금액<span class="th-sub">(원가×수량)</span>
+                </th>
+                <th class="text-center">
+                  원가출처
                 </th>
                 <th>비고</th>
               </tr>
@@ -187,6 +199,9 @@
                 </td>
                 <td>{{ item.poNo }}</td>
                 <td>{{ formatShortDate(item.orderDate) }}</td>
+                <td :title="item.shipmentNo || ''">
+                  {{ formatShortDate(item.shipmentDate) }}
+                </td>
                 <td>{{ item.demandAgency }}</td>
                 <td class="cell-project">
                   {{ item.projectName }}
@@ -199,9 +214,19 @@
                 </td>
                 <td class="text-right cell-amount">
                   {{ formatCurrency(item.unitCost) }}
+                  <i
+                    v-if="hasCostMismatch(item)"
+                    class="fas fa-exclamation-triangle cost-warn"
+                    :title="costMismatchTitle(item)"
+                  />
                 </td>
                 <td class="text-right cell-amount">
                   {{ formatCurrency(item.amount) }}
+                </td>
+                <td class="text-center">
+                  <span class="source-badge" :class="costSourceClass(item.costSource)">
+                    {{ costSourceLabel(item.costSource) }}
+                  </span>
                 </td>
                 <td class="cell-remarks">
                   {{ item.remarks || '-' }}
@@ -210,7 +235,7 @@
             </tbody>
             <tfoot>
               <tr class="total-row">
-                <td :colspan="selectedOemCompanyId === 0 ? 7 : 6" class="text-right">
+                <td :colspan="selectedOemCompanyId === 0 ? 8 : 7" class="text-right">
                   <strong>합계</strong>
                 </td>
                 <td class="text-right">
@@ -220,6 +245,7 @@
                 <td class="text-right">
                   <strong>{{ formatCurrency(ledgerData.totalAmount) }}</strong>
                 </td>
+                <td />
                 <td />
               </tr>
             </tfoot>
@@ -270,7 +296,8 @@ import { ref, computed, onMounted } from 'vue'
 import { oemLedgerService } from '~/services/oem-ledger.service'
 import { companyService } from '~/services/company.service'
 import type { OemMonthlyLedgerResponse } from '~/types/oem-ledger'
-import { OEM_LEDGER_PAYMENT_STATUS_LABELS } from '~/types/oem-ledger'
+import { OEM_LEDGER_PAYMENT_STATUS_LABELS, OEM_LEDGER_COST_SOURCE_LABELS } from '~/types/oem-ledger'
+import type { OemLedgerCostSource, OemLedgerItem } from '~/types/oem-ledger'
 import type { CompanyInfoResponse } from '~/types/company'
 import { formatCurrency, formatQuantity } from '~/utils/format'
 import { usePermission } from '~/composables/usePermission'
@@ -300,6 +327,7 @@ const availableYears = computed(() => {
 
 // 데이터
 const loading = ref(false)
+const exporting = ref(false)
 const oemCompanies = ref<CompanyInfoResponse[]>([])
 const ledgerData = ref<OemMonthlyLedgerResponse | null>(null)
 
@@ -332,11 +360,74 @@ const paymentStatusClass = computed(() => {
 })
 
 // 날짜 포맷 (MM-DD)
-function formatShortDate (dateStr: string): string {
+function formatShortDate (dateStr: string | null | undefined): string {
   if (!dateStr) { return '-' }
   const parts = dateStr.split('-')
   if (parts.length >= 3) { return `${parts[1]}-${parts[2]}` }
   return dateStr
+}
+
+// 적용 원가와 발주서 단가가 어긋난 건만 경고 (평시엔 두 값이 같다)
+function hasCostMismatch (item: OemLedgerItem): boolean {
+  if (item.poUnitPrice == null) { return false }
+  const cost = Number(item.unitCost ?? 0)
+  const po = Number(item.poUnitPrice)
+  return po > 0 && cost > 0 && po !== cost
+}
+
+function costMismatchTitle (item: OemLedgerItem): string {
+  return `발주서 단가 ${formatCurrency(item.poUnitPrice)} 와 다릅니다 (적용 원가 ${formatCurrency(item.unitCost)})`
+}
+
+// 원가 출처 라벨 (출하스냅샷 / 발주스냅샷 / 마스터 / 미등록)
+function costSourceLabel (costSource: OemLedgerCostSource | null): string {
+  if (!costSource) { return '-' }
+  return OEM_LEDGER_COST_SOURCE_LABELS[costSource] || costSource
+}
+
+// 원가 출처 배지 CSS (마스터·미등록은 주의 표시)
+function costSourceClass (costSource: OemLedgerCostSource | null): string {
+  const classMap: Record<string, string> = {
+    SHIPMENT: 'source-shipment',
+    PURCHASE_ORDER: 'source-po',
+    MASTER: 'source-master',
+    NONE: 'source-none'
+  }
+  return classMap[costSource || 'NONE'] || 'source-none'
+}
+
+// Blob 다운로드 트리거
+function downloadBlob (blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+// 엑셀 다운로드 (원장 + 원가이력 2시트, 현재 조회 조건 기준)
+async function handleExportExcel () {
+  if (exporting.value) { return }
+  if (selectedOemCompanyId.value === null) {
+    alert('OEM 제조사를 선택하세요.')
+    return
+  }
+
+  exporting.value = true
+  try {
+    // 전체(0) 선택 시 oemCompanyId를 null로 전달
+    const oemId = selectedOemCompanyId.value === 0 ? null : selectedOemCompanyId.value
+    const blob = await oemLedgerService.exportExcel(oemId, yearMonth.value)
+    downloadBlob(blob, `OEM월별매출원장_${yearMonth.value}.xlsx`)
+  } catch (error) {
+    console.error('엑셀 다운로드 실패:', error)
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
 }
 
 // OEM 변경
@@ -714,5 +805,51 @@ onMounted(async () => {
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid #e5e7eb;
+}
+
+/* 헤더 보조 표기 (금액 산식 / 참고 표시) */
+.th-sub {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+/* 발주서 단가와 어긋난 원가 경고 */
+.cost-warn {
+  margin-left: 4px;
+  color: #d97706;
+  font-size: 0.8em;
+  cursor: help;
+}
+
+/* 원가 출처 배지 */
+.source-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.source-shipment {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.source-po {
+  background: #e8f0fe;
+  color: #1967d2;
+}
+
+.source-master {
+  background: #fef7e0;
+  color: #b06000;
+}
+
+.source-none {
+  background: #fce8e6;
+  color: #c5221f;
 }
 </style>

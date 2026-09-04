@@ -445,6 +445,8 @@ const handleShipmentsConfirm = (shipmentItems: SelectedShipmentItem[], shipmentI
 
   let addedCount = 0
   let mergedCount = 0
+  // 원가 마스터가 없어 단가를 채우지 못한 품목 (담당자에게 경고)
+  const missingCostSkus: string[] = []
 
   for (const item of shipmentItems) {
     if (!item.shipmentQuantity || item.shipmentQuantity <= 0) { continue }
@@ -459,14 +461,23 @@ const handleShipmentsConfirm = (shipmentItems: SelectedShipmentItem[], shipmentI
       existing.quantity = existing.shipmentQuantity + Math.max(0, oldAdditionalQty)
       mergedCount++
     } else {
-      // 신규 SKU 추가 (oemCostMap 단가 우선)
+      // 신규 SKU 추가 — 단가는 OEM 원가 마스터 > 출하 원가 스냅샷 순으로만 채운다.
+      // ★ item.unitPrice(판매단가) 폴백 금지 (2026-09-01 점검).
+      //   원가 마스터가 없을 때 판매가가 발주 단가로 저장돼 왔고, 그 결과
+      //   월별 매출원장에서 원가 = 매출가가 되어 마진이 0으로 계산됐다.
+      //   (운영 실측: 전체 발주금액 14.97억 중 8.13억(54%)이 판매가로 입력됨)
+      //   원가를 모르면 0으로 두고 담당자에게 알린다 — 잘못된 값보다 빈 값이 낫다.
       const costPrice = oemCostMap.value.get(skuIdStr)
+      const resolvedCost = costPrice !== undefined ? costPrice : Number(item.costPrice || 0)
+      if (!resolvedCost) {
+        missingCostSkus.push(item.skuName || skuIdStr)
+      }
       formData.value.items.push({
         skuId: skuIdStr,
         skuName: item.skuName || skuIdStr,
         quantity: Number(item.shipmentQuantity),
         shipmentQuantity: Number(item.shipmentQuantity),
-        unitPrice: costPrice !== undefined ? costPrice : Number(item.costPrice || item.unitPrice || 0)
+        unitPrice: resolvedCost
       })
       addedCount++
     }
@@ -475,7 +486,11 @@ const handleShipmentsConfirm = (shipmentItems: SelectedShipmentItem[], shipmentI
   const messages = []
   if (addedCount > 0) { messages.push(`${addedCount}개 품목 추가`) }
   if (mergedCount > 0) { messages.push(`${mergedCount}개 품목 수량 합산`) }
-  alert(messages.length > 0 ? messages.join(', ') + '되었습니다.' : '추가할 품목이 없습니다.')
+  const summary = messages.length > 0 ? messages.join(', ') + '되었습니다.' : '추가할 품목이 없습니다.'
+  const costWarning = missingCostSkus.length > 0
+    ? `\n\n⚠️ 원가가 등록되지 않아 단가를 0으로 넣은 품목이 있습니다.\n- ${missingCostSkus.join('\n- ')}\n\n기초정보 > OEM 원가 관리에서 원가를 등록한 뒤 다시 불러오세요.`
+    : ''
+  alert(summary + costWarning)
 }
 
 // SKU 선택 팝업 열기

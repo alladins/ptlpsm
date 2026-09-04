@@ -10,12 +10,17 @@ export interface OemLedgerItem {
   demandAgency: string
   projectName: string
   spec: string
+  skuId: string
   quantity: number
   unit: string
   unitCost: number
   amount: number
+  poUnitPrice: number | null
+  masterCostPrice: number | null
+  costSource: OemLedgerCostSource
   remarks: string | null
   shipmentNo: string | null
+  shipmentDate: string | null
   oemCompanyName?: string  // 전체 조회 시 제조사명
 }
 
@@ -31,6 +36,23 @@ export interface OemMonthlyLedgerResponse {
   paymentId: number | null
   paidAmount: number | null
   paidDate: string | null
+}
+
+/** 원가 출처 (백엔드 OemLedgerMapper 의 costSource 와 1:1) */
+export const OEM_LEDGER_COST_SOURCE = {
+  SHIPMENT: 'SHIPMENT',
+  PURCHASE_ORDER: 'PURCHASE_ORDER',
+  MASTER: 'MASTER',
+  NONE: 'NONE'
+} as const
+
+export type OemLedgerCostSource = typeof OEM_LEDGER_COST_SOURCE[keyof typeof OEM_LEDGER_COST_SOURCE]
+
+export const OEM_LEDGER_COST_SOURCE_LABELS: Record<OemLedgerCostSource, string> = {
+  [OEM_LEDGER_COST_SOURCE.SHIPMENT]: '출하스냅샷',
+  [OEM_LEDGER_COST_SOURCE.PURCHASE_ORDER]: '발주스냅샷',
+  [OEM_LEDGER_COST_SOURCE.MASTER]: '마스터',
+  [OEM_LEDGER_COST_SOURCE.NONE]: '미등록'
 }
 
 /** 지급 상태 */

@@ -26,6 +26,21 @@ class OemLedgerService {
   }
 
   /**
+   * 월별 매출원장 엑셀 다운로드 (원장 + 원가이력 2시트)
+   */
+  async exportExcel(oemCompanyId: number | null, yearMonth: string): Promise<Blob> {
+    const params = new URLSearchParams({ yearMonth })
+    if (oemCompanyId) {
+      params.set('oemCompanyId', oemCompanyId.toString())
+    }
+    const response = await fetch(`${this.getBaseUrl()}/export?${params}`, {
+      headers: getAuthHeaders()
+    })
+    if (!response.ok) throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    return response.blob()
+  }
+
+  /**
    * 조회 가능 월 목록
    */
   async getAvailableMonths(oemCompanyId: number): Promise<string[]> {

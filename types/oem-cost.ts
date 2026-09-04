@@ -67,6 +67,7 @@ export interface OemCost {
 export interface OemCostListItem extends OemCost {
   itemName?: string           // 품목명
   unitPrice?: number          // SKU 납품단가 (마진율 계산용)
+  thickness?: number          // 두께(mm) — 단가 × 두께 = 원가 계산용
   marginRate?: number         // 계산된 마진율
   status?: OemCostStatus      // 계산된 상태
 }
@@ -83,6 +84,10 @@ export interface OemCostHistory {
   costSourceType: CostSourceType
   oldCost: number | null
   newCost: number | null
+  oldEffectiveDate: string | null
+  newEffectiveDate: string | null
+  oldExpiryDate: string | null
+  newExpiryDate: string | null
   changeType: CostChangeType
   changedBy: string
   changedByName?: string
@@ -134,10 +139,12 @@ export interface OemCostSearchParams {
  * 통계 정보
  */
 export interface OemCostStatistics {
-  totalCount: number          // 총 원가 설정 건수
-  activeCount: number         // 적용중 건수
-  noOemCostCount: number      // 원가 미설정 SKU 수 (경고!)
-  expiringCount: number       // 30일 내 만료 예정
+  totalOemCostCount: number     // 총 원가 설정 건수
+  activeOemCostCount: number    // 적용중 건수
+  skuWithCostCount: number      // 원가가 등록된 SKU 수
+  skuWithoutCostCount: number   // 원가 미설정 SKU 수 (경고!)
+  oemCompanyCount: number       // 등록된 OEM 제조사 수
+  expiringSoonCount: number     // 30일 내 만료 예정
 }
 
 /**
@@ -172,6 +179,7 @@ export interface OemCostTreeItem {
   itemClassificationNumber?: string
   itemName?: string
   unitPrice?: number
+  thickness?: number          // 두께(mm) — 단가 × 두께 = 원가 계산용
   oemCount: number
   oemCosts: OemCostListItem[]
 }

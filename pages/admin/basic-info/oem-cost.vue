@@ -62,7 +62,7 @@
             총 원가 설정
           </div>
           <div class="stat-value">
-            {{ statistics.totalCount.toLocaleString() }}건
+            {{ statistics.totalOemCostCount.toLocaleString() }}건
           </div>
         </div>
       </div>
@@ -76,7 +76,7 @@
             적용중
           </div>
           <div class="stat-value">
-            {{ statistics.activeCount.toLocaleString() }}건
+            {{ statistics.activeOemCostCount.toLocaleString() }}건
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@
             원가 미설정 SKU
           </div>
           <div class="stat-value text-danger">
-            {{ statistics.noOemCostCount.toLocaleString() }}건
+            {{ statistics.skuWithoutCostCount.toLocaleString() }}건
           </div>
         </div>
       </div>
@@ -104,7 +104,7 @@
             30일내 만료
           </div>
           <div class="stat-value">
-            {{ statistics.expiringCount.toLocaleString() }}건
+            {{ statistics.expiringSoonCount.toLocaleString() }}건
           </div>
         </div>
       </div>
@@ -377,13 +377,14 @@
       </div>
 
       <!-- 페이지네이션 -->
-      <div v-if="totalPages > 1" class="pagination-container">
-        <Pagination
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          @page-change="handlePageChange"
-        />
-      </div>
+      <!-- 공용 Pagination 이 정렬(justify-content:center)과 여백(margin-top:2rem)을 자체 처리한다.
+           래퍼로 감싸면 구분선이 이중으로 그려지고 여백도 3rem 으로 벌어져 다른 목록 화면과 어긋난다. -->
+      <Pagination
+        v-if="totalPages > 1"
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        @change="handlePageChange"
+      />
     </div>
 
     <!-- 원가 등록/수정 모달 -->
@@ -461,17 +462,19 @@ const isLoading = ref(false)
 const treeList = ref<OemCostTreeItem[]>([])
 const expandedSkuIds = ref<Set<string>>(new Set())
 const oemCompanies = ref<CompanyInfoResponse[]>([])
-const currentPage = ref(1)
+const currentPage = ref(0) // Pagination 컴포넌트 계약: 0-based (Spring page 와 동일)
 const pageSize = ref(20)
 const totalElements = ref(0)
 const totalPages = ref(0)
 
 // 통계
 const statistics = reactive<OemCostStatistics>({
-  totalCount: 0,
-  activeCount: 0,
-  noOemCostCount: 0,
-  expiringCount: 0
+  totalOemCostCount: 0,
+  activeOemCostCount: 0,
+  skuWithCostCount: 0,
+  skuWithoutCostCount: 0,
+  oemCompanyCount: 0,
+  expiringSoonCount: 0
 })
 
 // 검색 폼
@@ -510,6 +513,7 @@ const selectedSkuInfo = ref<{
   skuName?: string
   itemName?: string
   unitPrice?: number
+  thickness?: number
 } | null>(null)
 const selectedCostData = ref<OemCost | null>(null)
 
@@ -555,7 +559,7 @@ const loadData = async () => {
     isLoading.value = true
     const response = await oemCostService.getTreeList({
       ...searchForm,
-      page: currentPage.value - 1, // API는 0-indexed
+      page: currentPage.value,
       size: pageSize.value
     })
 
@@ -591,7 +595,7 @@ const loadOemCompanies = async () => {
 
 // 검색
 const handleSearch = () => {
-  currentPage.value = 1
+  currentPage.value = 0
   loadData()
 }
 
@@ -602,7 +606,7 @@ const handleReset = () => {
   searchForm.keyword = ''
   searchForm.status = ''
   searchForm.costSourceType = ''
-  currentPage.value = 1
+  currentPage.value = 0
   loadData()
 }
 
@@ -657,7 +661,7 @@ const handlePageChange = (page: number) => {
 
 // 페이지 크기 변경
 const handlePageSizeChange = () => {
-  currentPage.value = 1
+  currentPage.value = 0
   loadData()
 }
 
@@ -678,7 +682,8 @@ const openAddOemModal = (sku: OemCostTreeItem) => {
     skuId: sku.skuId,
     skuName: sku.skuName,
     itemName: sku.itemName,
-    unitPrice: sku.unitPrice
+    unitPrice: sku.unitPrice,
+    thickness: sku.thickness
   }
   selectedCostData.value = null
   // 해당 SKU에 이미 등록된 제조사 ID 목록 추출
@@ -704,7 +709,8 @@ const openEditModal = (oem: OemCostListItem) => {
     skuId: oem.skuId,
     skuName: oem.skuName,
     itemName: oem.itemName,
-    unitPrice: oem.unitPrice
+    unitPrice: oem.unitPrice,
+    thickness: oem.thickness
   }
   selectedCostData.value = oem as OemCost
   existingOemCompanyIds.value = []
@@ -1417,14 +1423,6 @@ onMounted(() => {
 .btn-excel:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-/* 페이지네이션 */
-.pagination-container {
-  padding: 1rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: center;
 }
 
 /* 반응형 */

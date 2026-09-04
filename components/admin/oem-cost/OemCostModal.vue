@@ -89,6 +89,42 @@
               </select>
             </div>
 
+            <!-- 단가(두께당) 입력 → 원가 자동 계산 -->
+            <div class="ccm-form-group">
+              <div class="ccm-form-label-row">
+                <label class="ccm-form-label">
+                  <i class="fas fa-calculator" />
+                  단가 <span class="optional-tag">(원가 자동 계산용)</span>
+                </label>
+                <span v-if="thickness" class="thickness-badge">두께 {{ formatThickness(thickness) }}T</span>
+              </div>
+              <div class="unit-cost-wrapper">
+                <div class="cost-input-container">
+                  <span class="cost-prefix">₩</span>
+                  <input
+                    v-model="formattedUnitCost"
+                    type="text"
+                    class="ccm-form-input cost-input unit-cost-input"
+                    placeholder="0"
+                    :disabled="isSubmitting || !thickness"
+                    @input="handleUnitCostInput"
+                  >
+                </div>
+                <div class="unit-cost-formula" :class="{ 'is-empty': !unitCost || !thickness }">
+                  <template v-if="thickness && unitCost">
+                    {{ formatNumber(unitCost) }} × {{ formatThickness(thickness) }}T =
+                    <strong>{{ formatCurrency(form.costPrice) }}</strong>
+                  </template>
+                  <template v-else-if="thickness">
+                    단가 입력 시 <strong>단가 × 두께</strong>가 원가에 자동 반영됩니다
+                  </template>
+                  <template v-else>
+                    이 SKU는 두께 정보가 없어 단가 계산을 사용할 수 없습니다
+                  </template>
+                </div>
+              </div>
+            </div>
+
             <!-- 원가 입력 -->
             <div class="ccm-form-group">
               <div class="ccm-form-label-row">
@@ -162,6 +198,16 @@
               </div>
             </div>
 
+            <!-- 적용구간 전환 안내 (수정 모드에서만) -->
+            <div v-if="isEditMode && previousPeriodText" class="period-rollover-notice">
+              <i class="fas fa-info-circle" />
+              <span>
+                이전 적용구간 <strong>{{ previousPeriodText }}</strong> 은
+                <strong>{{ previousClosingDate || '-' }}</strong> 까지로 자동 종료되고,
+                <strong>{{ form.effectiveDate || '-' }}</strong> 부터 새 원가가 적용됩니다.
+              </span>
+            </div>
+
             <!-- 적용 기간 -->
             <div class="ccm-form-row">
               <div class="ccm-form-group half">
@@ -189,6 +235,9 @@
                 >
               </div>
             </div>
+            <p v-if="periodError" class="period-error">
+              <i class="fas fa-exclamation-circle" /> {{ periodError }}
+            </p>
 
             <!-- 계약번호 -->
             <div class="ccm-form-group">
@@ -276,6 +325,7 @@ interface SkuInfo {
   skuName?: string
   itemName?: string
   unitPrice?: number
+  thickness?: number
 }
 
 interface Props {
@@ -347,6 +397,28 @@ const form = ref({
 // 포맷된 원가 (천단위 콤마)
 const formattedCostPrice = ref('')
 
+// 단가(두께 1T당 금액) — 저장 대상이 아니라 원가 계산 보조 입력
+const unitCost = ref<number | null>(null)
+const formattedUnitCost = ref('')
+
+/**
+ * 두께(T) 결정
+ * - 1순위: item_sku.thickness 컬럼
+ * - 2순위: SKU명 끝의 두께 표기 파싱 (예: HYDRO-22-40T → 40)
+ *   두께 컬럼이 비어 있는 SKU를 위한 폴백이다.
+ */
+const thickness = computed<number | null>(() => {
+  const raw = Number(props.skuInfo?.thickness)
+  if (raw > 0) { return raw }
+
+  const matches = (props.skuInfo?.skuName || '').match(/\d+(?:\.\d+)?\s*T(?![A-Za-z0-9])/gi)
+  if (matches && matches.length > 0) {
+    const parsed = parseFloat(matches[matches.length - 1])
+    if (parsed > 0) { return parsed }
+  }
+  return null
+})
+
 // 커스텀 퍼센트 입력
 const customPercent = ref<number | null>(null)
 
@@ -370,8 +442,35 @@ const isFormValid = computed(() => {
   return (
     form.value.oemCompanyId !== null &&
     form.value.costPrice > 0 &&
-    form.value.effectiveDate !== ''
+    form.value.effectiveDate !== '' &&
+    !periodError.value
   )
+})
+
+// 적용 시작일 > 만료일 검증
+const periodError = computed(() => {
+  if (!form.value.effectiveDate || !form.value.expiryDate) { return '' }
+  if (form.value.effectiveDate > form.value.expiryDate) {
+    return '적용 시작일은 만료일보다 이후일 수 없습니다.'
+  }
+  return ''
+})
+
+// 수정 모드에서 표시할 "이전 적용구간" (원본 데이터 기준)
+const previousPeriodText = computed(() => {
+  if (!props.editData?.effectiveDate) { return '' }
+  return `${props.editData.effectiveDate} ~ ${props.editData.expiryDate || '무기한'}`
+})
+
+// 이전 구간이 마감되는 날짜 = 새 시작일 하루 전 (그 하루가 두 구간에 겹치지 않도록)
+const previousClosingDate = computed(() => {
+  const start = form.value.effectiveDate
+  if (!start) { return '' }
+  const [y, m, d] = start.split('-').map(Number)
+  if (!y || !m || !d) { return '' }
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  dt.setUTCDate(dt.getUTCDate() - 1)
+  return dt.toISOString().slice(0, 10)
 })
 
 // 회사 목록 로드 (제조사 + 본사)
@@ -384,6 +483,26 @@ const loadOemCompanies = async () => {
   }
 }
 
+// 원가 설정 (단가 역산 포함)
+const setCostPrice = (value: number) => {
+  form.value.costPrice = value
+  formattedCostPrice.value = value.toLocaleString('ko-KR')
+  syncUnitCostFromCost()
+}
+
+// 원가 → 단가 역산 (두께로 나눔, 소수 2자리까지)
+const syncUnitCostFromCost = () => {
+  const t = thickness.value
+  if (!t || !form.value.costPrice) {
+    unitCost.value = null
+    formattedUnitCost.value = ''
+    return
+  }
+  const derived = Math.round((form.value.costPrice / t) * 100) / 100
+  unitCost.value = derived
+  formattedUnitCost.value = derived.toLocaleString('ko-KR')
+}
+
 // 원가 입력 핸들러
 const handleCostInput = (event: Event) => {
   const input = event.target as HTMLInputElement
@@ -393,15 +512,39 @@ const handleCostInput = (event: Event) => {
   form.value.costPrice = numValue
   // 천단위 콤마 포맷
   formattedCostPrice.value = numValue.toLocaleString('ko-KR')
+  // 원가를 직접 고치면 단가 표시도 함께 맞춘다
+  syncUnitCostFromCost()
+}
+
+// 단가 입력 핸들러 — 단가 × 두께를 원가에 자동 반영
+const handleUnitCostInput = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  // 숫자와 소수점만 허용 (소수점은 1개까지)
+  const cleaned = input.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
+  const numValue = parseFloat(cleaned)
+
+  if (!cleaned || isNaN(numValue)) {
+    unitCost.value = null
+    formattedUnitCost.value = cleaned
+    return
+  }
+
+  unitCost.value = numValue
+  // 입력 중 소수점("210." 등)은 콤마 포맷이 커서를 흔들므로 그대로 둔다
+  formattedUnitCost.value = cleaned.includes('.') ? cleaned : numValue.toLocaleString('ko-KR')
+
+  const t = thickness.value
+  if (!t) { return }
+  const calculated = Math.round(numValue * t)
+  form.value.costPrice = calculated
+  formattedCostPrice.value = calculated.toLocaleString('ko-KR')
 }
 
 // 퍼센트 적용 핸들러
 const applyPercentage = (percent: number | null) => {
   if (!percent || !props.skuInfo?.unitPrice) { return }
   // 납품단가 * 퍼센트% 계산 (반올림)
-  const calculatedCost = Math.round(props.skuInfo.unitPrice * (percent / 100))
-  form.value.costPrice = calculatedCost
-  formattedCostPrice.value = calculatedCost.toLocaleString('ko-KR')
+  setCostPrice(Math.round(props.skuInfo.unitPrice * (percent / 100)))
 }
 
 // 폼 초기화
@@ -417,22 +560,36 @@ const resetForm = () => {
     changeReason: ''
   }
   formattedCostPrice.value = ''
+  unitCost.value = null
+  formattedUnitCost.value = ''
   customPercent.value = null
 }
 
 // 수정 모드 데이터 로드
+// 적용 시작일은 "새 원가가 오늘부터 적용된다"는 것이 기본 동작이므로 오늘 날짜로 세팅한다.
+// (기존 시작일보다 뒤면 백엔드가 이전 구간을 그 날짜에 자동 종료 처리)
+// 단 기존 시작일이 미래(예약 등록)라면 그 값을 유지한다.
 const loadEditData = () => {
   if (props.editData) {
+    const today = getLocalDateString()
+    const currentEffective = props.editData.effectiveDate || ''
+    const defaultEffective = currentEffective && currentEffective > today ? currentEffective : today
+    // 기존 만료일이 새 시작일보다 이전이면 의미가 없으므로 비운다(무기한)
+    const currentExpiry = props.editData.expiryDate || ''
+    const defaultExpiry = currentExpiry && currentExpiry < defaultEffective ? '' : currentExpiry
+
     form.value = {
       oemCompanyId: props.editData.oemCompanyId,
       costPrice: props.editData.costPrice,
-      effectiveDate: props.editData.effectiveDate,
-      expiryDate: props.editData.expiryDate || '',
+      effectiveDate: defaultEffective,
+      expiryDate: defaultExpiry,
       contractNo: props.editData.contractNo || '',
       remarks: props.editData.remarks || '',
       changeReason: ''
     }
     formattedCostPrice.value = props.editData.costPrice.toLocaleString('ko-KR')
+    // 기존 원가에서 단가를 역산해 채워둔다 (현재 단가를 보고 조정할 수 있도록)
+    syncUnitCostFromCost()
   }
 }
 
@@ -509,6 +666,18 @@ const getSuccessMessage = () => {
 const formatCurrency = (amount: number | undefined): string => {
   if (amount === undefined || amount === null) { return '-' }
   return amount.toLocaleString('ko-KR') + '원'
+}
+
+// 숫자 포맷 (소수는 있는 만큼만 표시)
+const formatNumber = (value: number | null): string => {
+  if (value === null || value === undefined) { return '-' }
+  return value.toLocaleString('ko-KR', { maximumFractionDigits: 2 })
+}
+
+// 두께 포맷 (40.00 → 40)
+const formatThickness = (value: number | null): string => {
+  if (!value) { return '-' }
+  return value.toLocaleString('ko-KR', { maximumFractionDigits: 2 })
 }
 
 // 모달 열림 감지
@@ -757,6 +926,91 @@ onMounted(() => {
 .ccm-form-textarea {
   resize: vertical;
   min-height: 60px;
+}
+
+/* 단가(두께당) 입력 */
+.unit-cost-wrapper {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.unit-cost-wrapper .cost-input-container {
+  flex: 0 0 45%;
+}
+
+.unit-cost-input {
+  font-size: 1rem;
+}
+
+.unit-cost-formula {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.875rem;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.unit-cost-formula strong {
+  font-weight: 700;
+  color: #7c3aed;
+  margin-left: 0.25rem;
+}
+
+.unit-cost-formula.is-empty {
+  color: #9ca3af;
+}
+
+.unit-cost-formula.is-empty strong {
+  color: #6b7280;
+  margin-left: 0;
+}
+
+.thickness-badge {
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0369a1;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* 적용구간 전환 안내 */
+.period-rollover-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  margin-bottom: 0.75rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #1e40af;
+}
+
+.period-rollover-notice i {
+  margin-top: 0.125rem;
+  color: #3b82f6;
+}
+
+.period-rollover-notice strong {
+  font-weight: 700;
+}
+
+/* 적용기간 검증 오류 */
+.period-error {
+  margin: -0.75rem 0 1.25rem;
+  font-size: 0.8125rem;
+  color: #dc2626;
 }
 
 /* 원가 입력 */
