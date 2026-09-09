@@ -51,6 +51,14 @@ export interface ShipmentListItem {
   deliveryDoneId?: number | null     // 납품완료계 ID (COMPLETED 상태일 때 존재)
   // B급 품목 여부
   hasBgradeItems?: boolean           // B급 품목 존재 여부
+  /**
+   * 손실 수량 (수량부족 확정분 합계)
+   *
+   * ⚠ shipmentQuantity 는 원장 그대로다. 손실은 이 값으로만 병기하고,
+   *   유효 수량이 필요하면 shipmentQuantity - lossQuantity 로 계산한다.
+   *   납품률·잔여·기성청구는 백엔드에서 이미 차감되어 내려온다.
+   */
+  lossQuantity?: number
   // 합지(병합) 품목 여부
   hasMergedItems?: boolean           // 합지 품목 존재 여부
   // 출고요청 상태 (REQUESTED/CONFIRMED/DISPATCHED, null=미요청)

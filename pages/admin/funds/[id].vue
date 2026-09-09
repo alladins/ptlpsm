@@ -316,6 +316,7 @@
           :can-adjust-bgrade="canAdjustBgrade"
           :bgrade-button-title="bgradeButtonTitle"
           @open-bgrade-modal="openBgradeModal"
+          @open-loss-modal="showLossModal = true"
           @recalculate-oem-cost="handleRecalculateOemCost"
         />
       </div>
@@ -383,6 +384,15 @@
       @updated="handleBgradeUpdated"
     />
 
+    <!-- 손실 등록 모달 (출하 선택 → 품목 선택) -->
+    <LossAdjustmentModal
+      :is-open="showLossModal"
+      :shipments="fundShipments"
+      :order-id="fundDetail?.orderId ?? null"
+      @close="showLossModal = false"
+      @saved="handleLossSaved"
+    />
+
     <!-- 잔금 등록 모달 -->
     <BalanceRegisterModal
       :is-open="showBalanceRegisterModal"
@@ -406,6 +416,7 @@ import AdvancePaymentModal from '~/components/fund/AdvancePaymentModal.vue'
 import CollectionConfirmModal from '~/components/fund/CollectionConfirmModal.vue'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import BgradeItemsModal from '~/components/delivery-done/BgradeItemsModal.vue'
+import LossAdjustmentModal from '~/components/loss/LossAdjustmentModal.vue'
 import BalanceRegisterModal from '~/components/fund/BalanceRegisterModal.vue'
 import FundAdvanceTab from '~/components/fund/FundAdvanceTab.vue'
 import FundProgressTab from '~/components/fund/FundProgressTab.vue'
@@ -611,6 +622,16 @@ const {
   },
   refreshOemPayments
 })
+
+// ============ 손실 등록 모달 ============
+// 손실은 발주서·출하 원장을 바꾸지 않고, 납품률·잔여·기성청구 계산에서만 차감된다.
+const showLossModal = ref(false)
+
+/** 손실 등록 후 자금·원가 현황 갱신 */
+const handleLossSaved = async () => {
+  showLossModal.value = false
+  await loadData()
+}
 
 /** 선급금 차감 누계 (정산 완료된 선급금 총액) - 백엔드 값 사용 */
 const advanceSettledTotal = computed(() => {

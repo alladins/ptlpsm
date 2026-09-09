@@ -163,6 +163,11 @@
                 </td>
                 <td class="text-right">
                   {{ formatQuantity(item.shipmentQuantity) }} ㎡
+                  <!-- 손실이 있으면 원장 수량은 그대로 두고 유효수량을 함께 표기 -->
+                  <div v-if="item.lossQuantity" class="loss-note">
+                    손실 {{ formatQuantity(item.lossQuantity) }}
+                    → 유효 {{ formatQuantity(item.shipmentQuantity - item.lossQuantity) }} ㎡
+                  </div>
                 </td>
                 <td class="text-right">
                   {{ formatCurrency(item.shipmentAmount) }}
@@ -171,6 +176,7 @@
                   <span v-if="item.hasMergedItems" class="merge-badge">합지</span>
                   <span v-if="item.hasAdditionalItems" class="additional-badge">추가</span>
                   <span v-if="item.hasBgradeItems" class="bgrade-badge">B급</span>
+                  <span v-if="item.lossQuantity" class="loss-badge">손실</span>
                 </td>
               </tr>
             </tbody>
@@ -660,6 +666,26 @@ onMounted(async () => {
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+/* 손실 배지 — 출하 원장 수량은 그대로이고 손실만 별도 표기 */
+.loss-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  margin: 1px 2px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* 손실/유효수량 병기 */
+.loss-note {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: #b91c1c;
+  white-space: nowrap;
 }
 
 /* 합지 배지 */

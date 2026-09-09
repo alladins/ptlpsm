@@ -22,6 +22,17 @@
           B급 조정
         </button>
         <button
+          class="btn-loss"
+          :disabled="!canAdjustBgrade"
+          :title="canAdjustBgrade
+            ? '현장 수량부족·스펙오납 손실을 등록합니다 (발주서·출하 원장은 변경되지 않습니다)'
+            : bgradeButtonTitle"
+          @click="emit('openLossModal')"
+        >
+          <i class="fas fa-triangle-exclamation" />
+          손실 등록
+        </button>
+        <button
           class="btn-link-po"
           @click="goToMonthlyLedger"
         >
@@ -209,6 +220,8 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   /** B급 조정 모달 열기 */
   openBgradeModal: []
+  /** 손실 등록 모달 열기 */
+  openLossModal: []
   /** OEM 원가 재계산 */
   recalculateOemCost: []
 }>()
@@ -594,4 +607,23 @@ function goToMonthlyLedger () {
 
 .btn-warning:hover:not(:disabled) { background: #d97706; }
 .btn-warning:disabled { background: #fcd34d; color: #92400e; cursor: not-allowed; opacity: 0.7; }
+
+/* 손실 등록 버튼 */
+.btn-loss {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-loss:hover:not(:disabled) { background: #b91c1c; }
+.btn-loss:disabled { background: #fca5a5; color: #7f1d1d; cursor: not-allowed; opacity: 0.7; }
 </style>
