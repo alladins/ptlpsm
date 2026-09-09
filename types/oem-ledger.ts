@@ -31,11 +31,36 @@ export interface OemMonthlyLedgerResponse {
   yearMonth: string
   items: OemLedgerItem[]
   totalQuantity: number
+  /** 발주 품목 합계 (손실 차감 전 공급가액) */
   totalAmount: number
+
+  /** 손실 차감 목록 (제조사 부담 손실·스펙오납 정산분) */
+  lossDeductions?: LossDeductionSummary[]
+  /** 손실 차감액 합계 */
+  lossDeductionTotal?: number
+  /** 지급 예정 공급가액 = totalAmount − lossDeductionTotal */
+  payableAmount?: number
+  /** 부가세 (공급가액의 10%, 원 단위 반올림 — 발주서 PDF 와 동일 기준) */
+  vatAmount?: number
+  /** 합계 (공급가액 + 부가세) */
+  totalWithVat?: number
+
   paymentStatus: OemLedgerPaymentStatus
   paymentId: number | null
   paidAmount: number | null
   paidDate: string | null
+}
+
+/** 원장에 표시되는 손실 차감 행 (백엔드 LossAdjustmentResponse 의 부분집합) */
+export interface LossDeductionSummary {
+  lossId: number
+  lossNo: string
+  lossTypeName: string
+  skuName?: string | null
+  quantity: number
+  oemDeductionAmount: number
+  settlementStatusName: string
+  occurredDate: string
 }
 
 /** 원가 출처 (백엔드 OemLedgerMapper 의 costSource 와 1:1) */

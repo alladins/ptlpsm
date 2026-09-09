@@ -234,6 +234,7 @@
               </tr>
             </tbody>
             <tfoot>
+              <!-- 발주 품목 합계 (공급가액) -->
               <tr class="total-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 8 : 7" class="text-right">
                   <strong>합계</strong>
@@ -244,6 +245,55 @@
                 <td />
                 <td class="text-right">
                   <strong>{{ formatCurrency(ledgerData.totalAmount) }}</strong>
+                </td>
+                <td />
+                <td />
+              </tr>
+
+              <!-- 손실 차감 (제조사 부담분이 있을 때만) -->
+              <tr v-if="hasLossDeduction" class="deduct-row">
+                <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
+                  손실 차감 (제조사 부담)
+                  <span class="deduct-hint">{{ lossDeductionLabel }}</span>
+                </td>
+                <td />
+                <td class="text-right">− {{ formatCurrency(ledgerData.lossDeductionTotal) }}</td>
+                <td />
+                <td />
+              </tr>
+
+              <!-- 공급가액 (손실 차감 후) -->
+              <tr v-if="hasLossDeduction" class="supply-row">
+                <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
+                  <strong>공급가액</strong>
+                </td>
+                <td />
+                <td class="text-right">
+                  <strong>{{ formatCurrency(ledgerData.payableAmount) }}</strong>
+                </td>
+                <td />
+                <td />
+              </tr>
+
+              <!-- 부가세 -->
+              <tr class="vat-row">
+                <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
+                  부가세 <span class="deduct-hint">(공급가액의 10%)</span>
+                </td>
+                <td />
+                <td class="text-right">{{ formatCurrency(ledgerData.vatAmount) }}</td>
+                <td />
+                <td />
+              </tr>
+
+              <!-- 합계 (VAT 포함) -->
+              <tr class="grand-total-row">
+                <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
+                  <strong>합계 (부가세 포함)</strong>
+                </td>
+                <td />
+                <td class="text-right">
+                  <strong>{{ formatCurrency(ledgerData.totalWithVat) }}</strong>
                 </td>
                 <td />
                 <td />
@@ -340,6 +390,19 @@ const completeForm = ref({
 
 // 년월 문자열
 const yearMonth = computed(() => `${selectedYear.value}-${selectedMonth.value}`)
+
+/** 제조사 부담 손실 차감이 있는지 */
+const hasLossDeduction = computed(() => {
+  const total = ledgerData.value?.lossDeductionTotal
+  return total != null && Number(total) !== 0
+})
+
+/** 손실 차감 건수 요약 라벨 */
+const lossDeductionLabel = computed(() => {
+  const list = ledgerData.value?.lossDeductions
+  if (!list || list.length === 0) return ''
+  return `${list.length}건`
+})
 
 // 지급 상태 라벨
 const paymentStatusLabel = computed(() => {
@@ -715,6 +778,50 @@ onMounted(async () => {
   border-top: 2px solid #e2e8f0;
   font-weight: 600;
   color: #1e293b;
+}
+
+/* 손실 차감 행 */
+.deduct-row {
+  background: #fff7ed !important;
+}
+.deduct-row td {
+  color: #b45309;
+  font-weight: 500;
+}
+
+.deduct-hint {
+  font-size: 0.78em;
+  color: #94a3b8;
+  font-weight: 400;
+  margin-left: 0.25rem;
+}
+
+/* 공급가액 행 (손실 차감 후) */
+.supply-row {
+  background: #f8fafc !important;
+}
+.supply-row td {
+  color: #1e293b;
+}
+
+/* 부가세 행 */
+.vat-row {
+  background: #f8fafc !important;
+}
+.vat-row td {
+  color: #475569;
+}
+
+/* 합계 (부가세 포함) */
+.grand-total-row {
+  background: linear-gradient(180deg, #eff6ff, #dbeafe) !important;
+}
+.grand-total-row td {
+  border-top: 2px solid #93c5fd;
+  border-bottom: 2px solid #93c5fd;
+  color: #1e3a8a;
+  font-size: 1.02em;
+  font-weight: 700;
 }
 
 /* 모달 */
