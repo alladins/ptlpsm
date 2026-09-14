@@ -20,6 +20,40 @@ import type {
 import type { StatusCode } from '~/types/common'
 
 /**
+ * 납품완료보고서 붙임 서류 종류 (백엔드 DeliveryDoneDocType 과 1:1)
+ *
+ * ⚠ 값·순서를 바꾸면 백엔드 enum 과 어긋난다. 공문 붙임 문구와 ZIP·합지 파일 구성이
+ *   모두 이 값으로 결정되므로 한쪽만 수정하지 말 것.
+ * 공문은 선택 대상이 아니며 항상 포함된다.
+ */
+export const DELIVERY_DONE_DOC_TYPES = ['COMPLETION', 'CONFIRMATION', 'PHOTO', 'STATEMENT'] as const
+export type DeliveryDoneDocType = typeof DELIVERY_DONE_DOC_TYPES[number]
+
+/** 화면 표기용 서류명 */
+export const DELIVERY_DONE_DOC_LABELS: Record<DeliveryDoneDocType, string> = {
+  COMPLETION: '납품완료계',
+  CONFIRMATION: '납품확인서',
+  PHOTO: '사진대지',
+  STATEMENT: '납품내역서'
+}
+
+/**
+ * 공문 수신자명·붙임 서류 선택을 쿼리스트링으로 조립한다.
+ * docs 를 넘기지 않으면 파라미터 자체를 붙이지 않아 백엔드가 전체 선택으로 처리한다(기존 동작).
+ */
+function buildDocsQuery (recipientName?: string, docs?: DeliveryDoneDocType[]): string {
+  const params = new URLSearchParams()
+  if (recipientName && recipientName.trim()) {
+    params.append('recipientName', recipientName.trim())
+  }
+  if (docs && docs.length > 0) {
+    params.append('docs', docs.join(','))
+  }
+  const query = params.toString()
+  return query ? `?${query}` : ''
+}
+
+/**
  * 납품완료계 서비스
  *
  * API 엔드포인트:
@@ -355,14 +389,18 @@ export async function downloadBaselineInvoiceExcel (orderId: number): Promise<vo
 /**
  * 모든 PDF 일괄 다운로드
  */
-export async function downloadAllPdfs (deliveryDoneId: number, recipientName?: string): Promise<void> {
+export async function downloadAllPdfs (
+  deliveryDoneId: number, recipientName?: string, docs?: DeliveryDoneDocType[]
+): Promise<void> {
   try {
-    let url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/pdf/download-all`
-    if (recipientName) {
-      url += `?recipientName=${encodeURIComponent(recipientName)}`
-    }
+    const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/pdf/download-all` +
+      buildDocsQuery(recipientName, docs)
+    // 인증 헤더는 plugins/api-interceptor.ts 가 /api/ 요청에 자동 주입하지만,
+    // 바로 아래 downloadMergedPdf 와 형태를 맞추기 위해 명시한다.
+    // (인터셉터가 스프레드 뒤에 Authorization 을 덮어쓰므로 토큰이 어긋날 일은 없다)
     const response = await fetch(url, {
-      method: 'GET'
+      method: 'GET',
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -388,11 +426,11 @@ export async function downloadAllPdfs (deliveryDoneId: number, recipientName?: s
 /**
  * 모든 PDF 합지 다운로드 (공문+납품완료계+납품확인서+사진대지+납품내역서+기성청구내역서 → 단일 PDF)
  */
-export async function downloadMergedPdf (deliveryDoneId: number, recipientName?: string): Promise<void> {
-  let url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/pdf/download-merged`
-  if (recipientName) {
-    url += `?recipientName=${encodeURIComponent(recipientName)}`
-  }
+export async function downloadMergedPdf (
+  deliveryDoneId: number, recipientName?: string, docs?: DeliveryDoneDocType[]
+): Promise<void> {
+  const url = `${getApiBaseUrl()}/admin/delivery-done/${deliveryDoneId}/pdf/download-merged` +
+    buildDocsQuery(recipientName, docs)
   const response = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders()

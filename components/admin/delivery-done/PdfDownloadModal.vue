@@ -161,6 +161,29 @@
             </button>
           </div>
 
+          <!-- 붙임 서류 선택 — 공문 미리보기·일괄(ZIP)·합지 다운로드에 공통 적용 -->
+          <div class="docs-section">
+            <label class="docs-label">붙임 서류</label>
+            <div class="docs-checkbox-row">
+              <label
+                v-for="docType in DELIVERY_DONE_DOC_TYPES"
+                :key="docType"
+                class="docs-checkbox"
+              >
+                <input
+                  v-model="selectedDocs"
+                  type="checkbox"
+                  :value="docType"
+                >
+                {{ DELIVERY_DONE_DOC_LABELS[docType] }}
+              </label>
+            </div>
+            <p class="docs-hint">
+              선택한 서류만 첨부되고, 공문의 붙임 목록도 선택한 것만 번호를 다시 매겨 표기됩니다.
+              공문은 항상 포함됩니다.
+            </p>
+          </div>
+
           <!-- 일괄/합지 다운로드 -->
           <div class="batch-download">
             <button
@@ -168,14 +191,14 @@
               @click="downloadMerged"
             >
               <i class="fas fa-file-pdf" />
-              모든 PDF 합지 다운로드 (단일 PDF)
+              선택 서류 합지 다운로드 (단일 PDF)
             </button>
             <button
               class="btn-batch-download"
               @click="downloadAll"
             >
               <i class="fas fa-file-archive" />
-              모든 PDF 일괄 다운로드 (ZIP)
+              선택 서류 일괄 다운로드 (ZIP)
             </button>
           </div>
         </div>
@@ -212,7 +235,10 @@ import {
   downloadMergedPdf,
   getPdfDownloadUrl,
   downloadBaselineInvoiceExcel,
-  getBaselineInvoicePdfUrl
+  getBaselineInvoicePdfUrl,
+  DELIVERY_DONE_DOC_TYPES,
+  DELIVERY_DONE_DOC_LABELS,
+  type DeliveryDoneDocType
 } from '~/services/delivery-done.service'
 import { baselineService } from '~/services/baseline.service'
 import { orderService } from '~/services/order.service'
@@ -314,6 +340,10 @@ function openPdfPreview (pdfType: PdfType) {
   if (pdfType === 'cover' && recipientName.value.trim()) {
     url += `?recipientName=${encodeURIComponent(recipientName.value.trim())}`
   }
+  // 공문 붙임 목록은 선택분만 표기 — 미지정이면 백엔드가 전체로 처리한다
+  if (pdfType === 'cover' && selectedDocs.value.length > 0) {
+    url += `${url.includes('?') ? '&' : '?'}docs=${selectedDocs.value.join(',')}`
+  }
   previewPdfUrl.value = url
   previewFileName.value = `${pdfTypeNames[pdfType]}_${props.deliveryDone.deliveryRequestNo}.pdf`
   showPdfPreview.value = true
@@ -342,12 +372,30 @@ async function downloadExcel () {
   }
 }
 
+// 붙임 서류 선택 — 기본은 전체 선택(기존 동작과 동일).
+// 하나도 선택하지 않으면 백엔드가 '미지정=전체'로 처리하므로, 빈 배열은 다운로드 시 막는다.
+const selectedDocs = ref<DeliveryDoneDocType[]>([...DELIVERY_DONE_DOC_TYPES])
+
+/** 붙임 서류를 하나도 고르지 않았으면 경고하고 중단 */
+function ensureDocsSelected (): boolean {
+  if (selectedDocs.value.length === 0) {
+    alert('붙임 서류를 하나 이상 선택하세요.')
+    return false
+  }
+  return true
+}
+
 /**
- * 모든 PDF 일괄 다운로드 (ZIP)
+ * 선택 서류 일괄 다운로드 (ZIP)
  */
 async function downloadAll () {
+  if (!ensureDocsSelected()) {
+    return
+  }
   try {
-    await downloadAllPdfs(props.deliveryDone.deliveryDoneId, recipientName.value.trim() || undefined)
+    await downloadAllPdfs(
+      props.deliveryDone.deliveryDoneId, recipientName.value.trim() || undefined, selectedDocs.value
+    )
   } catch (error) {
     console.error('Failed to download all PDFs:', error)
     alert('일괄 다운로드 중 오류가 발생했습니다.')
@@ -355,11 +403,16 @@ async function downloadAll () {
 }
 
 /**
- * 모든 PDF 합지 다운로드 (단일 PDF)
+ * 선택 서류 합지 다운로드 (단일 PDF)
  */
 async function downloadMerged () {
+  if (!ensureDocsSelected()) {
+    return
+  }
   try {
-    await downloadMergedPdf(props.deliveryDone.deliveryDoneId, recipientName.value.trim() || undefined)
+    await downloadMergedPdf(
+      props.deliveryDone.deliveryDoneId, recipientName.value.trim() || undefined, selectedDocs.value
+    )
   } catch (error) {
     console.error('Failed to download merged PDF:', error)
     alert(error instanceof Error ? error.message : '합지 다운로드 중 오류가 발생했습니다.')
@@ -590,6 +643,43 @@ async function downloadMerged () {
 .pdf-action {
   font-size: 20px;
   color: #2563eb;
+}
+
+/* 붙임 서류 선택 */
+.docs-section {
+  padding: 15px;
+  margin-bottom: 10px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.docs-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.docs-checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.docs-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.docs-hint {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: #9ca3af;
 }
 
 .batch-download {

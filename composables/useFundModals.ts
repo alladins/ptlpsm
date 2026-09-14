@@ -6,7 +6,7 @@ import { ref, computed, type Ref, type ComputedRef } from 'vue'
 import type { FundDetail, ProgressPaymentRequest, AdvancePayment, OemPayment, AdvancePdfType } from '~/types/fund'
 import { fundService } from '~/services/fund.service'
 import { advancePaymentService } from '~/services/advance-payment.service'
-import { baselineService } from '~/services/baseline.service'
+import { baselineService, type BaselineDocType } from '~/services/baseline.service'
 import { formatCurrency } from '~/utils/format'
 
 interface UseFundModalsOptions {
@@ -147,12 +147,16 @@ export function useFundModals(options: UseFundModalsOptions) {
   }
 
   /** 공문(갑지) PDF 보기 — 수신자명은 화면 상단 입력값을 사용(입력 시 발주에 저장) */
-  const viewCoverPdf = (baselineId: number | undefined, recipientName?: string) => {
+  const viewCoverPdf = (baselineId: number | undefined, recipientName?: string, docs?: BaselineDocType[]) => {
     if (!baselineId) return
     // 갑지는 매 요청 즉석 생성(항상 최신) — 브라우저 캐시만 캐시버스터로 회피
     let url = `${baselineService.getCoverPdfUrl(baselineId)}?_t=${Date.now()}`
     if (recipientName && recipientName.trim()) {
       url += `&recipientName=${encodeURIComponent(recipientName.trim())}`
+    }
+    // 붙임 목록을 선택분만 표기 — 미지정이면 파라미터를 붙이지 않아 백엔드가 전체로 처리한다
+    if (docs && docs.length > 0) {
+      url += `&docs=${docs.join(',')}`
     }
     currentPdfUrl.value = url
     currentPdfFileName.value = `공문_${baselineId}.pdf`
@@ -174,22 +178,26 @@ export function useFundModals(options: UseFundModalsOptions) {
     }
   }
 
-  /** 기성 차수 전체 PDF 일괄 다운로드(ZIP) — 공문·납품확인서·기성금청구내역·사진대지·납품내역서 */
-  const downloadAllBaselinePdfs = async (baselineId: number | undefined, recipientName?: string) => {
+  /** 기성 차수 전체 PDF 일괄 다운로드(ZIP) — 공문 + 선택된 붙임 서류 */
+  const downloadAllBaselinePdfs = async (
+    baselineId: number | undefined, recipientName?: string, docs?: BaselineDocType[]
+  ) => {
     if (!baselineId) return
     try {
-      await baselineService.downloadAllPdfs(baselineId, recipientName)
+      await baselineService.downloadAllPdfs(baselineId, recipientName, docs)
     } catch (error) {
       console.error('기성 전체 PDF 다운로드 실패:', error)
       alert(error instanceof Error ? error.message : '전체 PDF 다운로드에 실패했습니다.')
     }
   }
 
-  /** 기성 차수 전체 PDF 합지 다운로드(단일 PDF) — 공문+납품확인서+기성금청구내역+사진대지+납품내역서 */
-  const downloadMergedBaselinePdf = async (baselineId: number | undefined, recipientName?: string) => {
+  /** 기성 차수 전체 PDF 합지 다운로드(단일 PDF) — 공문 + 선택된 붙임 서류 */
+  const downloadMergedBaselinePdf = async (
+    baselineId: number | undefined, recipientName?: string, docs?: BaselineDocType[]
+  ) => {
     if (!baselineId) return
     try {
-      await baselineService.downloadMergedPdf(baselineId, recipientName)
+      await baselineService.downloadMergedPdf(baselineId, recipientName, docs)
     } catch (error) {
       console.error('기성 합지 PDF 다운로드 실패:', error)
       alert(error instanceof Error ? error.message : '합지 PDF 다운로드에 실패했습니다.')

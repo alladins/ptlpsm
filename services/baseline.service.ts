@@ -27,6 +27,40 @@ import type {
   BaselineCreateAndSendResponse
 } from '~/types/baseline'
 
+/**
+ * 기성청구 붙임 서류 종류 (백엔드 BaselineDocType 과 1:1)
+ *
+ * ⚠ 값·순서를 바꾸면 백엔드 enum 과 어긋난다. 공문 붙임 문구와 ZIP·합지 파일 구성이
+ *   모두 이 값으로 결정되므로 한쪽만 수정하지 말 것.
+ * 공문은 선택 대상이 아니며 항상 포함된다.
+ */
+export const BASELINE_DOC_TYPES = ['CONFIRMATION', 'INVOICE', 'PHOTO', 'STATEMENT'] as const
+export type BaselineDocType = typeof BASELINE_DOC_TYPES[number]
+
+/** 화면 표기용 서류명 */
+export const BASELINE_DOC_LABELS: Record<BaselineDocType, string> = {
+  CONFIRMATION: '납품확인서',
+  INVOICE: '기성금청구내역',
+  PHOTO: '사진대지',
+  STATEMENT: '납품내역서'
+}
+
+/**
+ * 공문 수신자명·붙임 서류 선택을 쿼리스트링으로 조립한다.
+ * docs 를 넘기지 않으면 파라미터 자체를 붙이지 않아 백엔드가 전체 선택으로 처리한다(기존 동작).
+ */
+function buildDocsQuery (recipientName?: string, docs?: BaselineDocType[]): string {
+  const params = new URLSearchParams()
+  if (recipientName && recipientName.trim()) {
+    params.append('recipientName', recipientName.trim())
+  }
+  if (docs && docs.length > 0) {
+    params.append('docs', docs.join(','))
+  }
+  const query = params.toString()
+  return query ? `?${query}` : ''
+}
+
 export const baselineService = {
   /**
    * 주문별 차수 목록 조회
@@ -631,11 +665,8 @@ export const baselineService = {
    * @param baselineId - 차수 ID
    * @param recipientName - 공문 수신자명 즉석 입력값(선택)
    */
-  async downloadAllPdfs(baselineId: number, recipientName?: string): Promise<void> {
-    let url = this.getDownloadAllPdfUrl(baselineId)
-    if (recipientName && recipientName.trim()) {
-      url += `?recipientName=${encodeURIComponent(recipientName.trim())}`
-    }
+  async downloadAllPdfs(baselineId: number, recipientName?: string, docs?: BaselineDocType[]): Promise<void> {
+    const url = this.getDownloadAllPdfUrl(baselineId) + buildDocsQuery(recipientName, docs)
 
     const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
     if (!response.ok) {
@@ -668,12 +699,10 @@ export const baselineService = {
    * - 인증 토큰 필요 → fetch + blob 방식으로 다운로드 트리거
    * @param baselineId - 차수 ID
    * @param recipientName - 공문 수신자명 즉석 입력값(선택)
+   * @param docs - 포함할 붙임 서류(선택). 미지정 시 전체
    */
-  async downloadMergedPdf(baselineId: number, recipientName?: string): Promise<void> {
-    let url = this.getDownloadMergedPdfUrl(baselineId)
-    if (recipientName && recipientName.trim()) {
-      url += `?recipientName=${encodeURIComponent(recipientName.trim())}`
-    }
+  async downloadMergedPdf(baselineId: number, recipientName?: string, docs?: BaselineDocType[]): Promise<void> {
+    const url = this.getDownloadMergedPdfUrl(baselineId) + buildDocsQuery(recipientName, docs)
 
     const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
     if (!response.ok) {

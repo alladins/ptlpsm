@@ -37,6 +37,29 @@
       </p>
     </div>
 
+    <!-- 붙임 서류 선택. 공문 미리보기·일괄(ZIP)·합지 다운로드에 공통 적용 -->
+    <div class="docs-section">
+      <label class="docs-label">붙임 서류</label>
+      <div class="docs-checkbox-row">
+        <label
+          v-for="docType in BASELINE_DOC_TYPES"
+          :key="docType"
+          class="docs-checkbox"
+        >
+          <input
+            v-model="selectedDocs"
+            type="checkbox"
+            :value="docType"
+          >
+          {{ BASELINE_DOC_LABELS[docType] }}
+        </label>
+      </div>
+      <p class="docs-hint">
+        선택한 서류만 첨부되고, 공문의 붙임 목록도 선택한 것만 번호를 다시 매겨 표기됩니다.
+        공문은 항상 포함됩니다. (납품내역서는 출하가 2회 이상인 건에서만 첨부)
+      </p>
+    </div>
+
     <div class="table-container">
       <table class="data-table">
         <thead>
@@ -89,7 +112,7 @@
                   class="btn-pdf-sm"
                   :disabled="!payment.baselineId"
                   title="공문(갑지) — 항상 최신 양식으로 즉석 생성"
-                  @click="emit('viewCoverPdf', payment.baselineId, recipientName)"
+                  @click="ensureDocsSelected() && emit('viewCoverPdf', payment.baselineId, recipientName, selectedDocs)"
                 >
                   <i class="fas fa-file-pdf" />
                   공문
@@ -153,7 +176,7 @@
                   class="btn-pdf-sm btn-merge-download"
                   :disabled="!payment.baselineId"
                   title="공문+납품확인서+기성금청구내역+사진대지+납품내역서를 하나의 PDF로 합쳐 다운로드"
-                  @click="emit('downloadMergedPdf', payment.baselineId, recipientName)"
+                  @click="ensureDocsSelected() && emit('downloadMergedPdf', payment.baselineId, recipientName, selectedDocs)"
                 >
                   <i class="fas fa-file-pdf" />
                   합지 다운로드
@@ -162,7 +185,7 @@
                   class="btn-pdf-sm btn-zip-download"
                   :disabled="!payment.baselineId"
                   title="공문·납품확인서·기성금청구내역·사진대지·납품내역서를 ZIP으로 일괄 다운로드"
-                  @click="emit('downloadAllPdfs', payment.baselineId, recipientName)"
+                  @click="ensureDocsSelected() && emit('downloadAllPdfs', payment.baselineId, recipientName, selectedDocs)"
                 >
                   <i class="fas fa-file-archive" />
                   일괄 다운로드
@@ -272,7 +295,7 @@ import { computed, ref } from 'vue'
 import type { ProgressPaymentRequest } from '~/types/fund'
 import { formatCurrency } from '~/utils/format'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
-import { baselineService } from '~/services/baseline.service'
+import { baselineService, BASELINE_DOC_TYPES, BASELINE_DOC_LABELS, type BaselineDocType } from '~/services/baseline.service'
 import { orderService } from '~/services/order.service'
 
 interface Props {
@@ -321,6 +344,19 @@ const saveRecipientName = async () => {
   }
 }
 
+// 붙임 서류 선택 — 기본은 전체 선택(기존 동작과 동일).
+// 하나도 선택하지 않으면 백엔드가 '미지정=전체'로 처리하므로, 빈 배열은 다운로드 시 막는다.
+const selectedDocs = ref<BaselineDocType[]>([...BASELINE_DOC_TYPES])
+
+/** 붙임 서류를 하나도 고르지 않았으면 경고하고 중단 */
+const ensureDocsSelected = (): boolean => {
+  if (selectedDocs.value.length === 0) {
+    alert('붙임 서류를 하나 이상 선택하세요.')
+    return false
+  }
+  return true
+}
+
 // 기성금만 필터링 (BALANCE 타입 제외)
 const filteredProgressPayments = computed(() =>
   props.progressPayments.filter(p => p.paymentType !== 'BALANCE')
@@ -340,13 +376,13 @@ const emit = defineEmits<{
   /** 사진대지 PDF 보기 */
   viewPhotoSheetPdf: [baselineId: number]
   /** 공문(갑지) PDF 보기 */
-  viewCoverPdf: [baselineId: number, recipientName: string]
+  viewCoverPdf: [baselineId: number, recipientName: string, docs: BaselineDocType[]]
   /** 기성청구 PDF 재생성 (납품확인서·사진대지) */
   regeneratePdfs: [baselineId: number]
   /** 기성 차수 전체 PDF 일괄 다운로드(ZIP) */
-  downloadAllPdfs: [baselineId: number, recipientName: string]
+  downloadAllPdfs: [baselineId: number, recipientName: string, docs: BaselineDocType[]]
   /** 기성 차수 전체 PDF 합지 다운로드(단일 PDF) */
-  downloadMergedPdf: [baselineId: number, recipientName: string]
+  downloadMergedPdf: [baselineId: number, recipientName: string, docs: BaselineDocType[]]
   /** 스캔본 업로드 완료 → 목록 갱신 */
   scanUploaded: []
   /** 기성 차수 취소 완료 → 목록 갱신 */
@@ -538,6 +574,40 @@ const {
 }
 
 .recipient-hint {
+  margin: 0.375rem 0 0 0;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* 붙임 서류 선택 */
+.docs-section {
+  margin-bottom: 1rem;
+}
+
+.docs-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.docs-checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.docs-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.docs-hint {
   margin: 0.375rem 0 0 0;
   font-size: 0.75rem;
   color: #9ca3af;
