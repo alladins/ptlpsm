@@ -1104,12 +1104,16 @@ const handleSaveEdit = async () => {
 // 발주서 삭제
 const handleDelete = async () => {
   // 연관 출하 영향 확인
+  // ★ getRejectImpact 는 "직접 연결"과 "같은 OEM/SKU 간접 영향"을 함께 돌려준다(반려 모달용).
+  //   삭제는 이 발주서만 건드리므로 directlyLinked 인 것만 보여줘야 한다.
+  //   전체를 나열하면 무관한 출하까지 영향받는 것처럼 보여 사용자가 삭제를 주저하게 된다.
   let confirmMsg = '정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'
   try {
     const impact = await purchaseOrderService.getRejectImpact(poId.value)
-    if (impact.affectedShipments.length > 0) {
-      const shipmentNos = impact.affectedShipments.map(s => s.shipmentNo).join(', ')
-      confirmMsg = `이 발주서에 연결된 출하가 있습니다: ${shipmentNos}\n\n삭제하면 출하 연결이 해제됩니다. 정말 삭제하시겠습니까?`
+    const linkedShipments = impact.affectedShipments.filter(s => s.directlyLinked)
+    if (linkedShipments.length > 0) {
+      const shipmentNos = linkedShipments.map(s => s.shipmentNo).join(', ')
+      confirmMsg = `이 발주서에 연결된 출하 ${linkedShipments.length}건이 있습니다: ${shipmentNos}\n\n삭제해도 출하 자체는 유지되지만, 이 발주서와의 연결은 더 이상 조회되지 않습니다.\n정말 삭제하시겠습니까?`
     }
   } catch (error) {
     console.error('삭제 영향 분석 실패:', error)
