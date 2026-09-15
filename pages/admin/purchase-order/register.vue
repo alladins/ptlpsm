@@ -68,6 +68,34 @@
                 <li>바로 입고 시 모든 품목이 본사 창고에 즉시 입고되며 <b>되돌릴 수 없습니다</b>.</li>
                 <li>외부 OEM 발주라면 다른 제조사를 선택해 주세요.</li>
               </ul>
+
+              <!-- 생산자 지정 — 본사는 생산 설비가 없어 지급 대상이 될 수 없다.
+                   돈은 실제로 만든 제조사에게 가야 하므로 여기서 반드시 받는다. -->
+              <div class="source-oem-field">
+                <label class="source-oem-label">
+                  생산자 <span class="required-mark">*</span>
+                </label>
+                <select
+                  v-model="formData.sourceOemCompanyId"
+                  class="form-select-sm"
+                  :class="{ 'is-error': errors.sourceOemCompanyId }"
+                >
+                  <option :value="null">선택하세요</option>
+                  <option
+                    v-for="company in manufacturerCompanies"
+                    :key="company.id"
+                    :value="company.id"
+                  >
+                    {{ company.companyName }}
+                  </option>
+                </select>
+                <p class="source-oem-hint">
+                  이 물량을 실제로 만든 제조사입니다. 원가와 지급이 이 회사 기준으로 잡힙니다.
+                </p>
+                <p v-if="errors.sourceOemCompanyId" class="source-oem-error">
+                  {{ errors.sourceOemCompanyId }}
+                </p>
+              </div>
             </div>
 
             <!-- 발주일자 -->
@@ -86,6 +114,19 @@
                 type="date"
                 class="form-input-sm text-center"
               >
+            </FormField>
+
+            <!-- 가공비 -->
+            <FormField label="가공비">
+              <input
+                v-model.number="formData.processingFee"
+                type="number"
+                min="0"
+                step="1000"
+                class="form-input-sm text-right"
+                placeholder="0"
+              >
+              <span class="form-hint">OEM 에 가공을 요청하고 지불하는 비용입니다. 발주일이 속한 달의 OEM 원장에 가산됩니다.</span>
             </FormField>
 
             <!-- 비고 -->
@@ -308,6 +349,13 @@ const oemCompanies = ref<CompanyInfoResponse[]>([])
 const loadingOemCompanies = ref(false)
 
 // 본사 선택 여부
+// 생산자 후보 = 제조사로 등록된 회사만.
+// 원가 마스터(item_sku_oem_cost)에 행이 있는 회사와 정확히 일치하므로
+// 여기 없는 회사를 고르면 원가를 못 찾는다.
+const manufacturerCompanies = computed(() =>
+  oemCompanies.value.filter(c => c.companyType === 'MANUFACTURER')
+)
+
 const isLeadpowerSelected = computed(() => {
   if (!formData.value.oemCompanyId) { return false }
   const selected = oemCompanies.value.find(c => c.id === formData.value.oemCompanyId)
@@ -341,6 +389,11 @@ interface PoItemRow extends PurchaseOrderItemInput {
 // 폼 데이터
 const formData = ref({
   oemCompanyId: null as number | null,
+  // 생산자 — 본사(리드파워) 명의일 때만 입력받는다.
+  // 제조사 명의면 명의=생산자이므로 null 로 보내고 백엔드가 COALESCE 로 해석한다.
+  sourceOemCompanyId: null as number | null,
+  // 가공비 — 원장에 가산되는 부대비용
+  processingFee: null as number | null,
   orderDate: getTodayDate(),
   expectedCompletionDate: '',
   remarks: '',
@@ -400,7 +453,21 @@ const totalAmount = computed(() => {
 })
 
 // OEM 제조사 변경 시 원가 조회
-watch(() => formData.value.oemCompanyId, async (newOemId) => {
+// 원가 조회 대상 = 생산자 우선, 없으면 공급원.
+// ⚠ 본사(리드파워) 명의로 등록할 때 공급원으로 조회하면 리드파워는 원가 마스터 행이 없어
+//   모든 품목 단가가 0 으로 저장된다. purchase_order_items.unit_price 는 원장의 2순위
+//   원가 소스이므로, 그대로 두면 0원 발주서가 그대로 원장에 실린다.
+const costLookupCompanyId = computed(
+  () => formData.value.sourceOemCompanyId ?? formData.value.oemCompanyId
+)
+
+watch(() => formData.value.oemCompanyId, () => {
+  // 공급원이 바뀌면 생산자는 초기화한다.
+  // 제조사 명의로 되돌렸는데 이전 생산자가 남아 있으면 백엔드 검증에 걸린다.
+  formData.value.sourceOemCompanyId = null
+})
+
+watch(costLookupCompanyId, async (newOemId) => {
   oemCostMap.value.clear()
   if (!newOemId) { return }
 
@@ -545,6 +612,10 @@ const validate = (): boolean => {
     newErrors.oemCompanyId = 'OEM 제조사를 선택하세요.'
   }
 
+  if (isLeadpowerSelected.value && !formData.value.sourceOemCompanyId) {
+    newErrors.sourceOemCompanyId = '본사 명의 발주서는 생산자(실제 제조사)를 지정해야 합니다.'
+  }
+
   if (!formData.value.orderDate) {
     newErrors.orderDate = '발주일자를 입력하세요.'
   }
@@ -582,7 +653,9 @@ const buildRequestData = (): PurchaseOrderCreateRequest => {
       shipmentQuantity: item.shipmentQuantity || 0,
       unitPrice: item.unitPrice
     })),
-    shipmentIds: linkedShipmentIds.value.length > 0 ? linkedShipmentIds.value : undefined
+    shipmentIds: linkedShipmentIds.value.length > 0 ? linkedShipmentIds.value : undefined,
+    sourceOemCompanyId: formData.value.sourceOemCompanyId,
+    processingFee: formData.value.processingFee || 0
   }
 }
 
@@ -797,6 +870,46 @@ onMounted(async () => {
   border-radius: 4px;
   padding: 0.875rem 1rem;
   margin-top: 0.5rem;
+}
+
+/* 생산자 지정 — 경고 패널 안쪽 */
+.source-oem-field {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #fcd34d;
+}
+
+.source-oem-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #78350f;
+  margin-bottom: 0.375rem;
+}
+
+.source-oem-field .required-mark {
+  color: #dc2626;
+}
+
+.source-oem-field .form-select-sm {
+  width: 100%;
+  max-width: 320px;
+}
+
+.source-oem-field .form-select-sm.is-error {
+  border-color: #dc2626;
+}
+
+.source-oem-hint {
+  margin: 0.375rem 0 0;
+  font-size: 0.75rem;
+  color: #92400e;
+}
+
+.source-oem-error {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #dc2626;
 }
 
 .leadpower-warning-header {

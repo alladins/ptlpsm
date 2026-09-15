@@ -201,6 +201,38 @@
             >
           </FormField>
 
+          <!-- 생산자 — 명의(OEM 제조사)와 실제 만든 회사가 다를 때만 값이 있다.
+               본사(리드파워) 명의 발주서는 반드시 지정되어야 한다. -->
+          <FormField
+            v-if="isLeadpowerPo || poDetail.sourceOemCompanyId"
+            label="생산자"
+            :required="isEditMode && isLeadpowerPo"
+            :error="errors.sourceOemCompanyId"
+          >
+            <select
+              v-if="isEditMode"
+              v-model="editForm.sourceOemCompanyId"
+              class="form-select"
+              :disabled="loadingOemCompanies"
+            >
+              <option :value="null">선택하세요</option>
+              <option
+                v-for="company in manufacturerCompanies"
+                :key="company.id"
+                :value="company.id"
+              >
+                {{ company.companyName }}
+              </option>
+            </select>
+            <input
+              v-else
+              type="text"
+              :value="poDetail.sourceOemCompanyName || poDetail.oemCompanyName || '-'"
+              class="form-input-sm"
+              readonly
+            >
+          </FormField>
+
           <!-- 발주일자 -->
           <FormField label="발주일자">
             <input
@@ -857,8 +889,17 @@ interface EditItemRow {
   stockedQuantity: number
 }
 
+// 생산자 후보 = 제조사로 등록된 회사만.
+// getManufacturers() 응답에 본사(LEADPOWER)가 섞여 들어오므로 여기서 걸러야 한다.
+// 걸러지지 않으면 명의와 같은 회사를 생산자로 고를 수 있고, 백엔드가 NULL 로 정규화한 뒤
+// "생산자를 지정해야 합니다" 400 을 던져 원인을 알기 어렵다.
+const manufacturerCompanies = computed(() =>
+  oemCompanies.value.filter(c => (c as any).companyType === 'MANUFACTURER')
+)
+
 const editForm = ref({
   oemCompanyId: null as number | null,
+  sourceOemCompanyId: null as number | null,
   orderDate: '',
   expectedCompletionDate: '',
   remarks: '',
@@ -937,6 +978,7 @@ const enterEditMode = () => {
 
   editForm.value = {
     oemCompanyId: poDetail.value.oemCompanyId,
+    sourceOemCompanyId: poDetail.value.sourceOemCompanyId ?? null,
     orderDate: poDetail.value.orderDate || '',
     expectedCompletionDate: poDetail.value.expectedCompletionDate || '',
     remarks: poDetail.value.remarks || '',
@@ -1078,6 +1120,7 @@ const handleSaveEdit = async () => {
   try {
     const updateData: PurchaseOrderUpdateRequest = {
       oemCompanyId: editForm.value.oemCompanyId!,
+      sourceOemCompanyId: editForm.value.sourceOemCompanyId,
       orderDate: editForm.value.orderDate || null,
       expectedCompletionDate: editForm.value.expectedCompletionDate || null,
       remarks: editForm.value.remarks || null,

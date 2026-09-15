@@ -113,6 +113,14 @@ export interface PurchaseOrderDetail {
   oemCompanyId: number
   /** OEM 제조사명 */
   oemCompanyName: string
+  /** 회사 유형 (MANUFACTURER / LEADPOWER) */
+  companyType?: string | null
+  /** 생산자 회사 ID — null 이면 명의(oemCompanyId)와 동일하다는 뜻 */
+  sourceOemCompanyId?: number | null
+  /** 생산자 회사명 */
+  sourceOemCompanyName?: string | null
+  /** 가공비 (원장 가산) */
+  processingFee?: number | null
   /** 발주일자 */
   orderDate: string | null
   /** 납기 예정일 */
@@ -167,8 +175,12 @@ export interface PurchaseOrderItemInput {
  * 발주서 등록 요청
  */
 export interface PurchaseOrderCreateRequest {
-  /** OEM 제조사 ID */
+  /** OEM 제조사 ID (거래 명의) */
   oemCompanyId: number
+  /** 생산자 회사 ID — 명의와 실제 제조사가 다를 때만 지정. 같으면 보내지 않는다(null=동일) */
+  sourceOemCompanyId?: number | null
+  /** 가공비 — OEM 에 가공을 요청하고 지불하는 비용. 발주일 기준월 원장에 가산된다 */
+  processingFee?: number | null
   /** 발주일자 */
   orderDate: string | null
   /** 납기 예정일 */
@@ -185,8 +197,12 @@ export interface PurchaseOrderCreateRequest {
  * 발주서 수정 요청
  */
 export interface PurchaseOrderUpdateRequest {
-  /** OEM 제조사 ID */
+  /** OEM 제조사 ID (거래 명의) */
   oemCompanyId?: number
+  /** 생산자 회사 ID — 명의와 실제 제조사가 다를 때만 지정 */
+  sourceOemCompanyId?: number | null
+  /** 가공비 */
+  processingFee?: number | null
   /** 발주일자 */
   orderDate?: string | null
   /** 납기 예정일 */

@@ -107,6 +107,26 @@
                     >
                   </FormField>
 
+                  <FormField label="운송비 부담">
+                    <select v-model="formData.shippingCostType" class="form-select-sm">
+                      <option value="OEM_BEARS">OEM 부담 (청구 없음)</option>
+                      <option value="PAID_TO_OEM">OEM 에 지불 (원장 포함)</option>
+                      <option value="LP_BEARS">리드파워 부담 (마진 원가만)</option>
+                    </select>
+                    <span class="form-hint">
+                      {{ shippingCostTypeHint }}
+                    </span>
+                  </FormField>
+
+                  <FormField label="운송사">
+                    <select v-model.number="formData.carrierCompanyId" class="form-select-sm">
+                      <option :value="null">선택 안 함</option>
+                      <option v-for="c in carrierOptions" :key="c.id" :value="c.id">
+                        {{ c.companyName }}
+                      </option>
+                    </select>
+                  </FormField>
+
                   <FormField label="총 출하수량">
                     <input
                       type="text"
@@ -616,8 +636,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from '#imports'
+import { companyService } from '~/services/company.service'
 import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
 import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
 import ItemMergeSelectModal from '~/components/shipment/ItemMergeSelectModal.vue'
@@ -632,6 +653,35 @@ import { usePermission } from '~/composables/usePermission'
 import { useShippingFormData } from '~/composables/admin/useShippingFormData'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
+
+// ── 운송비 부담 주체 ─────────────────────────────────────────────────────────
+// ⚠ PAID_TO_OEM 만 OEM 월별 원장에 실린다.
+//   OEM_BEARS 는 OEM 이 자기 돈으로 내는 것이고,
+//   LP_BEARS 는 리드파워가 운송사(중앙운수 등)에 직접 내는 것이라 제조사에게 줄 돈이 아니다.
+const shippingCostTypeHint = computed(() => {
+  switch (formData.value.shippingCostType) {
+    case 'PAID_TO_OEM':
+      return '소량 주문 등으로 운반비를 OEM 에 지불하는 경우입니다. 출하일이 속한 달의 OEM 원장에 가산됩니다.'
+    case 'LP_BEARS':
+      return '창고이동 후 리드파워가 직접 운송하는 경우입니다. 마진 원가에만 반영되고 원장에는 실리지 않습니다.'
+    default:
+      return 'OEM 제조회사가 부담합니다. 원장·마진 어디에도 반영되지 않습니다.'
+  }
+})
+
+// 운송사 후보 = 운송사(CARRIER, 중앙운수 등) + OEM 제조사
+const carrierOptions = ref<any[]>([])
+onMounted(async () => {
+  try {
+    const [carriers, makers] = await Promise.all([
+      companyService.getCompanies('CARRIER'),
+      companyService.getManufacturers()
+    ])
+    carrierOptions.value = [...carriers, ...makers]
+  } catch (e) {
+    console.error('운송사 목록 조회 실패:', e)
+  }
+})
 import RelatedOrderRequestsDrawer from '~/components/admin/shipping/RelatedOrderRequestsDrawer.vue'
 import { mobileOrderService } from '~/services/mobile-order.service'
 import type { MobileOrderRequest } from '~/types/mobile-order'
@@ -1287,6 +1337,8 @@ const {
       receiverName: data.receiverName || null,
       receiverPhone: data.receiverPhone || null,
       shippingCost: data.shippingCost || 0, // 배송비
+      shippingCostType: data.shippingCostType || 'OEM_BEARS',
+      carrierCompanyId: data.carrierCompanyId ?? null,
       items: allItems
     }
 
@@ -1313,7 +1365,9 @@ const {
     addressDetail: '',
     receiverName: '',
     receiverPhone: '',
-    shippingCost: 0 // 배송비
+    shippingCost: 0, // 배송비
+    shippingCostType: 'OEM_BEARS', // 운송비 부담 주체
+    carrierCompanyId: null as number | null // 운송사
   },
   onCreateSuccess: () => {
     alert('출하 정보가 저장되었습니다.')

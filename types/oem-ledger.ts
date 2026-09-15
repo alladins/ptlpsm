@@ -34,11 +34,32 @@ export interface OemMonthlyLedgerResponse {
   /** 발주 품목 합계 (손실 차감 전 공급가액) */
   totalAmount: number
 
+  /**
+   * 비출하 재고 소진 목록 (품질관리 발송 / 리드파워 계약)
+   * 발주서 없이 재고에서 빠진 물량. 그 물량을 만든 OEM 이 청구하므로 원장에 가산된다.
+   */
+  consumptions?: LedgerConsumptionItem[]
+  /** 비출하 소진 합계 (가산) */
+  consumptionTotal?: number
+
+  /**
+   * 운송비 목록 — OEM 에게 지불하는 건(PAID_TO_OEM)만 실린다.
+   * OEM 부담(OEM_BEARS)·리드파워 부담(LP_BEARS)은 제조사에게 줄 돈이 아니라 제외된다.
+   */
+  shippingCharges?: LedgerChargeItem[]
+  /** 운송비 합계 (가산) */
+  shippingChargeTotal?: number
+
+  /** 가공비 목록 — OEM 에 가공을 요청하고 지불하는 비용 */
+  processingCharges?: LedgerChargeItem[]
+  /** 가공비 합계 (가산) */
+  processingChargeTotal?: number
+
   /** 손실 차감 목록 (제조사 부담 손실·스펙오납 정산분) */
   lossDeductions?: LossDeductionSummary[]
   /** 손실 차감액 합계 */
   lossDeductionTotal?: number
-  /** 지급 예정 공급가액 = totalAmount − lossDeductionTotal */
+  /** 지급 예정 공급가액 = totalAmount + 소진 + 운송비 + 가공비 − lossDeductionTotal */
   payableAmount?: number
   /** 부가세 (공급가액의 10%, 원 단위 반올림 — 발주서 PDF 와 동일 기준) */
   vatAmount?: number
@@ -112,4 +133,49 @@ export interface OemLedgerPaymentRequest {
   remarks?: string
   paidAmount?: number
   paidDate?: string
+}
+
+/**
+ * 원장 부대비용 항목 (운송비 / 가공비)
+ *
+ * 발주 품목처럼 "수량 × 원가"가 아니라 금액만 가산되는 항목이다.
+ */
+export interface LedgerChargeItem {
+  /** SHIPPING:운송비 / PROCESSING:가공비 */
+  chargeType: 'SHIPPING' | 'PROCESSING'
+  /** 출처 문서번호 (출하번호 또는 발주서번호) */
+  sourceNo: string | null
+  sourceId: number | null
+  amount: number
+  /** 기준일 (출하일 또는 발주일) */
+  refDate: string | null
+  /** 운송사명 (운송비인 경우) */
+  carrierName?: string | null
+  deliveryRequestNo?: string | null
+  client?: string | null
+  remarks?: string | null
+}
+
+/**
+ * 원장의 비출하 재고 소진 항목
+ *
+ * 수량·원가가 있어 부대비용과 구분된다.
+ * 상세 타입은 ~/types/inventory-consumption 의 InventoryConsumption 과 같다.
+ */
+export interface LedgerConsumptionItem {
+  consumptionId: number
+  consumptionNo: string
+  consumptionType: string
+  skuId: string
+  skuName: string | null
+  warehouseName: string | null
+  /** 수량 (㎡) */
+  quantity: number
+  sheetCount: number | null
+  unitCost: number
+  amount: number
+  consumptionDate: string
+  destination: string | null
+  contractNo: string | null
+  sourceOemCompanyName: string | null
 }

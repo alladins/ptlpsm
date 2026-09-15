@@ -250,6 +250,42 @@
                 <td />
               </tr>
 
+              <!-- 비출하 재고 소진 (품질관리 발송 / 리드파워 계약) -->
+              <tr v-if="hasConsumption" class="add-row">
+                <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
+                  비출하 재고 소진
+                  <span class="deduct-hint">{{ consumptionLabel }}</span>
+                </td>
+                <td />
+                <td class="text-right">+ {{ formatCurrency(ledgerData.consumptionTotal) }}</td>
+                <td />
+                <td />
+              </tr>
+
+              <!-- 운송비 (OEM 에 지불하는 건만) -->
+              <tr v-if="hasShippingCharge" class="add-row">
+                <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
+                  운송비
+                  <span class="deduct-hint">{{ shippingChargeLabel }}</span>
+                </td>
+                <td />
+                <td class="text-right">+ {{ formatCurrency(ledgerData.shippingChargeTotal) }}</td>
+                <td />
+                <td />
+              </tr>
+
+              <!-- 가공비 -->
+              <tr v-if="hasProcessingCharge" class="add-row">
+                <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
+                  가공비
+                  <span class="deduct-hint">{{ processingChargeLabel }}</span>
+                </td>
+                <td />
+                <td class="text-right">+ {{ formatCurrency(ledgerData.processingChargeTotal) }}</td>
+                <td />
+                <td />
+              </tr>
+
               <!-- 손실 차감 (제조사 부담분이 있을 때만) -->
               <tr v-if="hasLossDeduction" class="deduct-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
@@ -262,8 +298,8 @@
                 <td />
               </tr>
 
-              <!-- 공급가액 (손실 차감 후) -->
-              <tr v-if="hasLossDeduction" class="supply-row">
+              <!-- 공급가액 (가산·차감 반영 후) -->
+              <tr v-if="hasAdjustment" class="supply-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
                   <strong>공급가액</strong>
                 </td>
@@ -398,6 +434,34 @@ const hasLossDeduction = computed(() => {
 })
 
 /** 손실 차감 건수 요약 라벨 */
+// ── 원장 가산 항목 ───────────────────────────────────────────────────────────
+// 발주 품목 외에 원장에 더해지는 것들. 손실은 차감이고 이쪽은 가산이라 부호가 반대다.
+const hasConsumption = computed(() => Number(ledgerData.value?.consumptionTotal || 0) > 0)
+const hasShippingCharge = computed(() => Number(ledgerData.value?.shippingChargeTotal || 0) > 0)
+const hasProcessingCharge = computed(() => Number(ledgerData.value?.processingChargeTotal || 0) > 0)
+
+// 가산이든 차감이든 하나라도 있으면 "공급가액" 행을 보여줘야 한다
+const hasAdjustment = computed(() =>
+  hasLossDeduction.value || hasConsumption.value || hasShippingCharge.value || hasProcessingCharge.value
+)
+
+const consumptionLabel = computed(() => {
+  const list = ledgerData.value?.consumptions
+  if (!list || list.length === 0) { return '' }
+  return `(${list.length}건 — 품질관리 발송 / 리드파워 계약)`
+})
+const shippingChargeLabel = computed(() => {
+  const list = ledgerData.value?.shippingCharges
+  if (!list || list.length === 0) { return '' }
+  const carriers = [...new Set(list.map((x: any) => x.carrierName).filter(Boolean))]
+  return carriers.length > 0 ? `(${list.length}건 — ${carriers.join(', ')})` : `(${list.length}건)`
+})
+const processingChargeLabel = computed(() => {
+  const list = ledgerData.value?.processingCharges
+  if (!list || list.length === 0) { return '' }
+  return `(${list.length}건)`
+})
+
 const lossDeductionLabel = computed(() => {
   const list = ledgerData.value?.lossDeductions
   if (!list || list.length === 0) return ''
@@ -794,6 +858,16 @@ onMounted(async () => {
   color: #94a3b8;
   font-weight: 400;
   margin-left: 0.25rem;
+}
+
+/* 가산 행 (비출하 소진 / 운송비 / 가공비)
+   손실 차감(주황)과 구분되도록 초록 계열을 쓴다 — 부호가 반대인 항목이다. */
+.add-row {
+  background: #f0fdf4 !important;
+}
+.add-row td {
+  color: #15803d;
+  font-weight: 500;
 }
 
 /* 공급가액 행 (손실 차감 후) */

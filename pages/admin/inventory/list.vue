@@ -13,6 +13,10 @@
           <i v-else class="fas fa-search" />
           검색
         </button>
+        <button v-if="!isOemManager" class="btn-action" @click="showConsumptionModal = true">
+          <i class="fas fa-flask" />
+          소진 등록
+        </button>
         <button v-if="!isOemManager" class="btn-action btn-primary" @click="openTransferModal">
           <i class="fas fa-exchange-alt" />
           창고간 이동
@@ -418,6 +422,9 @@
       </div>
     </div>
 
+    <!-- 재고 소진 등록 (품질관리 발송 / 리드파워 계약) -->
+    <InventoryConsumptionModal v-model="showConsumptionModal" @saved="handleSearch" />
+
     <!-- 창고간 이동 모달 -->
     <Teleport to="body">
       <div v-if="showTransferModal" class="modal-overlay">
@@ -586,6 +593,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { inventoryService } from '~/services/inventory.service'
 import { warehouseService } from '~/services/warehouse.service'
+import InventoryConsumptionModal from '~/components/admin/inventory/InventoryConsumptionModal.vue'
 import type { InventoryItem, InventoryTransaction, TransferRequest, SkuTransactionSummary } from '~/types/inventory'
 import { TRANSACTION_TYPE_LABELS, TRANSACTION_TYPE_COLORS } from '~/types/inventory'
 import type { Warehouse } from '~/types/warehouse'
@@ -974,6 +982,8 @@ const switchTab = (tab: 'inventory' | 'transactions') => {
 
 // ======== 창고간 이동 모달 ========
 const showTransferModal = ref(false)
+// 재고 소진 등록 모달 — 확정하면 재고가 차감되므로 저장 후 목록을 다시 읽는다
+const showConsumptionModal = ref(false)
 const transferring = ref(false)
 const loadingWarehouseSkus = ref(false)
 
