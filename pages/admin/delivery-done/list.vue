@@ -250,41 +250,45 @@
                 <!-- 관리: 수동완료 / 초기화 / 스캔본 -->
                 <td>
                   <div class="admin-action-buttons">
+                    <!--
+                      아이콘만 남긴다. 버튼명은 title 로 띄우고, 상세 화면에는 라벨이 그대로 있다.
+                      ⚠ title 을 지우면 무슨 버튼인지 알 길이 사라진다. 반드시 함께 유지할 것.
+                    -->
                     <button
                       v-if="canCompleteManually(item)"
-                      class="btn-action-small btn-success-soft"
-                      title="디지털 서명 없이 PDF 3종 생성 후 완료 처리"
+                      class="btn-action-icon btn-success-soft"
+                      title="수동완료 — 디지털 서명 없이 PDF 3종 생성 후 완료 처리"
+                      aria-label="수동완료"
                       @click.stop="openManualCompleteModal(item)"
                     >
                       <i class="fas fa-check-circle" />
-                      <span>수동완료</span>
                     </button>
                     <button
                       v-if="canResetItem(item)"
-                      class="btn-action-small btn-danger-soft"
-                      title="서명·PDF 모두 초기화 (SYSTEM_ADMIN, 담당자)"
+                      class="btn-action-icon btn-danger-soft"
+                      title="초기화 — 서명·PDF 모두 초기화 (SYSTEM_ADMIN, 담당자)"
+                      aria-label="초기화"
                       @click.stop="openResetModal(item)"
                     >
                       <i class="fas fa-undo" />
-                      <span>초기화</span>
                     </button>
                     <button
                       v-if="canRegeneratePdfsItem(item)"
-                      class="btn-action-small btn-info-soft"
-                      title="서명 보존하고 PDF 3종만 새 데이터로 재생성 (SYSTEM_ADMIN, 담당자)"
+                      class="btn-action-icon btn-info-soft"
+                      title="PDF 재발행 — 서명 보존하고 PDF 3종만 새 데이터로 재생성 (SYSTEM_ADMIN, 담당자)"
+                      aria-label="PDF 재발행"
                       @click.stop="openRegenerateModal(item)"
                     >
                       <i class="fas fa-redo" />
-                      <span>PDF재발행</span>
                     </button>
                     <button
                       v-if="canUploadScan(item)"
-                      class="btn-action-small btn-info-soft"
-                      title="종이 서명본 스캔 PDF 업로드"
+                      class="btn-action-icon btn-info-soft"
+                      title="스캔 업로드 — 종이 서명본 스캔 PDF 업로드"
+                      aria-label="스캔 업로드"
                       @click.stop="openScanUploadModal(item)"
                     >
                       <i class="fas fa-upload" />
-                      <span>스캔</span>
                     </button>
                   </div>
                 </td>
@@ -1220,28 +1224,33 @@ onMounted(async () => {
 }
 
 /* 관리 컬럼: 수동완료/초기화/스캔본 버튼 */
+/* 아이콘만 쓰므로 세로로 쌓을 이유가 없다. 한 줄로 붙이고 좁으면 넘긴다 */
 .admin-action-buttons {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 4px;
 }
 
-.btn-action-small {
-  padding: 4px 8px;
+.btn-action-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
+  border-radius: 6px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  white-space: nowrap;
+  justify-content: center;
   transition: all 0.15s;
 }
 
-.btn-action-small i {
-  font-size: 10px;
+.btn-action-icon i {
+  font-size: 13px;
+}
+
+.btn-action-icon:hover {
+  transform: translateY(-1px);
 }
 
 .btn-success-soft {
