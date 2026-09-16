@@ -98,6 +98,10 @@
           <i class="fas fa-sitemap" />
           <span>사이트맵</span>
         </NuxtLink>
+        <NuxtLink to="/manual" class="user-menu-item" @click="closeUserMenu">
+          <i class="fas fa-book" />
+          <span>사용자 매뉴얼</span>
+        </NuxtLink>
         <NuxtLink to="/help" class="user-menu-item" @click="closeUserMenu">
           <i class="fas fa-question-circle" />
           <span>도움말</span>
@@ -165,8 +169,50 @@ interface MenuWithAuth extends Menu {
   children?: MenuWithAuth[]
 }
 
-// 수동으로 정의한 메뉴 구조 (constants/adminMenus.ts 에서 import)
+/**
+ * 하드코딩 메뉴 (constants/adminMenus.ts)
+ *
+ * ⚠ 더 이상 메뉴 구조의 기준이 아니다. 기준은 DB(menu 테이블)다.
+ *   서버 조회가 실패했을 때만 쓰는 비상 폴백이고, 아이콘이 빠진 메뉴의 보완용이다.
+ *
+ *   예전에는 이걸 뼈대로 삼고 서버 권한만 덧칠했는데, 그래서
+ *   - DB 에만 있는 메뉴는 화면에 영원히 안 나왔고 (재고 소진관리가 그랬다),
+ *   - 상수의 menuId 가 DB 와 어긋나 엉뚱한 메뉴의 권한을 가져갔다
+ *     (제조생산이 11 로 적혀 있어 영업일지(11)의 권한을 집었다. DB 는 110).
+ */
 const manualMenus = ref<AdminMenuWithAuth[]>(ADMIN_MENUS)
+
+/** URL -> 아이콘. 서버 메뉴에 아이콘이 비어 있을 때만 쓴다. */
+const iconFallbackByUrl = (() => {
+  const map = new Map<string, string>()
+  const walk = (list: AdminMenuWithAuth[]) => {
+    for (const m of list) {
+      if (m.menuUrl && m.menuIcon) { map.set(m.menuUrl, m.menuIcon) }
+      if (m.children?.length) { walk(m.children as AdminMenuWithAuth[]) }
+    }
+  }
+  walk(ADMIN_MENUS)
+  return map
+})()
+
+/**
+ * 서버가 준 메뉴 트리를 화면용으로 정리한다.
+ *
+ * - visible = 'N' 인 메뉴는 숨긴다 (서버 쿼리는 use_yn 만 걸러서 내려온다).
+ * - 아이콘이 비어 있으면 URL 로 상수에서 찾아 채운다. 그것도 없으면 기본 아이콘.
+ * - 정렬은 서버가 menu_level, sort_order 로 이미 해 두었으므로 건드리지 않는다.
+ */
+function normalizeServerMenus (list: MenuWithAuth[]): MenuWithAuth[] {
+  return list
+    .filter(menu => menu.visible !== 'N')
+    .map(menu => ({
+      ...menu,
+      menuIcon: menu.menuIcon
+        || (menu.menuUrl ? iconFallbackByUrl.get(menu.menuUrl) : undefined)
+        || 'fas fa-circle',
+      children: menu.children?.length ? normalizeServerMenus(menu.children) : []
+    }))
+}
 
 // Reactive data
 const rawMenus = ref<MenuWithAuth[]>([])
@@ -240,7 +286,11 @@ function filterMenusByPermission (menuList: MenuWithAuth[]): MenuWithAuth[] {
 }
 
 /**
- * 원본 메뉴 찾기
+ * 필터링 전 원본 메뉴 찾기
+ *
+ * ⚠ 뼈대인 rawMenus 를 뒤져야 한다.
+ *   예전에는 상수(manualMenus)를 뒤졌는데, 상수의 menuId 가 DB 와 어긋나
+ *   "원래 자식이 있었는가" 판정이 엉뚱한 메뉴를 보고 있었다.
  */
 function findOriginalMenu (menuId: number): MenuWithAuth | null {
   function search (menus: MenuWithAuth[]): MenuWithAuth | null {
@@ -253,7 +303,7 @@ function findOriginalMenu (menuId: number): MenuWithAuth | null {
     }
     return null
   }
-  return search(manualMenus.value)
+  return search(rawMenus.value)
 }
 
 // Methods
@@ -276,8 +326,11 @@ const loadMenus = async () => {
         const userMenusWithAuth = await permissionStore.fetchUserMenus()
 
         if (userMenusWithAuth && userMenusWithAuth.length > 0) {
-          // 서버에서 받은 메뉴 사용 (권한 정보 포함)
-          rawMenus.value = mergeMenuPermissions(manualMenus.value, userMenusWithAuth)
+          // ★ 서버가 준 메뉴를 그대로 뼈대로 쓴다.
+          //   서버는 menu 테이블 전체를 트리로 만들고 각 메뉴의 권한(auth)까지 붙여서 준다.
+          //   상수와 합치지 않는다 — 합치면 DB 에만 있는 메뉴가 사라지고,
+          //   상수의 menuId 가 DB 와 어긋나면 엉뚱한 권한을 집는다.
+          rawMenus.value = normalizeServerMenus(userMenusWithAuth as MenuWithAuth[])
         }
       } catch (error) {
         console.warn('❌ [loadMenus] 권한 정보 로딩 실패 (기본 메뉴 사용):', error)
@@ -307,57 +360,6 @@ function getRoleDisplayName (role: string): string {
   return roleNames[role] || role || '사용자'
 }
 
-/**
- * 수동 메뉴와 서버 권한 정보 병합
- *
- * 보안 우선 정책:
- * - 서버에서 권한 정보가 없으면 기본적으로 접근 불허
- * - API에서 명시적으로 readAuth: 'Y'를 받아야만 메뉴 표시
- */
-function mergeMenuPermissions (
-  manualMenuList: MenuWithAuth[],
-  serverMenus: (Menu & { auth?: MenuAuth })[]
-): MenuWithAuth[] {
-  // 서버 메뉴를 menuCode로 맵핑
-  const serverMenuMap = new Map<string, Menu & { auth?: MenuAuth }>()
-
-  function mapServerMenus (menus: (Menu & { auth?: MenuAuth })[]) {
-    for (const menu of menus) {
-      if (menu.menuCode) {
-        serverMenuMap.set(menu.menuCode, menu)
-      }
-      if (menu.children) {
-        mapServerMenus(menu.children as (Menu & { auth?: MenuAuth })[])
-      }
-    }
-  }
-  mapServerMenus(serverMenus)
-
-  // 수동 메뉴에 서버 권한 정보 병합
-  function merge (menus: MenuWithAuth[]): MenuWithAuth[] {
-    return menus.map((menu) => {
-      const serverMenu = serverMenuMap.get(menu.menuCode)
-      const mergedMenu: MenuWithAuth = {
-        ...menu,
-        // ✅ 보안 우선: 서버 권한 없으면 기본적으로 접근 불허
-        auth: serverMenu?.auth || {
-          readAuth: 'N', // 기본값: 조회 불허 (API에서 명시적 허용 필요)
-          writeAuth: 'N',
-          editAuth: 'N',
-          deleteAuth: 'N'
-        }
-      }
-
-      if (menu.children && menu.children.length > 0) {
-        mergedMenu.children = merge(menu.children)
-      }
-
-      return mergedMenu
-    })
-  }
-
-  return merge(manualMenuList)
-}
 
 const toggleSubmenu = (menu: Menu) => {
   if (!menu.children || menu.children.length === 0) {
@@ -466,8 +468,10 @@ watch(
     if (newValue) {
       loadMenus()
     } else {
-      // 로그아웃 시 메뉴 초기화
-      rawMenus.value = manualMenus.value
+      // 로그아웃 시 메뉴 비우기.
+      // 상수로 되돌리면 권한 정보가 없는 메뉴 목록이 잠깐 남는다.
+      // (필터가 걸러 주기는 하지만, 비워 두는 편이 의도가 분명하다)
+      rawMenus.value = []
       permissionStore.clearCache()
     }
   }
@@ -494,25 +498,35 @@ watch(
   { deep: true }
 )
 
-// 현재 경로에 해당하는 메뉴를 자동으로 열어주는 함수
+/**
+ * 현재 경로에 해당하는 메뉴를 자동으로 열어준다.
+ *
+ * ⚠ 반드시 «정확히 일치» 를 먼저 찾고, 없을 때만 «앞부분 일치» 로 넘어가야 한다.
+ *   앞부분 일치를 먼저 보면 짧은 URL 이 긴 URL 을 가로챈다.
+ *   실제 사례: 기성청구(/admin/funds) 가 손실관리(/admin/funds/loss-management) 를
+ *   가로채, 손실관리를 누르면 제조생산이 닫히고 납품관리가 열렸다.
+ */
 const expandMenuForCurrentPath = () => {
   const currentPath = route.path
 
-  // 현재 경로와 매칭되는 메인 메뉴 찾기
-  const matchingMenu = menus.value.find((menu) => {
+  // ① 정확히 일치하는 자식이 있는 메뉴
+  const exactMatch = menus.value.find(menu =>
+    menu.children?.some(submenu => submenu.menuUrl && currentPath === submenu.menuUrl)
+  )
+
+  // ② 없으면 앞부분 일치 (상세·수정 등 하위 경로. 예: /admin/order/edit/123)
+  const prefixMatch = exactMatch || menus.value.find((menu) => {
     if (menu.children && menu.children.length > 0) {
-      // 자식 메뉴 중에 현재 경로와 일치하거나 시작하는 게 있는지 확인
-      // 예: /admin/delivery/list 또는 /admin/order/edit/123 등
       return menu.children.some((submenu) => {
         if (!submenu.menuUrl) { return false }
-        // 정확히 일치하거나, 현재 경로가 메뉴 URL로 시작하는 경우
-        return currentPath === submenu.menuUrl ||
-               currentPath.startsWith(submenu.menuUrl + '/') ||
+        return currentPath.startsWith(submenu.menuUrl + '/') ||
                currentPath.startsWith(submenu.menuUrl.replace('/list', '/'))
       })
     }
     return currentPath === menu.menuUrl
   })
+
+  const matchingMenu = prefixMatch
 
   if (matchingMenu && matchingMenu.children && matchingMenu.children.length > 0) {
     // 현재 경로의 부모 메뉴 열기

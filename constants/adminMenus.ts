@@ -8,8 +8,21 @@ export interface MenuWithAuth extends Menu {
 
 /**
  * 관리자 메뉴 정적 구조
- * - 사이드바(SidebarMenu.vue)와 사이트맵(/sitemap) 페이지에서 공유
- * - 권한은 런타임에 `permissionStore.getPermissionByMenuCode(menuCode)` 로 결합
+ *
+ * ⚠⚠ 메뉴의 기준은 이 파일이 아니라 DB(menu 테이블)다. ⚠⚠
+ *
+ *   사이드바(SidebarMenu.vue)는 2026-09-15 부터 서버가 주는 메뉴 트리
+ *   (GET /api/comm/menus/user/{loginId} — 계층·아이콘·권한 포함)를 뼈대로 쓴다.
+ *   이 상수는 그 조회가 실패했을 때의 비상 폴백, 그리고 아이콘 보완용일 뿐이다.
+ *
+ *   여기 적힌 menuId 는 DB 와 어긋나 있으니 믿지 말 것. 실측(2026-09-15):
+ *     - 상수에 없어 화면에 못 나오던 DB 메뉴 4건
+ *       (제조생산 110 / 재고 소진관리 115 / 손실관리 114 / 방문자 추적 100)
+ *     - menuId 불일치 3건 (발주서관리 111→33, 재고현황 112→34, OEM 대시보드 114→36)
+ *     - 상수 내부 중복 1건 (menuId 11 이 영업일지와 제조생산에 함께 쓰임)
+ *
+ *   메뉴를 추가·변경할 일이 생기면 DB 를 고치고, 이 파일은 손대지 않아도 된다.
+ *   ⚠ 단 /sitemap 페이지는 아직 이 상수를 직접 쓰므로 거기서는 위 오차가 그대로 보인다.
  */
 export const ADMIN_MENUS: MenuWithAuth[] = [
   {

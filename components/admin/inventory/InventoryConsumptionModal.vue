@@ -69,12 +69,30 @@
             <label class="form-label required">소진 수량</label>
             <div class="qty-row">
               <div class="qty-input">
-                <input v-model.number="form.sheetCount" type="number" min="1" class="form-input" @input="onSheetInput">
+                <input
+                  v-model.number="form.sheetCount"
+                  type="number"
+                  min="1"
+                  step="1"
+                  class="form-input"
+                  @keydown="blockDecimalKey"
+                  @paste="stripDecimalOnPaste"
+                  @input="onSheetInput"
+                >
                 <span class="qty-unit">매</span>
               </div>
               <span class="qty-eq">=</span>
               <div class="qty-input">
-                <input v-model.number="form.quantity" type="number" min="1" step="2" class="form-input" @input="onSqmInput">
+                <input
+                  v-model.number="form.quantity"
+                  type="number"
+                  min="1"
+                  step="2"
+                  class="form-input"
+                  @keydown="blockDecimalKey"
+                  @paste="stripDecimalOnPaste"
+                  @input="onSqmInput"
+                >
                 <span class="qty-unit">㎡</span>
               </div>
               <span v-if="currentStock !== null" class="stock-badge" :class="{ over: isOverStock }">
@@ -156,6 +174,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { warehouseService } from '~/services/warehouse.service'
+import { blockDecimalKey, stripDecimalOnPaste } from '~/utils/numberInput'
 import { companyService } from '~/services/company.service'
 import { inventoryService } from '~/services/inventory.service'
 import { inventoryConsumptionService } from '~/services/inventory-consumption.service'

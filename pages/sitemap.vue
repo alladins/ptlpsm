@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { usePermissionStore } from '~/stores/permission'
 import { useAuthStore } from '~/stores/auth'
 import { ADMIN_MENUS, type MenuWithAuth } from '~/constants/adminMenus'
@@ -69,11 +69,29 @@ const permissionStore = usePermissionStore()
 const authStore = useAuthStore()
 
 /**
+ * 메뉴 원본
+ *
+ * ★ 사이드바(SidebarMenu.vue)와 같은 소스를 본다 — DB(menu 테이블)다.
+ *   ADMIN_MENUS 상수는 서버 조회가 실패했을 때의 비상 폴백일 뿐이다.
+ *   예전에는 상수를 그대로 그려서, DB 에만 있는 메뉴
+ *   (제조생산·재고 소진관리·손실관리·방문자 추적)가 사이트맵에서 통째로 빠졌다.
+ */
+const rawMenus = ref<MenuWithAuth[]>(ADMIN_MENUS)
+
+/**
  * 권한 기준으로 메뉴 필터링
  * - SYSTEM_ADMIN(isFullAccess): 모든 메뉴 표시
- * - 그 외: permissionFlatMap 의 readAuth === 'Y' 인 메뉴만 표시
+ * - 그 외: 서버가 준 auth.readAuth === 'Y' 인 메뉴만 표시
+ *   (서버 메뉴에 auth 가 없으면 permissionFlatMap 으로 폴백 — 상수 폴백일 때의 경로)
  * - 부모 메뉴는 자식이 하나라도 보이면 표시
  */
+function canRead (menu: MenuWithAuth): boolean {
+  if (menu.auth?.readAuth) {
+    return menu.auth.readAuth === 'Y'
+  }
+  return permissionStore.getPermissionByMenuCode(menu.menuCode).readAuth === 'Y'
+}
+
 function filterAccessibleMenus (menuList: MenuWithAuth[]): MenuWithAuth[] {
   if (permissionStore.isFullAccess) {
     return menuList
@@ -81,19 +99,40 @@ function filterAccessibleMenus (menuList: MenuWithAuth[]): MenuWithAuth[] {
 
   return menuList
     .map((menu) => {
-      const filteredChildren = menu.children
-        ? menu.children.filter(child => permissionStore.getPermissionByMenuCode(child.menuCode).readAuth === 'Y')
-        : []
+      const filteredChildren = menu.children ? menu.children.filter(canRead) : []
       return { ...menu, children: filteredChildren }
     })
     .filter(menu => menu.children && menu.children.length > 0)
 }
 
-const visibleMenus = computed<MenuWithAuth[]>(() => filterAccessibleMenus(ADMIN_MENUS))
+const visibleMenus = computed<MenuWithAuth[]>(() => filterAccessibleMenus(rawMenus.value))
+
+/** visible='N' 제외 + 아이콘 폴백 (사이드바의 normalizeServerMenus 와 같은 규칙) */
+function normalizeServerMenus (list: MenuWithAuth[]): MenuWithAuth[] {
+  return list
+    .filter(menu => menu.visible !== 'N')
+    .map(menu => ({
+      ...menu,
+      menuIcon: menu.menuIcon || 'fas fa-circle',
+      children: menu.children?.length ? normalizeServerMenus(menu.children) : []
+    }))
+}
 
 onMounted(async () => {
-  // 권한 플랫맵이 아직 로드되지 않았으면 로드
-  if (authStore.isLoggedIn && !permissionStore.isPermissionFlatMapLoaded()) {
+  if (!authStore.isLoggedIn) { return }
+
+  // 메뉴 구조를 서버(DB)에서 받아 온다. 실패하면 상수 폴백을 그대로 쓴다.
+  try {
+    const serverMenus = await permissionStore.fetchUserMenus()
+    if (serverMenus && serverMenus.length > 0) {
+      rawMenus.value = normalizeServerMenus(serverMenus as MenuWithAuth[])
+    }
+  } catch (err) {
+    console.warn('[Sitemap] 서버 메뉴 로드 실패 → 상수 폴백 사용:', err)
+  }
+
+  // 권한 플랫맵이 아직 로드되지 않았으면 로드 (상수 폴백 경로에서 필요)
+  if (!permissionStore.isPermissionFlatMapLoaded()) {
     try {
       await permissionStore.fetchPermissionFlatMap()
     } catch (err) {
