@@ -350,6 +350,18 @@
                         <i class="fas fa-exclamation-triangle" />
                         겹침
                       </span>
+                      <!--
+                        마지막 구간인데 종료일이 있으면 그 뒤를 덮는 원가가 없다.
+                        = 지금 적용중인 원가가 없는 상태. 2026-09-16 운영 사고가 이 모양이었다.
+                      -->
+                      <span
+                        v-else-if="isDanglingEnd(sku, oem)"
+                        class="dangling-badge"
+                        title="마지막 구간인데 종료일이 있습니다. 이 날 이후를 덮는 원가가 없어 '적용중 원가 없음' 상태입니다. 이 구간의 종료일을 비우거나, 이어지는 새 구간을 등록하세요."
+                      >
+                        <i class="fas fa-unlink" />
+                        이후 원가 없음
+                      </span>
                     </td>
                     <td class="text-center">
                       <span
@@ -743,6 +755,21 @@ const isOverlapping = (sku: OemCostTreeItem, oem: OemCostListItem): boolean => {
     if (other.id === oem.id || !other.effectiveDate) { return false }
     return s <= endOf(other) && startOf(other) <= e
   })
+}
+
+/**
+ * 마지막 구간인데 종료일이 있는가 — 그 뒤를 덮는 원가가 없다는 뜻이다.
+ *
+ * ⚠ (SKU + 공급사 + 원가유형) 당 무기한 구간은 정확히 1개여야 한다.
+ *   0개면 «지금 적용중인 원가» 가 없어 출하·원장이 원가를 찾지 못하고,
+ *   등록도 «이미 등록된 원가입니다» 로 막혀(등록은 첫 구간 전용) 손쓸 수 없게 된다.
+ *   2026-09-16 운영에서 실제로 이 상태가 만들어져 SQL 로 복구해야 했다.
+ */
+const isDanglingEnd = (sku: OemCostTreeItem, oem: OemCostListItem): boolean => {
+  if (!oem.effectiveDate || !oem.expiryDate) { return false }
+  const s = startOf(oem)
+  return !siblingPeriods(sku, oem).some(other =>
+    other.id !== oem.id && other.effectiveDate && startOf(other) > s)
 }
 
 /**
@@ -1524,19 +1551,29 @@ onMounted(() => {
   background: #fff7ed;
 }
 
-.overlap-badge {
+.overlap-badge,
+.dangling-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
   margin-left: 0.375rem;
   padding: 0.05rem 0.35rem;
   border-radius: 3px;
-  background: #ffedd5;
-  color: #c2410c;
   font-size: 0.65rem;
   font-weight: 700;
   white-space: nowrap;
   cursor: help;
+}
+
+.overlap-badge {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+/* 마지막 구간에 종료일이 있는 상태 — 그 뒤로 적용중 원가가 없다 */
+.dangling-badge {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 /* 새로고침 버튼 */
