@@ -63,11 +63,15 @@
               </p>
             </div>
 
-            <!-- 운송사 -->
+            <!--
+              운송사 — 리드파워 부담일 때는 필수다.
+              그 운송비가 «어느 운송사에 낼 돈» 인지가 운송비 월별 원장의 집계 기준이라,
+              비워 두면 원장에서 갈 곳을 잃는다.
+            -->
             <div class="ccm-form-group">
-              <label class="ccm-form-label">
+              <label class="ccm-form-label" :class="{ required: isLpBears }">
                 <i class="fas fa-building" />
-                운송사 <span class="optional-tag">(선택)</span>
+                운송사 <span v-if="!isLpBears" class="optional-tag">(선택)</span>
               </label>
               <select v-model.number="form.carrierCompanyId" class="ccm-form-select" :disabled="saving">
                 <option :value="null">
@@ -77,6 +81,10 @@
                   {{ c.companyName }}
                 </option>
               </select>
+              <p v-if="isLpBears && !form.carrierCompanyId" class="warn-line">
+                <i class="fas fa-exclamation-circle" />
+                리드파워 부담은 운송사를 지정해야 합니다. 운송비 월별 원장이 운송사별로 모입니다.
+              </p>
             </div>
 
             <!-- 금액 -->
@@ -102,8 +110,13 @@
               </p>
             </div>
 
-            <!-- 원장 반영 월 -->
-            <div v-if="form.shippingCostType === 'PAID_TO_OEM'" class="ccm-form-group">
+            <!--
+              원장 반영 월 — 실리는 원장이 유형마다 다르다.
+                PAID_TO_OEM : OEM 월별 매출원장 (제조사에게 줄 돈)
+                LP_BEARS    : 운송사 월별 운송비 원장 (운송사에 낼 돈)
+                OEM_BEARS   : 어느 원장에도 안 실리므로 이 칸을 감춘다.
+            -->
+            <div v-if="needsLedgerMonth" class="ccm-form-group">
               <label class="ccm-form-label">
                 <i class="fas fa-calendar-alt" />
                 원장 반영 월 <span class="optional-tag">(선택)</span>
@@ -111,7 +124,9 @@
               <input v-model="form.shippingCostYm" type="month" class="ccm-form-input" :disabled="saving">
               <span class="form-hint">
                 비워 두면 출하일이 속한 달({{ defaultYm }})에 실립니다.
-                그 달 지급이 이미 끝났다면 다음 달을 지정하세요.
+                {{ isLpBears
+                  ? '출하는 지난달인데 운송비를 이번 달에 정산한다면 이번 달을 지정하세요.'
+                  : '그 달 지급이 이미 끝났다면 다음 달을 지정하세요.' }}
               </span>
             </div>
           </div>
@@ -190,6 +205,22 @@ const typeHint = computed(() => {
 const hintClass = computed(() =>
   form.value.shippingCostType === 'PAID_TO_OEM' ? 'hint-pay' : 'hint-plain')
 
+const isLpBears = computed(() => form.value.shippingCostType === 'LP_BEARS')
+
+// 반영월이 필요한 유형 — 실리는 원장이 다를 뿐 둘 다 «어느 달 장부인가» 가 있어야 한다.
+const needsLedgerMonth = computed(() =>
+  form.value.shippingCostType === 'PAID_TO_OEM' || isLpBears.value)
+
+// 리드파워 부담으로 바꾸면 운송사를 기본으로 채워 준다(대개 중앙운수다).
+// 이미 고른 값이 있으면 건드리지 않는다.
+watch(isLpBears, (lp) => {
+  if (!lp || form.value.carrierCompanyId) { return }
+  const centralCarrier = carrierOptions.value.find(c => c.companyName?.includes('중앙운수'))
+  if (centralCarrier) {
+    form.value.carrierCompanyId = centralCarrier.id
+  }
+})
+
 const onCostInput = (e: Event) => {
   const raw = (e.target as HTMLInputElement).value.replace(/[^\d]/g, '')
   const num = raw ? Number(raw) : 0
@@ -232,6 +263,13 @@ const handleClose = () => {
 
 const handleSubmit = async () => {
   if (!props.shipment || saving.value) { return }
+
+  // 리드파워 부담은 운송사가 원장의 집계 기준이라 비운 채로 저장할 수 없다.
+  // (백엔드도 같은 이유로 막지만, 여기서 걸러야 사용자가 왜 막혔는지 바로 안다)
+  if (isLpBears.value && !form.value.carrierCompanyId) {
+    alert('리드파워 부담 운송비는 운송사를 지정해야 합니다.\n운송비 월별 원장이 운송사별로 모입니다.')
+    return
+  }
 
   saving.value = true
   try {
