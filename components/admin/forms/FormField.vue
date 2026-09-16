@@ -16,8 +16,12 @@
 <template>
   <div class="form-field" :class="{ 'form-field--full': fullWidth, 'form-field--error': !!error }">
     <label v-if="label" class="form-label">
-      {{ label }}
+      <!-- ⚠ 라벨명은 반드시 span 으로 감싼다. 맨 텍스트로 두면 flex 안에서 줄바꿈되어
+           "가공비" 가 "가공 / 비" 로 쪼개진다. -->
+      <span class="label-text">{{ label }}</span>
       <span v-if="required" class="required-mark">*</span>
+      <!-- 짧은 부연은 라벨 옆에 괄호로 붙인다. 아래 hint 로 내리면 줄이 늘어나 답답해진다 -->
+      <span v-if="labelNote" class="label-note">({{ labelNote }})</span>
     </label>
 
     <div class="form-input-wrapper">
@@ -41,8 +45,10 @@ defineProps<{
   required?: boolean
   /** 에러 메시지 */
   error?: string
-  /** 도움말 메시지 */
+  /** 도움말 메시지 (입력칸 아래에 한 줄로) */
   hint?: string
+  /** 라벨 옆에 괄호로 붙는 짧은 부연 (hint 보다 짧게 쓸 것) */
+  labelNote?: string
   /** 전체 너비 사용 (그리드에서 2칸 차지) */
   fullWidth?: boolean
 }>()
@@ -64,8 +70,24 @@ defineProps<{
   font-weight: 500;
   color: #374151;
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  flex-wrap: wrap;
   gap: 0.25rem;
+}
+
+/* 라벨명은 절대 접히지 않는다 */
+.label-text {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* 라벨 옆 괄호 부연 — 라벨보다 한 단계 작고 흐리게. 좁으면 여기만 줄바꿈된다 */
+.label-note {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #94a3b8;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
 }
 
 .required-mark {
