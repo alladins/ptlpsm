@@ -334,7 +334,23 @@
                       </span>
                       <span v-else class="margin-badge margin-none">-</span>
                     </td>
-                    <td>{{ formatDateRange(oem) }}</td>
+                    <!--
+                      적용기간 — 겹치는 구간은 눈에 띄게 표시한다.
+                      두 구간이 한 날짜를 함께 덮으면 그 시점 원가를 하나로 정할 수 없어
+                      집계가 어긋난다. 저장 단계에서 막고 있지만, 이미 들어간 데이터는
+                      화면에서 보이지 않으면 아무도 모른 채 남는다.
+                    -->
+                    <td :class="{ 'period-overlap': isOverlapping(sku, oem) }">
+                      {{ formatDateRange(oem) }}
+                      <span
+                        v-if="isOverlapping(sku, oem)"
+                        class="overlap-badge"
+                        title="다른 구간과 적용기간이 겹칩니다. 그 기간의 원가를 하나로 정할 수 없어 집계가 어긋납니다. 한쪽을 수정하거나 삭제해 정리하세요."
+                      >
+                        <i class="fas fa-exclamation-triangle" />
+                        겹침
+                      </span>
+                    </td>
                     <td class="text-center">
                       <span
                         v-if="getOemStatus(oem)"
@@ -358,6 +374,22 @@
                         @click="openHistoryModal(oem)"
                       >
                         <i class="fas fa-history" />
+                      </button>
+                      <!--
+                        삭제 — 마지막 구간만 지울 수 있다.
+                        중간 구간을 지우면 그 기간의 원가를 찾지 못해 출하·원장 금액이 어긋난다.
+                        (백엔드 validateNotMiddlePeriod 가 같은 이유로 막는다. 여기서도 눌리지 않게
+                         해 두어야 «눌렀는데 에러» 대신 «왜 못 지우는지»가 먼저 보인다)
+                      -->
+                      <button
+                        class="btn-icon btn-delete"
+                        :disabled="!canDelete(sku, oem)"
+                        :title="canDelete(sku, oem)
+                          ? '이 구간 삭제'
+                          : '뒤에 다른 적용구간이 있어 지울 수 없습니다. 마지막 구간부터 지우세요.'"
+                        @click="handleDeleteCost(sku, oem)"
+                      >
+                        <i class="fas fa-trash-alt" />
                       </button>
                     </td>
                   </tr>
@@ -684,6 +716,72 @@ const getMarginRate = (oem: OemCostListItem): number | null => {
 const getOemStatus = (oem: OemCostListItem): OemCostStatus | null => {
   if (!oem.effectiveDate) { return null }
   return calculateOemCostStatus(oem as OemCost)
+}
+
+/** 같은 (공급사 + 원가유형) 형제 구간 — 겹침·삭제 판정은 이 안에서만 한다 */
+const siblingPeriods = (sku: OemCostTreeItem, oem: OemCostListItem): OemCostListItem[] =>
+  (sku.oemCosts || []).filter(o =>
+    o.oemCompanyId === oem.oemCompanyId && o.costSourceType === oem.costSourceType)
+
+const FOREVER = '9999-12-31'
+const startOf = (o: OemCostListItem) => String(o.effectiveDate || '').slice(0, 10)
+const endOf = (o: OemCostListItem) => String(o.expiryDate || FOREVER).slice(0, 10)
+
+/**
+ * 이 구간이 형제 구간과 하루라도 겹치는가.
+ *
+ * ⚠ 겹치면 그 날짜의 원가를 하나로 정할 수 없다. as-of 조회가 두 값을 보게 되어
+ *   출하 원가·원장 금액이 조회 순서에 따라 달라진다.
+ *   저장 단계에서 막고 있지만(validateNoPeriodOverlap), 과거에 들어간 데이터나
+ *   SQL 로 직접 넣은 행은 걸러지지 않아 화면에서 드러나야 한다.
+ */
+const isOverlapping = (sku: OemCostTreeItem, oem: OemCostListItem): boolean => {
+  if (!oem.effectiveDate) { return false }
+  const s = startOf(oem)
+  const e = endOf(oem)
+  return siblingPeriods(sku, oem).some((other) => {
+    if (other.id === oem.id || !other.effectiveDate) { return false }
+    return s <= endOf(other) && startOf(other) <= e
+  })
+}
+
+/**
+ * 지울 수 있는가 — 뒤에 다른 구간이 없어야 한다(= 마지막 구간).
+ *
+ * 중간 구간을 지우면 그 기간의 원가를 찾지 못해 출하·원장 금액이 어긋난다.
+ * 백엔드도 같은 이유로 막으므로(validateNotMiddlePeriod) 여기서 미리 걸러
+ * 눌렀다가 에러를 보는 대신 왜 못 지우는지가 먼저 보이게 한다.
+ */
+const canDelete = (sku: OemCostTreeItem, oem: OemCostListItem): boolean => {
+  if (!oem.id || !oem.effectiveDate) { return false }
+  const s = startOf(oem)
+  return !siblingPeriods(sku, oem).some(other =>
+    other.id !== oem.id && other.effectiveDate && startOf(other) > s)
+}
+
+// 원가 구간 삭제
+const handleDeleteCost = async (sku: OemCostTreeItem, oem: OemCostListItem) => {
+  if (!canDelete(sku, oem)) { return }
+
+  const period = formatDateRange(oem)
+  const ok = window.confirm(
+    `${oem.oemCompanyName} / ${sku.skuName}\n` +
+    `${formatCurrency(oem.costPrice)}  (${period})\n\n` +
+    '이 적용구간을 삭제합니다.\n' +
+    '이미 나간 출하는 그 시점 원가가 따로 저장돼 있어 금액이 바뀌지 않습니다.\n' +
+    '다만 이 구간이 덮던 기간에 새로 잡히는 원가는 앞 구간을 따라갑니다.'
+  )
+  if (!ok) { return }
+
+  try {
+    await oemCostService.delete(oem.id, '원가 구간 삭제 (화면)')
+    await loadData()
+    await loadStatistics()
+  } catch (error) {
+    console.error('원가 삭제 실패:', error)
+    // 지급 완료·중간 구간 등 백엔드 가드 메시지를 그대로 보여준다 — 이유가 곧 안내다
+    alert(error instanceof Error ? error.message : '원가 삭제에 실패했습니다.')
+  }
 }
 
 // OEM 추가 모달 열기 (트리의 SKU 부모 행에서)
@@ -1357,6 +1455,7 @@ onMounted(() => {
 
 .btn-edit,
 .btn-view,
+.btn-delete,
 .btn-add-oem {
   display: inline-flex;
   align-items: center;
@@ -1401,6 +1500,43 @@ onMounted(() => {
 .btn-view:hover {
   background: #e5e7eb;
   color: #1f2937;
+}
+
+.btn-delete {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* 중간 구간은 지울 수 없다 — 왜 못 지우는지는 title 로 알린다 */
+.btn-delete:disabled {
+  background: #f9fafb;
+  color: #d1d5db;
+  cursor: not-allowed;
+}
+
+/* 겹치는 적용기간 — 그 날짜의 원가를 하나로 정할 수 없는 상태다 */
+.period-overlap {
+  background: #fff7ed;
+}
+
+.overlap-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.375rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  background: #ffedd5;
+  color: #c2410c;
+  font-size: 0.65rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: help;
 }
 
 /* 새로고침 버튼 */
