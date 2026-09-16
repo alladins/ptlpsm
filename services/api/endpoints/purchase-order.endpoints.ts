@@ -54,6 +54,17 @@ export const PURCHASE_ORDER_ENDPOINTS = {
   },
 
   /**
+   * 출하에 연결된 발주서 목록
+   * 출하 사후 처리에서 가공비를 넣을 발주서를 고를 때 쓴다.
+   * 발주와 출하는 1:1 이 아니라 여러 건이 나올 수 있다.
+   * @returns GET /admin/purchase-orders/by-shipment/{shipmentId}
+   */
+  byShipment: (shipmentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/purchase-orders/by-shipment/${shipmentId}`
+  },
+
+  /**
    * 발주서 생성
    * @returns POST /admin/purchase-orders
    */
@@ -70,6 +81,18 @@ export const PURCHASE_ORDER_ENDPOINTS = {
   update: (poId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/purchase-orders/${poId}`
+  },
+
+  /**
+   * 가공비 확정 (출하 사후 처리)
+   *
+   * ⚠ update(PUT) 를 쓰면 안 된다. 그쪽은 발주서 전체를 덮는 API 라
+   *   제조사·발주일이 지워진다. 가공비만 고칠 때는 반드시 이 경로를 쓸 것.
+   * @returns PATCH /admin/purchase-orders/{poId}/processing-fee
+   */
+  updateProcessingFee: (poId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/purchase-orders/${poId}/processing-fee`
   },
 
   /**

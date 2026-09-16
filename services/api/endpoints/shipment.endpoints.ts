@@ -94,6 +94,18 @@ export const SHIPMENT_ENDPOINTS = {
   },
 
   /**
+   * 운송비 확정 (출하 사후 처리)
+   *
+   * ⚠ update(PUT) 를 쓰면 안 된다. 그쪽은 출하 전체를 덮는 API 라
+   *   배송지·수령인·상태가 지워진다. 운송비만 고칠 때는 반드시 이 경로를 쓸 것.
+   * @returns PATCH /admin/shipments/{shipmentId}/shipping-cost
+   */
+  updateShippingCost: (shipmentId: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/shipments/${shipmentId}/shipping-cost`
+  },
+
+  /**
    * 출하 삭제
    * @param shipmentId - 출하 ID
    * @returns DELETE /admin/shipments/{shipmentId}

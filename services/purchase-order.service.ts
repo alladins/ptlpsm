@@ -231,6 +231,25 @@ class PurchaseOrderService {
    * @param request - 발주서 수정 요청 데이터
    * @returns 수정된 발주서 정보
    */
+  /**
+   * 출하에 연결된 발주서 목록
+   *
+   * 출하 사후 처리에서 가공비를 넣을 발주서를 고를 때 쓴다.
+   * ⚠ 발주와 출하는 1:1 이 아니므로 여러 건이 나올 수 있다.
+   */
+  async getPurchaseOrdersByShipmentId(shipmentId: number): Promise<PurchaseOrderDetail[]> {
+    const response = await fetch(PURCHASE_ORDER_ENDPOINTS.byShipment(shipmentId), {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`연결 발주서 조회 실패: ${response.status}`)
+    }
+
+    return await response.json()
+  }
+
   async updatePurchaseOrder(poId: number, request: PurchaseOrderUpdateRequest): Promise<PurchaseOrderDetail> {
     try {
       const url = PURCHASE_ORDER_ENDPOINTS.update(poId)
@@ -262,6 +281,37 @@ class PurchaseOrderService {
     } catch (error) {
       console.error('[purchase-order.service] updatePurchaseOrder 에러:', error)
       throw error
+    }
+  }
+
+  /**
+   * 가공비만 확정 (출하 사후 처리)
+   *
+   * ⚠ updatePurchaseOrder(PUT) 를 쓰면 안 된다. 그쪽 매퍼는 oem_company_id ·
+   *   order_date · remarks 를 조건 없이 덮으므로, 가공비만 담아 보내면
+   *   제조사와 발주일이 NULL 이 되어 발주서가 망가진다.
+   * @param poId - 발주서 ID
+   * @param processingFee - 가공비 (0 이상)
+   */
+  async updateProcessingFee(poId: number, processingFee: number): Promise<void> {
+    const url = PURCHASE_ORDER_ENDPOINTS.updateProcessingFee(poId)
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ processingFee })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      try {
+        const errorJson = JSON.parse(errorText)
+        throw new Error(errorJson.message || `가공비 저장 실패: ${response.status}`)
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          throw new Error(errorText || `가공비 저장 실패: ${response.status}`)
+        }
+        throw e
+      }
     }
   }
 

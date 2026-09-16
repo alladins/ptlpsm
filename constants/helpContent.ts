@@ -129,6 +129,45 @@ export const HELP_CONTENT: HelpSection[] = [
       {
         question: '출하 건을 삭제할 수 없어요.',
         body: '운송장이 발행되었거나 납품요청(dispatch_requests) 이 연결된 출하는 안전을 위해 직접 삭제가 제한됩니다. 필요한 경우 시스템 관리자에게 문의하세요.'
+      },
+      {
+        question: '배차가 늦어 출하할 때 운송비를 정할 수 없습니다.',
+        body: '일단 저장하고 나중에 <strong>출하관리 > 출하 사후 처리</strong> 에서 확정하면 됩니다. 출하 목록의 <strong>[처리]</strong> 버튼으로도 바로 갈 수 있습니다. 운송비 부담 유형·운송사·금액을 그때 넣습니다.',
+        relatedLinks: [
+          { label: '출하 사후 처리로 이동', url: '/admin/shipping/post-process' }
+        ]
+      },
+      {
+        question: '운송비를 입력했는데 OEM 원장에 안 나옵니다.',
+        body: '<strong>운송비 부담</strong> 을 확인하세요. 기본값 <strong>「OEM 부담」</strong> 은 제조사가 자기 돈으로 내는 것이라 원장·마진 어디에도 반영되지 않습니다. 제조사에게 지급하는 건이면 <strong>「OEM 에 지불」</strong> 로 바꿔야 그 달 원장에 가산됩니다.'
+      },
+      {
+        question: '현장에 물건이 덜 도착했습니다.',
+        body: '<strong>출하 사후 처리</strong> 에서 해당 출하를 찾아 <strong>손실 등록</strong> 을 하세요. 발주서·출하 수량은 그대로 두고, 납품률·잔여·기성청구를 계산할 때만 부족분을 뺍니다. 고객 서류에는 손실 표기가 나가지 않습니다.',
+        relatedLinks: [
+          { label: '출하 사후 처리로 이동', url: '/admin/shipping/post-process' }
+        ]
+      },
+      {
+        question: '손실을 등록했는데 제조사 지급액이 그대로입니다.',
+        body: '손실 목록에서 <strong>[차감]</strong> 을 눌러야 원장에 반영됩니다. 등록만 하고 <strong>미정산</strong> 으로 두면 지급액은 줄지 않습니다. 반영 년월을 비워뒀다면 <strong>발생월</strong> 로 자동 지정됩니다. 단, <strong>[차감] 이후에는 수정·취소가 막히므로</strong> 금액을 고칠 일이 있으면 그 전에 끝내세요.',
+        relatedLinks: [
+          { label: '손실관리로 이동', url: '/admin/funds/loss-management' }
+        ]
+      },
+      {
+        question: '손실이 났는데 재고를 빼야 하나요?',
+        body: '대개 <strong>빼면 안 됩니다.</strong> 재고는 <strong>운송(배차) 시점에 이미 빠졌기</strong> 때문에 또 빼면 이중 차감입니다. <strong>제조사가 애초에 안 실어 물건이 창고에 그대로 있는 경우에만</strong> 손실 목록의 <strong>[재고 조정]</strong> 으로 <strong>양수(+)</strong> 로 되돌리세요. 운송 중 분실·파손이면 조정하지 않습니다. 입력은 매수, 반영은 ㎡ 로 자동 환산됩니다(1매 = 2㎡).',
+        relatedLinks: [
+          { label: '손실관리로 이동', url: '/admin/funds/loss-management' }
+        ]
+      },
+      {
+        question: '손실 난 출하의 인수증은 어떻게 하나요?',
+        body: '<strong>실인수 수량 기준으로 다시 발행</strong>해야 합니다. 평소대로 납품확인에서 인수증을 재발행한 뒤, 손실 목록에서 <strong>[재발행 완료]</strong> 를 눌러 기록을 남기세요. 이 버튼은 <strong>기록일 뿐</strong> 인수증을 대신 뽑아주지 않습니다.',
+        relatedLinks: [
+          { label: '손실관리로 이동', url: '/admin/funds/loss-management' }
+        ]
       }
     ]
   },

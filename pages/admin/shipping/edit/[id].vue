@@ -28,6 +28,18 @@
           <i class="fas fa-trash" />
           삭제
         </button>
+        <!--
+          사후 처리 — 출하가 끝난 뒤에야 확정되는 값(운송비·손실·가공비)
+          목록에서는 배지로 상태만 보여주고, 실제 처리는 여기와 '출하 사후 처리' 화면에서 한다.
+        -->
+        <button
+          class="btn-action"
+          title="운송비 확정 · 손실 등록 · 가공비 입력"
+          @click="goToPostProcess"
+        >
+          <i class="fas fa-screwdriver-wrench" />
+          사후 처리
+        </button>
         <button class="btn-action btn-secondary" @click="handleGoBack">
           <i class="fas fa-list" />
           목록
@@ -1327,6 +1339,19 @@ const handleSubmit = async () => {
 }
 
 // 목록으로 이동 (returnPage 쿼리 파라미터 처리)
+/**
+ * 출하 사후 처리로 이동
+ *
+ * 출하가 끝난 뒤에야 확정되는 값(운송비·손실·가공비)을 넣는 곳이다.
+ * 출하번호를 넘기면 그 화면이 바로 검색해 해당 건을 잡아 준다.
+ */
+const goToPostProcess = () => {
+  router.push({
+    path: '/admin/shipping/post-process/register',
+    query: { shipmentNo: formData.value?.shipmentNo || '' }
+  })
+}
+
 const handleGoBack = () => {
   const returnPage = route.query.returnPage
   if (returnPage) {

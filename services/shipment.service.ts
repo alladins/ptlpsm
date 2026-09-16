@@ -67,6 +67,18 @@ export interface ShipmentListItem {
   inventorySufficient?: boolean | null
   // 접수된 발주서 존재 여부 (입고대기 표시용)
   hasAcceptedPo?: boolean | null
+
+  // ── 사후 처리 상태 (출하가 끝난 뒤 확정되는 값) ──────────────────────────
+  /** 운송비 */
+  shippingCost?: number | null
+  /** 운송비 부담 유형 (OEM_BEARS / PAID_TO_OEM / LP_BEARS) */
+  shippingCostType?: string | null
+  /** 운송사명 */
+  carrierCompanyName?: string | null
+  /** 운송비 원장 반영 월 */
+  shippingCostYm?: string | null
+  /** 연결 발주서 가공비 합계 — 가공비는 발주서에 붙는 값이라 합산해 내려온다 */
+  processingFeeTotal?: number | null
 }
 
 export interface ShipmentDetail {
@@ -108,6 +120,8 @@ export interface ShipmentSearchParams {
   oemCompanyId?: number | null
   undispatchedOnly?: boolean
   dispatchedOnly?: boolean
+  /** 사후 처리(운송비·가공비·손실)가 등록된 출하만 — 출하 사후 처리 목록용 */
+  postProcessedOnly?: boolean
   page: number
   size: number
   sort?: string
@@ -330,6 +344,7 @@ class ShipmentService {
       if (params.oemCompanyId !== undefined && params.oemCompanyId !== null) queryParams.append('oemCompanyId', params.oemCompanyId.toString())
       if (params.undispatchedOnly) queryParams.append('undispatchedOnly', 'true')
       if (params.dispatchedOnly) queryParams.append('dispatchedOnly', 'true')
+      if (params.postProcessedOnly) queryParams.append('postProcessedOnly', 'true')
       if (params.sort) queryParams.append('sort', params.sort)
 
       const url = `${SHIPMENT_ENDPOINTS.list()}?${queryParams.toString()}`
@@ -452,6 +467,38 @@ class ShipmentService {
   }
 
   // 출하 수정
+  /**
+   * 운송비만 확정 (출하 사후 처리)
+   *
+   * ⚠ updateShipment(PUT) 를 쓰면 안 된다. 그쪽 매퍼는 tracking_number · status ·
+   *   delivery_address · receiver_name 등을 조건 없이 덮으므로, 운송비 네 개만
+   *   담아 보내면 배송지·수령인·상태가 전부 지워진다.
+   */
+  async updateShippingCost (shipmentId: number, payload: {
+    shippingCostType: string
+    shippingCost: number
+    carrierCompanyId: number | null
+    shippingCostYm: string | null
+  }): Promise<void> {
+    const response = await fetch(SHIPMENT_ENDPOINTS.updateShippingCost(shipmentId), {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload)
+    })
+    if (!response.ok) {
+      const errorText = await response.text()
+      try {
+        const errorJson = JSON.parse(errorText)
+        throw new Error(errorJson.message || `운송비 저장 실패: ${response.status}`)
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          throw new Error(errorText || `운송비 저장 실패: ${response.status}`)
+        }
+        throw e
+      }
+    }
+  }
+
   async updateShipment(shipmentId: number, shipment: any): Promise<void> {
     const response = await fetch(SHIPMENT_ENDPOINTS.update(shipmentId), {
       method: 'PUT',

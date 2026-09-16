@@ -172,11 +172,29 @@
                 <td class="text-right">
                   {{ formatCurrency(item.shipmentAmount) }}
                 </td>
+                <!--
+                  비고 배지
+
+                  앞 3개(합지·추가·B급)와 손실은 "출하 내용물의 성격"이고,
+                  운송비·가공비는 "사후에 확정된 비용"이다. 성격이 다르지만
+                  사후 처리 칸을 없앴으므로 여기서 함께 보여준다.
+                  처리는 출하 상세나 '출하 사후 처리' 화면에서 한다.
+                -->
                 <td class="text-center badges-cell">
                   <span v-if="item.hasMergedItems" class="merge-badge">합지</span>
                   <span v-if="item.hasAdditionalItems" class="additional-badge">추가</span>
                   <span v-if="item.hasBgradeItems" class="bgrade-badge">B급</span>
                   <span v-if="item.lossQuantity" class="loss-badge">손실</span>
+                  <span
+                    v-if="Number(item.shippingCost) > 0"
+                    class="ship-badge"
+                    :title="`운송비 ${formatCurrency(item.shippingCost)} · ${shippingCostTypeLabel(item.shippingCostType)}`"
+                  >운송비</span>
+                  <span
+                    v-if="Number(item.processingFeeTotal) > 0"
+                    class="fee-badge"
+                    :title="`가공비 ${formatCurrency(item.processingFeeTotal)}`"
+                  >가공비</span>
                 </td>
               </tr>
             </tbody>
@@ -476,6 +494,17 @@ const goToRegister = () => {
   router.push('/admin/shipping/register')
 }
 
+/**
+ * 운송비 부담 유형 라벨 (배지 툴팁용)
+ *
+ * 목록은 보는 곳이라 유형까지 칸을 차지하게 두지 않는다. 마우스를 올리면 나온다.
+ */
+const shippingCostTypeLabel = (type?: string | null): string => {
+  if (type === 'PAID_TO_OEM') { return '제조사에 지불 (원장 가산)' }
+  if (type === 'LP_BEARS') { return '리드파워 부담 (마진 원가)' }
+  return '제조사 부담 (청구 없음)'
+}
+
 // 수정 페이지로 이동 (현재 페이지 번호를 쿼리로 전달)
 const editItem = (id: number) => {
   router.push({
@@ -680,6 +709,28 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+/* 사후에 확정된 비용 — 성격 배지(합지·B급)와 색을 달리해 구분한다 */
+.ship-badge,
+.fee-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  margin: 1px 2px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+.ship-badge {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.fee-badge {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
 /* 손실/유효수량 병기 */
 .loss-note {
   margin-top: 2px;
@@ -722,4 +773,5 @@ onMounted(async () => {
     min-width: 1200px;
   }
 }
+
 </style>
