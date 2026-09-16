@@ -120,7 +120,13 @@
                     <th style="width: 84px" class="nowrap-cell">
                       변경자
                     </th>
-                    <th style="width: 150px" class="nowrap-cell">
+                    <!--
+                      170px — "2026. 09. 02. 오후 04:20" 이 실측 154px 라 150px 로는 모자랐다.
+                      table-layout:fixed 라 폭은 지켜지지만 nowrap 텍스트가 셀 밖으로 흘러
+                      옆 '사유' 칸을 덮어 두 값이 붙어 보였다(…04:202026-08-27 원가이력…).
+                      줄어드는 만큼은 사유 칸이 흡수한다 — 거긴 어차피 말줄임이다.
+                    -->
+                    <th style="width: 170px" class="nowrap-cell">
                       변경일시
                     </th>
                     <th>사유</th>
@@ -776,6 +782,10 @@ defineExpose({ reload: () => { loadHistory() } })
 /* 변경자·변경일시는 줄바꿈되면 읽기 어려워 한 줄 고정 */
 .nowrap-cell {
   white-space: nowrap;
+  /* ★ 안전망. table-layout:fixed 에서 nowrap 만 걸면 넘친 글자가 셀 밖으로 흘러
+     옆 칸 위에 겹쳐 그려진다(잘리지 않는다). 폭이 모자랄 땐 말줄임이 맞다. */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .source-badge {
