@@ -267,6 +267,38 @@
             >
           </FormField>
 
+          <!--
+            가공비 — 발주 건당 하나로 붙는 삯이다 (품목별 아님).
+            발주서 PDF 의 품목 표 아래에 한 행으로 나가고 공급가액에 합산된다(과세).
+            그 달 OEM 원장에도 가산되므로 금액을 고치면 지급액이 바뀐다.
+          -->
+          <FormField
+            label="가공비"
+            label-note="OEM 에 지불하는 가공 비용 · 발주일이 속한 달 원장에 가산"
+          >
+            <div v-if="isEditMode" class="fee-box">
+              <span class="fee-currency">₩</span>
+              <input
+                v-model.number="editForm.processingFee"
+                type="number"
+                min="0"
+                step="1000"
+                class="fee-input"
+                placeholder="0"
+                @keydown="blockDecimalKey"
+                @paste="stripDecimalOnPaste"
+                @blur="truncateToInt($event, v => editForm.processingFee = v)"
+              >
+            </div>
+            <input
+              v-else
+              type="text"
+              :value="formatCurrency(poDetail.processingFee || 0)"
+              class="form-input-sm text-right"
+              readonly
+            >
+          </FormField>
+
           <!-- 상태 -->
           <FormField label="상태">
             <span :class="getStatusBadgeClass(poDetail.status)">
@@ -469,7 +501,10 @@
                         :min="0"
                         step="1"
                         class="table-input text-right input-w75"
+                        @keydown="blockDecimalKey"
+                        @paste="stripDecimalOnPaste"
                         @input="item.quantity = (item.shipmentQuantity || 0) + Math.max(0, Number(($event.target as HTMLInputElement).value) || 0)"
+                        @blur="truncateToInt($event, v => item.quantity = (item.shipmentQuantity || 0) + Math.max(0, v))"
                       >
                     </td>
                     <td class="text-right">
@@ -551,6 +586,9 @@
                           step="1"
                           class="table-input text-right"
                           style="width: 80px"
+                          @keydown="blockDecimalKey"
+                          @paste="stripDecimalOnPaste"
+                          @blur="truncateToInt($event, v => item.newProducedQuantity = v)"
                         >
                         <span class="produce-current">/ {{ formatQuantity(item.quantity) }}</span>
                       </div>
@@ -821,6 +859,7 @@ import { useRouter, useRoute } from '#imports'
 import { purchaseOrderService } from '~/services/purchase-order.service'
 import { companyService } from '~/services/company.service'
 import { oemCostService } from '~/services/oem-cost.service'
+import { blockDecimalKey, stripDecimalOnPaste, truncateToInt } from '~/utils/numberInput'
 import type {
   PurchaseOrderDetail,
   PurchaseOrderItem,
@@ -902,6 +941,8 @@ const editForm = ref({
   sourceOemCompanyId: null as number | null,
   orderDate: '',
   expectedCompletionDate: '',
+  /** 가공비 — 발주 건당 하나. PDF 공급가액과 월별 원장에 함께 반영된다 */
+  processingFee: 0 as number,
   remarks: '',
   items: [] as EditItemRow[]
 })
@@ -981,6 +1022,7 @@ const enterEditMode = () => {
     sourceOemCompanyId: poDetail.value.sourceOemCompanyId ?? null,
     orderDate: poDetail.value.orderDate || '',
     expectedCompletionDate: poDetail.value.expectedCompletionDate || '',
+    processingFee: Number(poDetail.value.processingFee || 0),
     remarks: poDetail.value.remarks || '',
     items: poDetail.value.items.map(item => ({
       skuId: item.skuId,
@@ -1123,6 +1165,9 @@ const handleSaveEdit = async () => {
       sourceOemCompanyId: editForm.value.sourceOemCompanyId,
       orderDate: editForm.value.orderDate || null,
       expectedCompletionDate: editForm.value.expectedCompletionDate || null,
+      // ⚠ 0 도 유효한 값이다. || null 로 쓰면 0 으로 되돌릴 수 없다
+      //   (매퍼가 <if processingFee != null> 조건부라 null 이면 기존 값이 남는다).
+      processingFee: Number(editForm.value.processingFee || 0),
       remarks: editForm.value.remarks || null,
       items: editForm.value.items.map(item => ({
         skuId: item.skuId,
@@ -2057,5 +2102,46 @@ onMounted(() => {
   .po-info-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/*
+ * 가공비 입력칸 (등록 화면과 같은 모양)
+ *
+ * form-input-sm 은 width 만 주는 클래스라 number 입력이 배경과 구분되지 않는다.
+ * 금액 칸이므로 테두리와 ₩ 기호를 붙여 눈에 걸리게 한다.
+ */
+.fee-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 160px;
+  padding: 0.375rem 0.625rem;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.fee-box:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.fee-currency {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+}
+
+.fee-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  text-align: right;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1e293b;
 }
 </style>

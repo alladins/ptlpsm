@@ -117,16 +117,24 @@
             </FormField>
 
             <!-- 가공비 -->
-            <FormField label="가공비">
-              <input
-                v-model.number="formData.processingFee"
-                type="number"
-                min="0"
-                step="1000"
-                class="form-input-sm text-right"
-                placeholder="0"
-              >
-              <span class="form-hint">OEM 에 가공을 요청하고 지불하는 비용입니다. 발주일이 속한 달의 OEM 원장에 가산됩니다.</span>
+            <FormField
+              label="가공비"
+              label-note="OEM 에 지불하는 가공 비용 · 발주일이 속한 달 원장에 가산"
+            >
+              <div class="fee-box">
+                <span class="fee-currency">₩</span>
+                <input
+                  v-model.number="formData.processingFee"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  class="fee-input"
+                  placeholder="0"
+                  @keydown="blockDecimalKey"
+                  @paste="stripDecimalOnPaste"
+                  @blur="truncateToInt($event, v => formData.processingFee = v)"
+                >
+              </div>
             </FormField>
 
             <!-- 비고 -->
@@ -229,7 +237,10 @@
                         :min="-(item.shipmentQuantity || 0)"
                         step="1"
                         class="table-input text-right input-w75"
+                        @keydown="blockDecimalKey"
+                        @paste="stripDecimalOnPaste"
                         @input="updateAdditionalQuantity(item, Number(($event.target as HTMLInputElement).value))"
+                        @blur="truncateToInt($event, v => updateAdditionalQuantity(item, v))"
                       >
                     </td>
                     <td class="text-right">
@@ -242,7 +253,10 @@
                         :min="0"
                         step="100"
                         class="table-input text-right input-w100"
+                        @keydown="blockDecimalKey"
+                        @paste="stripDecimalOnPaste"
                         @change="recalculateAmount(index)"
+                        @blur="truncateToInt($event, v => { item.unitPrice = v; recalculateAmount(index) })"
                       >
                     </td>
                     <td class="text-right">
@@ -323,6 +337,7 @@ import { useRouter } from '#imports'
 import { purchaseOrderService } from '~/services/purchase-order.service'
 import { companyService } from '~/services/company.service'
 import { oemCostService } from '~/services/oem-cost.service'
+import { blockDecimalKey, stripDecimalOnPaste, truncateToInt } from '~/utils/numberInput'
 import type { CompanyInfoResponse } from '~/types/company'
 import type { PurchaseOrderCreateRequest, PurchaseOrderItemInput } from '~/types/purchase-order'
 import type { OemCost } from '~/types/oem-cost'
@@ -904,6 +919,47 @@ onMounted(async () => {
   margin: 0.375rem 0 0;
   font-size: 0.75rem;
   color: #92400e;
+}
+
+/*
+ * 가공비 입력칸
+ *
+ * form-input-sm 은 width 만 주는 클래스라 number 입력이 배경과 구분되지 않았다.
+ * 금액이 들어가는 칸이므로 테두리와 ₩ 기호를 붙여 눈에 걸리게 한다.
+ */
+.fee-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 160px;
+  padding: 0.375rem 0.625rem;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.fee-box:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.fee-currency {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+}
+
+.fee-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  text-align: right;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1e293b;
 }
 
 .source-oem-error {
