@@ -203,24 +203,36 @@ export interface LossMonthlySummary {
 }
 
 /** 손실 유형 옵션 */
-export const LOSS_TYPE_OPTIONS: Array<{ value: LossType; label: string; description: string }> = [
+/**
+ * 손실 유형 옵션
+ *
+ * ⚠ label 은 담당자가 읽고 바로 고를 수 있는 말로 쓴다.
+ *   "수량부족 / 스펙오납" 같은 한자어는 현장에서 무슨 뜻인지 되묻는다.
+ *   괄호 안에 원래 용어를 남겨 서류·문의 때 말이 통하게 한다.
+ * example 은 한 줄짜리 실제 사례다. 설명 열 줄보다 이게 빠르다.
+ */
+export const LOSS_TYPE_OPTIONS: Array<{
+  value: LossType; label: string; example: string; description: string
+}> = [
   {
     value: 'SHORTAGE',
-    label: '수량부족',
-    description: '발주 수량보다 현장 실인수가 적은 경우. 발주서·출하는 그대로 두고 납품률·잔여·기성청구 계산에서만 차감됩니다.'
+    label: '덜 갔어요 (수량 부족)',
+    example: '예) 118㎡ 보냈는데 현장에서 110㎡만 받음',
+    description: '모자란 만큼은 아직 안 보낸 것으로 칩니다. 발주서·출하 기록은 그대로 두고, 납품률과 남은 수량만 줄어듭니다. 나중에 다시 보내면 되돌아옵니다.'
   },
   {
     value: 'SPEC_MISMATCH',
-    label: '스펙오납',
-    description: '발주와 다른 규격이 납품·시공된 경우. 매출·서류는 계약 기준을 유지하고 원가만 정정합니다.'
+    label: '다른 두께가 갔어요 (규격 오납)',
+    example: '예) 40T 계약인데 현장에 50T 가 깔림',
+    description: '수량은 맞습니다. 고객 서류와 매출은 계약(40T) 그대로 나가고, 원가 차액만 정정합니다.'
   }
 ]
 
 /** 보전 방식 옵션 */
 export const RECOVERY_TYPE_OPTIONS: Array<{ value: RecoveryType; label: string; description: string }> = [
-  { value: 'NONE', label: '보전없음', description: '재발송하지 않습니다.' },
-  { value: 'SEPARATE', label: '별도발송', description: '별도 차량으로 발송합니다. 배송비가 손실에 가산됩니다.' },
-  { value: 'MERGED', label: '차기출하 합산', description: '다음 출하에 함께 실어 보냅니다. 배송비 손실이 없습니다.' }
+  { value: 'NONE', label: '안 보냄', description: '모자란 만큼 다시 보내지 않습니다.' },
+  { value: 'SEPARATE', label: '따로 보냄', description: '차를 한 번 더 부릅니다. 그 운반비가 손실에 더해집니다.' },
+  { value: 'MERGED', label: '다음 출하에 같이', description: '다음에 갈 때 함께 실어 보냅니다. 운반비가 더 들지 않습니다.' }
 ]
 
 /** 정산 상태 옵션 */

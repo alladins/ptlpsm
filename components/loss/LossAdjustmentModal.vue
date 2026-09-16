@@ -60,6 +60,7 @@
                 <input v-model="form.lossType" type="radio" :value="opt.value" :disabled="isEdit">
                 <div class="type-content">
                   <span class="type-label">{{ opt.label }}</span>
+                  <span class="type-example">{{ opt.example }}</span>
                   <span class="type-desc">{{ opt.description }}</span>
                 </div>
               </label>
@@ -84,7 +85,17 @@
 
               <div class="form-field">
                 <label>{{ isShortage ? '부족 수량' : '오납 수량' }} <span class="req">*</span></label>
-                <input v-model.number="form.quantity" type="number" min="0" step="0.01" placeholder="0">
+                <!-- ㎡ 단위. 1매 = 2㎡ 로 나가므로 소수가 나올 일이 없다 -->
+                <input
+                  v-model.number="form.quantity"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  @keydown="blockDecimalKey"
+                  @paste="stripDecimalOnPaste"
+                  @blur="truncateToInt($event, v => form.quantity = v)"
+                >
                 <small v-if="selectedItem" class="hint">
                   현재 출하 수량: {{ formatNumber(selectedItem.shipmentQuantity) }}
                 </small>
@@ -108,7 +119,16 @@
                 </div>
                 <div class="form-field">
                   <label>실납 SKU 원가 <span class="req">*</span></label>
-                  <input v-model.number="form.actualUnitCost" type="number" min="0" step="1" placeholder="0">
+                  <input
+                    v-model.number="form.actualUnitCost"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="0"
+                    @keydown="blockDecimalKey"
+                    @paste="stripDecimalOnPaste"
+                    @blur="truncateToInt($event, v => form.actualUnitCost = v)"
+                  >
                 </div>
               </template>
             </div>
@@ -152,7 +172,16 @@
 
             <div v-if="form.recoveryType === 'SEPARATE'" class="form-field mt">
               <label>배송비 손실</label>
-              <input v-model.number="form.shippingLossAmount" type="number" min="0" step="1000" placeholder="0">
+              <input
+                v-model.number="form.shippingLossAmount"
+                type="number"
+                min="0"
+                step="1000"
+                placeholder="0"
+                @keydown="blockDecimalKey"
+                @paste="stripDecimalOnPaste"
+                @blur="truncateToInt($event, v => form.shippingLossAmount = v)"
+              >
               <small class="hint">별도 차량 발송 시에만 손실에 가산됩니다.</small>
             </div>
           </div>
@@ -167,7 +196,16 @@
               <div v-if="isShortage" class="form-field">
                 <label>제조사 부담률 (%)</label>
                 <div class="rate-input">
-                  <input v-model.number="form.oemBurdenRate" type="number" min="0" max="100" step="10">
+                  <input
+                    v-model.number="form.oemBurdenRate"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="10"
+                    @keydown="blockDecimalKey"
+                    @paste="stripDecimalOnPaste"
+                    @blur="truncateToInt($event, v => form.oemBurdenRate = v)"
+                  >
                   <div class="rate-presets">
                     <button type="button" @click="form.oemBurdenRate = 0">0%</button>
                     <button type="button" @click="form.oemBurdenRate = 50">50%</button>
@@ -178,7 +216,16 @@
 
               <div class="form-field">
                 <label>페널티 (협의 금액)</label>
-                <input v-model.number="form.penaltyAmount" type="number" min="0" step="10000" placeholder="0">
+                <input
+                  v-model.number="form.penaltyAmount"
+                  type="number"
+                  min="0"
+                  step="10000"
+                  placeholder="0"
+                  @keydown="blockDecimalKey"
+                  @paste="stripDecimalOnPaste"
+                  @blur="truncateToInt($event, v => form.penaltyAmount = v)"
+                >
                 <label class="checkbox-inline">
                   <input v-model="form.penaltyApplied" type="checkbox">
                   즉시 상계 (OEM 지급에서 차감)
@@ -235,7 +282,21 @@
               <input v-model="form.inventoryAdjusted" type="checkbox">
               재고를 함께 조정합니다
             </label>
-            <div v-if="form.inventoryAdjusted" class="form-grid mt">
+            <!-- 그 제조사 창고가 없으면 조정할 곳이 없다. 고르게 두지 말고 막는다 -->
+            <div v-if="form.inventoryAdjusted && !loadingWarehouses && warehouses.length === 0" class="warehouse-empty mt">
+              <i class="fas fa-triangle-exclamation" />
+              <div>
+                <strong>이 제조사의 창고가 없습니다.</strong>
+                <p>
+                  조정할 창고가 없어 재고 조정을 진행할 수 없습니다.
+                  <br><strong>기초정보 → 창고</strong> 에서 이 제조사의 창고를 먼저 등록하세요.
+                  아직 이 제조사와 거래를 시작하기 전이라면 <strong>발주·입고</strong> 부터 진행해야 합니다.
+                </p>
+                <p class="sub">손실 등록 자체는 재고 조정 없이도 할 수 있습니다. 위 체크를 해제하세요.</p>
+              </div>
+            </div>
+
+            <div v-if="form.inventoryAdjusted && warehouses.length > 0" class="form-grid mt">
               <div class="form-field">
                 <label>창고 <span class="req">*</span></label>
                 <select v-model.number="form.inventoryWarehouseId">
@@ -246,10 +307,13 @@
                 </select>
               </div>
               <div class="form-field">
-                <label>조정 수량 (부호 포함) <span class="req">*</span></label>
-                <input v-model.number="form.inventoryAdjustQty" type="number" step="1" placeholder="-4">
+                <label>조정 수량 (매, 부호 포함) <span class="req">*</span></label>
+                <input v-model.number="form.inventoryAdjustQty" type="number" step="1" placeholder="4">
                 <small class="hint">
-                  운송 중 증발이면 음수(−), 창고에 남아있으면 조정 불필요합니다.
+                  재고는 <strong>운송 시점에 이미 빠졌습니다.</strong>
+                  제조사가 애초에 안 실어 창고에 그대로 있으면 <strong>양수(+)</strong> 로 되돌리고,
+                  운송 중 분실·파손이면 <strong>조정 불필요</strong>합니다.
+                  <br>1매 = 2㎡ 로 자동 환산됩니다.
                 </small>
               </div>
             </div>
@@ -297,7 +361,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { lossService } from '~/services/loss.service'
+import { blockDecimalKey, stripDecimalOnPaste, truncateToInt } from '~/utils/numberInput'
 import { shipmentService } from '~/services/shipment.service'
+import { warehouseService } from '~/services/warehouse.service'
 import {
   LOSS_TYPE_OPTIONS,
   RECOVERY_TYPE_OPTIONS,
@@ -318,6 +384,8 @@ interface ShipmentItemLike {
 interface WarehouseLike {
   warehouseId: number
   warehouseName: string
+  /** 창고 주인 회사. 제조사별로 걸러내는 데 쓴다 */
+  companyId?: number | null
 }
 
 interface ShipmentPickLike {
@@ -371,6 +439,42 @@ const fetchedItems = ref<ShipmentItemLike[]>([])
 const loadingItems = ref(false)
 const fetchedOrderId = ref<number | null>(null)
 
+/**
+ * 재고 조정용 창고
+ *
+ * ⚠ 이 모달은 손실관리·자금상세·출하 사후 처리 세 곳에서 열린다.
+ *   예전에는 창고를 prop 으로만 받았는데 세 곳 다 넘겨주지 않아
+ *   재고 조정을 체크해도 드롭다운이 조용히 비어 있었다(에러도 안 났다).
+ *   호출하는 쪽이 잊어도 동작하도록 여기서 직접 불러온다.
+ *   prop 으로 넘어오면 그걸 우선한다.
+ *
+ * ⚠ 전체 창고가 아니라 "그 출하를 만든 제조사의 창고"만 보여준다.
+ *   남의 창고 재고를 손대면 안 된다.
+ */
+const pickedOemCompanyId = ref<number | null>(null)
+const fetchedWarehouses = ref<WarehouseLike[]>([])
+const loadingWarehouses = ref(false)
+
+const loadWarehouses = async () => {
+  if (props.warehouses?.length) { return }
+  loadingWarehouses.value = true
+  try {
+    fetchedWarehouses.value = await warehouseService.getWarehouseList() as unknown as WarehouseLike[]
+  } catch (error) {
+    console.error('[LossAdjustmentModal] 창고 조회 실패:', error)
+    fetchedWarehouses.value = []
+  } finally {
+    loadingWarehouses.value = false
+  }
+}
+
+/** 그 제조사 창고만 남긴다 */
+const warehouses = computed<WarehouseLike[]>(() => {
+  const all = props.warehouses?.length ? props.warehouses : fetchedWarehouses.value
+  if (!pickedOemCompanyId.value) { return [] }
+  return all.filter(w => Number((w as { companyId?: number }).companyId) === pickedOemCompanyId.value)
+})
+
 /** 실제로 사용할 출하 ID */
 const effectiveShipmentId = computed(() => props.shipmentId || pickedShipmentId.value || 0)
 
@@ -418,8 +522,15 @@ const selectedItem = computed(() =>
  * (자금 상세처럼 출하 목록만 있고 품목이 없는 진입 경로용)
  */
 watch(pickedShipmentId, async (shipmentId) => {
-  form.value.skuId = ''
-  form.value.unitCost = 0
+  // ⚠ 수정 모드에서 대상 출하를 그대로 다시 세팅하는 경우에는 고른 품목을 지우면 안 된다.
+  //   isOpen 워처가 form 을 채운 바로 다음에 이 워처가 돌기 때문에,
+  //   무조건 비우면 수정 화면이 열리자마자 품목 선택이 풀려
+  //   [수정] 버튼이 영영 비활성으로 남는다(= 손실 수정 자체가 불가능해진다).
+  const keepPicked = !!props.editTarget && shipmentId === props.editTarget.shipmentId
+  if (!keepPicked) {
+    form.value.skuId = ''
+    form.value.unitCost = 0
+  }
   fetchedItems.value = []
   if (!shipmentId) return
 
@@ -436,6 +547,9 @@ watch(pickedShipmentId, async (shipmentId) => {
     fetchedOrderId.value = detail.orderId ?? null
     form.value.shipmentId = shipmentId
     form.value.orderId = detail.orderId ?? props.orderId
+    // 재고 조정은 "그 제조사 창고"에만 한다. 출하가 정해져야 제조사를 알 수 있다.
+    pickedOemCompanyId.value = detail.oemCompanyId ?? null
+    await loadWarehouses()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '출하 품목을 불러오지 못했습니다.'
     console.error('[LossAdjustmentModal] 품목 조회 실패:', error)
@@ -502,6 +616,8 @@ const isValid = computed(() => {
   if (!isShortage.value && !form.value.actualSkuId) return false
   if (!isShortage.value && !form.value.actualUnitCost) return false
   if (form.value.inventoryAdjusted) {
+    // 그 제조사 창고가 없으면 조정할 곳이 없다 — 체크를 풀어야 등록된다
+    if (warehouses.value.length === 0) return false
     if (!form.value.inventoryWarehouseId) return false
     if (!form.value.inventoryAdjustQty) return false
   }
@@ -519,18 +635,47 @@ const onActualSkuChange = () => {
   // 실납 SKU 원가는 담당자가 직접 입력한다 (해당 제조사 원가 마스터 확인 후)
 }
 
-/** 수량부족은 부족분만큼 재고가 증발한 것이므로 음수 기본 제안 */
-watch(() => form.value.quantity, (qty) => {
-  if (isShortage.value && form.value.inventoryAdjusted && qty) {
-    form.value.inventoryAdjustQty = -Math.abs(Number(qty))
-  }
+// 실납 원가를 넣으면 '원가 차액을 OEM 정산에 반영' 기본값을 안내문대로 맞춘다.
+//
+// ⚠ 실납이 더 비싸면 차액(costDiff)이 양수가 되고, 반영을 켜면 oemDeduction 이 음수가 되어
+//   지급액이 오히려 늘어난다. 비싼 물건이 잘못 온 것은 제조사 손해이지
+//   리드파워가 더 줄 이유가 없다(설계서 §4.2 — 그 경우는 "조정만").
+//   기본값이 늘 켜져 있어서, 담당자가 체크를 풀지 않으면 그대로 증액되던 자리다.
+watch(() => form.value.actualUnitCost, (actual) => {
+  if (isShortage.value || actual == null) { return }
+  form.value.applyToOemSettlement = Number(actual) <= Number(form.value.unitCost || 0)
+})
+
+// 재고는 운송(배차) 시점에 이미 빠졌다. 부족분만큼 또 빼면 이중 차감이다.
+// 조정이 필요한 전형적 경우는 "제조사가 애초에 안 실어 창고에 그대로 있는" 상황이라
+// 되돌리는 방향, 즉 양수를 기본 제안한다. 방향은 실물 확인 후 담당자가 바꾼다.
+//
+// ⚠ 단위가 다르다. 부족 수량은 ㎡(shipment_items.unit = 'm²'), 조정 수량은 매다.
+//   1매 = 2㎡ 이므로 반으로 나눠야 한다. 그대로 넣으면 의도한 양의 두 배가 조정된다.
+const SQM_PER_SHEET = 2
+
+const suggestAdjustQty = () => {
+  const qty = Number(form.value.quantity)
+  if (!isShortage.value || !form.value.inventoryAdjusted || !qty) { return }
+  form.value.inventoryAdjustQty = Math.abs(qty) / SQM_PER_SHEET
+}
+
+watch(() => form.value.quantity, suggestAdjustQty)
+// 수량을 먼저 넣고 나중에 체크하는 순서가 더 흔하다. 그때도 제안값이 채워져야 한다.
+watch(() => form.value.inventoryAdjusted, (on) => {
+  if (on) { suggestAdjustQty() }
 })
 
 watch(() => props.isOpen, (open) => {
   if (!open) return
   errorMessage.value = ''
-  // 출하 선택 상태 초기화 (수정 시에는 대상 출하로 고정)
-  pickedShipmentId.value = props.editTarget ? props.editTarget.shipmentId : null
+  // 출하 선택 상태 초기화
+  //   - 수정: 대상 출하로 고정
+  //   - 신규: 고를 것이 하나뿐이면 미리 골라 둔다.
+  //     출하 사후 처리에서 이미 한 건을 고르고 들어오는데 여기서 또 고르게 하면 군더더기다.
+  pickedShipmentId.value = props.editTarget
+    ? props.editTarget.shipmentId
+    : (props.shipments?.length === 1 ? props.shipments[0].shipmentId : null)
   fetchedItems.value = []
   if (props.editTarget) {
     const t = props.editTarget
@@ -731,6 +876,27 @@ const formatCurrency = (value: number): string => {
   gap: 0.2rem;
 }
 .type-label, .opt-label { font-weight: 600; font-size: 0.88rem; }
+.warehouse-empty {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.warehouse-empty p { margin: 0.25rem 0 0; }
+.warehouse-empty .sub { color: #a16207; font-size: 0.76rem; }
+
+/* 사례 한 줄 — 설명보다 먼저 눈에 걸려야 해서 색을 준다 */
+.type-example {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  line-height: 1.4;
+}
 .type-desc, .opt-desc { font-size: 0.76rem; color: #6b7280; line-height: 1.4; }
 
 .form-grid {
