@@ -385,7 +385,7 @@ import type { OemMonthlyLedgerResponse } from '~/types/oem-ledger'
 import { OEM_LEDGER_PAYMENT_STATUS_LABELS, OEM_LEDGER_COST_SOURCE_LABELS } from '~/types/oem-ledger'
 import type { OemLedgerCostSource, OemLedgerItem } from '~/types/oem-ledger'
 import type { CompanyInfoResponse } from '~/types/company'
-import { formatCurrency, formatQuantity } from '~/utils/format'
+import { formatCurrency, formatQuantity, getLocalDateString } from '~/utils/format'
 import { usePermission } from '~/composables/usePermission'
 import { useAuthStore } from '~/stores/auth'
 
@@ -583,9 +583,14 @@ async function loadLedger () {
       yearMonth.value
     )
     // 지급 완료 모달 기본값 설정
+    //
+    // ⚠ totalAmount(발주 합계)가 아니라 payableAmount 를 써야 한다.
+    //   payableAmount = 발주 합계 + 비출하 소진 + 운송비 + 가공비 − 손실 차감
+    //   화면에는 이 값이 "지급 예정"으로 표시되는데 지급 기록에 합계만 남기면
+    //   소진·운송비·가공비는 영영 지급되지 않고 손실은 차감되지 않는다.
     if (ledgerData.value) {
-      completeForm.value.paidAmount = ledgerData.value.totalAmount || 0
-      completeForm.value.paidDate = new Date().toISOString().split('T')[0]
+      completeForm.value.paidAmount = ledgerData.value.payableAmount ?? ledgerData.value.totalAmount ?? 0
+      completeForm.value.paidDate = getLocalDateString()
     }
   } catch (error) {
     console.error('원장 조회 실패:', error)
@@ -598,13 +603,18 @@ async function loadLedger () {
 // 지급 요청
 async function handlePaymentRequest () {
   if (!ledgerData.value) { return }
-  if (!confirm(`${yearMonth.value} 매출원장 기준 ${formatCurrency(ledgerData.value.totalAmount)} 지급을 요청하시겠습니까?`)) { return }
+
+  // ⚠ 요청 금액은 payableAmount(지급 예정 공급가액) 다.
+  //   = 발주 합계 + 비출하 소진 + 운송비 + 가공비 − 손실 차감
+  //   totalAmount(발주 합계)로 보내면 화면에 보이는 금액과 실제 요청액이 갈라진다.
+  const requestAmount = ledgerData.value.payableAmount ?? ledgerData.value.totalAmount
+  if (!confirm(`${yearMonth.value} 매출원장 기준 ${formatCurrency(requestAmount)} 지급을 요청하시겠습니까?`)) { return }
 
   try {
     await oemLedgerService.createPaymentRequest({
       oemCompanyId: selectedOemCompanyId.value!,
       yearMonth: yearMonth.value,
-      totalAmount: ledgerData.value.totalAmount
+      totalAmount: requestAmount
     })
     alert('지급 요청이 등록되었습니다.')
     await loadLedger()
