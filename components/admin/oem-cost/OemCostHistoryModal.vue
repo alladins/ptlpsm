@@ -49,11 +49,41 @@
               </div>
             </div>
 
-            <!-- 변경 이력 테이블 -->
+            <!--
+              변경 이력 — 이 모달의 본체다.
+
+              ★ 예전에는 위에 '적용구간' 표가 함께 있었으나 걷어냈다.
+                목록 화면이 구간을 만료분까지 전부 행으로 펼쳐 보여주고
+                각 행에서 바로 수정할 수 있게 되면서(openEditModal) 완전히 중복됐고,
+                그 표가 자리를 다 차지해 정작 변경 이력이 스크롤 밖으로 밀렸다.
+              ★ 구간표(마스터)는 '지금 얼마인가'(상태), 이력은 '누가 언제 왜 고쳤나'(사건)다.
+                같은 구간을 제자리 정정하면 마스터 금액은 덮어써지므로
+                이력이 그 변경의 유일한 흔적이 된다.
+            -->
             <div class="history-section">
-              <div class="history-header">
+              <div class="history-header with-toggle">
                 <span class="history-title">변경 이력</span>
                 <span class="history-count">총 {{ historyList.length }}건</span>
+
+                <!--
+                  시스템 일괄 적재 토글
+                  위 구간표는 '지금 얼마인가'(상태), 이 이력은 '누가 언제 왜 고쳤나'(사건)다.
+                  제자리 정정은 마스터 금액을 덮어쓰므로 이력이 유일한 흔적이라 지우지 않는다.
+                  다만 마이그레이션 적재분은 기본으로 감춰 사람이 한 변경이 묻히지 않게 한다.
+                -->
+                <button
+                  v-if="systemHistoryCount > 0"
+                  type="button"
+                  class="system-toggle"
+                  :class="{ active: includeSystem }"
+                  :title="includeSystem
+                    ? '시스템 일괄 적재(마이그레이션) 이력을 숨깁니다'
+                    : '2026-08-27 일괄 소급·2026-09-15 구간표 승급 등 시스템이 한 번에 넣은 이력입니다'"
+                  @click="toggleSystemHistory"
+                >
+                  <i :class="includeSystem ? 'fas fa-eye-slash' : 'fas fa-eye'" />
+                  시스템 일괄 적재 {{ systemHistoryCount }}건 {{ includeSystem ? '숨기기' : '보기' }}
+                </button>
               </div>
 
               <div v-if="isLoading" class="loading-container">
@@ -63,7 +93,10 @@
 
               <div v-else-if="historyList.length === 0" class="empty-state">
                 <i class="fas fa-inbox" />
-                <span>변경 이력이 없습니다.</span>
+                <span v-if="systemHistoryCount > 0 && !includeSystem">
+                  사람이 직접 변경한 이력이 없습니다. (시스템 일괄 적재 {{ systemHistoryCount }}건은 위 버튼으로 볼 수 있습니다)
+                </span>
+                <span v-else>변경 이력이 없습니다.</span>
               </div>
 
               <table v-else class="history-table">
@@ -94,7 +127,11 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in historyList" :key="item.id">
+                  <tr
+                    v-for="item in historyList"
+                    :key="item.id"
+                    :class="{ 'system-row': item.changedBy === 'system' }"
+                  >
                     <td class="company-cell">
                       {{ item.oemCompanyName || '-' }}
                       <span v-if="item.costSourceType === 'LEADPOWER'" class="source-badge source-leadpower">본사</span>
@@ -137,10 +174,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { formatDateTime, utcToKstDateString } from '~/utils/format'
 import { oemCostService } from '~/services/oem-cost.service'
-import { calculateMarginRate, getMarginRateClass, COST_CHANGE_TYPE_LABELS } from '~/types/oem-cost'
+import {
+  calculateMarginRate, getMarginRateClass, COST_CHANGE_TYPE_LABELS
+} from '~/types/oem-cost'
 import type { OemCost, OemCostHistory, CostChangeType } from '~/types/oem-cost'
 
 interface Props {
@@ -160,26 +199,56 @@ const emit = defineEmits<{
 
 // 상태
 const isLoading = ref(false)
-const historyList = ref<OemCostHistory[]>([])
 
-// 이력 로드
+/**
+ * 서버에서 받은 이력 원본 — 필터와 무관하게 항상 전량을 들고 있는다.
+ *
+ * ⚠ 여기서 행을 빼면 안 된다. appliedPeriodMap 이 목록 전체를 훑어
+ *   각 행의 적용기간을 역산하므로, 중간 행이 빠지면 연쇄가 끊겨
+ *   엉뚱한 기간이 조용히 표시된다. 화면에 뿌릴 목록은 historyList 를 쓴다.
+ */
+const allHistory = ref<OemCostHistory[]>([])
+
+/**
+ * 시스템 일괄 적재 이력을 함께 볼 것인가.
+ *
+ * ⚠ 기본은 false 다. 2026-08-27 일괄 소급 반영, 2026-09-15 구간표 승급 같은
+ *   일회성 마이그레이션이 changed_by='system' 으로 한꺼번에 꽂혀 있어,
+ *   최신순 목록에서 사람이 실제로 한 변경을 통째로 밀어냈다.
+ *   데이터를 지운 게 아니라 표시만 거르는 것이라 토글로 언제든 되살릴 수 있다.
+ */
+const includeSystem = ref(false)
+
+const isSystemRow = (item: OemCostHistory): boolean => item.changedBy === 'system'
+
+// 감춰진 시스템 이력 건수 (0 이면 토글 자체를 숨긴다)
+const systemHistoryCount = computed(() => allHistory.value.filter(isSystemRow).length)
+
+// 실제로 화면에 뿌리는 목록
+const historyList = computed(() =>
+  includeSystem.value ? allHistory.value : allHistory.value.filter(item => !isSystemRow(item)))
+
+// 이력 로드 — 전량을 받아 allHistory 에 담는다 (필터는 historyList 에서)
 const loadHistory = async () => {
   if (!props.skuId) { return }
 
   try {
     isLoading.value = true
     // oemCompanyId가 0이면 SKU 전체 이력, 아니면 특정 OEM 이력
-    if (props.oemCompanyId) {
-      historyList.value = await oemCostService.getHistory(props.skuId, props.oemCompanyId)
-    } else {
-      historyList.value = await oemCostService.getHistoryBySku(props.skuId)
-    }
+    allHistory.value = props.oemCompanyId
+      ? await oemCostService.getHistory(props.skuId, props.oemCompanyId)
+      : await oemCostService.getHistoryBySku(props.skuId)
   } catch (error) {
     console.error('이력 조회 실패:', error)
-    historyList.value = []
+    allHistory.value = []
   } finally {
     isLoading.value = false
   }
+}
+
+// 시스템 일괄 적재 포함 여부 토글 — 원본은 이미 전량 들고 있어 재조회가 필요 없다
+const toggleSystemHistory = () => {
+  includeSystem.value = !includeSystem.value
 }
 
 // 닫기
@@ -337,12 +406,16 @@ const getChangeTypeClass = (type: CostChangeType): string => {
   }
 }
 
-// 모달 열림 감지
+// 모달 열림 감지 — 매번 기본 필터(시스템 적재 숨김)로 되돌린다
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
+    includeSystem.value = false
     loadHistory()
   }
 })
+
+// 부모가 원가를 고친 뒤 다시 불러오게 한다 (이력이 한 줄 늘어나므로)
+defineExpose({ reload: () => { loadHistory() } })
 </script>
 
 <style scoped>
@@ -556,6 +629,52 @@ watch(() => props.isOpen, (newVal) => {
   color: #6b7280;
 }
 
+/*
+  변경 이력 헤더는 토글 버튼까지 3요소라 space-between 으로는 제목·건수가 벌어진다.
+  제목·건수를 왼쪽에 붙이고 토글만 오른쪽 끝으로 민다.
+*/
+.history-header.with-toggle {
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.system-toggle {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.system-toggle:hover {
+  color: #374151;
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.system-toggle.active {
+  color: #4f46e5;
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+/* 시스템 일괄 적재 행은 사람이 한 변경과 눈으로 구분되게 흐리게 */
+.history-table tr.system-row {
+  background: #fafafa;
+  color: #9ca3af;
+}
+
+.history-table tr.system-row .cost-value {
+  color: #6b7280;
+}
+
 /* 로딩 */
 .loading-container {
   display: flex;
@@ -752,4 +871,6 @@ watch(() => props.isOpen, (newVal) => {
   /* "2026-01-01 ~ 2026-06-15" 가 두 줄로 꺾이지 않도록 한 줄 유지 */
   white-space: nowrap;
 }
+
+/* 적용구간 표는 목록 화면과 중복이라 걷어냈다 (관련 스타일도 함께 제거) */
 </style>

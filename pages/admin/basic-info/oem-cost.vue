@@ -393,12 +393,18 @@
       :sku-info="selectedSkuInfo"
       :edit-data="selectedCostData"
       :existing-oem-company-ids="existingOemCompanyIds"
+      :correct-mode="isCorrectMode"
       @close="closeCostModal"
       @saved="handleCostSaved"
     />
 
-    <!-- 이력 모달 -->
+    <!--
+      이력 모달 — '누가 언제 왜 고쳤나' 감사 로그 전용.
+      적용구간 표는 걷어냈다: 위 목록이 만료 구간까지 전부 행으로 펼쳐 주고
+      각 행의 수정 버튼(openEditModal)이 정정 모드까지 처리하므로 완전히 중복이었다.
+    -->
     <OemCostHistoryModal
+      ref="historyModalRef"
       :is-open="showHistoryModal"
       :sku-id="historyTarget.skuId"
       :oem-company-id="historyTarget.oemCompanyId"
@@ -433,6 +439,7 @@ import OemCostRecalcModal from '~/components/admin/oem-cost/OemCostRecalcModal.v
 import { oemCostService } from '~/services/oem-cost.service'
 import { companyService } from '~/services/company.service'
 import {
+  OEM_COST_STATUS,
   OEM_COST_STATUS_LABELS,
   calculateMarginRate,
   calculateOemCostStatus,
@@ -516,8 +523,11 @@ const selectedSkuInfo = ref<{
   thickness?: number
 } | null>(null)
 const selectedCostData = ref<OemCost | null>(null)
+// 정정 모드 — 지나간(만료) 구간의 금액을 그 자리에서 고친다. 새 구간을 만들지 않는다.
+const isCorrectMode = ref(false)
 
 const showHistoryModal = ref(false)
+const historyModalRef = ref<{ reload: () => void } | null>(null)
 const historyTarget = reactive({
   skuId: '',
   oemCompanyId: 0,
@@ -704,6 +714,10 @@ const openSkuHistoryModal = (sku: OemCostTreeItem) => {
 }
 
 // 원가 수정 모달 열기 (자식 OEM 행에서)
+// 목록에는 적용중·만료 구간이 모두 나온다.
+//
+// ★ 만료 구간을 평소 수정 모드로 열면 시작일이 오늘로 세팅돼 '새 구간'이 하나 더 생긴다.
+//   지나간 구간은 그 자리에서 금액만 고치는 '정정'이어야 한다.
 const openEditModal = (oem: OemCostListItem) => {
   selectedSkuInfo.value = {
     skuId: oem.skuId,
@@ -714,6 +728,10 @@ const openEditModal = (oem: OemCostListItem) => {
   }
   selectedCostData.value = oem as OemCost
   existingOemCompanyIds.value = []
+  // ⚠ '종료일이 있는가' 가 아니라 '이미 지났는가' 로 판정해야 한다.
+  //   만료일이 미래인 현재 구간(예: 6/1~12/31)을 정정 모드로 열면
+  //   시작일이 유지된 채 금액만 바뀌어 지나간 몇 달 원가가 소급으로 덮인다.
+  isCorrectMode.value = calculateOemCostStatus(oem) === OEM_COST_STATUS.EXPIRED
   showCostModal.value = true
 }
 
@@ -725,6 +743,7 @@ const closeCostModal = () => {
   showCostModal.value = false
   selectedSkuInfo.value = null
   selectedCostData.value = null
+  isCorrectMode.value = false
 }
 
 // 저장 완료
@@ -732,6 +751,10 @@ const handleCostSaved = (data: OemCost, context?: { skuId: string, oemCompanyId:
   closeCostModal()
   loadData()
   loadStatistics()
+  // 이력 모달이 열린 채로 구간을 고친 경우 — 그 자리에서 구간 목록을 다시 읽는다
+  if (showHistoryModal.value) {
+    historyModalRef.value?.reload()
+  }
 
   // 원가 변경 시 재계산 모달 표시
   if (context && context.oldCost !== context.newCost) {

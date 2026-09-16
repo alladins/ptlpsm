@@ -206,7 +206,34 @@ class OemCostService {
   }
 
   /**
+   * 특정 SKU + OEM 조합의 적용구간 조회 — 만료된 과거 구간 포함
+   *
+   * ★ 목록(트리)에도 만료 구간이 함께 나오지만, 그건 SKU 단위로 펼쳐진 화면이다.
+   *   한 공급사의 구간만 모아 보거나 고칠 때는 이 메서드를 쓴다.
+   * ⚠ getHistory(변경 이력)와 다른 것이다.
+   *   이력은 "누가 언제 왜 고쳤나" 감사 로그, 이건 "언제부터 언제까지 얼마" 구간표다.
+   *
+   * ※ 현재 호출처 없음 — 이력 모달의 적용구간 표를 걷어내면서(목록 화면과 중복)
+   *   쓰이지 않게 됐다. 백엔드 /admin/oem-costs/periods 와 함께 남겨 둔다.
+   */
+  async getPeriods(skuId: string, oemCompanyId?: number): Promise<OemCost[]> {
+    const response = await fetch(OEM_COST_ENDPOINTS.periods(skuId, oemCompanyId), {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error(`적용구간 조회 실패: ${response.status}`)
+    }
+
+    return await response.json()
+  }
+
+  /**
    * 특정 SKU + OEM 조합의 변경 이력 조회
+   *
+   * ⚠ 시스템 일괄 적재를 포함한 전량이 온다. 화면에서 감추더라도
+   *   적용기간 역산에는 전량이 필요하므로 여기서 거르지 않는다.
    */
   async getHistory(skuId: string, oemCompanyId: number): Promise<OemCostHistory[]> {
     const response = await fetch(OEM_COST_ENDPOINTS.history(skuId, oemCompanyId), {

@@ -13,7 +13,7 @@
                   </svg>
                 </div>
                 <h3 class="ccm-success-title">
-                  {{ isEditMode ? '원가 수정 완료' : '원가 등록 완료' }}
+                  {{ isEditMode ? (correctMode ? '원가 정정 완료' : '원가 수정 완료') : '원가 등록 완료' }}
                 </h3>
                 <p class="ccm-success-message">
                   {{ getSuccessMessage() }}
@@ -32,9 +32,13 @@
               </div>
               <div class="ccm-header-text">
                 <h2 class="ccm-modal-title">
-                  {{ isEditMode ? '원가 수정' : '원가 등록' }}
+                  {{ isEditMode ? (correctMode ? '원가 정정' : '원가 수정') : '원가 등록' }}
                 </h2>
-                <span class="ccm-modal-subtitle">{{ isEditMode ? '기존 원가 정보 수정' : '공급원별 원가 등록' }}</span>
+                <span class="ccm-modal-subtitle">{{
+                  isEditMode
+                    ? (correctMode ? '지나간 구간의 금액을 그 자리에서 정정' : '기존 원가 정보 수정 (새 구간 추가)')
+                    : '공급원별 원가 등록'
+                }}</span>
               </div>
             </div>
             <button class="ccm-close-button" :disabled="isSubmitting" @click="handleClose">
@@ -198,13 +202,24 @@
               </div>
             </div>
 
+            <!-- 정정 안내 (지나간 구간을 그 자리에서 고칠 때) -->
+            <div v-if="isEditMode && correctMode" class="period-rollover-notice">
+              <i class="fas fa-exclamation-triangle" />
+              <span>
+                <strong>{{ previousPeriodText || '-' }}</strong> 구간의 금액을 그 자리에서 고칩니다.
+                새 구간이 생기지 않습니다.
+                이 기간의 발주·출하 원가가 바뀌므로, 저장 후 해당 건들의 금액을 다시 확인하세요.
+              </span>
+            </div>
+
             <!-- 적용구간 전환 안내 (수정 모드에서만) -->
-            <div v-if="isEditMode && previousPeriodText" class="period-rollover-notice">
+            <div v-else-if="isEditMode && previousPeriodText" class="period-rollover-notice">
               <i class="fas fa-info-circle" />
               <span>
                 이전 적용구간 <strong>{{ previousPeriodText }}</strong> 은
                 <strong>{{ previousClosingDate || '-' }}</strong> 까지로 자동 종료되고,
                 <strong>{{ form.effectiveDate || '-' }}</strong> 부터 새 원가가 적용됩니다.
+                이전 구간은 지워지지 않고 그대로 남아, 그 기간의 발주·출하는 계속 옛 원가로 계산됩니다.
               </span>
             </div>
 
@@ -215,11 +230,13 @@
                   <i class="fas fa-calendar-alt" />
                   적용 시작일
                 </label>
+                <!-- 정정 모드는 '금액·비고만 고친다' 가 정의다.
+                     날짜를 건드리면 백엔드가 곧장 구간 추가로 가버려 안내문과 어긋난다. -->
                 <input
                   v-model="form.effectiveDate"
                   type="date"
                   class="ccm-form-input"
-                  :disabled="isSubmitting"
+                  :disabled="isSubmitting || correctMode"
                 >
               </div>
               <div class="ccm-form-group half">
@@ -231,7 +248,7 @@
                   v-model="form.expiryDate"
                   type="date"
                   class="ccm-form-input"
-                  :disabled="isSubmitting"
+                  :disabled="isSubmitting || correctMode"
                 >
               </div>
             </div>
@@ -302,7 +319,7 @@
               @click="handleSubmit"
             >
               <span v-if="isSubmitting" class="loading-spinner" />
-              <span v-else>{{ isEditMode ? '수정하기' : '등록하기' }}</span>
+              <span v-else>{{ isEditMode ? (correctMode ? '정정하기' : '수정하기') : '등록하기' }}</span>
             </button>
           </div>
         </div>
@@ -333,6 +350,14 @@ interface Props {
   skuInfo: SkuInfo | null
   editData?: OemCost | null // 수정 모드에서 기존 데이터
   existingOemCompanyIds?: number[] // 이미 등록된 제조사 ID 목록 (제외할 목록)
+  /**
+   * 정정 모드 — 이미 지나간 구간의 금액을 그 자리에서 고친다.
+   *
+   * 기본(수정) 모드는 적용 시작일을 오늘로 세팅해 '새 구간 추가'가 된다.
+   * 만료 구간을 그렇게 열면 구간이 하나 더 생겨버리므로, 이 모드에서는
+   * 시작일·종료일을 원래 값 그대로 둔다. 백엔드는 시작일이 같으면 제자리 정정한다.
+   */
+  correctMode?: boolean
 }
 
 const props = defineProps<Props>()
@@ -573,13 +598,22 @@ const loadEditData = () => {
   if (props.editData) {
     const today = getLocalDateString()
     const currentEffective = props.editData.effectiveDate || ''
-    const defaultEffective = currentEffective && currentEffective > today ? currentEffective : today
-    // 기존 만료일이 새 시작일보다 이전이면 의미가 없으므로 비운다(무기한)
     const currentExpiry = props.editData.expiryDate || ''
-    const defaultExpiry = currentExpiry && currentExpiry < defaultEffective ? '' : currentExpiry
+
+    // 정정 모드: 구간을 그대로 두고 금액만 고친다 (시작일을 건드리면 구간이 하나 더 생긴다)
+    const defaultEffective = props.correctMode
+      ? currentEffective
+      : (currentEffective && currentEffective > today ? currentEffective : today)
+    // 기존 만료일이 새 시작일보다 이전이면 의미가 없으므로 비운다(무기한)
+    const defaultExpiry = props.correctMode
+      ? currentExpiry
+      : (currentExpiry && currentExpiry < defaultEffective ? '' : currentExpiry)
 
     form.value = {
       oemCompanyId: props.editData.oemCompanyId,
+      // 원가 유형(제조사/본사)은 수정 대상이 아니므로 기존 값을 그대로 싣는다.
+      // 빠뜨리면 폼 타입이 깨지고, 저장 시 유형이 비어 나간다.
+      costSourceType: props.editData.costSourceType || 'OEM',
       costPrice: props.editData.costPrice,
       effectiveDate: defaultEffective,
       expiryDate: defaultExpiry,

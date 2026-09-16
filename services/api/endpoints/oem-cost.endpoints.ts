@@ -59,7 +59,18 @@ export const OEM_COST_ENDPOINTS = {
     return `${baseUrl}/admin/oem-costs/${id}`
   },
 
+  // 적용구간 조회 (특정 SKU + OEM 조합) — 만료된 과거 구간 포함
+  // 한 공급사의 구간만 모아 보는 용도 (트리 목록은 SKU 단위로 전 공급사가 섞여 나온다)
+  periods: (skuId: string, oemCompanyId?: number) => {
+    const baseUrl = getApiBaseUrl()
+    const oem = oemCompanyId ? `&oemCompanyId=${oemCompanyId}` : ''
+    return `${baseUrl}/admin/oem-costs/periods?skuId=${encodeURIComponent(skuId)}${oem}`
+  },
+
   // 변경 이력 조회 (특정 SKU + OEM 조합)
+  // ⚠ 시스템 일괄 적재를 서버에서 거르지 않는다. 화면의 '적용기간' 컬럼이
+  //   이력 전량을 훑어 구간을 역산하므로 중간 행이 빠지면 기간이 틀어진다.
+  //   표시 필터는 OemCostHistoryModal 에서 한다.
   history: (skuId: string, oemCompanyId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/oem-costs/history?skuId=${encodeURIComponent(skuId)}&oemCompanyId=${oemCompanyId}&size=100`
