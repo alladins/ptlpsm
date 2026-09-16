@@ -18,10 +18,10 @@
             <i class="fas fa-times" />
           </button>
         </div>
-        <a href="/docs/사용자매뉴얼.md" download class="btn-download">
+        <button type="button" class="btn-download" :disabled="!rawMarkdown" @click="downloadManual">
           <i class="fas fa-download" />
           내려받기
-        </a>
+        </button>
       </div>
     </div>
 
@@ -115,6 +115,28 @@ const loading = ref(true)
 const error = ref('')
 const html = ref('')
 const toc = ref<TocItem[]>([])
+
+/**
+ * 내려받기용 원본.
+ *
+ * ⚠ public 에 매뉴얼 사본을 따로 두지 않는다. 두 벌이 되면 반드시 어긋나고,
+ *   실제로 /docs/사용자매뉴얼.md 링크는 파일이 없어 404 였다.
+ *   화면이 이미 들고 있는 원본을 그대로 내려주면 항상 최신이다.
+ */
+const rawMarkdown = ref('')
+
+const downloadManual = () => {
+  if (!rawMarkdown.value) { return }
+  const blob = new Blob([rawMarkdown.value], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = '출하관리시스템_사용자매뉴얼.md'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
 const keyword = ref('')
 const activeId = ref('')
 const showTop = ref(false)
@@ -198,6 +220,7 @@ const onScroll = () => { showTop.value = window.scrollY > 400 }
 onMounted(async () => {
   try {
     const raw = (await import('~/docs/출하관리시스템_사용자매뉴얼.md?raw')).default
+    rawMarkdown.value = raw
     const parsed = renderMarkdown(raw)
     html.value = parsed.html
     toc.value = parsed.toc

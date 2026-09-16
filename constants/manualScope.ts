@@ -35,6 +35,9 @@ export const MANUAL_SCOPE: ManualScopeRule[] = [
   { prefix: '3.2', menuUrls: ['/admin/shipping/list'] },
   { prefix: '3.3', menuUrls: ['/admin/shipping/list'] },
   { prefix: '3.4', menuUrls: ['/admin/shipping/post-process'] },
+  // 운송비 원장은 «리드파워가 운송사에 낼 돈» 이라 관리자 전용 메뉴다.
+  // 제조사에게는 메뉴가 없으므로 이 절도 함께 가려진다.
+  { prefix: '3.5', menuUrls: ['/admin/shipping/carrier-ledger'] },
   { prefix: '3.', menuUrls: ['/admin/shipping/list'] },
 
   // ── 4장 납품확인 ────────────────────────────────────────────────────
@@ -66,7 +69,7 @@ export const MANUAL_SCOPE: ManualScopeRule[] = [
 export const MANUAL_CHAPTER_SCOPE: Record<string, string[]> = {
   '1': [],
   '2': ['/admin/order/list'],
-  '3': ['/admin/shipping/list', '/admin/shipping/post-process'],
+  '3': ['/admin/shipping/list', '/admin/shipping/post-process', '/admin/shipping/carrier-ledger'],
   '4': ['/admin/delivery/list'],
   '5': ['/admin/delivery-done/list'],
   '6': ['/admin/funds'],
