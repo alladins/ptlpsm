@@ -18,9 +18,9 @@
             <i class="fas fa-times" />
           </button>
         </div>
-        <button type="button" class="btn-download" :disabled="!rawMarkdown" @click="downloadManual">
-          <i class="fas fa-download" />
-          내려받기
+        <button type="button" class="btn-download" :disabled="!html" @click="savePdf">
+          <i class="fas fa-file-pdf" />
+          PDF로 저장
         </button>
       </div>
     </div>
@@ -117,25 +117,28 @@ const html = ref('')
 const toc = ref<TocItem[]>([])
 
 /**
- * 내려받기용 원본.
+ * 원본 마크다운.
  *
  * ⚠ public 에 매뉴얼 사본을 따로 두지 않는다. 두 벌이 되면 반드시 어긋나고,
  *   실제로 /docs/사용자매뉴얼.md 링크는 파일이 없어 404 였다.
- *   화면이 이미 들고 있는 원본을 그대로 내려주면 항상 최신이다.
+ *   화면이 이미 들고 있는 원본을 그대로 쓴다.
  */
 const rawMarkdown = ref('')
 
-const downloadManual = () => {
-  if (!rawMarkdown.value) { return }
-  const blob = new Blob([rawMarkdown.value], { type: 'text/markdown;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = '출하관리시스템_사용자매뉴얼.md'
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+/**
+ * PDF 로 저장 — 브라우저 인쇄를 쓴다.
+ *
+ * ★ 마크다운을 그대로 내려주면(.md) 받는 사람이 원문 마크업을 보게 된다.
+ *   서버에서 PDF 를 만드는 방법도 있지만, 190KB·표 다수 문서라
+ *   페이지 나눔·목차·한글 폰트 임베딩을 새로 감당해야 한다.
+ *   이미 화면에 그려진 HTML 을 인쇄하면 그 문제가 전부 사라진다.
+ *
+ * ⚠ 인쇄 대화상자에서 «대상: PDF 로 저장» 을 고르면 PDF 가 된다.
+ *   아래 @media print 가 좌측 메뉴·목차·헤더를 걷어내고 본문만 남긴다.
+ */
+const savePdf = () => {
+  if (!html.value) { return }
+  window.print()
 }
 const keyword = ref('')
 const activeId = ref('')
@@ -606,4 +609,89 @@ onUnmounted(() => {
 .md-root a:hover { text-decoration: underline; }
 
 .md-root strong { color: #111827; }
+
+/* ═══════════════════════════════════════════════════════════════
+   인쇄 · PDF 저장
+   [PDF로 저장] 은 window.print() 를 부른다. 화면용 껍데기를 걷어내고
+   본문만 남겨야 종이(또는 PDF)에 매뉴얼만 담긴다.
+   ⚠ scoped 스타일이라 레이아웃(사이드바·헤더)은 :deep() 로 잡아야 한다.
+   ═══════════════════════════════════════════════════════════════ */
+@media print {
+  /* 좌측 메뉴 · 상단 헤더 · 화면 전용 장치 제거 */
+  :deep(.admin-sidebar),
+  :deep(.sidebar),
+  :deep(.admin-header),
+  :deep(.impersonation-banner),
+  .manual-header,
+  .manual-toc,
+  .btn-top {
+    display: none !important;
+  }
+
+  /* 본문이 종이 폭을 다 쓰게 한다 */
+  :deep(.admin-layout),
+  :deep(.main-content),
+  :deep(.main-content.sidebar-collapsed),
+  :deep(.content-wrapper) {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    display: block !important;
+  }
+
+  .manual-page { padding: 0 !important; }
+
+  .manual-body {
+    display: block !important;
+    gap: 0 !important;
+  }
+
+  .md-root {
+    max-width: none !important;
+    padding: 0 !important;
+    font-size: 10.5pt;
+    line-height: 1.55;
+  }
+
+  /* 장 제목은 새 쪽에서 시작 — 목차와 쪽 번호가 어긋나지 않게 */
+  .md-root :deep(h1) { page-break-before: always; }
+  .md-root :deep(h1:first-child) { page-break-before: avoid; }
+
+  /* 제목만 남고 내용이 다음 쪽으로 넘어가는 것을 막는다 */
+  .md-root :deep(h1),
+  .md-root :deep(h2),
+  .md-root :deep(h3) {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 표·인용문이 쪽 경계에서 잘리지 않게 */
+  .md-root :deep(table),
+  .md-root :deep(blockquote),
+  .md-root :deep(pre) {
+    page-break-inside: avoid;
+  }
+
+  /* 표는 쪽마다 머리글을 다시 인쇄한다 */
+  .md-root :deep(thead) { display: table-header-group; }
+
+  /* 잉크 절약 + 흑백 출력 대비 */
+  .md-root :deep(table th) {
+    background: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 화면에서는 파란 링크지만 종이에서는 의미가 없다 */
+  .md-root :deep(a) {
+    color: #111827 !important;
+    text-decoration: none !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 15mm 14mm;
+  }
+}
 </style>
