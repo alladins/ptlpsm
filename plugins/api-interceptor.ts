@@ -93,8 +93,34 @@ export default defineNuxtPlugin(() => {
       // (이미 완료된 납품 링크를 다시 열면 백엔드가 403 을 준다 → 고객이 로그인 창을 보게 됨)
       const isPublicMobileApi = url.includes('/api/m/')
 
-      // 401 Unauthorized 또는 403 Forbidden 처리
-      if ((response.status === 401 || response.status === 403) && !isPublicMobileApi) {
+      /**
+       * 403 을 전부 «세션 만료» 로 보면 안 된다.
+       *
+       * 이 백엔드는 토큰이 없거나 틀렸을 때도 401 이 아니라 403 을 준다(실측).
+       * 그래서 403 을 그냥 무시하면 진짜 만료된 사람이 로그인 화면으로 못 간다.
+       * 반대로 전부 로그아웃시키면 «권한 없는 버튼을 눌렀을 뿐인데 튕기는» 일이 생긴다.
+       *   (실측: 제조사 담당자가 발주서 [접수] 를 누르자 403 → 강제 로그아웃)
+       *
+       * 그래서 «우리가 아직 살아 있다고 믿는 토큰을 들고 있었는가» 로 가른다.
+       *   들고 있었다면 → 권한 부족. 로그아웃하지 않는다.
+       *   없거나 만료됐다면 → 세션 만료. 로그인으로 보낸다.
+       */
+      const hasLiveToken = (() => {
+        if (!process.client) { return false }
+        try {
+          if (!localStorage.getItem('auth_access_token')) { return false }
+          const expiry = Number(localStorage.getItem('auth_token_expiry') || 0)
+          return !expiry || expiry > Date.now()
+        } catch { return false }
+      })()
+
+      const isPermissionDenied = response.status === 403 && hasLiveToken
+      if (isPermissionDenied && !isPublicMobileApi) {
+        console.warn('권한 없음(403) — 세션은 유지합니다:', url)
+      }
+
+      // 401 Unauthorized 또는 (세션이 없는 상태의) 403 처리
+      if ((response.status === 401 || response.status === 403) && !isPublicMobileApi && !isPermissionDenied) {
         console.error('인증 오류 발생:', {
           status: response.status,
           url,
