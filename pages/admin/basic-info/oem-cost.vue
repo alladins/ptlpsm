@@ -1561,6 +1561,7 @@ onMounted(() => {
 
 .btn-edit,
 .btn-view,
+.btn-past,
 .btn-delete,
 .btn-add-oem {
   display: inline-flex;
@@ -1606,6 +1607,17 @@ onMounted(() => {
 .btn-view:hover {
   background: #e5e7eb;
   color: #1f2937;
+}
+
+/* 구간 추가 — 새 구간을 «만드는» 동작이라 SKU 행의 [OEM 원가 추가]와 같은 보라 계열로 묶는다 */
+.btn-past {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+}
+
+.btn-past:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
 }
 
 .btn-delete {
