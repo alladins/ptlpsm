@@ -1,8 +1,13 @@
 <template>
   <div class="sdr">
+    <!--
+      ★ multi-calendars — 달력을 두 달 나란히 편다.
+        한 달만 보이면 시작(전달)과 종료(이번달)를 고를 때 화살표로 왔다 갔다 해야 한다.
+    -->
     <VueDatePicker
       :model-value="range"
       range
+      :multi-calendars="2"
       :enable-time-picker="false"
       model-type="yyyy-MM-dd"
       format="yyyy-MM-dd"
