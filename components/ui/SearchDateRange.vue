@@ -17,6 +17,7 @@
       :placeholder="placeholder"
       auto-apply
       :teleport="true"
+      position="left"
       :clearable="false"
       :max-date="maxDate"
       week-start="0"

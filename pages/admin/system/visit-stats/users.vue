@@ -14,9 +14,7 @@
       <div class="search-row-single">
         <div class="search-item">
           <label>기간:</label>
-          <input v-model="params.startDate" type="date" class="date-input">
-          <span class="separator">~</span>
-          <input v-model="params.endDate" type="date" class="date-input">
+          <SearchDateRange v-model:start-date="params.startDate" v-model:end-date="params.endDate" />
         </div>
         <div class="search-item">
           <label>사용자 ID:</label>
@@ -146,6 +144,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, onMounted } from 'vue'
 import { visitService } from '~/services/visit.service'
 import type { VisitUserStatsDaily, UserTodayLive } from '~/types/visit'

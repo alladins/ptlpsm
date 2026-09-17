@@ -177,9 +177,7 @@
           <div class="popup-search">
             <div class="search-row">
               <div class="date-range">
-                <input v-model="transportSearch.startDate" type="date" class="form-input">
-                <span class="date-separator">~</span>
-                <input v-model="transportSearch.endDate" type="date" class="form-input">
+                <SearchDateRange v-model:start-date="transportSearch.startDate" v-model:end-date="transportSearch.endDate" />
               </div>
               <button class="btn-primary" @click="searchTransports">
                 검색
@@ -233,6 +231,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref } from 'vue'
 import { useRouter } from '#imports'
 

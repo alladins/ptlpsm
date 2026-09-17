@@ -265,9 +265,7 @@
           <div class="search-row-single">
             <div class="search-item">
               <label>기간:</label>
-              <input v-model="txFilter.startDate" type="date" class="date-input">
-              <span class="separator">~</span>
-              <input v-model="txFilter.endDate" type="date" class="date-input">
+              <SearchDateRange v-model:start-date="txFilter.startDate" v-model:end-date="txFilter.endDate" />
             </div>
             <div class="search-item">
               <label>창고:</label>
@@ -584,6 +582,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 /**
  * 재고 현황 페이지
  * - 재고 목록 조회 (창고별, 품목별)
@@ -597,7 +596,7 @@ import InventoryConsumptionModal from '~/components/admin/inventory/InventoryCon
 import type { InventoryItem, InventoryTransaction, TransferRequest, SkuTransactionSummary } from '~/types/inventory'
 import { TRANSACTION_TYPE_LABELS, TRANSACTION_TYPE_COLORS } from '~/types/inventory'
 import type { Warehouse } from '~/types/warehouse'
-import { formatDate, formatDateTime } from '~/utils/format'
+import { formatDate, formatDateTime, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { usePermission } from '~/composables/usePermission'
 import { useDataTable } from '~/composables/useDataTable'
 
@@ -906,8 +905,8 @@ const txFilter = ref({
   warehouseId: null as number | null,
   skuId: '',
   transactionType: '',
-  startDate: getThreeMonthsAgo(),
-  endDate: getTodayDate()
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate()
 })
 
 const {

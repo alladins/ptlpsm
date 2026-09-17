@@ -84,9 +84,7 @@
           <!-- 조회기간 -->
           <div class="search-item">
             <label>조회기간:</label>
-            <input v-model="searchForm.startDate" type="date" class="date-input">
-            <span class="separator">~</span>
-            <input v-model="searchForm.endDate" type="date" class="date-input">
+            <SearchDateRange v-model:start-date="searchForm.startDate" v-model:end-date="searchForm.endDate" />
           </div>
 
           <!-- 납품요구번호 -->
@@ -300,11 +298,12 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from '#imports'
 import { useFundStore } from '~/stores/fund'
 import { fundService } from '~/services/fund.service'
-import { formatCurrency } from '~/utils/format'
+import { formatCurrency, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import type { FundListItem, FundStatus, FundStatistics, OrderStatus } from '~/types/fund'
 import { FUND_STATUS_LABELS, ORDER_STATUS_LABELS } from '~/types/fund'
 import { usePermissionButtons } from '~/composables/usePermission'
@@ -341,8 +340,8 @@ const getOneYearAgo = () => {
 
 // 검색 조건 (기본값: 과거 1년 ~ 오늘)
 const searchForm = ref({
-  startDate: getOneYearAgo(),
-  endDate: getTodayDate(),
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   deliveryRequestNo: '',
   projectName: '',
   status: '' as FundStatus | ''
@@ -431,8 +430,8 @@ const handleSearch = async () => {
 
 const handleReset = () => {
   searchForm.value = {
-    startDate: getOneYearAgo(),
-    endDate: getTodayDate(),
+    startDate: getSearchStartDate(),
+    endDate: getSearchEndDate(),
     deliveryRequestNo: '',
     projectName: '',
     status: ''

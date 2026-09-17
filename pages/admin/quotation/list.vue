@@ -165,7 +165,7 @@ import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { quotationService, type QuotationSearchRequest } from '~/services/quotation.service'
-import { formatCurrency, formatDate, formatDateTime } from '~/utils/format'
+import { formatCurrency, formatDate, formatDateTime, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
 import { usePermission } from '~/composables/usePermission'
 
@@ -179,8 +179,8 @@ const { canWrite } = usePermission()
 
 // 검색 폼
 const searchForm = ref<QuotationSearchRequest>({
-  startDate: '',
-  endDate: '',
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   status: '',
   keyword: ''
 })
@@ -236,7 +236,7 @@ const {
 const handleSearch = () => search()
 
 const handleReset = () => {
-  searchForm.value = { startDate: '', endDate: '', status: '', keyword: '' }
+  searchForm.value = { startDate: getSearchStartDate(), endDate: getSearchEndDate(), status: '', keyword: '' }
   reset()
 }
 

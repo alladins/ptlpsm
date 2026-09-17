@@ -181,7 +181,7 @@ import {
   type ConsumptionStatus,
   type InventoryConsumption
 } from '~/types/inventory-consumption'
-import { formatDate, formatCurrency } from '~/utils/format'
+import { formatDate, formatCurrency, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 
 definePageMeta({ layout: 'admin', pageTitle: '재고 소진관리' })
 
@@ -205,8 +205,8 @@ const filter = reactive({
   consumptionType: null as ConsumptionType | null,
   status: null as ConsumptionStatus | null,
   sourceOemCompanyId: null as number | null,
-  dateFrom: '',
-  dateTo: '',
+  dateFrom: getSearchStartDate(),
+  dateTo: getSearchEndDate(),
   keyword: '',
   page: 0,
   size: 20

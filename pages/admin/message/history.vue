@@ -12,9 +12,7 @@
         <div class="search-item search-item-date">
           <label>발송일자</label>
           <div class="date-range">
-            <input v-model="searchParams.startDate" type="date" class="date-input">
-            <span>~</span>
-            <input v-model="searchParams.endDate" type="date" class="date-input">
+            <SearchDateRange v-model:start-date="searchParams.startDate" v-model:end-date="searchParams.endDate" />
           </div>
         </div>
 
@@ -315,8 +313,9 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, reactive, onMounted } from 'vue'
-import { formatDateTime, formatPhoneNumber } from '~/utils/format'
+import { formatDateTime, formatPhoneNumber, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { searchMessageHistory, resendMessage } from '~/services/message-history.service'
 import type {
   MessageHistoryResponse,
@@ -347,8 +346,8 @@ const pageSize = ref(10)
 
 // Search params
 const searchParams = reactive<MessageHistorySearchRequest>({
-  startDate: '',
-  endDate: '',
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   recipientType: '',
   sendStatus: '',
   recipientPhone: '',

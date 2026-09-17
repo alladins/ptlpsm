@@ -179,7 +179,7 @@
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, reactive, computed, onMounted } from 'vue'
 import { shipmentService, type ShipmentListItem } from '~/services/shipment.service'
-import { formatDate, formatQuantity, getLocalDateString } from '~/utils/format'
+import { formatDate, formatQuantity, getLocalDateString, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import Pagination from '~/components/ui/Pagination.vue'
 
 definePageMeta({ layout: 'admin' })
@@ -198,8 +198,8 @@ const loading = ref(false)
 const shipments = ref<ShipmentListItem[]>([])
 
 const search = reactive({
-  startDate: '',
-  endDate: getLocalDateString(),
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   shipmentNo: '',
   deliveryRequestNo: '',
   projectName: '',

@@ -127,9 +127,7 @@
         <div class="search-row-single">
           <div class="search-item">
             <label>기간:</label>
-            <input v-model="transSearchForm.startDate" type="date" class="date-input">
-            <span class="separator">~</span>
-            <input v-model="transSearchForm.endDate" type="date" class="date-input">
+            <SearchDateRange v-model:start-date="transSearchForm.startDate" v-model:end-date="transSearchForm.endDate" />
           </div>
           <div class="search-item">
             <label>구분:</label>
@@ -273,6 +271,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, reactive, onMounted } from 'vue'
 import { bankAccountService } from '~/services/bank-account.service'
 import { codeService } from '~/services/code.service'

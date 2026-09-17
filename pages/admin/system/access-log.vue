@@ -74,9 +74,7 @@
         <!-- 날짜 -->
         <div class="search-item search-keyword">
           <label>기간:</label>
-          <input v-model="searchParams.startDate" type="date" class="date-input">
-          <span class="separator">~</span>
-          <input v-model="searchParams.endDate" type="date" class="date-input">
+          <SearchDateRange v-model:start-date="searchParams.startDate" v-model:end-date="searchParams.endDate" />
         </div>
       </div>
     </div>
@@ -294,6 +292,8 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
+import { getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { ref, reactive, computed, onMounted } from 'vue'
 import { getLocalDateString } from '~/utils/format'
 import { accessLogService } from '~/services/access-log.service'
@@ -338,8 +338,8 @@ const searchParams = reactive<AccessLogSearchParams>({
   username: '',
   httpMethod: '',
   statusCode: undefined,
-  startDate: getDefaultStartDate(),
-  endDate: getDefaultEndDate(),
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   page: 0,
   size: 20
 })

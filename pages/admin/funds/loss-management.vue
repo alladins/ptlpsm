@@ -38,9 +38,7 @@
       <div class="search-row-single">
         <div class="search-item">
           <label>발생일:</label>
-          <input v-model="search.startDate" type="date" class="date-input">
-          <span class="separator">~</span>
-          <input v-model="search.endDate" type="date" class="date-input">
+          <SearchDateRange v-model:start-date="search.startDate" v-model:end-date="search.endDate" />
         </div>
 
         <div class="search-item">
@@ -325,12 +323,13 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, computed, onMounted } from 'vue'
 import { lossService } from '~/services/loss.service'
 import LossAdjustmentModal from '~/components/loss/LossAdjustmentModal.vue'
 import RecoveryLinkModal from '~/components/loss/RecoveryLinkModal.vue'
 import InventoryAdjustModal from '~/components/loss/InventoryAdjustModal.vue'
-import { formatDate } from '~/utils/format'
+import { formatDate, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import {
   SETTLEMENT_STATUS_OPTIONS,
   type LossAdjustmentResponse,
@@ -356,8 +355,8 @@ const currentPage = ref(1)
 const pagination = ref({ totalPages: 0, totalElements: 0 })
 
 const createSearch = (): LossSearchRequest => ({
-  startDate: null,
-  endDate: null,
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   lossType: null,
   settlementStatus: null,
   keyword: null

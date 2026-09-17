@@ -21,9 +21,7 @@
         <div class="search-row-single">
           <div class="search-item">
             <label>기간:</label>
-            <input v-model="searchForm.startDate" type="date" class="date-input">
-            <span class="separator">~</span>
-            <input v-model="searchForm.endDate" type="date" class="date-input">
+            <SearchDateRange v-model:start-date="searchForm.startDate" v-model:end-date="searchForm.endDate" />
           </div>
           <div class="search-item">
             <label>상태:</label>
@@ -252,6 +250,8 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
+import { getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { ref, onMounted } from 'vue'
 import { errorReportService } from '~/services/error-report.service'
 import type { ErrorReport } from '~/services/error-report.service'
@@ -308,8 +308,8 @@ const getMonthAgo = () => {
 }
 
 const searchForm = ref({
-  startDate: getMonthAgo(),
-  endDate: getTodayDate(),
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   status: '',
   errorSource: '',
   keyword: ''
