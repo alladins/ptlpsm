@@ -81,9 +81,13 @@
             </option>
           </select>
           <template v-if="periodType === 'custom'">
-            <input v-model="customStartDate" type="date" class="filter-date" @change="onPeriodChange">
-            <span class="filter-separator">~</span>
-            <input v-model="customEndDate" type="date" class="filter-date" @change="onPeriodChange">
+            <SearchDateRange
+              v-model:start-date="customStartDate"
+              v-model:end-date="customEndDate"
+              :show-presets="false"
+              :max-today="false"
+              @change="onPeriodChange"
+            />
           </template>
           <span class="filter-period-label">{{ periodLabel }}</span>
         </div>
@@ -343,6 +347,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from '#imports'
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { getOemMonthlyChart, getShipmentStatistics } from '~/services/statistics.service'
 import { getCommissionPeriods } from '~/services/commission.service'
 import { orderService } from '~/services/order.service'

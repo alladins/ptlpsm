@@ -185,9 +185,9 @@
           <div class="popup-search">
             <div class="search-row">
               <div class="date-range">
-                <input v-model="transportSearch.startDate" type="date" class="form-input">
+                <SearchDateRange v-model:start-date="transportSearch.startDate" v-model:end-date="transportSearch.endDate" />
                 <span class="date-separator">~</span>
-                <input v-model="transportSearch.endDate" type="date" class="form-input">
+
               </div>
               <button class="btn-primary" @click="searchTransports">
                 검색
@@ -242,6 +242,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
+import { getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { useRouter, useRoute } from '#imports'
 import { usePermission } from '~/composables/usePermission'
 
@@ -277,8 +279,8 @@ const deliveryForm = ref({
 
 // 운송장 검색
 const transportSearch = ref({
-  startDate: '2024-01-01',
-  endDate: '2024-01-17'
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate()
 })
 
 // 운송장 목록

@@ -21,9 +21,7 @@
         <div class="search-row-single">
           <div class="search-item">
             <label>출하일:</label>
-            <input v-model="search.startDate" type="date" class="keyword-input w-date">
-            <span class="date-sep">~</span>
-            <input v-model="search.endDate" type="date" class="keyword-input w-date">
+            <SearchDateRange v-model:start-date="search.startDate" v-model:end-date="search.endDate" />
           </div>
           <div class="search-item">
             <label>출하NO:</label>
@@ -267,8 +265,9 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { shipmentService, type ShipmentListItem } from '~/services/shipment.service'
-import { formatDate, formatQuantity, getLocalDateString } from '~/utils/format'
+import { formatDate, formatQuantity, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import Pagination from '~/components/ui/Pagination.vue'
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { lossService } from '~/services/loss.service'
 import type { LossAdjustmentResponse } from '~/types/loss'
 import LossAdjustmentModal from '~/components/loss/LossAdjustmentModal.vue'
@@ -300,8 +299,8 @@ const showLoss = ref(false)
 const showProcessingFee = ref(false)
 
 const search = reactive({
-  startDate: '',
-  endDate: getLocalDateString(),
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   shipmentNo: '',
   deliveryRequestNo: '',
   projectName: '',
@@ -344,8 +343,8 @@ const doSearch = async () => {
 }
 
 const resetSearch = () => {
-  search.startDate = ''
-  search.endDate = getLocalDateString()
+  search.startDate = getSearchStartDate()
+  search.endDate = getSearchEndDate()
   search.shipmentNo = ''
   search.deliveryRequestNo = ''
   search.projectName = ''

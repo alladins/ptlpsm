@@ -233,6 +233,7 @@
 <script setup lang="ts">
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref } from 'vue'
+import { getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { useRouter } from '#imports'
 
 definePageMeta({
@@ -263,8 +264,8 @@ const deliveryForm = ref({
 
 // 운송장 검색
 const transportSearch = ref({
-  startDate: '2024-01-01',
-  endDate: '2024-01-17'
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate()
 })
 
 // 운송장 목록
