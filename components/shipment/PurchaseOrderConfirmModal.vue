@@ -203,7 +203,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { shipmentService } from '~/services/shipment.service'
-import { formatPhoneNumber, formatPhoneNumberInput, getLocalDateString } from '~/utils/format'
+import { formatPhoneNumber, formatPhoneNumberInput, getLocalDateString , toUtcIsoString} from '~/utils/format'
 import type { UserByRole } from '~/types/user'
 
 // Daum Postcode API 타입 선언
@@ -403,7 +403,10 @@ const handleSubmit = async () => {
     // 발주서 생성 API 호출 (생성만, 다운로드는 별도)
     const result = await shipmentService.generatePurchaseOrder(props.shipmentId, {
       orderDate: formData.purchaseOrderDate,
-      expectedArrivalDatetime: formData.expectedArrivalAt,
+      // ★ 화면 입력은 KST, DB 는 UTC 저장이다. 변환 없이 보내면 9시간 밀린다.
+      expectedArrivalDatetime: formData.expectedArrivalAt
+        ? toUtcIsoString(formData.expectedArrivalAt)
+        : formData.expectedArrivalAt,
       zipcode: formData.zipcode,
       deliveryAddress: formData.deliveryAddress,
       addressDetail: formData.addressDetail,

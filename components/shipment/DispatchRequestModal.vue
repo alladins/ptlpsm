@@ -273,7 +273,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { dispatchRequestService } from '~/services/dispatch-request.service'
 import { companyService } from '~/services/company.service'
-import { formatPhoneNumber, formatPhoneNumberInput, getDefaultDateTimeString } from '~/utils/format'
+import { formatPhoneNumber, formatPhoneNumberInput, getDefaultDateTimeString , toUtcIsoString} from '~/utils/format'
 import type { UserByRole } from '~/types/user'
 import type { CompanyInfoResponse } from '~/types/company'
 import type { DispatchAvailabilityResponse } from '~/types/dispatch-request'
@@ -594,7 +594,13 @@ const handleSubmit = async () => {
       zipcode: formData.zipcode || undefined,
       deliveryAddress: formData.deliveryAddress,
       addressDetail: formData.addressDetail || undefined,
-      expectedArrivalDatetime: formData.expectedArrivalDatetime || undefined,
+      // ★ 화면 입력은 KST, DB 는 UTC 저장이다. 변환 없이 보내면 9시간이 밀린다.
+      //   운송장 등록(pages/admin/transport/register.vue)은 toUtcIsoString 을 쓰는데
+      //   여기만 빠져 있었다. 운송장 화면이 날짜만 떼어 쓰고 시각은 07:00 으로
+      //   덮어써서 겉으로 안 드러났지만, 자정 근처 값은 날짜까지 하루 밀린다.
+      expectedArrivalDatetime: formData.expectedArrivalDatetime
+        ? toUtcIsoString(formData.expectedArrivalDatetime)
+        : undefined,
       siteManagerId: formData.siteManagerId || undefined,
       siteManagerName: formData.siteManagerName || undefined,
       siteManagerPhone: formData.siteManagerPhone || undefined,
