@@ -47,6 +47,12 @@ export const OEM_COST_ENDPOINTS = {
     return `${baseUrl}/admin/oem-costs`
   },
 
+  // 과거 구간 추가 (첫 구간보다 앞선 기간 — 제조사 소급 단가표)
+  addPastPeriod: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/oem-costs/past-period`
+  },
+
   // 원가 수정
   update: (id: number) => {
     const baseUrl = getApiBaseUrl()

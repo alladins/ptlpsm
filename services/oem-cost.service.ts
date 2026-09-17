@@ -173,6 +173,28 @@ class OemCostService {
   }
 
   /**
+   * 과거 구간 추가
+   *
+   * 이미 있는 첫 구간보다 앞선 기간의 원가를 끼워 넣는다.
+   * 제조사가 소급 단가표를 보내온 경우에 쓴다.
+   * ⚠ 종료일 필수 — 비우면 무기한이 되어 뒤 구간과 겹친다.
+   */
+  async addPastPeriod(data: OemCostCreateRequest): Promise<OemCost> {
+    const response = await fetch(OEM_COST_ENDPOINTS.addPastPeriod(), {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || errorData.error || `과거 구간 추가 실패: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  /**
    * 원가 수정
    */
   async update(id: number, data: OemCostUpdateRequest): Promise<OemCost> {

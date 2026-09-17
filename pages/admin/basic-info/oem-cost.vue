@@ -388,6 +388,17 @@
                         <i class="fas fa-history" />
                       </button>
                       <!--
+                        과거 구간 추가 — [등록]은 첫 구간 전용, [수정]은 앞으로만 추가라
+                        제조사가 소급 단가표를 보내오면 넣을 경로가 없었다.
+                      -->
+                      <button
+                        class="btn-icon btn-past"
+                        title="과거 구간 추가 (지나간 기간의 단가)"
+                        @click="openPastPeriodModal(sku, oem)"
+                      >
+                        <i class="fas fa-clock-rotate-left" />
+                      </button>
+                      <!--
                         삭제 — 마지막 구간만 지울 수 있다.
                         중간 구간을 지우면 그 기간의 원가를 찾지 못해 출하·원장 금액이 어긋난다.
                         (백엔드 validateNotMiddlePeriod 가 같은 이유로 막는다. 여기서도 눌리지 않게
@@ -458,6 +469,17 @@
       @close="closeHistoryModal"
     />
 
+    <!-- 과거 구간 추가 모달 -->
+    <OemCostPastPeriodModal
+      :is-open="showPastPeriodModal"
+      :sku-info="pastPeriodContext.skuInfo"
+      :oem-company-id="pastPeriodContext.oemCompanyId"
+      :oem-company-name="pastPeriodContext.oemCompanyName"
+      :cost-source-type="pastPeriodContext.costSourceType"
+      @close="showPastPeriodModal = false"
+      @saved="loadData(); loadStatistics()"
+    />
+
     <!-- 재계산 모달 -->
     <OemCostRecalcModal
       :is-open="showRecalcModal"
@@ -480,6 +502,7 @@ import Pagination from '~/components/ui/Pagination.vue'
 import OemCostModal from '~/components/admin/oem-cost/OemCostModal.vue'
 import OemCostHistoryModal from '~/components/admin/oem-cost/OemCostHistoryModal.vue'
 import OemCostRecalcModal from '~/components/admin/oem-cost/OemCostRecalcModal.vue'
+import OemCostPastPeriodModal from '~/components/admin/oem-cost/OemCostPastPeriodModal.vue'
 import { oemCostService } from '~/services/oem-cost.service'
 import { companyService } from '~/services/company.service'
 import {
@@ -862,6 +885,30 @@ const openEditModal = (oem: OemCostListItem) => {
 
 // 해당 SKU에 이미 등록된 제조사 ID 목록
 const existingOemCompanyIds = ref<number[]>([])
+
+// ── 과거 구간 추가 ─────────────────────────────────────────────────────────
+// [등록]은 첫 구간 전용, [수정]은 앞으로만 추가라 지나간 기간을 넣을 경로가 없었다.
+const showPastPeriodModal = ref(false)
+const pastPeriodContext = ref<{
+  skuInfo: { skuId: string; skuName?: string; thickness?: number } | null
+  oemCompanyId: number | null
+  oemCompanyName: string
+  costSourceType: string
+}>({ skuInfo: null, oemCompanyId: null, oemCompanyName: '', costSourceType: 'OEM' })
+
+const openPastPeriodModal = (sku: any, oem: OemCostListItem) => {
+  pastPeriodContext.value = {
+    skuInfo: {
+      skuId: oem.skuId || sku?.skuId,
+      skuName: oem.skuName || sku?.skuName,
+      thickness: oem.thickness ?? sku?.thickness
+    },
+    oemCompanyId: oem.oemCompanyId,
+    oemCompanyName: oem.oemCompanyName || '',
+    costSourceType: (oem as any).costSourceType || 'OEM'
+  }
+  showPastPeriodModal.value = true
+}
 
 // 모달 닫기
 const closeCostModal = () => {

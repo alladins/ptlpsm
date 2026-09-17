@@ -202,8 +202,20 @@
               </div>
             </div>
 
+            <!-- 등록 안내 — 이 화면은 '첫 구간' 전용이다 -->
+            <div v-if="!isEditMode" class="period-rollover-notice">
+              <i class="fas fa-info-circle" />
+              <span>
+                <strong>등록은 그 공급원의 첫 구간만</strong> 만듭니다.
+                이미 원가가 있으면 거부되니, 단가가 바뀐 경우는 해당 행의
+                <strong>[수정]</strong> 에서 새 적용 시작일을 넣으세요(이전 구간은 그 전날까지로 자동 마감).
+                <br>
+                지나간 기간의 단가를 뒤늦게 받았다면 <strong>[과거 구간 추가]</strong> 를 쓰세요.
+              </span>
+            </div>
+
             <!-- 정정 안내 (지나간 구간을 그 자리에서 고칠 때) -->
-            <div v-if="isEditMode && correctMode" class="period-rollover-notice">
+            <div v-else-if="isEditMode && correctMode" class="period-rollover-notice">
               <i class="fas fa-exclamation-triangle" />
               <span>
                 <strong>{{ previousPeriodText || '-' }}</strong> 구간의 금액을 그 자리에서 고칩니다.
@@ -220,6 +232,10 @@
                 <strong>{{ previousClosingDate || '-' }}</strong> 까지로 자동 종료되고,
                 <strong>{{ form.effectiveDate || '-' }}</strong> 부터 새 원가가 적용됩니다.
                 이전 구간은 지워지지 않고 그대로 남아, 그 기간의 발주·출하는 계속 옛 원가로 계산됩니다.
+                <br>
+                <strong>수정은 앞으로만 구간을 추가합니다.</strong> 시작일을 지금 구간보다 과거로 되돌릴 수 없습니다 —
+                지나간 기간을 새로 넣으려면 <strong>[과거 구간 추가]</strong>, 이미 있는 구간의 금액만 고치려면
+                <strong>[정정]</strong> 을 쓰세요.
               </span>
             </div>
 
