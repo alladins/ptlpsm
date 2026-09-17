@@ -397,7 +397,7 @@
                         :disabled="getCalculatedRemainingQuantity(item) <= 0"
                         @click="setMaxQuantity(item)"
                       >
-                        ▶
+                        전체
                       </button>
                     </td>
                     <td class="text-right quantity-col">
@@ -492,7 +492,7 @@
                         :title="'전체수량 입력 (' + formatQuantity(item.remainingQuantity) + ')'"
                         @click="item.shippingQuantity = item.remainingQuantity"
                       >
-                        ▶
+                        전체
                       </button>
                     </td>
                     <!-- 출하수량 -->
@@ -1631,16 +1631,19 @@ const handleSubmit = async () => {
 }
 
 /* Page-specific: Max quantity button */
+/* 잔여수량을 입력칸에 그대로 채워 넣는 버튼.
+   예전에는 ▶ 한 글자였는데 무슨 뜻인지 알 수 없었다.
+   글자를 넣었으므로 폭을 고정하지 않는다. */
 .btn-max-quantity {
   display: inline-block;
-  width: 20px;
+  min-width: 20px;
   height: 20px;
   line-height: 18px;
+  padding: 0 5px;
   background: #3b82f6;
   border: none;
   color: white;
   cursor: pointer;
-  padding: 0;
   margin-left: 4px;
   border-radius: 3px;
   font-size: 10px;

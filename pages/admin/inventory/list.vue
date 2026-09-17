@@ -519,7 +519,7 @@
                         title="전체 수량 이동"
                         @click="item.transferQuantity = item.quantity"
                       >
-                        ▶
+                        전체
                       </button>
                     </td>
                     <td class="text-right">
@@ -1358,12 +1358,14 @@ onMounted(async () => {
   background: #f0f9ff;
   font-weight: 600;
 }
+/* 글자('전체')가 들어가므로 폭을 고정하지 않는다 */
 .btn-fill-all {
   background: #e0f2fe;
   color: #0369a1;
   border: 1px solid #bae6fd;
   border-radius: 4px;
-  width: 26px;
+  min-width: 26px;
+  padding: 0 6px;
   height: 26px;
   cursor: pointer;
   font-size: 0.7rem;
