@@ -200,7 +200,7 @@
                       합계<br><small>(m²)</small>
                     </th>
                     <th style="width: 100px" class="text-right">
-                      단가<br><small>(원)</small>
+                      발주원가<br><small>(원/㎡)</small>
                     </th>
                     <th style="width: 120px" class="text-right">
                       금액<br><small>(원)</small>
@@ -482,18 +482,23 @@ watch(() => formData.value.oemCompanyId, () => {
   formData.value.sourceOemCompanyId = null
 })
 
-watch(costLookupCompanyId, async (newOemId) => {
+// 원가는 ★발주일 시점★ 구간으로 잡는다.
+//   과거 실적을 소급 입력할 때 '지금 원가'가 들어가면 발주서 금액이 통째로 틀리고,
+//   purchase_order_items.unit_price 는 매출원장 원가의 2순위 소스라 그대로 박제된다.
+//   (실측: 발주일 2025-11-05 인데 2026-07-01 구간 단가가 들어가 있었다)
+const reloadOemCosts = async () => {
   oemCostMap.value.clear()
-  if (!newOemId) { return }
+  const oemId = costLookupCompanyId.value
+  if (!oemId) { return }
 
   loadingOemCosts.value = true
   try {
-    const costs: OemCost[] = await oemCostService.getByOemId(newOemId)
+    const costs: OemCost[] = await oemCostService.getByOemId(oemId, formData.value.orderDate || undefined)
     for (const cost of costs) {
       oemCostMap.value.set(cost.skuId, cost.costPrice)
     }
 
-    // 이미 추가된 품목의 단가를 OEM 원가로 갱신
+    // 이미 추가된 품목의 단가를 그 시점 원가로 갱신
     for (const item of formData.value.items) {
       const costPrice = oemCostMap.value.get(item.skuId)
       if (costPrice !== undefined) {
@@ -505,7 +510,11 @@ watch(costLookupCompanyId, async (newOemId) => {
   } finally {
     loadingOemCosts.value = false
   }
-})
+}
+
+// 공급원(또는 생산자)이 바뀔 때, 그리고 발주일이 바뀔 때 모두 다시 잡는다
+watch(costLookupCompanyId, reloadOemCosts)
+watch(() => formData.value.orderDate, reloadOemCosts)
 
 // 출하 선택 모달 열기
 const openShipmentPicker = () => {

@@ -35,10 +35,11 @@ export const OEM_COST_ENDPOINTS = {
     return `${baseUrl}/admin/oem-costs/sku/${skuId}`
   },
 
-  // OEM별 SKU 원가 목록
-  byOem: (oemCompanyId: number) => {
+  // OEM별 SKU 원가 목록 (baseDate 시점 구간. 발주 화면은 발주일을 넘긴다)
+  byOem: (oemCompanyId: number, baseDate?: string) => {
     const baseUrl = getApiBaseUrl()
-    return `${baseUrl}/admin/oem-costs/oem/${oemCompanyId}`
+    const qs = baseDate ? `?baseDate=${baseDate}` : ''
+    return `${baseUrl}/admin/oem-costs/oem/${oemCompanyId}${qs}`
   },
 
   // 원가 등록

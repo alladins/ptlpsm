@@ -131,8 +131,13 @@ class OemCostService {
   /**
    * OEM별 SKU 원가 목록
    */
-  async getByOemId(oemCompanyId: number): Promise<OemCost[]> {
-    const response = await fetch(OEM_COST_ENDPOINTS.byOem(oemCompanyId), {
+  /**
+   * OEM 회사의 SKU별 원가
+   * @param baseDate 기준일(yyyy-MM-dd). 발주 화면은 **발주일** 을 넘긴다.
+   *                 생략하면 오늘 기준이라 과거 발주에 지금 원가가 들어간다.
+   */
+  async getByOemId(oemCompanyId: number, baseDate?: string): Promise<OemCost[]> {
+    const response = await fetch(OEM_COST_ENDPOINTS.byOem(oemCompanyId, baseDate), {
       method: 'GET',
       headers: getAuthHeaders()
     })

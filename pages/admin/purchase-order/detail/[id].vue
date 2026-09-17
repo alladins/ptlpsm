@@ -406,7 +406,7 @@
                     합계<br><small>(m²)</small>
                   </th>
                   <th style="width: 80px" class="text-right">
-                    단가<br><small>(원)</small>
+                    발주원가<br><small>(원/㎡)</small>
                   </th>
                   <th style="width: 100px" class="text-right">
                     금액<br><small>(원)</small>
@@ -872,7 +872,7 @@ import { PO_STATUS_LABELS, PO_STATUS_COLORS } from '~/types/purchase-order'
 import type { CompanyInfoResponse } from '~/types/company'
 import type { OemCost } from '~/types/oem-cost'
 import type { Item, ItemSku } from '~/services/item.service'
-import { formatDate, formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
+import { formatDate, formatNumber, formatCurrency, formatQuantity , formatDateTime} from '~/utils/format'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import LoadingSection from '~/components/admin/common/LoadingSection.vue'
@@ -972,23 +972,6 @@ const getStatusBadgeClass = (status: PurchaseOrderStatus): string => {
   return `status-badge ${colorClass}`
 }
 
-// 날짜+시간 포맷
-const formatDateTime = (dateStr: string | null): string => {
-  if (!dateStr) { return '-' }
-  try {
-    const d = new Date(dateStr)
-    return d.toLocaleString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return dateStr
-  }
-}
-
 // 수정 모드 - 총 수량
 const editTotalQuantity = computed(() => {
   return editForm.value.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
@@ -1044,7 +1027,7 @@ const enterEditMode = () => {
 
   // OEM 원가 로드 (수정 모드에서 신규 품목 추가 시 원가 참조용)
   if (poDetail.value.oemCompanyId) {
-    loadOemCosts(poDetail.value.oemCompanyId)
+    loadOemCosts(poDetail.value.oemCompanyId, poDetail.value.orderDate || undefined)
   }
 }
 
@@ -1067,12 +1050,14 @@ const loadOemCompanies = async () => {
   }
 }
 
-// OEM 원가 로드
-const loadOemCosts = async (oemCompanyId: number) => {
+// OEM 원가 로드 — ★발주일 시점★ 구간으로 잡는다.
+//   오늘 기준으로 잡으면 과거 발주서를 수정할 때 '지금 원가'로 덮여
+//   purchase_order_items.unit_price 가 틀린 값으로 박제된다(매출원장 원가 2순위 소스).
+const loadOemCosts = async (oemCompanyId: number, baseDate?: string) => {
   oemCostMap.value.clear()
   loadingOemCosts.value = true
   try {
-    const costs: OemCost[] = await oemCostService.getByOemId(oemCompanyId)
+    const costs: OemCost[] = await oemCostService.getByOemId(oemCompanyId, baseDate || undefined)
     for (const cost of costs) {
       oemCostMap.value.set(cost.skuId, cost.costPrice)
     }
@@ -1083,19 +1068,23 @@ const loadOemCosts = async (oemCompanyId: number) => {
   }
 }
 
-// 수정 모드에서 OEM 제조사 변경 시 원가 재조회
-watch(() => editForm.value.oemCompanyId, async (newOemId) => {
-  if (!isEditMode.value || !newOemId) { return }
-  await loadOemCosts(newOemId)
+// 수정 모드에서 제조사 또는 ★발주일★ 이 바뀌면 그 시점 원가로 다시 잡는다
+const reloadEditOemCosts = async () => {
+  const oemId = editForm.value.oemCompanyId
+  if (!isEditMode.value || !oemId) { return }
+  await loadOemCosts(oemId, editForm.value.orderDate || undefined)
 
-  // 이미 추가된 품목의 단가를 OEM 원가로 갱신
+  // 이미 추가된 품목의 단가를 그 시점 원가로 갱신
   for (const item of editForm.value.items) {
     const costPrice = oemCostMap.value.get(item.skuId)
     if (costPrice !== undefined) {
       item.unitPrice = costPrice
     }
   }
-})
+}
+
+watch(() => editForm.value.oemCompanyId, reloadEditOemCosts)
+watch(() => editForm.value.orderDate, reloadEditOemCosts)
 
 // SKU 선택 팝업 열기
 const openSkuSelector = () => {
