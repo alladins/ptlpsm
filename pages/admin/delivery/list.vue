@@ -117,6 +117,7 @@
 </template>
 
 <script setup lang="ts">
+import { getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { deliveryService } from '~/services/delivery.service'
@@ -146,29 +147,13 @@ const getTodayDate = () => {
 }
 
 // 6개월 전 날짜 계산 (로컬 시간 기준)
-const getSixMonthsAgo = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() - 6)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // 1개월 후 날짜 계산 (로컬 시간 기준)
-const getOneMonthLater = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() + 1)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // 검색 폼 (기본값: 과거 6개월 ~ 미래 1개월)
 const searchForm = ref({
-  startDate: getSixMonthsAgo(),
-  endDate: getOneMonthLater(),
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   searchKeyword: '', // 통합 검색어 (납품요구번호·수요기관·사업명)
   status: ''
 })
@@ -250,8 +235,8 @@ const handleExportExcel = async () => {
 // 초기화
 const handleReset = () => {
   searchForm.value = {
-    startDate: getSixMonthsAgo(),
-    endDate: getOneMonthLater(),
+    startDate: getSearchStartDate(),
+    endDate: getSearchEndDate(),
     searchKeyword: '',
     status: ''
   }

@@ -318,7 +318,7 @@ import { getCommissionPeriods } from '~/services/commission.service'
 import type { OrderDetailResponse, ContractType } from '~/types/order'
 import { CONTRACT_TYPE_LABELS, ORDER_STATUS_LABELS } from '~/types/order'
 // 리팩토링: 공통 모듈 import
-import { formatNumber } from '~/utils/format'
+import { formatNumber, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
 import { usePermission, usePermissionButtons } from '~/composables/usePermission'
 
@@ -354,32 +354,16 @@ const getTodayDate = () => {
 }
 
 // 6개월 전 날짜 계산 (로컬 시간 기준)
-const getSixMonthsAgo = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() - 6)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // 1개월 후 날짜 계산 (로컬 시간 기준)
-const getOneMonthLater = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() + 1)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // ★ 정책: 대시보드(admin/index.vue)와 동일하게 "활성 정산기간"을 기본 기간으로 사용한다.
 //   두 페이지의 건수·합계 비교 시 항상 같은 집합을 조회하기 위함.
 //   활성 정산기간 조회 실패 시에만 과거 6개월 ~ 미래 1개월 fallback 사용.
 // 검색 폼 데이터 (납품요구일자 기본값은 onMounted에서 정산기간 로드 후 세팅)
 const searchForm = ref({
-  startDate: getSixMonthsAgo(),
-  endDate: getOneMonthLater(),
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   client: '',
   keyword: '',
   status: '',
@@ -407,7 +391,7 @@ const applyDefaultDateRangeFromActivePeriod = async () => {
     searchForm.value.startDate = startDate
     searchForm.value.endDate = endDate
   } catch (error) {
-    console.warn('활성 정산기간 로드 실패 — 기본값(6개월 전 ~ 1개월 후) 유지:', error)
+    console.warn('활성 정산기간 로드 실패 — 기본값(1년 전 ~ 오늘) 유지:', error)
   }
 }
 
@@ -525,8 +509,8 @@ const handleExportExcel = async () => {
 // 검색 초기화 — 기본 기간은 활성 정산기간(대시보드와 동일). 로드 실패 시 과거 6개월~미래 1개월.
 const handleReset = async () => {
   searchForm.value = {
-    startDate: getSixMonthsAgo(),
-    endDate: getOneMonthLater(),
+    startDate: getSearchStartDate(),
+    endDate: getSearchEndDate(),
     client: '',
     keyword: '',
     status: '',

@@ -244,7 +244,7 @@ import type { ShipmentListItem } from '~/services/shipment.service'
 import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
 import type { OrderDetailResponse } from '~/types/order'
 // 리팩토링: 공통 모듈 import
-import { formatDate, formatDateTime, formatNumber, formatCurrency, formatQuantity } from '~/utils/format'
+import { formatDate, formatDateTime, formatNumber, formatCurrency, formatQuantity, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import { usePermission, usePermissionButtons } from '~/composables/usePermission'
@@ -277,29 +277,13 @@ const getTodayDate = () => {
 }
 
 // 6개월 전 날짜 계산 (로컬 시간 기준)
-const getSixMonthsAgo = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() - 6)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // 1개월 후 날짜 계산 (로컬 시간 기준)
-const getOneMonthLater = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() + 1)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // 검색 폼 데이터 (출하일자 기본값: 과거 6개월 ~ 미래 1개월)
 const searchForm = ref({
-  startDate: getSixMonthsAgo(),
-  endDate: getOneMonthLater(),
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   orderId: null as number | null,
   deliveryRequestNo: '',
   keyword: '',
@@ -469,8 +453,8 @@ const handleExportExcel = async () => {
 // 검색 초기화
 const handleReset = () => {
   searchForm.value = {
-    startDate: getSixMonthsAgo(),
-    endDate: getOneMonthLater(),
+    startDate: getSearchStartDate(),
+    endDate: getSearchEndDate(),
     orderId: null,
     deliveryRequestNo: '',
     status: '',

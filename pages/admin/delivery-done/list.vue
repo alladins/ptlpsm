@@ -390,7 +390,7 @@ import type {
   DeliveryDoneSearchParams,
   DeliveryDoneStatus
 } from '~/types/delivery-done'
-import { formatDate } from '~/utils/format'
+import { formatDate, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import { useAuthStore } from '~/stores/auth'
 import ManualCompleteModal from '~/components/admin/delivery-done/ManualCompleteModal.vue'
@@ -438,29 +438,13 @@ const getTodayDate = () => {
 }
 
 // 6개월 전 날짜 계산 (로컬 시간 기준)
-const getSixMonthsAgo = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() - 6)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // 1개월 후 날짜 계산 (로컬 시간 기준)
-const getOneMonthLater = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() + 1)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // 검색 폼 (기본값: 과거 6개월 ~ 미래 1개월)
 const searchForm = ref<DeliveryDoneSearchParams>({
-  startDate: getSixMonthsAgo(),
-  endDate: getOneMonthLater(),
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   searchKeyword: '',
   contractNo: '',
   client: '',
@@ -583,8 +567,8 @@ const handleExportExcel = async () => {
 // 초기화
 function handleReset () {
   searchForm.value = {
-    startDate: getSixMonthsAgo(),
-    endDate: getOneMonthLater(),
+    startDate: getSearchStartDate(),
+    endDate: getSearchEndDate(),
     deliveryRequestNo: '',
     contractNo: '',
     client: '',

@@ -119,6 +119,34 @@ export function getLocalDateString(): string {
 }
 
 /**
+ * 오늘 기준 n개월 전/후 날짜를 date 입력 형식으로 반환
+ *
+ * ★ 목록 화면의 검색 기간 기본값은 이 함수로 맞춘다.
+ *   예전에는 화면마다 getSixMonthsAgo()/getOneMonthLater() 를 따로 정의해
+ *   기본 기간이 제각각이었다(6개월 전 ~ 한 달 뒤 등).
+ *
+ * @param months 더할 개월 수 (음수면 과거)
+ */
+export function getDateStringByMonthOffset(months: number): string {
+  const date = new Date()
+  date.setMonth(date.getMonth() + months)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/** 목록 검색 기본 시작일 — 오늘로부터 1년 전 */
+export function getSearchStartDate(): string {
+  return getDateStringByMonthOffset(-12)
+}
+
+/** 목록 검색 기본 종료일 — 오늘 */
+export function getSearchEndDate(): string {
+  return getLocalDateString()
+}
+
+/**
  * 통화를 한국 원화 형식으로 포맷팅
  * @param amount - 금액 (숫자)
  * @param suffix - 접미사 (기본값: '원')

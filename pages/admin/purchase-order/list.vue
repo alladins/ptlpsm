@@ -207,7 +207,7 @@ import { companyService } from '~/services/company.service'
 import type { PurchaseOrderListItem, PurchaseOrderStatus } from '~/types/purchase-order'
 import { PO_STATUS_LABELS, PO_STATUS_COLORS } from '~/types/purchase-order'
 import type { CompanyInfoResponse } from '~/types/company'
-import { formatDate, formatCurrency, formatQuantity } from '~/utils/format'
+import { formatDate, formatCurrency, formatQuantity, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
 
 definePageMeta({
@@ -233,29 +233,13 @@ const getTodayDate = () => {
 }
 
 // 6개월 전 날짜
-const getSixMonthsAgo = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() - 6)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // 1개월 후 날짜
-const getOneMonthLater = () => {
-  const date = new Date()
-  date.setMonth(date.getMonth() + 1)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // 검색 폼
 const searchForm = ref({
-  startDate: getSixMonthsAgo(),
-  endDate: getOneMonthLater(),
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   status: '' as PurchaseOrderStatus | '',
   oemCompanyId: null as number | null,
   keyword: ''
