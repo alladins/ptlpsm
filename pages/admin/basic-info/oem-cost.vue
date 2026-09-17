@@ -388,28 +388,35 @@
                         <i class="fas fa-history" />
                       </button>
                       <!--
-                        과거 구간 추가 — [등록]은 첫 구간 전용, [수정]은 앞으로만 추가라
-                        제조사가 소급 단가표를 보내오면 넣을 경로가 없었다.
+                        구간 추가 [+] — «지금부터 적용»(단가 변경)과 «지난 기간»(소급 단가)을
+                        한 버튼에 모았다.
+
+                        ★ 예전에는 단가가 바뀌면 [수정]을 눌러야 했는데, 실제 동작은 '새 구간 추가'라
+                          고객이 이해하기 어려웠다. 이제 새 구간은 [+], 이미 있는 구간의 값 손질은
+                          [수정] 으로 역할을 갈랐다.
+                        ★ 공급원당 한 번이면 되는 동작이라 대표 행(적용중)에만 단다.
                       -->
                       <button
+                        v-if="isPastPeriodAnchor(sku, oem)"
                         class="btn-icon btn-past"
-                        title="과거 구간 추가 (지나간 기간의 단가)"
+                        title="구간 추가 (지금부터 적용 / 지난 기간)"
                         @click="openPastPeriodModal(sku, oem)"
                       >
-                        <i class="fas fa-clock-rotate-left" />
+                        <i class="fas fa-plus" />
                       </button>
                       <!--
                         삭제 — 마지막 구간만 지울 수 있다.
                         중간 구간을 지우면 그 기간의 원가를 찾지 못해 출하·원장 금액이 어긋난다.
-                        (백엔드 validateNotMiddlePeriod 가 같은 이유로 막는다. 여기서도 눌리지 않게
-                         해 두어야 «눌렀는데 에러» 대신 «왜 못 지우는지»가 먼저 보인다)
+                        (백엔드 validateNotMiddlePeriod 가 같은 이유로 막는다)
+
+                        ★ 못 지우는 행에서는 아예 감춘다. 예전에는 비활성 버튼을 남겨
+                          «왜 못 지우는지»를 툴팁으로 알렸는데, 구간이 쌓이니 회색 휴지통만
+                          줄줄이 남아 화면이 어수선했다.
                       -->
                       <button
+                        v-if="canDelete(sku, oem)"
                         class="btn-icon btn-delete"
-                        :disabled="!canDelete(sku, oem)"
-                        :title="canDelete(sku, oem)
-                          ? '이 구간 삭제'
-                          : '뒤에 다른 적용구간이 있어 지울 수 없습니다. 마지막 구간부터 지우세요.'"
+                        title="이 구간 삭제"
                         @click="handleDeleteCost(sku, oem)"
                       >
                         <i class="fas fa-trash-alt" />
@@ -469,13 +476,14 @@
       @close="closeHistoryModal"
     />
 
-    <!-- 과거 구간 추가 모달 -->
-    <OemCostPastPeriodModal
+    <!-- 구간 추가 모달 (지금부터 적용 / 지난 기간) -->
+    <OemCostAddPeriodModal
       :is-open="showPastPeriodModal"
       :sku-info="pastPeriodContext.skuInfo"
       :oem-company-id="pastPeriodContext.oemCompanyId"
       :oem-company-name="pastPeriodContext.oemCompanyName"
       :cost-source-type="pastPeriodContext.costSourceType"
+      :anchor-cost="pastPeriodContext.anchorCost"
       @close="showPastPeriodModal = false"
       @saved="loadData(); loadStatistics()"
     />
@@ -502,7 +510,7 @@ import Pagination from '~/components/ui/Pagination.vue'
 import OemCostModal from '~/components/admin/oem-cost/OemCostModal.vue'
 import OemCostHistoryModal from '~/components/admin/oem-cost/OemCostHistoryModal.vue'
 import OemCostRecalcModal from '~/components/admin/oem-cost/OemCostRecalcModal.vue'
-import OemCostPastPeriodModal from '~/components/admin/oem-cost/OemCostPastPeriodModal.vue'
+import OemCostAddPeriodModal from '~/components/admin/oem-cost/OemCostAddPeriodModal.vue'
 import { oemCostService } from '~/services/oem-cost.service'
 import { companyService } from '~/services/company.service'
 import {
@@ -809,6 +817,24 @@ const canDelete = (sku: OemCostTreeItem, oem: OemCostListItem): boolean => {
     other.id !== oem.id && other.effectiveDate && startOf(other) > s)
 }
 
+/**
+ * 이 행이 «과거 구간 추가» 버튼을 달 대표 행인가.
+ *
+ * 과거 구간 추가는 (SKU + 공급원) 조합당 한 번이면 되는 동작이다.
+ * 어느 구간 행에서 눌러도 결과가 같으므로, 구간 수만큼 버튼을 노출할 이유가 없다.
+ * 적용중 구간을 대표로 삼고, 전부 만료된 조합은 가장 최근 구간에 단다.
+ */
+const isPastPeriodAnchor = (sku: OemCostTreeItem, oem: OemCostListItem): boolean => {
+  const siblings = siblingPeriods(sku, oem)
+  if (siblings.length <= 1) { return true }
+
+  const active = siblings.find(o => calculateOemCostStatus(o) === OEM_COST_STATUS.ACTIVE)
+  if (active) { return active.id === oem.id }
+
+  const latest = [...siblings].sort((a, b) => endOf(b).localeCompare(endOf(a)))[0]
+  return latest?.id === oem.id
+}
+
 // 원가 구간 삭제
 const handleDeleteCost = async (sku: OemCostTreeItem, oem: OemCostListItem) => {
   if (!canDelete(sku, oem)) { return }
@@ -876,10 +902,12 @@ const openEditModal = (oem: OemCostListItem) => {
   }
   selectedCostData.value = oem as OemCost
   existingOemCompanyIds.value = []
-  // ⚠ '종료일이 있는가' 가 아니라 '이미 지났는가' 로 판정해야 한다.
-  //   만료일이 미래인 현재 구간(예: 6/1~12/31)을 정정 모드로 열면
-  //   시작일이 유지된 채 금액만 바뀌어 지나간 몇 달 원가가 소급으로 덮인다.
-  isCorrectMode.value = calculateOemCostStatus(oem) === OEM_COST_STATUS.EXPIRED
+  // [수정]은 언제나 «그 구간을 그 자리에서 고치는» 정정이다.
+  //
+  // ★ 예전에는 적용중 구간을 [수정]으로 열면 시작일이 오늘로 바뀌며 새 구간이 생겼다.
+  //   버튼 이름은 '수정'인데 결과는 '구간 추가'라 고객이 이해하기 어려웠다.
+  //   새 구간은 [+] 로 갈랐으니 여기서는 값만 고친다.
+  isCorrectMode.value = true
   showCostModal.value = true
 }
 
@@ -894,7 +922,8 @@ const pastPeriodContext = ref<{
   oemCompanyId: number | null
   oemCompanyName: string
   costSourceType: string
-}>({ skuInfo: null, oemCompanyId: null, oemCompanyName: '', costSourceType: 'OEM' })
+  anchorCost: OemCost | null
+}>({ skuInfo: null, oemCompanyId: null, oemCompanyName: '', costSourceType: 'OEM', anchorCost: null })
 
 const openPastPeriodModal = (sku: any, oem: OemCostListItem) => {
   pastPeriodContext.value = {
@@ -905,7 +934,10 @@ const openPastPeriodModal = (sku: any, oem: OemCostListItem) => {
     },
     oemCompanyId: oem.oemCompanyId,
     oemCompanyName: oem.oemCompanyName || '',
-    costSourceType: (oem as any).costSourceType || 'OEM'
+    costSourceType: (oem as any).costSourceType || 'OEM',
+    // «지금부터 적용» 은 이 구간을 하루 전으로 마감하고 뒤에 새 구간을 붙인다.
+    // 버튼이 적용중(없으면 최신) 행에만 달리므로 그 행이 곧 기준 구간이다.
+    anchorCost: oem as OemCost
   }
   showPastPeriodModal.value = true
 }

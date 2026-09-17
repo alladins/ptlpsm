@@ -207,10 +207,10 @@
               <i class="fas fa-info-circle" />
               <span>
                 <strong>등록은 그 공급원의 첫 구간만</strong> 만듭니다.
-                이미 원가가 있으면 거부되니, 단가가 바뀐 경우는 해당 행의
-                <strong>[수정]</strong> 에서 새 적용 시작일을 넣으세요(이전 구간은 그 전날까지로 자동 마감).
+                이미 원가가 있으면 거부됩니다.
                 <br>
-                지나간 기간의 단가를 뒤늦게 받았다면 <strong>[과거 구간 추가]</strong> 를 쓰세요.
+                단가가 바뀌었거나 지난 기간 단가를 뒤늦게 받았다면 해당 행의
+                <strong>[+]</strong> 버튼을 쓰세요 — 「지금부터 적용」과 「지난 기간」 중에서 고릅니다.
               </span>
             </div>
 
@@ -219,8 +219,11 @@
               <i class="fas fa-exclamation-triangle" />
               <span>
                 <strong>{{ previousPeriodText || '-' }}</strong> 구간의 금액을 그 자리에서 고칩니다.
-                새 구간이 생기지 않습니다.
+                <strong>새 구간이 생기지 않습니다.</strong>
                 이 기간의 발주·출하 원가가 바뀌므로, 저장 후 해당 건들의 금액을 다시 확인하세요.
+                <br>
+                단가가 바뀌어 <strong>새 구간</strong>을 만들어야 한다면 이 창을 닫고
+                <strong>[+]</strong> 버튼을 쓰세요.
               </span>
             </div>
 
