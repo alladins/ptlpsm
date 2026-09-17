@@ -111,6 +111,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate } from '~/utils/format'
 import { ref, reactive, computed, onMounted } from 'vue'
 import { orderService } from '~/services/order.service'
 import type { OrderDetailResponse } from '~/types/order'
@@ -168,10 +169,6 @@ function onSelect(order: OrderRow) {
   emit('select', order)
 }
 
-function formatDate(s: string | null | undefined) {
-  if (!s) return '-'
-  return new Date(s).toLocaleDateString('ko-KR')
-}
 
 onMounted(() => { load(1) })
 </script>

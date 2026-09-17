@@ -128,6 +128,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, formatDateTime } from '~/utils/format'
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useMobileOrderRequestStore } from '~/stores/mobileOrderRequest'
 import { useSiteStore } from '~/stores/site'
@@ -200,14 +201,6 @@ function urgencyBadge(u: OrderUrgency) { return URGENCY_DISPLAY[u]?.badgeClass ?
 function statusLabel(s: OrderRequestStatus) { return REQUEST_STATUS_DISPLAY[s]?.label ?? s }
 function statusBadge(s: OrderRequestStatus) { return REQUEST_STATUS_DISPLAY[s]?.badgeClass ?? '' }
 
-function formatDate(s: string | null | undefined) {
-  if (!s) return '-'
-  return new Date(s).toLocaleDateString('ko-KR')
-}
-function formatDateTime(s: string | null | undefined) {
-  if (!s) return '-'
-  return new Date(s).toLocaleString('ko-KR')
-}
 
 onMounted(async () => {
   await siteStore.fetchList({ size: 200, active: true })

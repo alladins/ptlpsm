@@ -143,6 +143,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, formatDateTime } from '~/utils/format'
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useSiteStore } from '~/stores/site'
 import type { Site } from '~/types/site'
@@ -252,14 +253,6 @@ async function removeSite(site: Site) {
   await store.remove(site.siteId)
 }
 
-function formatDate(s: string | null | undefined) {
-  if (!s) return '-'
-  return new Date(s).toLocaleDateString('ko-KR')
-}
-function formatDateTime(s: string | null | undefined) {
-  if (!s) return '-'
-  return new Date(s).toLocaleString('ko-KR')
-}
 
 onMounted(() => { load(1) })
 </script>

@@ -633,7 +633,7 @@
 <script setup lang="ts">
 // API 서비스
 import { userService } from '~/services/user.service'
-import { formatPhoneNumberInput, normalizeEmail } from '~/utils/format'
+import { formatPhoneNumberInput, normalizeEmail , formatDate} from '~/utils/format'
 import { isValidEmail, isValidPhone } from '~/utils/validators'
 import { getRoleName } from '~/types/user'
 
@@ -953,12 +953,6 @@ const getRoleClass = (roleCode: string) => {
     READ_ONLY: 'role-readonly'
   }
   return roleClasses[roleCode] || 'role-default'
-}
-
-const formatDate = (dateString: string) => {
-  if (!dateString) { return '-' }
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR')
 }
 
 const showAlert = (message: string, type: 'success' | 'error' | 'warning' = 'warning') => {

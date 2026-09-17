@@ -103,6 +103,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, formatDateTime } from '~/utils/format'
 import { ref, onMounted } from 'vue'
 import { mobileOrderService } from '~/services/mobile-order.service'
 import {
@@ -158,14 +159,6 @@ function urgencyBadge(u: OrderUrgency) { return URGENCY_DISPLAY[u]?.badgeClass ?
 function statusLabel(s: OrderRequestStatus) { return REQUEST_STATUS_DISPLAY[s]?.label ?? s }
 function statusBadge(s: OrderRequestStatus) { return REQUEST_STATUS_DISPLAY[s]?.badgeClass ?? '' }
 
-function formatDate(s: string | null | undefined) {
-  if (!s) return '-'
-  return new Date(s).toLocaleDateString('ko-KR')
-}
-function formatDateTime(s: string | null | undefined) {
-  if (!s) return '-'
-  return new Date(s).toLocaleString('ko-KR')
-}
 function formatNumber(n: number | null | undefined) {
   if (n == null) return '-'
   return n.toLocaleString('ko-KR')

@@ -226,7 +226,7 @@ import { shipmentService, type ShipmentItemWithOrder } from '~/services/shipment
 import { bgradeItemService } from '~/services/bgrade-item.service'
 import type { BgradeItemResponse, BgradeItemCreateRequest } from '~/types/bgrade-item'
 import type { FundShipmentInfo } from '~/types/fund'
-import { formatCurrency as formatCurrencyUtil } from '~/utils/format'
+import { formatCurrency as formatCurrencyUtil, formatDate as formatDateUtil } from '~/utils/format'
 
 // Props
 interface Props {
@@ -315,11 +315,9 @@ const totalDiscount = computed(() => {
 // Methods
 const formatCurrency = (value: number) => formatCurrencyUtil(value)
 
-const formatDate = (dateString: string) => {
-  if (!dateString) { return '-' }
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
-}
+// 연도 없이 '8월 25일' 로만 보여준다 (year: undefined 로 공용 기본값을 끈다)
+const formatDate = (dateString: string) =>
+  formatDateUtil(dateString, { year: undefined, month: 'short', day: 'numeric' })
 
 const calculateDiscount = (item: BgradeItemResponse) => {
   return item.quantity * (item.originalUnitPrice - item.adjustedUnitPrice)

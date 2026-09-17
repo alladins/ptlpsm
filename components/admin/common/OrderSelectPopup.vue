@@ -107,6 +107,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate } from '~/utils/format'
 import { ref, onMounted } from 'vue'
 import type { OrderDetailResponse } from '~/types/order'
 import { orderService } from '~/services/order.service'
@@ -169,13 +170,6 @@ const loadOrders = async () => {
     orders.value = []
     totalPages.value = 1
   }
-}
-
-// 날짜 포맷팅
-const formatDate = (dateString: string): string => {
-  if (!dateString) { return '-' }
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR')
 }
 
 // 발주 선택

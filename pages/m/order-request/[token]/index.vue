@@ -102,6 +102,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, parseUtcDate } from '~/utils/format'
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from '#imports'
 import { usePublicOrderRequestStore } from '~/stores/publicOrderRequest'
@@ -142,14 +143,15 @@ function urgencyBadge(u: OrderUrgency) { return URGENCY_DISPLAY[u]?.badgeClass ?
 function statusLabel(s: OrderRequestStatus) { return REQUEST_STATUS_DISPLAY[s]?.label ?? s }
 function statusBadge(s: OrderRequestStatus) { return REQUEST_STATUS_DISPLAY[s]?.badgeClass ?? '' }
 
-function formatDate(s: string | null | undefined) {
-  if (!s) return '-'
-  return new Date(s).toLocaleDateString('ko-KR')
-}
+// 모바일은 폭이 좁아 'M/D HH:mm' 짧은 표기를 쓴다. 다만 저장값은 UTC 라 KST 로 바꿔서 뽑는다.
 function formatDateTime(s: string | null | undefined) {
   if (!s) return '-'
-  const d = new Date(s)
-  return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+  const parts = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(parseUtcDate(s))
+  const pick = (t: string) => parts.find(x => x.type === t)?.value ?? ''
+  return `${pick('month')}/${pick('day')} ${pick('hour')}:${pick('minute')}`
 }
 
 onMounted(async () => {

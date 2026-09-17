@@ -115,6 +115,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate } from '~/utils/format'
 import { ref, computed, onMounted } from 'vue'
 import type { ShipmentListItem } from '~/services/shipment.service'
 import { shipmentService } from '~/services/shipment.service'
@@ -234,13 +235,6 @@ const loadShipments = async () => {
     shipments.value = []
     totalPages.value = 1
   }
-}
-
-// 날짜 포맷팅
-const formatDate = (dateString: string): string => {
-  if (!dateString) { return '-' }
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR')
 }
 
 // 상태 텍스트 (DB 기반)

@@ -70,6 +70,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, formatDateTime } from '~/utils/format'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from '#imports'
 import { usePublicOrderRequestStore } from '~/stores/publicOrderRequest'
@@ -115,14 +116,6 @@ function urgencyBadge(u: OrderUrgency) { return URGENCY_DISPLAY[u]?.badgeClass ?
 function statusLabel(s: OrderRequestStatus) { return REQUEST_STATUS_DISPLAY[s]?.label ?? s }
 function statusBadge(s: OrderRequestStatus) { return REQUEST_STATUS_DISPLAY[s]?.badgeClass ?? '' }
 
-function formatDate(s: string | null | undefined) {
-  if (!s) return '-'
-  return new Date(s).toLocaleDateString('ko-KR')
-}
-function formatDateTime(s: string | null | undefined) {
-  if (!s) return '-'
-  return new Date(s).toLocaleString('ko-KR')
-}
 function formatNumber(n: number | null | undefined) {
   return n == null ? '-' : n.toLocaleString('ko-KR')
 }
