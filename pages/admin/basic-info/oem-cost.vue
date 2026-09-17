@@ -1609,15 +1609,18 @@ onMounted(() => {
   color: #1f2937;
 }
 
-/* 구간 추가 — 새 구간을 «만드는» 동작이라 SKU 행의 [OEM 원가 추가]와 같은 보라 계열로 묶는다 */
+/* 구간 추가 — 구간 행의 보조 동작이라 흰 배경으로 차분하게 둔다.
+   («OEM 원가 추가»는 SKU 행의 주 동작이라 보라, 여기는 그보다 한 단계 아래) */
 .btn-past {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
 }
 
 .btn-past:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
 }
 
 .btn-delete {
