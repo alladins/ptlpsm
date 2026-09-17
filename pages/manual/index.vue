@@ -34,7 +34,17 @@
       {{ error }}
     </div>
 
-    <div v-else class="manual-body">
+    <template v-else>
+      <!-- 장 번호가 건너뛰어 보이는 이유를 미리 알려준다 -->
+      <div v-if="hiddenChapters > 0" class="manual-scope-note">
+        <i class="fas fa-user-shield" />
+        <span>
+          내 권한으로 쓸 수 있는 화면의 설명만 보이고 있습니다.
+          <strong>{{ hiddenChapters }}개 장</strong>이 숨겨져 장 번호가 건너뛸 수 있습니다.
+        </span>
+      </div>
+
+      <div class="manual-body">
       <!-- 좌측 목차 -->
       <!-- ⚠ 스크롤되는 상자는 이 aside 다(.toc-nav 에는 overflow 가 없다). ref 를 옮기지 말 것 -->
       <aside ref="tocEl" class="manual-toc">
@@ -61,11 +71,12 @@
       </aside>
 
       <!-- 우측 본문 -->
-      <article ref="contentEl" class="manual-content" @click="onContentClick">
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <div class="md-root" v-html="html" />
-      </article>
-    </div>
+        <article ref="contentEl" class="manual-content" @click="onContentClick">
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div class="md-root" v-html="html" />
+        </article>
+      </div>
+    </template>
 
     <button v-if="showTop" class="btn-top" title="맨 위로" @click="scrollTop">
       <i class="fas fa-arrow-up" />
@@ -76,6 +87,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { renderMarkdown, type TocItem } from '~/utils/markdown'
+import { scopeManualToMenus, collectMenuUrls } from '~/utils/manual-scope'
+import { usePermissionStore } from '~/stores/permission'
 
 definePageMeta({
   layout: 'admin',
@@ -115,6 +128,20 @@ const loading = ref(true)
 const error = ref('')
 const html = ref('')
 const toc = ref<TocItem[]>([])
+
+/**
+ * 역할별 노출
+ *
+ * 매뉴얼은 한 문서인데 보는 사람의 역할은 제각각이다.
+ * 제조사 담당자에게 기성청구 절차를 보여주면 쓸 수 없는 화면의 설명을 읽게 된다.
+ *
+ * 역할 목록을 화면에 박지 않고, 장마다 문서에 적힌 «그 장이 설명하는 화면 주소» 가
+ * 내가 들어갈 수 있는 메뉴와 겹치는지만 본다.
+ * 메뉴권한관리에서 권한을 바꾸면 매뉴얼도 같이 따라온다.
+ */
+const permissionStore = usePermissionStore()
+/** 안 보이게 걸러진 장 수 — 안내 문구용 */
+const hiddenChapters = ref(0)
 
 /**
  * 원본 마크다운.
@@ -223,8 +250,24 @@ const onScroll = () => { showTop.value = window.scrollY > 400 }
 onMounted(async () => {
   try {
     const raw = (await import('~/docs/출하관리시스템_사용자매뉴얼.md?raw')).default
-    rawMarkdown.value = raw
-    const parsed = renderMarkdown(raw)
+
+    // 내가 들어갈 수 있는 메뉴를 먼저 확보한다.
+    // 실패해도 매뉴얼은 띄운다 — 권한을 못 읽었다고 문서가 통째로 사라지면 안 된다.
+    let myMenuUrls: string[] = []
+    try {
+      const menus = permissionStore.userMenus?.length
+        ? permissionStore.userMenus
+        : await permissionStore.fetchUserMenus()
+      myMenuUrls = collectMenuUrls(menus)
+    } catch (e) {
+      console.warn('[매뉴얼] 메뉴 권한을 읽지 못해 전체를 표시합니다:', e)
+    }
+
+    const scoped = scopeManualToMenus(raw, myMenuUrls, permissionStore.isFullAccess)
+    hiddenChapters.value = scoped.hiddenCount
+
+    rawMarkdown.value = scoped.markdown
+    const parsed = renderMarkdown(scoped.markdown)
     html.value = parsed.html
     toc.value = parsed.toc
   } catch (e) {
@@ -262,6 +305,20 @@ onUnmounted(() => {
 <style scoped>
 .manual-page {
   padding: 20px 24px 60px;
+}
+
+/* 권한으로 일부 장이 숨겨졌을 때의 안내 */
+.manual-scope-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 13px;
 }
 
 /* ===== 헤더 ===== */
