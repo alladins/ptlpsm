@@ -373,6 +373,24 @@
                       </span>
                     </td>
                     <td class="action-buttons">
+                      <!--
+                        구간 추가 [+] — «지금부터 적용»(단가 변경)과 «지난 기간»(소급 단가)을
+                        한 버튼에 모았다.
+
+                        ★ 예전에는 단가가 바뀌면 [수정]을 눌러야 했는데, 실제 동작은 '새 구간 추가'라
+                          고객이 이해하기 어려웠다. 이제 새 구간은 [+], 이미 있는 구간의 값 손질은
+                          [수정] 으로 역할을 갈랐다.
+                        ★ 공급원당 한 번이면 되는 동작이라 대표 행(적용중)에만 단다.
+                        ★ 자주 쓰는 동작이라 맨 앞에 둔다.
+                      -->
+                      <button
+                        v-if="isPastPeriodAnchor(sku, oem)"
+                        class="btn-icon btn-past"
+                        title="구간 추가 (지금부터 적용 / 지난 기간)"
+                        @click="openPastPeriodModal(sku, oem)"
+                      >
+                        <i class="fas fa-plus" />
+                      </button>
                       <button
                         class="btn-icon btn-edit"
                         title="수정"
@@ -386,23 +404,6 @@
                         @click="openHistoryModal(oem)"
                       >
                         <i class="fas fa-history" />
-                      </button>
-                      <!--
-                        구간 추가 [+] — «지금부터 적용»(단가 변경)과 «지난 기간»(소급 단가)을
-                        한 버튼에 모았다.
-
-                        ★ 예전에는 단가가 바뀌면 [수정]을 눌러야 했는데, 실제 동작은 '새 구간 추가'라
-                          고객이 이해하기 어려웠다. 이제 새 구간은 [+], 이미 있는 구간의 값 손질은
-                          [수정] 으로 역할을 갈랐다.
-                        ★ 공급원당 한 번이면 되는 동작이라 대표 행(적용중)에만 단다.
-                      -->
-                      <button
-                        v-if="isPastPeriodAnchor(sku, oem)"
-                        class="btn-icon btn-past"
-                        title="구간 추가 (지금부터 적용 / 지난 기간)"
-                        @click="openPastPeriodModal(sku, oem)"
-                      >
-                        <i class="fas fa-plus" />
                       </button>
                       <!--
                         삭제 — 마지막 구간만 지울 수 있다.
@@ -1617,10 +1618,18 @@ onMounted(() => {
   color: #6b7280;
 }
 
+/* + 기호는 다른 아이콘보다 획이 가늘어 묻힌다 — 조금 키우고 굵게 */
+.btn-past i {
+  font-size: 0.85rem;
+  font-weight: 900;
+  -webkit-text-stroke: 0.4px currentColor;
+}
+
+/* 올려두면 초록 — «추가»임을 색으로 한 번 더 알린다 */
 .btn-past:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-  color: #374151;
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
 }
 
 .btn-delete {
