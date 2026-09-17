@@ -36,9 +36,7 @@
           <!-- 제출일자 -->
           <div class="search-item">
             <label>제출일자:</label>
-            <input v-model="searchForm.startDate" type="date" class="date-input">
-            <span class="separator">~</span>
-            <input v-model="searchForm.endDate" type="date" class="date-input">
+            <SearchDateRange v-model:start-date="searchForm.startDate" v-model:end-date="searchForm.endDate" />
           </div>
 
           <!-- 상태 -->
@@ -163,6 +161,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { quotationService, type QuotationSearchRequest } from '~/services/quotation.service'

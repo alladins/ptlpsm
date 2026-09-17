@@ -12,20 +12,11 @@
       <div class="search-section">
         <div class="search-form">
           <div class="form-group">
-            <label>조회 시작일</label>
-            <input
-              v-model="searchParams.startDate"
-              type="date"
-              class="form-control"
-            >
-          </div>
-          <div class="form-group">
-            <label>조회 종료일</label>
-            <input
-              v-model="searchParams.endDate"
-              type="date"
-              class="form-control"
-            >
+            <label>조회 기간</label>
+            <SearchDateRange
+              v-model:start-date="searchParams.startDate"
+              v-model:end-date="searchParams.endDate"
+            />
           </div>
           <div class="form-group">
             <label>조회 단위</label>
@@ -164,6 +155,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { getLocalDateString } from '~/utils/format'
 import { getShipmentStatistics } from '~/services/statistics.service'
 import type { RegionBreakdownItem, ShipmentStatisticsRequest } from '~/types/statistics'

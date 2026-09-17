@@ -14,9 +14,7 @@
           <div class="search-item">
             <label>조회기간</label>
             <div class="date-range">
-              <input v-model="searchParams.startDate" type="date" class="date-input">
-              <span>~</span>
-              <input v-model="searchParams.endDate" type="date" class="date-input">
+              <SearchDateRange v-model:start-date="searchParams.startDate" v-model:end-date="searchParams.endDate" />
             </div>
           </div>
 
@@ -356,6 +354,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, reactive, computed, onMounted } from 'vue'
 import { getShipmentStatistics } from '~/services/statistics.service'
 import type {

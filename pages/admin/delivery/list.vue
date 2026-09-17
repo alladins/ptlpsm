@@ -27,9 +27,7 @@
           <!-- 납품요구일자 -->
           <div class="search-item">
             <label>납품요구일자:</label>
-            <input v-model="searchForm.startDate" type="date" class="date-input">
-            <span class="separator">~</span>
-            <input v-model="searchForm.endDate" type="date" class="date-input">
+            <SearchDateRange v-model:start-date="searchForm.startDate" v-model:end-date="searchForm.endDate" />
           </div>
 
           <!-- 통합 검색어 (납품요구번호·수요기관·사업명) -->
@@ -117,6 +115,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'

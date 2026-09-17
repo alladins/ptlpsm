@@ -65,9 +65,7 @@
 
           <div class="search-item">
             <label>소진일:</label>
-            <input v-model="filter.dateFrom" type="date" class="date-input">
-            <span class="separator">~</span>
-            <input v-model="filter.dateTo" type="date" class="date-input">
+            <SearchDateRange v-model:start-date="filter.dateFrom" v-model:end-date="filter.dateTo" />
           </div>
 
           <div class="search-item">
@@ -170,6 +168,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, reactive, onMounted } from 'vue'
 import { inventoryConsumptionService } from '~/services/inventory-consumption.service'
 import { companyService } from '~/services/company.service'

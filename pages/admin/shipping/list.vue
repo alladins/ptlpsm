@@ -37,9 +37,10 @@
           <!-- 출하일자 -->
           <div class="search-item">
             <label>출하일자:</label>
-            <input v-model="searchForm.startDate" type="date" class="date-input">
-            <span class="separator">~</span>
-            <input v-model="searchForm.endDate" type="date" class="date-input">
+            <SearchDateRange
+              v-model:start-date="searchForm.startDate"
+              v-model:end-date="searchForm.endDate"
+            />
           </div>
 
           <!-- 납품요구번호 -->
@@ -242,6 +243,7 @@ import { useRouter, useRoute } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
 import type { ShipmentListItem } from '~/services/shipment.service'
 import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import type { OrderDetailResponse } from '~/types/order'
 // 리팩토링: 공통 모듈 import
 import { formatDate, formatDateTime, formatNumber, formatCurrency, formatQuantity, getSearchStartDate, getSearchEndDate } from '~/utils/format'

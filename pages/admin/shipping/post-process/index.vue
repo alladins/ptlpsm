@@ -29,9 +29,7 @@
         <div class="search-row-single">
           <div class="search-item">
             <label>출하일:</label>
-            <input v-model="search.startDate" type="date" class="keyword-input w-date">
-            <span class="date-sep">~</span>
-            <input v-model="search.endDate" type="date" class="keyword-input w-date">
+            <SearchDateRange v-model:start-date="search.startDate" v-model:end-date="search.endDate" />
           </div>
           <div class="search-item">
             <label>출하NO:</label>
@@ -178,6 +176,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, reactive, computed, onMounted } from 'vue'
 import { shipmentService, type ShipmentListItem } from '~/services/shipment.service'
 import { formatDate, formatQuantity, getLocalDateString } from '~/utils/format'
