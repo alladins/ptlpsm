@@ -39,6 +39,9 @@ export interface UserSearchRequest {
   companyName?: string
   position?: string
   enabled?: string
+  /** 등록일 기간 (yyyy-MM-dd) — 종료일은 그날 하루를 포함한다 */
+  startDate?: string
+  endDate?: string
   page?: number
   size?: number
   sortBy?: string
@@ -110,6 +113,9 @@ export const userService = {
     searchKeyword?: string
     role?: string
     enabled?: string
+    /** 등록일 기간 (yyyy-MM-dd) — 종료일은 그날 하루를 포함한다 */
+    startDate?: string
+    endDate?: string
     page?: number
     size?: number
     sortBy?: string
@@ -121,6 +127,8 @@ export const userService = {
       if (params.searchKeyword) queryParams.append('searchKeyword', params.searchKeyword)
       if (params.role) queryParams.append('role', params.role)
       if (params.enabled) queryParams.append('enabled', params.enabled)
+      if (params.startDate) queryParams.append('startDate', params.startDate)
+      if (params.endDate) queryParams.append('endDate', params.endDate)
       if (params.page !== undefined) queryParams.append('page', params.page.toString())
       if (params.size !== undefined) queryParams.append('size', params.size.toString())
       if (params.sortBy) queryParams.append('sortBy', params.sortBy)

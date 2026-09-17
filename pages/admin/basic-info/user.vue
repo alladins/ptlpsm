@@ -9,6 +9,13 @@
     <div class="search-section-compact">
       <div class="search-row-single">
         <div class="search-item">
+          <label>등록일</label>
+          <SearchDateRange
+            v-model:start-date="searchForm.startDate"
+            v-model:end-date="searchForm.endDate"
+          />
+        </div>
+        <div class="search-item">
           <label>권한</label>
           <select v-model="searchForm.role" class="status-select">
             <option value="">
@@ -488,7 +495,8 @@ import { userService } from '~/services/user.service'
 import { codeService } from '~/services/code.service'
 import { companyService } from '~/services/company.service'
 import type { CompanyInfoResponse } from '~/types/company'
-import { formatPhoneNumberInput, normalizeEmail, formatPostalCodeInput } from '~/utils/format'
+import { formatDate, formatPhoneNumberInput, normalizeEmail, formatPostalCodeInput, getSearchStartDate, getSearchEndDate } from '~/utils/format'
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { useDataTable } from '~/composables/useDataTable'
 
 definePageMeta({
@@ -506,6 +514,9 @@ const searchForm = ref({
   searchKeyword: '',
   role: '',
   enabled: '',
+  // 등록일 기간 — 다른 목록 화면과 같은 기본값(1년 전 ~ 오늘)
+  startDate: getSearchStartDate(),
+  endDate: getSearchEndDate(),
   sortBy: 'createdAt',
   sortDirection: 'desc'
 })
@@ -530,6 +541,8 @@ const {
       searchKeyword: searchForm.value.searchKeyword,
       role: searchForm.value.role,
       enabled: searchForm.value.enabled,
+      startDate: searchForm.value.startDate || undefined,
+      endDate: searchForm.value.endDate || undefined,
       page: params.page || 0,
       size: params.size || 10,
       sortBy: searchForm.value.sortBy,
@@ -624,12 +637,6 @@ const getRoleClass = (role: string) => {
 const getRoleName = (role: string) => {
   const roleObj = userRoles.value.find(r => r.code === role)
   return roleObj ? roleObj.codeName : role
-}
-
-// 날짜 포맷
-const formatDate = (date: string) => {
-  if (!date) { return '-' }
-  return new Date(date).toLocaleDateString('ko-KR')
 }
 
 // 전화번호 입력 포맷팅 (공통 함수 사용)
