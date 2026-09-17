@@ -1,13 +1,15 @@
 <template>
   <div class="sdr">
     <!--
-      ★ multi-calendars — 달력을 두 달 나란히 편다.
-        한 달만 보이면 시작(전달)과 종료(이번달)를 고를 때 화살표로 왔다 갔다 해야 한다.
+      ★ multi-calendars 를 solo 로 둔다.
+        기본값(연속 2개월)은 «9월·10월» 처럼 붙어 있는 달만 보여준다.
+        기본 조회 기간이 1년이라 그러면 종료월이 화면 밖으로 밀려난다.
+        solo 면 두 달력이 각각 움직여 왼쪽=시작월, 오른쪽=종료월을 보여줄 수 있다.
     -->
     <VueDatePicker
       :model-value="range"
       range
-      :multi-calendars="2"
+      :multi-calendars="{ solo: true, count: 2 }"
       :enable-time-picker="false"
       model-type="yyyy-MM-dd"
       format="yyyy-MM-dd"
