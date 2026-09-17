@@ -18,7 +18,9 @@
           <i v-else class="fas fa-file-excel" />
           엑셀
         </button>
+        <!-- 발주서는 리드파워가 낸다. 제조사에게는 등록 자리가 없다(서버도 막혀 있다) -->
         <button
+          v-if="canManagePo"
           class="btn-action btn-primary"
           @click="goToRegister"
         >
@@ -200,6 +202,7 @@ import SearchDateRange from '~/components/ui/SearchDateRange.vue'
  * 발주서 관리 페이지
  */
 import { ref, computed, onMounted, watch } from 'vue'
+import { usePermissionStore } from '~/stores/permission'
 import { useRouter, useRoute } from '#imports'
 import { purchaseOrderService } from '~/services/purchase-order.service'
 import { companyService } from '~/services/company.service'
@@ -353,6 +356,11 @@ const handlePageChange = (page: number) => {
 const handlePageSizeChange = () => {
   changePageSize(pageSize.value)
 }
+
+const permissionStore = usePermissionStore()
+
+/** 발주서를 «내는 쪽»인가 (리드파워/관리자). 제조사는 조회만 한다 */
+const canManagePo = computed(() => !permissionStore.isOemManager)
 
 // 등록 페이지로 이동
 const goToRegister = () => {

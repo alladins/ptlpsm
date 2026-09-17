@@ -131,18 +131,24 @@
                 <span class="status-chip" :class="r.status">{{ statusLabel(r.status) }}</span>
               </td>
               <td class="text-center">
+                <!--
+                  확정·취소·삭제는 돈이 확정되는 지점이라 관리자만 한다(서버도 막혀 있다).
+                  제조사에게 보여주면 눌러도 403 만 난다. 등록·수정까지는 제조사도 한다.
+                -->
                 <template v-if="r.status === 'DRAFT'">
                   <button class="btn-mini" @click="openEdit(r)">수정</button>
                   <button
+                    v-if="canSettle"
                     class="btn-mini primary"
                     :disabled="!canConfirm(r)"
                     :title="confirmHint(r)"
                     @click="handleConfirm(r)"
                   >확정</button>
-                  <button class="btn-mini danger" @click="handleDelete(r)">삭제</button>
+                  <button v-if="canSettle" class="btn-mini danger" @click="handleDelete(r)">삭제</button>
                 </template>
                 <template v-else-if="r.status === 'CONFIRMED'">
-                  <button class="btn-mini danger" @click="handleCancel(r)">취소</button>
+                  <button v-if="canSettle" class="btn-mini danger" @click="handleCancel(r)">취소</button>
+                  <span v-else class="muted">-</span>
                 </template>
                 <span v-else class="muted">-</span>
               </td>
@@ -169,7 +175,8 @@
 
 <script setup lang="ts">
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { usePermissionStore } from '~/stores/permission'
 import { inventoryConsumptionService } from '~/services/inventory-consumption.service'
 import { companyService } from '~/services/company.service'
 import InventoryConsumptionModal from '~/components/admin/inventory/InventoryConsumptionModal.vue'
@@ -184,6 +191,11 @@ import {
 import { formatDate, formatCurrency, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 
 definePageMeta({ layout: 'admin', pageTitle: '재고 소진관리' })
+
+const permissionStore = usePermissionStore()
+
+/** 확정·취소·삭제(= 돈이 확정되는 동작)를 할 수 있는가. 제조사는 등록·수정까지만 */
+const canSettle = computed(() => !permissionStore.isOemManager)
 
 const typeOptions = (Object.keys(CONSUMPTION_TYPE_LABELS) as ConsumptionType[])
   .map(v => ({ value: v, label: CONSUMPTION_TYPE_LABELS[v] }))

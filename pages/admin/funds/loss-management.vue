@@ -178,7 +178,7 @@
                 수정
               </button>
               <button
-                v-if="loss.status === 'CONFIRMED' && loss.lossType === 'SHORTAGE'"
+                v-if="canSettle && loss.status === 'CONFIRMED' && loss.lossType === 'SHORTAGE'"
                 class="btn-mini btn-recovery"
                 :title="loss.recoveryShipmentId ? '보전 연결 확인 · 변경' : '부족분을 다시 보낸 출하를 연결'"
                 @click="openRecovery(loss)"
@@ -186,7 +186,7 @@
                 {{ loss.recoveryShipmentId ? '보전됨' : '보전 연결' }}
               </button>
               <button
-                v-if="loss.status === 'CONFIRMED' && loss.receiptReissueNeeded && !loss.receiptReissuedAt"
+                v-if="canSettle && loss.status === 'CONFIRMED' && loss.receiptReissueNeeded && !loss.receiptReissuedAt"
                 class="btn-mini btn-reissue"
                 title="인수증·납품확인서를 다시 발행한 뒤 눌러 완료로 표시"
                 @click="markReissued(loss)"
@@ -194,7 +194,7 @@
                 재발행 완료
               </button>
               <button
-                v-if="loss.status === 'CONFIRMED' && !loss.inventoryAdjusted"
+                v-if="canSettle && loss.status === 'CONFIRMED' && !loss.inventoryAdjusted"
                 class="btn-mini btn-inventory"
                 title="실물 확인 후 창고 재고를 조정"
                 @click="openInventoryAdjust(loss)"
@@ -202,7 +202,7 @@
                 재고 조정
               </button>
               <button
-                v-if="loss.settlementStatus === 'PENDING' && loss.status === 'CONFIRMED'"
+                v-if="canSettle && loss.settlementStatus === 'PENDING' && loss.status === 'CONFIRMED'"
                 class="btn-mini btn-deduct"
                 title="OEM 지급에서 차감 반영"
                 @click="settleLoss(loss, 'DEDUCTED')"
@@ -210,7 +210,7 @@
                 차감
               </button>
               <button
-                v-if="loss.settlementStatus === 'PENDING' && loss.status === 'CONFIRMED'"
+                v-if="canSettle && loss.settlementStatus === 'PENDING' && loss.status === 'CONFIRMED'"
                 class="btn-mini"
                 title="정산 면제"
                 @click="settleLoss(loss, 'WAIVED')"
@@ -218,7 +218,7 @@
                 면제
               </button>
               <button
-                v-if="loss.status === 'CONFIRMED' && loss.settlementStatus !== 'DEDUCTED'"
+                v-if="canSettle && loss.status === 'CONFIRMED' && loss.settlementStatus !== 'DEDUCTED'"
                 class="btn-mini btn-danger"
                 title="손실 취소 (출하수량 원복)"
                 @click="cancelLoss(loss)"
@@ -325,6 +325,7 @@
 <script setup lang="ts">
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, computed, onMounted } from 'vue'
+import { usePermissionStore } from '~/stores/permission'
 import { lossService } from '~/services/loss.service'
 import LossAdjustmentModal from '~/components/loss/LossAdjustmentModal.vue'
 import RecoveryLinkModal from '~/components/loss/RecoveryLinkModal.vue'
@@ -341,6 +342,18 @@ import {
 definePageMeta({ layout: 'admin' })
 
 type TabKey = 'list' | 'summary'
+
+const permissionStore = usePermissionStore()
+
+/**
+ * 정산·재고조정·보전연결·재발행표시·취소를 할 수 있는가.
+ *
+ * ★ 손실은 제조사 지급액을 «깎는» 항목이라, 제조사가 스스로 지우거나 되돌리면
+ *   받을 돈이 늘어난다. 그래서 등록·수정까지만 열고 확정 지점은 관리자가 쥔다.
+ *   서버(SecurityConfig)도 같은 선으로 막혀 있어, 화면만 열어두면
+ *   제조사에게 눌러도 403 나는 버튼이 보인다.
+ */
+const canSettle = computed(() => !permissionStore.isOemManager)
 
 const tabs: Array<{ key: TabKey; label: string; icon: string }> = [
   { key: 'list', label: '손실 목록', icon: 'fas fa-list' },

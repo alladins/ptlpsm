@@ -10,7 +10,7 @@
         <!-- DRAFT 상태: 수정, 삭제, 발행 -->
         <template v-if="poDetail && poDetail.status === 'DRAFT'">
           <button
-            v-if="!isEditMode"
+            v-if="!isEditMode && canManagePo"
             class="btn-action"
             @click="enterEditMode"
           >
@@ -35,7 +35,7 @@
             {{ submitting ? '저장 중...' : '저장' }}
           </button>
           <button
-            v-if="!isEditMode"
+            v-if="!isEditMode && canManagePo"
             class="btn-action btn-delete"
             @click="handleDelete"
           >
@@ -43,7 +43,7 @@
             삭제
           </button>
           <button
-            v-if="!isEditMode && poDetail.status === 'DRAFT' && !isLeadpowerPo"
+            v-if="!isEditMode && poDetail.status === 'DRAFT' && !isLeadpowerPo && canManagePo"
             class="btn-action btn-primary"
             :disabled="submitting"
             @click="handleIssue"
@@ -52,7 +52,7 @@
             발행
           </button>
           <button
-            v-if="!isEditMode && poDetail.status === 'DRAFT' && isLeadpowerPo"
+            v-if="!isEditMode && poDetail.status === 'DRAFT' && isLeadpowerPo && canManagePo"
             class="btn-action btn-success"
             :disabled="submitting"
             @click="handleDirectStockIn"
@@ -73,6 +73,7 @@
             접수
           </button>
           <button
+            v-if="canManagePo"
             class="btn-action btn-delete"
             :disabled="submitting"
             @click="handleDelete"
@@ -97,6 +98,7 @@
         <!-- REJECTED 상태: 삭제 -->
         <template v-if="poDetail && poDetail.status === 'REJECTED'">
           <button
+            v-if="canManagePo"
             class="btn-action btn-delete"
             @click="handleDelete"
           >
@@ -855,6 +857,7 @@
  * - 생산완료 모드: 각 품목별 생산완료 수량 인라인 입력
  */
 import { ref, computed, onMounted, watch } from 'vue'
+import { usePermissionStore } from '~/stores/permission'
 import { useRouter, useRoute } from '#imports'
 import { purchaseOrderService } from '~/services/purchase-order.service'
 import { companyService } from '~/services/company.service'
@@ -1229,6 +1232,19 @@ const handleIssue = async () => {
 }
 
 // 본사(LEADPOWER) 발주 여부
+const permissionStore = usePermissionStore()
+
+/**
+ * 발주서를 «내는 쪽»인가 (리드파워/관리자)
+ *
+ * ★ 발주서는 리드파워가 내고 제조사는 받는다.
+ *   등록·수정·발행·삭제는 서버(SecurityConfig)에서 리드파워로 막혀 있는데
+ *   화면은 상태만 보고 버튼을 그려서, 제조사에게 눌러도 403 나는 버튼이 보였다.
+ *   서버와 같은 기준으로 화면에서도 가린다.
+ *   (접수·생산완료·반려는 «만드는 쪽»의 절차라 제조사도 쓸 수 있다)
+ */
+const canManagePo = computed(() => !permissionStore.isOemManager)
+
 const isLeadpowerPo = computed(() => {
   if (!poDetail.value) { return false }
   // companyType이 응답에 포함되어 있으면 사용, 아니면 oem_company_name으로 판별
