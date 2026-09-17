@@ -659,7 +659,7 @@ import FormSection from '~/components/admin/forms/FormSection.vue'
 //   OEM_BEARS 는 OEM 이 자기 돈으로 내는 것이고,
 //   LP_BEARS 는 리드파워가 운송사(중앙운수 등)에 직접 내는 것이라 제조사에게 줄 돈이 아니다.
 const shippingCostTypeHint = computed(() => {
-  switch (formData.value.shippingCostType) {
+  switch (formData.shippingCostType) {
     case 'PAID_TO_OEM':
       return '소량 주문 등으로 운반비를 OEM 에 지불하는 경우입니다. 출하일이 속한 달의 OEM 원장에 가산됩니다.'
     case 'LP_BEARS':

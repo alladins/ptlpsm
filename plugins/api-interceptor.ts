@@ -88,8 +88,13 @@ export default defineNuxtPlugin(() => {
         }
       }
 
+      // 모바일 납품확인(/api/m/**)은 URL 토큰만으로 접근하는 공개 경로다.
+      // 로그인 세션과 무관하므로 403 이 와도 로그인 페이지로 보내면 안 된다.
+      // (이미 완료된 납품 링크를 다시 열면 백엔드가 403 을 준다 → 고객이 로그인 창을 보게 됨)
+      const isPublicMobileApi = url.includes('/api/m/')
+
       // 401 Unauthorized 또는 403 Forbidden 처리
-      if (response.status === 401 || response.status === 403) {
+      if ((response.status === 401 || response.status === 403) && !isPublicMobileApi) {
         console.error('인증 오류 발생:', {
           status: response.status,
           url,

@@ -8,8 +8,13 @@
     >
       <template #actions>
         <button class="btn-action" :disabled="loading" @click="search">
-          <i class="fas fa-search" />
-          조회
+          <i v-if="loading" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-search" />
+          검색
+        </button>
+        <button class="btn-action" @click="resetSearch">
+          <i class="fas fa-rotate-left" />
+          초기화
         </button>
         <button class="btn-action btn-primary" @click="openCreate">
           <i class="fas fa-plus" />
@@ -19,44 +24,62 @@
     </PageHeader>
 
     <div class="content-section">
-      <!-- 검색 -->
-      <div class="search-bar">
-        <div class="search-field">
-          <label>유형</label>
-          <select v-model="filter.consumptionType" class="form-input-sm">
-            <option :value="null">전체</option>
-            <option v-for="t in typeOptions" :key="t.value" :value="t.value">{{ t.label }}</option>
-          </select>
-        </div>
-        <div class="search-field">
-          <label>상태</label>
-          <select v-model="filter.status" class="form-input-sm">
-            <option :value="null">전체</option>
-            <option v-for="s in statusOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
-          </select>
-        </div>
-        <div class="search-field">
-          <label>생산자</label>
-          <select v-model.number="filter.sourceOemCompanyId" class="form-input-sm">
-            <option :value="null">전체</option>
-            <option v-for="c in manufacturers" :key="c.id" :value="c.id">{{ c.companyName }}</option>
-          </select>
-        </div>
-        <div class="search-field">
-          <label>소진일</label>
-          <input v-model="filter.dateFrom" type="date" class="form-input-sm">
-          <span class="tilde">~</span>
-          <input v-model="filter.dateTo" type="date" class="form-input-sm">
-        </div>
-        <div class="search-field grow">
-          <label>검색어</label>
-          <input
-            v-model="filter.keyword"
-            type="text"
-            class="form-input-sm"
-            placeholder="소진번호 / 납품처 / 계약번호"
-            @keyup.enter="search"
-          >
+      <!-- 검색 조건 — 공용 search-section-compact 규격 (손실관리·원가관리 등과 동일) -->
+      <div class="search-section-compact">
+        <div class="search-row-single">
+          <div class="search-item">
+            <label>유형:</label>
+            <select v-model="filter.consumptionType" class="status-select">
+              <option :value="null">
+                전체
+              </option>
+              <option v-for="t in typeOptions" :key="t.value" :value="t.value">
+                {{ t.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="search-item">
+            <label>상태:</label>
+            <select v-model="filter.status" class="status-select">
+              <option :value="null">
+                전체
+              </option>
+              <option v-for="s in statusOptions" :key="s.value" :value="s.value">
+                {{ s.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="search-item">
+            <label>생산자:</label>
+            <select v-model.number="filter.sourceOemCompanyId" class="status-select">
+              <option :value="null">
+                전체
+              </option>
+              <option v-for="c in manufacturers" :key="c.id" :value="c.id">
+                {{ c.companyName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="search-item">
+            <label>소진일:</label>
+            <input v-model="filter.dateFrom" type="date" class="date-input">
+            <span class="separator">~</span>
+            <input v-model="filter.dateTo" type="date" class="date-input">
+          </div>
+
+          <div class="search-item">
+            <label>검색어:</label>
+            <input
+              v-model="filter.keyword"
+              type="text"
+              class="text-input"
+              placeholder="소진번호, 납품처, 계약번호"
+              @keyup.enter="search"
+            >
+          </div>
         </div>
       </div>
 
@@ -147,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { inventoryConsumptionService } from '~/services/inventory-consumption.service'
 import { companyService } from '~/services/company.service'
 import InventoryConsumptionModal from '~/components/admin/inventory/InventoryConsumptionModal.vue'
@@ -229,6 +252,17 @@ const onPageChange = (p: number) => { filter.page = p; load() }
 // 3페이지에서 조건을 좁히면 결과가 있어도 빈 목록이 보인다.
 const search = () => { filter.page = 0; load() }
 
+// 검색 조건 초기화 — 손실관리와 같은 동작(비우고 바로 다시 조회)
+const resetSearch = () => {
+  filter.consumptionType = null
+  filter.status = null
+  filter.sourceOemCompanyId = null
+  filter.dateFrom = ''
+  filter.dateTo = ''
+  filter.keyword = ''
+  search()
+}
+
 const openCreate = () => { editTarget.value = null; showModal.value = true }
 const openEdit = (r: InventoryConsumption) => { editTarget.value = r; showModal.value = true }
 const onSaved = () => { load() }
@@ -274,18 +308,13 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-@import '@/assets/css/admin-common.css';
-@import '@/assets/css/admin-buttons.css';
-@import '@/assets/css/admin-tables.css';
-@import '@/assets/css/admin-search.css';
+/* ⚠ 공용 CSS(admin-common/buttons/tables/search)는 nuxt.config.ts 의 css 배열에서
+   전역으로 불러온다. 여기서 @import 하면 같은 규칙이 한 벌 더 실려 번들만 커진다.
+   (손실관리·원가관리 등 다른 화면도 import 하지 않는다) */
 
-.search-bar { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: flex-end; margin-bottom: 1rem; }
-.search-field { display: flex; align-items: center; gap: 0.4rem; }
-.search-field.grow { flex: 1; min-width: 220px; }
-.search-field label { font-size: 0.8125rem; color: #4b5563; white-space: nowrap; }
-.search-field .form-input-sm { min-width: 120px; }
-.search-field.grow .form-input-sm { flex: 1; }
-.tilde { color: #9ca3af; }
+/* 검색줄은 공용 search-section-compact 규격을 쓴다 (assets/css/admin-search.css).
+   예전에는 이 화면만 search-bar / search-field 라는 자체 클래스를 써서
+   라벨 굵기·입력 폭·간격이 다른 화면과 미묘하게 달랐다. */
 
 .type-chip, .status-chip {
   display: inline-block;

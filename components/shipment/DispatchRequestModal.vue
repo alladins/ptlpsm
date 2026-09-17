@@ -354,13 +354,21 @@ const errors = reactive({
   receiverPhone: ''
 })
 
-// OEM 제조사 목록 로드
+// 공급원 목록 로드
+// ⚠ 출하 등록 화면(useShippingFormData)과 반드시 같은 목록이어야 한다.
+//   이 셀렉트는 출하의 공급원을 읽기 전용으로 되비추기만 하므로,
+//   목록에 없는 회사(리드파워 본사 = company_type LEADPOWER)가 공급원이면
+//   값이 비어 [출고요청] 버튼이 영원히 비활성된다.
 onMounted(async () => {
   loadingManufacturers.value = true
   try {
-    manufacturers.value = await companyService.getManufacturers()
+    const [oemList, leadpower] = await Promise.all([
+      companyService.getManufacturers(),
+      companyService.getCompanies('LEADPOWER')
+    ])
+    manufacturers.value = [...leadpower, ...oemList]
   } catch (error) {
-    console.error('OEM 제조사 목록 로드 실패:', error)
+    console.error('공급원 목록 로드 실패:', error)
   } finally {
     loadingManufacturers.value = false
   }
