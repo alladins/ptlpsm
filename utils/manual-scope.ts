@@ -97,16 +97,34 @@ function normalize (url: string): string {
   return trimmed.length > 1 && trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed
 }
 
-/** 메뉴 트리(자식 포함)에서 화면 주소를 전부 긁어모은다 */
+/**
+ * 메뉴 트리에서 «실제로 들어갈 수 있는» 화면 주소만 긁어모은다.
+ *
+ * ★ 메뉴 API 는 전체 메뉴를 다 내려주고, 볼 수 있는지는 항목마다
+ *   auth.readAuth(Y/N) 로 표시한다. 좌측 메뉴도 이 값으로 걸러 그린다.
+ *   주소만 모으면 «전부 접근 가능» 으로 읽혀 매뉴얼이 하나도 안 걸러진다.
+ */
 export function collectMenuUrls (menus: any[] | null | undefined): string[] {
   const out: string[] = []
   const walk = (list: any[] | null | undefined) => {
     if (!Array.isArray(list)) { return }
     for (const m of list) {
-      if (m?.menuUrl) { out.push(m.menuUrl) }
+      if (m?.menuUrl && canRead(m)) { out.push(m.menuUrl) }
       walk(m?.children)
     }
   }
   walk(menus)
   return out
+}
+
+/**
+ * 읽기 권한 판정
+ * auth.readAuth 가 표준이고, 평탄한 readAuth 로 오는 응답도 있어 함께 본다.
+ * 둘 다 없으면 «표시하지 않음» 이 아니라 «판단 불가» 로 보고 통과시킨다
+ * (권한 정보가 없다고 문서를 가려 버리면 안 된다).
+ */
+function canRead (menu: any): boolean {
+  const v = menu?.auth?.readAuth ?? menu?.readAuth
+  if (v === undefined || v === null || v === '') { return true }
+  return String(v).toUpperCase() === 'Y'
 }
