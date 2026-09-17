@@ -224,7 +224,11 @@
                   {{ formatCurrency(item.amount) }}
                 </td>
                 <td class="text-center">
-                  <span class="source-badge" :class="costSourceClass(item.costSource)">
+                  <span
+                    class="source-badge"
+                    :class="costSourceClass(item.costSource)"
+                    :title="costSourceHint(item.costSource)"
+                  >
                     {{ costSourceLabel(item.costSource) }}
                   </span>
                 </td>
@@ -382,7 +386,7 @@ import { ref, computed, onMounted } from 'vue'
 import { oemLedgerService } from '~/services/oem-ledger.service'
 import { companyService } from '~/services/company.service'
 import type { OemMonthlyLedgerResponse } from '~/types/oem-ledger'
-import { OEM_LEDGER_PAYMENT_STATUS_LABELS, OEM_LEDGER_COST_SOURCE_LABELS } from '~/types/oem-ledger'
+import { OEM_LEDGER_PAYMENT_STATUS_LABELS, OEM_LEDGER_COST_SOURCE_LABELS, OEM_LEDGER_COST_SOURCE_HINTS } from '~/types/oem-ledger'
 import type { OemLedgerCostSource, OemLedgerItem } from '~/types/oem-ledger'
 import type { CompanyInfoResponse } from '~/types/company'
 import { formatCurrency, formatQuantity, getLocalDateString } from '~/utils/format'
@@ -510,6 +514,12 @@ function costMismatchTitle (item: OemLedgerItem): string {
 function costSourceLabel (costSource: OemLedgerCostSource | null): string {
   if (!costSource) { return '-' }
   return OEM_LEDGER_COST_SOURCE_LABELS[costSource] || costSource
+}
+
+/** 원가 출처 설명 — 배지에 마우스를 올리면 «어디서 온 원가인가» 를 알려준다 */
+function costSourceHint (costSource: OemLedgerCostSource | null): string {
+  if (!costSource) { return '원가 출처를 알 수 없습니다.' }
+  return OEM_LEDGER_COST_SOURCE_HINTS[costSource] || ''
 }
 
 // 원가 출처 배지 CSS (마스터·미등록은 주의 표시)
@@ -662,7 +672,9 @@ async function handleComplete () {
     await oemLedgerService.completePaymentRequest(
       ledgerData.value.paymentId,
       completeForm.value.paidAmount,
-      completeForm.value.paidDate
+      completeForm.value.paidDate,
+      ledgerData.value.oemCompanyId,
+      ledgerData.value.yearMonth
     )
     showCompleteModal.value = false
     alert('지급이 완료되었습니다.')

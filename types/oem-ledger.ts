@@ -101,6 +101,23 @@ export const OEM_LEDGER_COST_SOURCE_LABELS: Record<OemLedgerCostSource, string> 
   [OEM_LEDGER_COST_SOURCE.NONE]: '미등록'
 }
 
+/**
+ * 원가 출처 설명 — 이 금액이 «어디서 온 원가인가»
+ *
+ * 배지에 단어만 떠 있으면 무슨 뜻인지 알 수 없어 문의가 온다.
+ * 위쪽일수록 그 시점의 값이라 믿을 만하고, 아래로 갈수록 지금 값이 섞인다.
+ */
+export const OEM_LEDGER_COST_SOURCE_HINTS: Record<OemLedgerCostSource, string> = {
+  [OEM_LEDGER_COST_SOURCE.SHIPMENT]:
+    '출하할 때 기록해 둔 원가입니다. 그 시점의 값이라 가장 정확합니다.',
+  [OEM_LEDGER_COST_SOURCE.PURCHASE_ORDER]:
+    '발주서에 적힌 단가입니다. 출하 기록이 없어 발주서에서 가져왔습니다.',
+  [OEM_LEDGER_COST_SOURCE.MASTER]:
+    '제조사 원가표의 현재 값입니다. 그 시점 기록이 없어 지금 단가를 쓴 것이라 실제와 다를 수 있습니다.',
+  [OEM_LEDGER_COST_SOURCE.NONE]:
+    '원가가 등록되어 있지 않아 0원으로 계산됐습니다. 제조사 원가를 등록해야 합니다.'
+}
+
 /** 지급 상태 */
 export const OEM_LEDGER_PAYMENT_STATUS = {
   NONE: 'NONE',

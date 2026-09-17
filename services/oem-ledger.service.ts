@@ -86,11 +86,22 @@ class OemLedgerService {
   /**
    * 지급 완료 (관리자)
    */
-  async completePaymentRequest(paymentId: number, paidAmount: number, paidDate: string): Promise<void> {
+  /**
+   * ★ oemCompanyId · yearMonth 도 함께 보낸다.
+   *   경로의 paymentId 로 대상이 정해지지만, 백엔드가 이 둘을 필수(@NotNull)로 검증한다.
+   *   빠뜨리면 «입력값 검증에 실패했습니다» 만 뜨고 무엇이 빠졌는지 화면에 안 나온다.
+   */
+  async completePaymentRequest(
+    paymentId: number,
+    paidAmount: number,
+    paidDate: string,
+    oemCompanyId: number,
+    yearMonth: string
+  ): Promise<void> {
     const response = await fetch(`${this.getBaseUrl()}/payment-request/${paymentId}/complete`, {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ paidAmount, paidDate })
+      body: JSON.stringify({ paidAmount, paidDate, oemCompanyId, yearMonth })
     })
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
