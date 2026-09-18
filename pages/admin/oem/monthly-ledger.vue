@@ -21,6 +21,31 @@
       </template>
     </PageHeader>
 
+    <!--
+      확인 대기 배너 (리드파워 담당자 전용)
+
+      ★ 알림만으로는 부족해서 둔 자리다. 알림은 한 번 읽으면 사라지지만
+        이 배너는 확인·반려 전까지 남는다. 제조사 계정에는 아예 뜨지 않는다.
+    -->
+    <div v-if="!isOemManager && pendingRequests.length > 0" class="pending-banner">
+      <div class="pending-banner-header">
+        <i class="fas fa-exclamation-triangle" />
+        <span>확인 대기 {{ pendingRequests.length }}건</span>
+      </div>
+      <ul class="pending-list">
+        <li v-for="item in pendingRequests" :key="item.paymentId" class="pending-row">
+          <span class="pending-company">{{ item.oemCompanyName || `제조사#${item.oemCompanyId}` }}</span>
+          <span class="pending-month">{{ item.yearMonth }}</span>
+          <span class="pending-amount">{{ formatCurrency(item.paymentAmount) }}</span>
+          <span class="pending-requested">{{ formatDateTime(item.requestedAt) }}</span>
+          <button class="btn-pending-go" @click="goToPending(item)">
+            <i class="fas fa-arrow-right" />
+            보기
+          </button>
+        </li>
+      </ul>
+    </div>
+
     <!-- 검색 조건 -->
     <div class="content-section">
       <div class="search-section-compact">
@@ -77,6 +102,19 @@
           <span v-if="ledgerData.paymentStatus === 'PAID' && ledgerData.paidAmount" class="paid-info">
             ({{ formatCurrency(ledgerData.paidAmount) }} / {{ ledgerData.paidDate }})
           </span>
+          <!--
+            감사 이력 — 누가 언제 청구·확인했는지.
+            예전에는 status 만 바뀌고 이게 전혀 안 남아 분쟁 시 댈 근거가 없었다.
+          -->
+          <span v-if="ledgerData.requestedBy" class="audit-trail">
+            청구 {{ ledgerData.requestedBy }} ({{ formatDateTime(ledgerData.requestedAt) }})
+            <template v-if="ledgerData.confirmedBy">
+              · 확인 {{ ledgerData.confirmedBy }} ({{ formatDateTime(ledgerData.confirmedAt) }})
+            </template>
+            <template v-if="ledgerData.paidBy">
+              · 지급 {{ ledgerData.paidBy }}
+            </template>
+          </span>
         </div>
         <div class="status-actions">
           <!-- OEM 담당자: 지급 요청 -->
@@ -106,6 +144,15 @@
             <i class="fas fa-check" />
             지급확인
           </button>
+          <!-- 관리자: 반려 — 금액이 맞지 않는 청구를 사유와 함께 돌려보낸다 -->
+          <button
+            v-if="!isOemManager && ledgerData.paymentStatus === 'PENDING'"
+            class="btn-action btn-danger"
+            @click="showRejectModal = true"
+          >
+            <i class="fas fa-undo" />
+            반려
+          </button>
           <!-- 관리자: 지급 완료 -->
           <button
             v-if="!isOemManager && ledgerData.paymentStatus === 'CONFIRMED'"
@@ -115,6 +162,33 @@
             <i class="fas fa-check-double" />
             지급완료
           </button>
+          <!-- 관리자: 확인 취소 — 잘못 누른 확인을 되돌린다 -->
+          <button
+            v-if="!isOemManager && ledgerData.paymentStatus === 'CONFIRMED'"
+            class="btn-action"
+            @click="handleRevertConfirm"
+          >
+            <i class="fas fa-rotate-left" />
+            확인취소
+          </button>
+        </div>
+      </div>
+
+      <!--
+        마지막 반려 사유
+
+        ★ 반려건은 paymentStatus 에 실리지 않는다(살아있는 청구가 아니므로 상태는 다시 «미요청»).
+          그래야 제조사가 금액을 고쳐 재청구할 수 있다. 다만 «왜 한 번 돌아왔는지» 는 남아야 해서
+          상태와 무관하게 이 줄을 띄운다.
+      -->
+      <div v-if="ledgerData && ledgerData.lastRejectReason" class="reject-notice">
+        <i class="fas fa-circle-exclamation" />
+        <div class="reject-body">
+          <strong>반려됨</strong>
+          <span class="reject-reason">{{ ledgerData.lastRejectReason }}</span>
+          <span class="reject-meta">
+            {{ ledgerData.lastRejectedBy }} · {{ formatDateTime(ledgerData.lastRejectedAt) }}
+          </span>
         </div>
       </div>
 
@@ -344,6 +418,43 @@
       </div>
     </div>
 
+    <!-- 반려 모달 -->
+    <Teleport to="body">
+      <div v-if="showRejectModal" class="modal-overlay" @click.self="showRejectModal = false">
+        <div class="modal-container modal-sm">
+          <div class="modal-header">
+            <h3>지급 요청 반려</h3>
+            <button class="modal-close" @click="showRejectModal = false">
+              <i class="fas fa-times" />
+            </button>
+          </div>
+          <div class="modal-body">
+            <p class="reject-guide">
+              반려하면 제조사가 금액을 고쳐 다시 청구할 수 있습니다.
+              무엇이 잘못됐는지 적어 주세요 — 사유 없이는 제조사가 알 수 없습니다.
+            </p>
+            <div class="form-group">
+              <label>반려 사유 <span class="required">*</span></label>
+              <textarea
+                v-model="rejectReason"
+                class="form-input"
+                rows="4"
+                placeholder="예) 9월 가공비 2건이 빠졌습니다. 확인 후 다시 올려주세요."
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-action" @click="showRejectModal = false">
+              취소
+            </button>
+            <button class="btn-action btn-danger" :disabled="!rejectReason.trim()" @click="handleReject">
+              반려
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- 지급 완료 모달 -->
     <Teleport to="body">
       <div v-if="showCompleteModal" class="modal-overlay" @click.self="showCompleteModal = false">
@@ -387,9 +498,9 @@ import { oemLedgerService } from '~/services/oem-ledger.service'
 import { companyService } from '~/services/company.service'
 import type { OemMonthlyLedgerResponse } from '~/types/oem-ledger'
 import { OEM_LEDGER_PAYMENT_STATUS_LABELS, OEM_LEDGER_COST_SOURCE_LABELS, OEM_LEDGER_COST_SOURCE_HINTS } from '~/types/oem-ledger'
-import type { OemLedgerCostSource, OemLedgerItem } from '~/types/oem-ledger'
+import type { OemLedgerCostSource, OemLedgerItem, OemLedgerPendingItem } from '~/types/oem-ledger'
 import type { CompanyInfoResponse } from '~/types/company'
-import { formatCurrency, formatQuantity, getLocalDateString } from '~/utils/format'
+import { formatCurrency, formatQuantity, getLocalDateString, formatDateTime } from '~/utils/format'
 import { usePermission } from '~/composables/usePermission'
 import { useAuthStore } from '~/stores/auth'
 
@@ -427,6 +538,19 @@ const completeForm = ref({
   paidAmount: 0,
   paidDate: ''
 })
+
+// 반려 모달
+// ⚠ useFormBase 의 formData 와 달리 이건 ref 다. .value 로 접근해야 한다.
+const showRejectModal = ref(false)
+const rejectReason = ref('')
+
+/**
+ * 확인 대기 청구 목록 (리드파워 담당자 전용)
+ *
+ * 알림은 한 번 읽으면 사라지지만 이 배너는 확인·반려 전까지 남는다.
+ * 제조사 계정으로 호출하면 403 이므로 관리자일 때만 부른다.
+ */
+const pendingRequests = ref<OemLedgerPendingItem[]>([])
 
 // 년월 문자열
 const yearMonth = computed(() => `${selectedYear.value}-${selectedMonth.value}`)
@@ -658,10 +782,70 @@ async function handleConfirm () {
     await oemLedgerService.confirmPaymentRequest(ledgerData.value.paymentId)
     alert('지급이 확인되었습니다.')
     await loadLedger()
+    await loadPendingRequests()
   } catch (error) {
     console.error('지급 확인 실패:', error)
     alert(error instanceof Error ? error.message : '지급 확인에 실패했습니다.')
   }
+}
+
+// 지급 확인 취소 (관리자) — 잘못 누른 확인을 되돌린다
+async function handleRevertConfirm () {
+  if (!ledgerData.value?.paymentId) { return }
+  if (!confirm('지급 확인을 취소하고 «요청완료» 상태로 되돌리시겠습니까?')) { return }
+
+  try {
+    await oemLedgerService.revertConfirmPaymentRequest(ledgerData.value.paymentId)
+    alert('지급 확인을 취소했습니다.')
+    await loadLedger()
+    await loadPendingRequests()
+  } catch (error) {
+    console.error('지급 확인 취소 실패:', error)
+    alert(error instanceof Error ? error.message : '지급 확인 취소에 실패했습니다.')
+  }
+}
+
+// 반려 (관리자) — 사유 필수
+async function handleReject () {
+  if (!ledgerData.value?.paymentId) { return }
+  if (!rejectReason.value.trim()) {
+    alert('반려 사유를 입력하세요.')
+    return
+  }
+
+  try {
+    await oemLedgerService.rejectPaymentRequest(ledgerData.value.paymentId, rejectReason.value.trim())
+    showRejectModal.value = false
+    rejectReason.value = ''
+    alert('지급 요청을 반려했습니다.')
+    await loadLedger()
+    await loadPendingRequests()
+  } catch (error) {
+    console.error('반려 실패:', error)
+    alert(error instanceof Error ? error.message : '반려에 실패했습니다.')
+  }
+}
+
+/** 확인 대기 목록 로드 — 제조사 계정은 403 이므로 부르지 않는다 */
+async function loadPendingRequests () {
+  if (isOemManager.value) { return }
+
+  try {
+    pendingRequests.value = await oemLedgerService.getPendingPaymentRequests()
+  } catch (error) {
+    // 배너는 보조 정보다. 실패해도 원장 화면 자체는 열려야 한다.
+    console.error('확인 대기 목록 로드 실패:', error)
+    pendingRequests.value = []
+  }
+}
+
+/** 배너에서 «보기» — 해당 제조사·월로 이동해 원장을 연다 */
+async function goToPending (item: OemLedgerPendingItem) {
+  selectedOemCompanyId.value = item.oemCompanyId
+  const [year, month] = item.yearMonth.split('-')
+  selectedYear.value = Number(year)
+  selectedMonth.value = month
+  await loadLedger()
 }
 
 // 지급 완료 (관리자)
@@ -679,6 +863,7 @@ async function handleComplete () {
     showCompleteModal.value = false
     alert('지급이 완료되었습니다.')
     await loadLedger()
+    await loadPendingRequests()
   } catch (error) {
     console.error('지급 완료 실패:', error)
     alert(error instanceof Error ? error.message : '지급 완료에 실패했습니다.')
@@ -706,6 +891,8 @@ onMounted(async () => {
       // 리드파워/시스템관리자: "전체"(0) 기본 선택
       selectedOemCompanyId.value = 0
     }
+    // 확인 대기 배너 — 관리자만
+    await loadPendingRequests()
   } catch (error) {
     console.error('OEM 제조사 목록 로드 실패:', error)
   }
@@ -717,6 +904,99 @@ onMounted(async () => {
 @import '@/assets/css/admin-buttons.css';
 @import '@/assets/css/admin-search.css';
 @import '@/assets/css/admin-tables.css';
+
+/* 확인 대기 배너 (리드파워 담당자 전용) */
+.pending-banner {
+  border: 1px solid #fbbf24;
+  background: #fffbeb;
+  border-radius: 10px;
+  padding: 0.875rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.pending-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+}
+
+.pending-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.pending-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #78350f;
+}
+
+.pending-company { min-width: 140px; font-weight: 600; }
+.pending-month { min-width: 80px; }
+.pending-amount { min-width: 130px; text-align: right; font-weight: 600; }
+.pending-requested { min-width: 150px; color: #a16207; font-size: 0.82rem; }
+
+.btn-pending-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #d97706;
+  border-radius: 6px;
+  background: #fff;
+  color: #b45309;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-pending-go:hover { background: #fef3c7; }
+
+/* 감사 이력 (누가 언제 청구·확인·지급) */
+.audit-trail {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-left: 0.75rem;
+}
+
+/* 반려 사유 알림 */
+.reject-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  border-radius: 10px;
+  padding: 0.875rem 1.25rem;
+  margin-bottom: 1rem;
+  color: #991b1b;
+}
+
+.reject-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.reject-reason { font-size: 0.92rem; }
+.reject-meta { font-size: 0.8rem; color: #b91c1c; }
+
+.reject-guide {
+  font-size: 0.88rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.required { color: #dc2626; }
 
 /* 지급 상태 카드 */
 .payment-status-card {

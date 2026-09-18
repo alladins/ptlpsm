@@ -70,6 +70,18 @@ export interface OemMonthlyLedgerResponse {
   paymentId: number | null
   paidAmount: number | null
   paidDate: string | null
+
+  /** 감사 이력 — 누가 언제 청구·확인·지급했는지 */
+  requestedBy?: string | null
+  requestedAt?: string | null
+  confirmedBy?: string | null
+  confirmedAt?: string | null
+  paidBy?: string | null
+
+  /** 마지막 반려 이력 (상태와 무관하게 내려온다) */
+  lastRejectReason?: string | null
+  lastRejectedBy?: string | null
+  lastRejectedAt?: string | null
 }
 
 /** 원장에 표시되는 손실 차감 행 (백엔드 LossAdjustmentResponse 의 부분집합) */
@@ -142,6 +154,13 @@ export const OEM_LEDGER_PAYMENT_STATUS_COLORS: Record<OemLedgerPaymentStatus, st
   [OEM_LEDGER_PAYMENT_STATUS.PAID]: 'status-paid'
 }
 
+/**
+ * ★ REJECTED 는 paymentStatus 에 실리지 않는다.
+ *   반려건은 «살아있는 청구» 가 아니라 제외되고(백엔드 getPaymentRequestStatus),
+ *   대신 lastRejectReason 으로 «왜 한 번 돌아왔는지» 만 전달된다.
+ *   그래서 상태가 다시 NONE 이 되어 제조사가 재청구를 올릴 수 있다.
+ */
+
 /** 지급 요청 */
 export interface OemLedgerPaymentRequest {
   oemCompanyId: number
@@ -150,6 +169,18 @@ export interface OemLedgerPaymentRequest {
   remarks?: string
   paidAmount?: number
   paidDate?: string
+}
+
+/** 확인 대기 청구 1건 — 리드파워 담당자 배너용 */
+export interface OemLedgerPendingItem {
+  paymentId: number
+  oemCompanyId: number
+  oemCompanyName: string | null
+  yearMonth: string
+  paymentAmount: number
+  remarks: string | null
+  requestedBy: string | null
+  requestedAt: string | null
 }
 
 /**
