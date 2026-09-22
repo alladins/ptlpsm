@@ -195,7 +195,7 @@ const roleFilters = [
   { value: 'SITE_INSPECTOR', label: '시공사 감리원' },
   { value: 'SALES_MANAGER', label: '영업 담당자' },
   { value: 'DELIVERY_DRIVER', label: '운송기사' },
-  { value: 'READ_ONLY', label: '조회 전용' }
+  { value: 'VIEWER', label: '조회 전용' }
 ]
 
 // 역할 라벨 변환
@@ -208,20 +208,20 @@ function getRoleLabel (role: string | undefined | null): string {
     SITE_INSPECTOR: '시공사 감리원',
     SALES_MANAGER: '영업 담당자',
     DELIVERY_DRIVER: '운송기사',
-    READ_ONLY: '조회 전용'
+    VIEWER: '조회 전용'
   }
   return roleMap[role || ''] || role || '알 수 없음'
 }
 
 // 필터링된 사용자 목록
+//
+// ★ 역할 필터는 여기서 거르지 않는다. 서버가 role 조건으로 걸러서 페이징까지 맞춘다.
+//   예전에는 서버가 role 을 안 받아서 화면이 **현재 페이지 10건만** 걸렀고,
+//   그 안에 해당 역할이 없으면 «검색 결과가 없습니다» 가 떴다(전체 6페이지에는 있는데도).
+//   여기서 또 거르면 서버가 준 페이지에 구멍이 생긴다.
 const filteredUsers = computed(() => {
-  return users.value.filter((user) => {
-    // 자기 자신 제외
-    if (user.userId === authStore.user?.userId) { return false }
-    // 역할 필터 적용 (selectedRole이 비어있으면 전체 표시)
-    if (selectedRole.value && user.role !== selectedRole.value) { return false }
-    return true
-  })
+  // 자기 자신만 제외
+  return users.value.filter(user => user.userId !== authStore.user?.userId)
 })
 
 // 모달 열릴 때 사용자 목록 로드
@@ -300,7 +300,7 @@ async function fetchUsers () {
       { userId: 4, loginId: 'driver01', userName: '박운송', role: 'DELIVERY_DRIVER', companyId: 3, companyName: '주식회사 유진로지스틱스' },
       { userId: 5, loginId: 'site01', userName: '최현장', role: 'SITE_MANAGER', companyId: 4, companyName: '(주)한주토건' },
       { userId: 6, loginId: 'sales01', userName: '정영업', role: 'SALES_MANAGER', companyId: 1, companyName: '(주)리드파워' },
-      { userId: 7, loginId: 'readonly01', userName: '한조회', role: 'READ_ONLY', companyId: 5, companyName: 'PTLPSM' },
+      { userId: 7, loginId: 'readonly01', userName: '한조회', role: 'VIEWER', companyId: 5, companyName: 'PTLPSM' },
       { userId: 8, loginId: 'inspector01', userName: '윤감리', role: 'SITE_INSPECTOR', companyId: 6, companyName: '플랫트리 주식회사' }
     ]
     totalPages.value = 1

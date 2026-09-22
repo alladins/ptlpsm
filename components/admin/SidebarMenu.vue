@@ -355,7 +355,7 @@ function getRoleDisplayName (role: string): string {
     SITE_INSPECTOR: '시공사 감리원',
     SALES_MANAGER: '영업 담당자',
     DELIVERY_DRIVER: '운송기사',
-    READ_ONLY: '조회 전용'
+    VIEWER: '조회 전용'
   }
   return roleNames[role] || role || '사용자'
 }

@@ -36,7 +36,7 @@ export type UserRole =
   | 'SITE_INSPECTOR'
   | 'SALES_MANAGER'
   | 'DELIVERY_DRIVER'
-  | 'READ_ONLY'
+  | 'VIEWER'
 
 /**
  * 역할 코드 상수 (8가지)
@@ -49,7 +49,7 @@ export const ROLE_CODES = {
   SITE_INSPECTOR: 'SITE_INSPECTOR',
   DELIVERY_DRIVER: 'DELIVERY_DRIVER',
   SALES_MANAGER: 'SALES_MANAGER',
-  READ_ONLY: 'READ_ONLY'
+  VIEWER: 'VIEWER'
 } as const
 
 /**
@@ -73,7 +73,7 @@ export const ROLE_LIST: RoleInfo[] = [
   { roleCode: 'SITE_INSPECTOR', roleName: '시공사 감리원', description: '시공사 감리 담당', sortOrder: 4 },
   { roleCode: 'DELIVERY_DRIVER', roleName: '운송기사', description: '배송/운송 담당', sortOrder: 5 },
   { roleCode: 'SALES_MANAGER', roleName: '영업 담당자', description: '영업 업무 담당', sortOrder: 6 },
-  { roleCode: 'READ_ONLY', roleName: '조회 전용', description: '조회만 가능한 역할', sortOrder: 7 }
+  { roleCode: 'VIEWER', roleName: '조회 전용', description: '조회만 가능한 역할', sortOrder: 7 }
 ]
 
 /**

@@ -950,7 +950,7 @@ const getRoleClass = (roleCode: string) => {
     SITE_INSPECTOR: 'role-inspector',
     SALES_MANAGER: 'role-sales',
     DELIVERY_DRIVER: 'role-driver',
-    READ_ONLY: 'role-readonly'
+    VIEWER: 'role-readonly'
   }
   return roleClasses[roleCode] || 'role-default'
 }

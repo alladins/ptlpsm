@@ -628,7 +628,7 @@ const getRoleClass = (role: string) => {
     case 'SITE_INSPECTOR': return 'role-inspector' // 초록 - 시공사 감리원
     case 'SALES_MANAGER': return 'role-sales' // 남색 - 영업 담당자
     case 'DELIVERY_DRIVER': return 'role-driver' // 청록 - 운송기사
-    case 'READ_ONLY': return 'role-readonly' // 회색 - 조회 전용
+    case 'VIEWER': return 'role-readonly' // 회색 - 조회 전용
     default: return 'role-default'
   }
 }

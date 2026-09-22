@@ -28,7 +28,7 @@ type UserRole =
   | 'SITE_INSPECTOR'
   | 'SALES_MANAGER'
   | 'DELIVERY_DRIVER'
-  | 'READ_ONLY'
+  | 'VIEWER'
 
 // 역할 코드 정규화 매핑 (DB → 프론트엔드 표준)
 const ROLE_CODE_MAPPING: Record<string, UserRole> = {
@@ -43,7 +43,7 @@ const ROLE_CODE_MAPPING: Record<string, UserRole> = {
   'SITE_INSPECTOR': 'SITE_INSPECTOR',
   'SALES_MANAGER': 'SALES_MANAGER',
   'DELIVERY_DRIVER': 'DELIVERY_DRIVER',
-  'READ_ONLY': 'READ_ONLY'
+  'VIEWER': 'VIEWER'
 }
 
 /**
@@ -126,7 +126,7 @@ export const usePermissionStore = defineStore('permission', () => {
   const isDeliveryDriver = computed(() => currentUserRole.value === 'DELIVERY_DRIVER')
 
   // 조회 전용 여부
-  const isReadOnly = computed(() => currentUserRole.value === 'READ_ONLY')
+  const isReadOnly = computed(() => currentUserRole.value === 'VIEWER')
 
   // ========================================
   // Actions
