@@ -3,6 +3,7 @@ import type { OrderDetailResponse, LowRemainingOrder, LowRemainingSearchRequest 
 import type { MobileOrderRequest } from '~/types/mobile-order'
 import { ORDER_ENDPOINTS } from './api/endpoints/order.endpoints'
 import { getApiBaseUrl } from './api/config'
+import { httpError, httpErrorMessage } from '~/utils/apiError'
 
 // MIGRATED: 2025-01-25 - URL을 ORDER_ENDPOINTS로 이전
 
@@ -35,6 +36,7 @@ export interface OrderSearchRequest {
   size?: number
   sort?: string
   shippableOnly?: boolean  // 출하 가능한 발주만 조회
+  latestOnly?: boolean     // 최종 계약만 (변경계약에 대체된 원계약 제외)
 }
 
 export const orderService = {
@@ -51,7 +53,7 @@ export const orderService = {
     })
     if (!response.ok) {
       const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || `수신자명 저장 실패: ${response.status}`)
+      throw new Error(errorData?.message || httpErrorMessage(response.status, '수신자명 저장'))
     }
   },
 
@@ -72,6 +74,8 @@ export const orderService = {
       if (params.status) queryParams.append('status', params.status)
       if (params.salesId) queryParams.append('salesId', params.salesId.toString())
       if (params.shippableOnly) queryParams.append('shippableOnly', 'true')
+      // 최종 계약만 (변경계약에 대체된 원계약 제외) — 납품요구 목록 화면용. 한 계약 = 한 건
+      if (params.latestOnly) queryParams.append('latestOnly', 'true')
 
       // 페이징 파라미터 (Spring은 0-based)
       const page = params.page ?? 0
@@ -145,7 +149,7 @@ export const orderService = {
     })
 
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
 
     return response.blob()

@@ -239,7 +239,7 @@
                     class="table-row tree-child-row"
                   >
                     <td class="child-index" @click="editItem(child.orderId)">
-                      {{ groupIndex + 1 }}-{{ childIndex + 1 }}
+                      {{ getDisplayIndex(groupIndex) }}-{{ childIndex + 1 }}
                     </td>
                     <td class="delivery-request-cell" @click="editItem(child.orderId)">
                       <div class="tree-child-indicator">
@@ -420,7 +420,10 @@ const {
       salesId: 0,
       page: params.page || 0,
       size: params.size || 10,
-      sort: params.sort || 'createdAt,desc'
+      sort: params.sort || 'createdAt,desc',
+      // ★ 한 계약 = 한 행. 변경계약에 대체된 원계약(-00)은 따로 세지 않고,
+      //   아래 family 보강으로 변경계약 행 밑에 붙어 보인다 (건수 61 → 58, 중복 표시 해소 — 2026-09-21)
+      latestOnly: true
     })
     return response
   },
