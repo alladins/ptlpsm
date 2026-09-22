@@ -1,5 +1,6 @@
 import { getAuthHeaders } from './api'
 import { DELIVERY_ENDPOINTS } from './api/endpoints/delivery.endpoints'
+import { httpError, httpErrorMessage } from '~/utils/apiError'
 
 // MIGRATED: 2025-10-27 - URL을 DELIVERY_ENDPOINTS로 이전
 
@@ -240,7 +241,7 @@ class DeliveryService {
       })
 
       if (!response.ok) {
-        throw new Error(`납품 생성 실패: ${response.status}`)
+        throw httpError(response.status, '납품 생성')
       }
 
       return await response.json()
@@ -283,7 +284,7 @@ class DeliveryService {
           ;(err as any).statusCode = 404
           throw err
         }
-        throw new Error(errorMessage || `납품 정보 조회 실패: ${response.status}`)
+        throw new Error(errorMessage || httpErrorMessage(response.status, '납품 정보 조회'))
       }
 
       // 서버 응답을 DeliveryApiResponse로 파싱
@@ -321,7 +322,7 @@ class DeliveryService {
       })
 
       if (!response.ok) {
-        throw new Error(`서명 업로드 실패: ${response.status}`)
+        throw httpError(response.status, '서명 업로드')
       }
 
       const result: UploadResponse = await response.json()
@@ -355,7 +356,7 @@ class DeliveryService {
       })
 
       if (!response.ok) {
-        throw new Error(`사진 업로드 실패: ${response.status}`)
+        throw httpError(response.status, '사진 업로드')
       }
 
       const result: UploadResponse = await response.json()
@@ -385,7 +386,7 @@ class DeliveryService {
       })
 
       if (!response.ok) {
-        throw new Error(`납품 완료 처리 실패: ${response.status}`)
+        throw httpError(response.status, '납품 완료 처리')
       }
 
       const result: DeliveryConfirmResponse = await response.json()
@@ -425,7 +426,7 @@ class DeliveryService {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null)
-      throw new Error(errorBody?.message || `임시 사진 업로드 실패: ${response.status}`)
+      throw new Error(errorBody?.message || httpErrorMessage(response.status, '임시 사진 업로드'))
     }
 
     const result: TempPhotoResponse = await response.json()
@@ -450,7 +451,7 @@ class DeliveryService {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null)
-      throw new Error(errorBody?.message || `임시 사진 삭제 실패: ${response.status}`)
+      throw new Error(errorBody?.message || httpErrorMessage(response.status, '임시 사진 삭제'))
     }
   }
 
@@ -474,7 +475,7 @@ class DeliveryService {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null)
-      throw new Error(errorBody?.message || `임시 사진 목록 조회 실패: ${response.status}`)
+      throw new Error(errorBody?.message || httpErrorMessage(response.status, '임시 사진 목록 조회'))
     }
 
     return await response.json()
@@ -525,7 +526,7 @@ class DeliveryService {
         if (response.status >= 500) {
           throw new Error('서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
         }
-        throw new Error(`납품 트리 조회 실패: ${response.status}`)
+        throw httpError(response.status, '납품 트리 조회')
       }
 
       return await response.json()
@@ -562,7 +563,7 @@ class DeliveryService {
     })
 
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
 
     return response.blob()
@@ -597,7 +598,7 @@ class DeliveryService {
       const response = await fetch(`${DELIVERY_ENDPOINTS.list()}?${queryParams.toString()}`)
 
       if (!response.ok) {
-        throw new Error(`납품 목록 조회 실패: ${response.status}`)
+        throw httpError(response.status, '납품 목록 조회')
       }
 
       return await response.json()
@@ -615,7 +616,7 @@ class DeliveryService {
       const response = await fetch(DELIVERY_ENDPOINTS.detail(deliveryId))
 
       if (!response.ok) {
-        throw new Error(`납품 상세 조회 실패: ${response.status}`)
+        throw httpError(response.status, '납품 상세 조회')
       }
 
       return await response.json()
@@ -635,7 +636,7 @@ class DeliveryService {
     })
 
     if (!response.ok) {
-      throw new Error(`납품 진행 상태 조회 실패: ${response.status}`)
+      throw httpError(response.status, '납품 진행 상태 조회')
     }
 
     return await response.json()
@@ -671,7 +672,7 @@ class DeliveryService {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null)
-      throw new Error(errorBody?.message || `관리자 임시 사진 업로드 실패: ${response.status}`)
+      throw new Error(errorBody?.message || httpErrorMessage(response.status, '관리자 임시 사진 업로드'))
     }
 
     const result: TempPhotoResponse = await response.json()
@@ -696,7 +697,7 @@ class DeliveryService {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null)
-      throw new Error(errorBody?.message || `관리자 임시 사진 삭제 실패: ${response.status}`)
+      throw new Error(errorBody?.message || httpErrorMessage(response.status, '관리자 임시 사진 삭제'))
     }
   }
 
@@ -712,7 +713,7 @@ class DeliveryService {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null)
-      throw new Error(errorBody?.message || `관리자 대리 완료 실패: ${response.status}`)
+      throw new Error(errorBody?.message || httpErrorMessage(response.status, '관리자 대리 완료'))
     }
 
     return await response.json()
@@ -737,7 +738,7 @@ class DeliveryService {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null)
-      throw new Error(errorBody?.message || `서명 요청 발송 실패: ${response.status}`)
+      throw new Error(errorBody?.message || httpErrorMessage(response.status, '서명 요청 발송'))
     }
 
     return await response.json()

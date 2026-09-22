@@ -1,5 +1,6 @@
 import { getAuthHeaders } from './api'
 import { ERROR_REPORT_ENDPOINTS } from './api/endpoints/error-report.endpoints'
+import { httpError } from '~/utils/apiError'
 
 // ===== 타입 =====
 export type ErrorReportStatus = 'NEW' | 'ANALYZING' | 'IN_PROGRESS' | 'DONE' | 'IGNORED'
@@ -85,7 +86,7 @@ export const errorReportService = {
       method: 'GET',
       headers: getAuthHeaders()
     })
-    if (!res.ok) { throw new Error(`오류 목록 조회 실패: ${res.status}`) }
+    if (!res.ok) { throw httpError(res.status, '오류 목록 조회') }
     return res.json()
   },
 
@@ -95,7 +96,7 @@ export const errorReportService = {
       method: 'GET',
       headers: getAuthHeaders()
     })
-    if (!res.ok) { throw new Error(`오류 상세 조회 실패: ${res.status}`) }
+    if (!res.ok) { throw httpError(res.status, '오류 상세 조회') }
     return res.json()
   },
 
@@ -106,7 +107,7 @@ export const errorReportService = {
       headers: getAuthHeaders(),
       body: JSON.stringify(body)
     })
-    if (!res.ok) { throw new Error(`상태 변경 실패: ${res.status}`) }
+    if (!res.ok) { throw httpError(res.status, '상태 변경') }
   },
 
   /** 코멘트 작성 (SYSTEM_ADMIN) */
@@ -116,7 +117,7 @@ export const errorReportService = {
       headers: getAuthHeaders(),
       body: JSON.stringify(body)
     })
-    if (!res.ok) { throw new Error(`코멘트 작성 실패: ${res.status}`) }
+    if (!res.ok) { throw httpError(res.status, '코멘트 작성') }
     return res.json()
   }
 }

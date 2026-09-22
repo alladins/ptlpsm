@@ -8,6 +8,7 @@
 import { getAuthHeaders } from './api'
 import { OEM_DASHBOARD_ENDPOINTS } from './api/endpoints/oem-dashboard.endpoints'
 import type { OemDashboardSummary, OemMonthlyPayment, OemProductionStatus } from '~/types/oem-dashboard'
+import { httpError } from '~/utils/apiError'
 
 /**
  * OEM 대시보드 서비스 클래스
@@ -39,7 +40,7 @@ class OemDashboardService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`OEM 대시보드 요약 조회 실패: ${response.status}`)
+        throw httpError(response.status, 'OEM 대시보드 요약 조회')
       }
 
       return await response.json()
@@ -77,7 +78,7 @@ class OemDashboardService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`OEM 대시보드 상세 조회 실패: ${response.status}`)
+        throw httpError(response.status, 'OEM 대시보드 상세 조회')
       }
 
       return await response.json()
@@ -116,7 +117,7 @@ class OemDashboardService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`OEM 생산 현황 조회 실패: ${response.status}`)
+        throw httpError(response.status, 'OEM 생산 현황 조회')
       }
 
       return await response.json()
@@ -153,7 +154,7 @@ class OemDashboardService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`OEM 월별 지급 현황 조회 실패: ${response.status}`)
+        throw httpError(response.status, 'OEM 월별 지급 현황 조회')
       }
 
       return await response.json()

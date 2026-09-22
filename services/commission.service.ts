@@ -12,6 +12,7 @@
 
 import { COMMISSION_ENDPOINTS } from './api/endpoints/commission.endpoints'
 import { getAuthHeaders } from './api'
+import { httpError } from '~/utils/apiError'
 import type {
   CommissionRateConfig,
   CommissionRateUpdateRequest,
@@ -51,7 +52,7 @@ export async function getCommissionRates(year: number): Promise<CommissionRateCo
       if (response.status === 404) {
         return null
       }
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -82,7 +83,7 @@ export async function saveCommissionRates(
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     // 백엔드가 빈 응답(200 no body)을 반환할 수 있음
@@ -123,7 +124,7 @@ export async function getCommissionSettlements(
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -153,7 +154,7 @@ export async function getCommissionSettlementByFund(
       if (response.status === 404) {
         return null
       }
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -183,7 +184,7 @@ export async function getCommissionSettlementDetail(
       if (response.status === 404) {
         return null
       }
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -209,7 +210,7 @@ export async function confirmCommissionSettlement(settlementId: number): Promise
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -233,7 +234,7 @@ export async function confirmCommissionSettlementBatch(settlementIds: number[]):
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -260,7 +261,7 @@ export async function getAnnualCommissionSummary(year: number): Promise<AnnualCo
       if (response.status === 404) {
         return null
       }
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -288,7 +289,7 @@ export async function getCommissionDashboardStats(year: number): Promise<Commiss
       if (response.status === 404) {
         return null
       }
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -330,7 +331,7 @@ export async function getCommissionPayments(
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -361,7 +362,7 @@ export async function createCommissionPayment(
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -391,7 +392,7 @@ export async function getCommissionPaymentDetail(
       if (response.status === 404) {
         return null
       }
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -422,7 +423,7 @@ export async function completeCommissionPayment(
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -445,7 +446,7 @@ export async function cancelCommissionPayment(paymentId: number): Promise<boolea
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -473,7 +474,7 @@ export async function createPeriodicSettlement(
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -509,7 +510,7 @@ export async function getPeriodicSettlements(
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -539,7 +540,7 @@ export async function getPeriodicSettlementDetail(
       if (response.status === 404) {
         return null
       }
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -562,7 +563,7 @@ export async function getCommissionPeriods() {
   const response = await fetch(COMMISSION_ENDPOINTS.periods(), {
     headers: getAuthHeaders()
   })
-  if (!response.ok) throw new Error(`정산기간 목록 조회 실패: ${response.status}`)
+  if (!response.ok) throw httpError(response.status, '정산기간 목록 조회')
   return response.json()
 }
 
@@ -573,7 +574,7 @@ export async function getActivePeriod() {
   const response = await fetch(COMMISSION_ENDPOINTS.activePeriod(), {
     headers: getAuthHeaders()
   })
-  if (!response.ok) throw new Error(`활성 정산기간 조회 실패: ${response.status}`)
+  if (!response.ok) throw httpError(response.status, '활성 정산기간 조회')
   return response.json()
 }
 
@@ -585,7 +586,7 @@ export async function createNextPeriod() {
     method: 'POST',
     headers: getAuthHeaders()
   })
-  if (!response.ok) throw new Error(`정산기간 생성 실패: ${response.status}`)
+  if (!response.ok) throw httpError(response.status, '정산기간 생성')
   return response.json()
 }
 
@@ -598,7 +599,7 @@ export async function getMonthlySnapshots(periodId: number) {
   const response = await fetch(COMMISSION_ENDPOINTS.monthlySnapshots(periodId), {
     headers: getAuthHeaders()
   })
-  if (!response.ok) throw new Error(`월별 스냅샷 조회 실패: ${response.status}`)
+  if (!response.ok) throw httpError(response.status, '월별 스냅샷 조회')
   return response.json()
 }
 
@@ -610,7 +611,7 @@ export async function generateMonthlySnapshot(year: number, month: number) {
     method: 'POST',
     headers: getAuthHeaders()
   })
-  if (!response.ok) throw new Error(`월별 스냅샷 생성 실패: ${response.status}`)
+  if (!response.ok) throw httpError(response.status, '월별 스냅샷 생성')
   return response.json()
 }
 
@@ -622,7 +623,7 @@ export async function confirmMonthlySnapshot(year: number, month: number) {
     method: 'POST',
     headers: getAuthHeaders()
   })
-  if (!response.ok) throw new Error(`월별 스냅샷 확정 실패: ${response.status}`)
+  if (!response.ok) throw httpError(response.status, '월별 스냅샷 확정')
   return true
 }
 
@@ -633,7 +634,7 @@ export async function getMonthlySettlementDetails(year: number, month: number) {
   const response = await fetch(COMMISSION_ENDPOINTS.monthlySnapshotDetails(year, month), {
     headers: getAuthHeaders()
   })
-  if (!response.ok) throw new Error(`영업담당자별 상세 조회 실패: ${response.status}`)
+  if (!response.ok) throw httpError(response.status, '영업담당자별 상세 조회')
   return response.json()
 }
 
@@ -650,7 +651,7 @@ export async function getAdvancePayments(year: number): Promise<AdvancePaymentHi
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -677,7 +678,7 @@ export async function createAdvancePayment(request: AdvancePaymentCreateRequest)
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -709,7 +710,7 @@ export async function getPaymentHistoryAll(
       : COMMISSION_ENDPOINTS.paymentAll(year)
 
     const response = await fetch(url, { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, 'API 호출')
 
     const data = await response.json()
     return data.success && data.data ? data.data : data
@@ -732,7 +733,7 @@ export async function updateCommissionPayment(
       headers: getAuthHeaders(),
       body: JSON.stringify(request)
     })
-    if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, 'API 호출')
     return true
   } catch (error) {
     console.error(`[Commission Service] 지급 수정 실패 (${paymentId}):`, error)
@@ -749,7 +750,7 @@ export async function deleteCommissionPayment(paymentId: number): Promise<boolea
       method: 'DELETE',
       headers: getAuthHeaders()
     })
-    if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, 'API 호출')
     return true
   } catch (error) {
     console.error(`[Commission Service] 지급 삭제 실패 (${paymentId}):`, error)
@@ -775,7 +776,7 @@ export async function exportPaymentsExcel(
     : COMMISSION_ENDPOINTS.exportPayments(year)
 
   const response = await fetch(url, { headers: getAuthHeaders() })
-  if (!response.ok) throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+  if (!response.ok) throw httpError(response.status, '엑셀 다운로드')
 
   const blob = await response.blob()
   const downloadUrl = window.URL.createObjectURL(blob)
@@ -803,7 +804,7 @@ export async function updateSettlementRemarks(
       headers: getAuthHeaders(),
       body: JSON.stringify({ remarks })
     })
-    if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, 'API 호출')
     return true
   } catch (error) {
     console.error(`[Commission Service] 정산이력 비고 수정 실패 (${settlementId}):`, error)
@@ -828,7 +829,7 @@ export async function exportSettlementsExcel(
     : COMMISSION_ENDPOINTS.exportSettlements(year)
 
   const response = await fetch(url, { headers: getAuthHeaders() })
-  if (!response.ok) throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+  if (!response.ok) throw httpError(response.status, '엑셀 다운로드')
 
   const blob = await response.blob()
   const downloadUrl = window.URL.createObjectURL(blob)
@@ -851,7 +852,7 @@ export async function getMonthlySummary(year: number): Promise<any[]> {
     const response = await fetch(COMMISSION_ENDPOINTS.monthlySummary(year), {
       headers: getAuthHeaders()
     })
-    if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, 'API 호출')
     return await response.json()
   } catch (error) {
     console.error(`[Commission Service] 월별 집계 조회 실패 (${year}):`, error)
@@ -866,7 +867,7 @@ export async function exportMonthlySummaryExcel(year: number): Promise<void> {
   const response = await fetch(COMMISSION_ENDPOINTS.exportMonthlySummary(year), {
     headers: getAuthHeaders()
   })
-  if (!response.ok) throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+  if (!response.ok) throw httpError(response.status, '엑셀 다운로드')
 
   const blob = await response.blob()
   const downloadUrl = window.URL.createObjectURL(blob)
@@ -891,7 +892,7 @@ export async function recalculateSettlements(year: number): Promise<{ updatedCou
       method: 'POST',
       headers: getAuthHeaders()
     })
-    if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, 'API 호출')
     return await response.json()
   } catch (error) {
     console.error(`[Commission Service] 정산이력 재계산 실패 (${year}):`, error)
@@ -914,7 +915,7 @@ export async function simulateFinalSettlement(
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()
@@ -942,7 +943,7 @@ export async function finalizeFinalSettlement(
     })
 
     if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status}`)
+      throw httpError(response.status, 'API 호출')
     }
 
     const data = await response.json()

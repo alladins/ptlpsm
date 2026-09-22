@@ -8,6 +8,7 @@
 
 import { BASELINE_ENDPOINTS, BASELINE_MOBILE_ENDPOINTS } from './api/endpoints/baseline.endpoints'
 import { getAuthHeaders } from './api'
+import { httpErrorMessage } from '~/utils/apiError'
 import type {
   Baseline,
   BaselineListItem,
@@ -384,7 +385,7 @@ export const baselineService = {
     const response = await fetch(url, { method: 'POST', headers, body: formData })
     if (!response.ok) {
       const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || `스캔본 업로드 실패: ${response.statusText}`)
+      throw new Error(errorData?.message || httpErrorMessage(response.status, '스캔본 업로드'))
     }
   },
 
@@ -407,7 +408,7 @@ export const baselineService = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || `기성 차수 취소 실패: ${response.statusText}`)
+      throw new Error(errorData?.message || httpErrorMessage(response.status, '기성 차수 취소'))
     }
   },
 
@@ -671,7 +672,7 @@ export const baselineService = {
     const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
     if (!response.ok) {
       const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || `일괄 다운로드 실패: ${response.status}`)
+      throw new Error(errorData?.message || httpErrorMessage(response.status, '일괄 다운로드'))
     }
 
     const blob = await response.blob()
@@ -707,7 +708,7 @@ export const baselineService = {
     const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
     if (!response.ok) {
       const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || `합지 다운로드 실패: ${response.status}`)
+      throw new Error(errorData?.message || httpErrorMessage(response.status, '합지 다운로드'))
     }
 
     const blob = await response.blob()

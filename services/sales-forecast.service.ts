@@ -1,6 +1,7 @@
 import { apiEnvironment, getAuthHeaders } from './api'
 import { SALES_ENDPOINTS } from './api/endpoints/sales.endpoints'
 import type { SalesForecast, SalesForecastRequest } from '~/types/sales'
+import { httpError } from '~/utils/apiError'
 
 /**
  * 영업 예측 서비스
@@ -19,7 +20,7 @@ export const salesForecastService = {
       })
 
       if (!response.ok) {
-        throw new Error(`예측 목록 조회 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '예측 목록 조회')
       }
 
       return await response.json()
@@ -42,7 +43,7 @@ export const salesForecastService = {
       })
 
       if (!response.ok) {
-        throw new Error(`예측 상세 조회 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '예측 상세 조회')
       }
 
       return await response.json()
@@ -65,7 +66,7 @@ export const salesForecastService = {
       })
 
       if (!response.ok) {
-        throw new Error(`수주 예측 조회 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '수주 예측 조회')
       }
 
       return await response.json()
@@ -88,7 +89,7 @@ export const salesForecastService = {
       })
 
       if (!response.ok) {
-        throw new Error(`확률별 예측 조회 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '확률별 예측 조회')
       }
 
       return await response.json()
@@ -112,7 +113,7 @@ export const salesForecastService = {
       })
 
       if (!response.ok) {
-        throw new Error(`예측 등록 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '예측 등록')
       }
 
       return await response.json()
@@ -136,7 +137,7 @@ export const salesForecastService = {
       })
 
       if (!response.ok) {
-        throw new Error(`예측 수정 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '예측 수정')
       }
 
       return await response.json()
@@ -159,7 +160,7 @@ export const salesForecastService = {
       })
 
       if (!response.ok) {
-        throw new Error(`예측 삭제 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '예측 삭제')
       }
     } catch (error) {
       console.error('예측 삭제 오류:', error)

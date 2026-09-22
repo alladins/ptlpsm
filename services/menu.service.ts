@@ -8,6 +8,7 @@ import type { Menu, MenuPage, MenuAuth } from '~/types/menu'
 import { MENU_ENDPOINTS, ROLE_ENDPOINTS } from '~/services/api/endpoints/menu.endpoints'
 import { ROLE_LIST } from '~/types/user'
 import { getAuthHeaders } from './api'
+import { httpError } from '~/utils/apiError'
 
 // ========================================
 // 역할 관련 타입
@@ -157,7 +158,7 @@ export const menuService = {
       })
 
       if (!response.ok) {
-        throw new Error(`API 호출 실패: ${response.status}`)
+        throw httpError(response.status, 'API 호출')
       }
 
       const data = await response.json()
@@ -185,7 +186,7 @@ export const menuService = {
       })
 
       if (!response.ok) {
-        throw new Error(`API 호출 실패: ${response.status}`)
+        throw httpError(response.status, 'API 호출')
       }
 
       const data = await response.json()
@@ -216,7 +217,7 @@ export const menuService = {
       })
 
       if (!response.ok) {
-        throw new Error(`API 호출 실패: ${response.status}`)
+        throw httpError(response.status, 'API 호출')
       }
 
       const data = await response.json()
@@ -242,7 +243,7 @@ export const menuService = {
       })
 
       if (!response.ok) {
-        throw new Error(`API 호출 실패: ${response.status}`)
+        throw httpError(response.status, 'API 호출')
       }
 
       const data = await response.json()
@@ -275,7 +276,7 @@ export const menuService = {
       })
 
       if (!response.ok) {
-        throw new Error(`API 호출 실패: ${response.status}`)
+        throw httpError(response.status, 'API 호출')
       }
 
       const data = await response.json()
@@ -342,7 +343,7 @@ export const roleService = {
       })
 
       if (!response.ok) {
-        throw new Error(`API 호출 실패: ${response.status}`)
+        throw httpError(response.status, 'API 호출')
       }
 
       const data = await response.json()
@@ -376,7 +377,7 @@ export const roleService = {
       })
 
       if (!response.ok) {
-        throw new Error(`API 호출 실패: ${response.status}`)
+        throw httpError(response.status, 'API 호출')
       }
 
       const data = await response.json()

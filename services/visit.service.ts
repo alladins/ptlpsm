@@ -7,6 +7,7 @@
 
 import { getAuthHeaders } from './api'
 import { VISIT_ENDPOINTS } from './api/endpoints/visit.endpoints'
+import { httpError } from '~/utils/apiError'
 import type {
   ApiCallLog,
   CompanyIpUsage,
@@ -55,7 +56,7 @@ export const visitService = {
       body: JSON.stringify(req)
     })
     if (!response.ok) {
-      throw new Error(`방문 기록 실패: ${response.status}`)
+      throw httpError(response.status, '방문 기록')
     }
     return response.json()
   },
@@ -69,19 +70,19 @@ export const visitService = {
   }): Promise<VisitCompanyStatsDaily[]> {
     const url = `${VISIT_ENDPOINTS.companyStats()}${buildQuery(params)}`
     const response = await fetch(url, { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`회사별 통계 조회 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '회사별 통계 조회')
     return response.json()
   },
 
   async getCompanyToday(): Promise<CompanyTodayLive[]> {
     const response = await fetch(VISIT_ENDPOINTS.companyToday(), { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`회사 오늘 통계 조회 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '회사 오늘 통계 조회')
     return response.json()
   },
 
   async getCompanyIps(companyId: number): Promise<CompanyIpUsage[]> {
     const response = await fetch(VISIT_ENDPOINTS.companyIps(companyId), { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`회사 IP 이력 조회 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '회사 IP 이력 조회')
     return response.json()
   },
 
@@ -95,13 +96,13 @@ export const visitService = {
   }): Promise<VisitUserStatsDaily[]> {
     const url = `${VISIT_ENDPOINTS.userStats()}${buildQuery(params)}`
     const response = await fetch(url, { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`사용자별 통계 조회 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '사용자별 통계 조회')
     return response.json()
   },
 
   async getUserToday(): Promise<UserTodayLive[]> {
     const response = await fetch(VISIT_ENDPOINTS.userToday(), { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`사용자 오늘 통계 조회 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '사용자 오늘 통계 조회')
     return response.json()
   },
 
@@ -113,7 +114,7 @@ export const visitService = {
   }): Promise<HourDistribution[]> {
     const url = `${VISIT_ENDPOINTS.hourDistribution()}${buildQuery(params)}`
     const response = await fetch(url, { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`시간대 분포 조회 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '시간대 분포 조회')
     return response.json()
   },
 
@@ -129,7 +130,7 @@ export const visitService = {
   }): Promise<PagedResponse<ApiCallLog>> {
     const url = `${VISIT_ENDPOINTS.apiCalls()}${buildQuery(params)}`
     const response = await fetch(url, { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`API 호출 로그 조회 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, 'API 호출 로그 조회')
     return response.json()
   },
 
@@ -138,13 +139,13 @@ export const visitService = {
   async getWhitelist(companyId: number, listType?: 'WHITE' | 'BLACK'): Promise<VisitIpWhitelist[]> {
     const url = `${VISIT_ENDPOINTS.whitelist()}${buildQuery({ companyId, listType })}`
     const response = await fetch(url, { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`화이트리스트 조회 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '화이트리스트 조회')
     return response.json()
   },
 
   async getActiveBlocks(): Promise<VisitIpWhitelist[]> {
     const response = await fetch(VISIT_ENDPOINTS.whitelistBlocks(), { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`활성 BLACK 조회 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '활성 BLACK 조회')
     return response.json()
   },
 
@@ -154,7 +155,7 @@ export const visitService = {
       headers: getAuthHeaders(),
       body: JSON.stringify(req)
     })
-    if (!response.ok) throw new Error(`화이트리스트 등록 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '화이트리스트 등록')
     return response.json()
   },
 
@@ -164,7 +165,7 @@ export const visitService = {
       headers: getAuthHeaders(),
       body: JSON.stringify(req)
     })
-    if (!response.ok) throw new Error(`화이트리스트 수정 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '화이트리스트 수정')
   },
 
   async deleteWhitelist(id: number): Promise<void> {
@@ -172,7 +173,7 @@ export const visitService = {
       method: 'DELETE',
       headers: getAuthHeaders()
     })
-    if (!response.ok) throw new Error(`화이트리스트 삭제 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '화이트리스트 삭제')
   },
 
   // ==================== 알림 ====================
@@ -187,7 +188,7 @@ export const visitService = {
   }): Promise<PagedResponse<VisitAlert>> {
     const url = `${VISIT_ENDPOINTS.alerts()}${buildQuery(params)}`
     const response = await fetch(url, { headers: getAuthHeaders() })
-    if (!response.ok) throw new Error(`알림 조회 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '알림 조회')
     return response.json()
   },
 
@@ -197,6 +198,6 @@ export const visitService = {
       headers: getAuthHeaders(),
       body: JSON.stringify(req)
     })
-    if (!response.ok) throw new Error(`알림 처리 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '알림 처리')
   }
 }

@@ -1,5 +1,6 @@
 import { getApiBaseUrl, getAuthHeaders } from './api'
 import { ITEM_ENDPOINTS } from './api/endpoints/item.endpoints'
+import { httpError } from '~/utils/apiError'
 
 // MIGRATED: 2025-01-25 - URL을 ITEM_ENDPOINTS로 이전
 
@@ -183,7 +184,7 @@ export const exportItems = async (params: { keyword?: string; useYn?: string } =
   })
 
   if (!response.ok) {
-    throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    throw httpError(response.status, '엑셀 다운로드')
   }
 
   return response.blob()

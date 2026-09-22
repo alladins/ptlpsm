@@ -1,5 +1,6 @@
 import { apiEnvironment, getAuthHeaders } from './api'
 import { DEMAND_ORGANIZATION_ENDPOINTS } from './api/endpoints/demand-organization.endpoints'
+import { httpError } from '~/utils/apiError'
 
 // MIGRATED: 2025-01-25 - URL을 DEMAND_ORGANIZATION_ENDPOINTS로 이전
 
@@ -485,7 +486,7 @@ export const demandOrganizationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`진행상황 조회 실패: ${response.status}`)
+      throw httpError(response.status, '진행상황 조회')
     }
 
     return await response.json()
@@ -503,7 +504,7 @@ export const demandOrganizationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`동기화 취소 실패: ${response.status}`)
+      throw httpError(response.status, '동기화 취소')
     }
   },
 

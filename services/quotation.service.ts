@@ -4,6 +4,7 @@
 
 import { QUOTATION_ENDPOINTS } from './api/endpoints/quotation.endpoints'
 import { getAuthHeaders } from './api'
+import { httpError } from '~/utils/apiError'
 
 // ==================== 타입 정의 ====================
 
@@ -121,7 +122,7 @@ export const quotationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`견적서 목록 조회 실패: ${response.status}`)
+      throw httpError(response.status, '견적서 목록 조회')
     }
 
     return await response.json()
@@ -137,7 +138,7 @@ export const quotationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`견적서 상세 조회 실패: ${response.status}`)
+      throw httpError(response.status, '견적서 상세 조회')
     }
 
     return await response.json()
@@ -154,7 +155,7 @@ export const quotationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`견적서 등록 실패: ${response.status}`)
+      throw httpError(response.status, '견적서 등록')
     }
 
     return await response.json()
@@ -171,7 +172,7 @@ export const quotationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`견적서 수정 실패: ${response.status}`)
+      throw httpError(response.status, '견적서 수정')
     }
 
     return await response.json()
@@ -187,7 +188,7 @@ export const quotationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`견적서 삭제 실패: ${response.status}`)
+      throw httpError(response.status, '견적서 삭제')
     }
   },
 
@@ -201,7 +202,7 @@ export const quotationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`견적서 PDF 생성 실패: ${response.status}`)
+      throw httpError(response.status, '견적서 PDF 생성')
     }
 
     return await response.json()
@@ -217,7 +218,7 @@ export const quotationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`견적서 PDF 미리보기 실패: ${response.status}`)
+      throw httpError(response.status, '견적서 PDF 미리보기')
     }
 
     const blob = await response.blob()
@@ -235,7 +236,7 @@ export const quotationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`견적서 PDF 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '견적서 PDF 다운로드')
     }
 
     const blob = await response.blob()
@@ -271,7 +272,7 @@ export const quotationService = {
     })
 
     if (!response.ok) {
-      throw new Error(`견적서 이메일 발송 실패: ${response.status}`)
+      throw httpError(response.status, '견적서 이메일 발송')
     }
   },
 }

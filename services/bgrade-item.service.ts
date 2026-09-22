@@ -6,6 +6,7 @@
 
 import { getAuthHeaders } from './api'
 import { BGRADE_ITEM_ENDPOINTS } from './api/endpoints/bgrade-item.endpoints'
+import { httpError } from '~/utils/apiError'
 import type {
   BgradeItemCreateRequest,
   BgradeItemUpdateRequest,
@@ -35,7 +36,7 @@ class BgradeItemService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`B급 품목 목록 조회 실패: ${response.status}`)
+        throw httpError(response.status, 'B급 품목 목록 조회')
       }
 
       const data = await response.json()
@@ -69,7 +70,7 @@ class BgradeItemService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`B급 품목 조회 실패: ${response.status}`)
+        throw httpError(response.status, 'B급 품목 조회')
       }
 
       const data = await response.json()
@@ -108,7 +109,7 @@ class BgradeItemService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`B급 품목 등록 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, 'B급 품목 등록')
       }
 
       const data = await response.json()
@@ -154,7 +155,7 @@ class BgradeItemService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`B급 품목 수정 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, 'B급 품목 수정')
       }
 
       const data = await response.json()
@@ -188,7 +189,7 @@ class BgradeItemService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`B급 품목 삭제 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, 'B급 품목 삭제')
       }
 
       console.log('[bgrade-item.service] B급 품목 삭제 완료')

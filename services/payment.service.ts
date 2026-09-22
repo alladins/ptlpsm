@@ -7,6 +7,7 @@
 
 import { getAuthHeaders } from './api'
 import { PAYMENT_ENDPOINTS } from './api/endpoints/payment.endpoints'
+import { httpError } from '~/utils/apiError'
 import type {
   Payment,
   PaymentRequest,
@@ -68,7 +69,7 @@ class PaymentService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`지급 목록 조회 실패: ${response.status}`)
+        throw httpError(response.status, '지급 목록 조회')
       }
 
       const data = await response.json()
@@ -121,7 +122,7 @@ class PaymentService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`지급 상세 조회 실패: ${response.status}`)
+        throw httpError(response.status, '지급 상세 조회')
       }
 
       return await response.json()
@@ -155,7 +156,7 @@ class PaymentService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`발주서별 지급 조회 실패: ${response.status}`)
+        throw httpError(response.status, '발주서별 지급 조회')
       }
 
       const data = await response.json()
@@ -188,7 +189,7 @@ class PaymentService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`지급 등록 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '지급 등록')
       }
 
       const data = await response.json()
@@ -220,7 +221,7 @@ class PaymentService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`지급 삭제 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '지급 삭제')
       }
 
       console.log('[payment.service] 삭제 성공')
@@ -253,7 +254,7 @@ class PaymentService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`OEM 지급 요약 조회 실패: ${response.status}`)
+        throw httpError(response.status, 'OEM 지급 요약 조회')
       }
 
       return await response.json()
@@ -287,7 +288,7 @@ class PaymentService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`OEM 제조사별 지급 요약 조회 실패: ${response.status}`)
+        throw httpError(response.status, 'OEM 제조사별 지급 요약 조회')
       }
 
       return await response.json()

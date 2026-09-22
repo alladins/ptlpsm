@@ -1,6 +1,7 @@
 import { getAuthHeaders } from './api'
 import { SALES_ENDPOINTS } from './api/endpoints/sales.endpoints'
 import type { SalesActivity, SalesActivityFile, SalesActivityRequest } from '~/types/sales'
+import { httpError } from '~/utils/apiError'
 
 /**
  * 영업 활동 기록 서비스
@@ -18,7 +19,7 @@ export const salesActivityService = {
     })
 
     if (!response.ok) {
-      throw new Error(`활동 목록 조회 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '활동 목록 조회')
     }
 
     return await response.json()
@@ -37,7 +38,7 @@ export const salesActivityService = {
     })
 
     if (!response.ok) {
-      throw new Error(`활동 등록 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '활동 등록')
     }
 
     return await response.json()
@@ -56,7 +57,7 @@ export const salesActivityService = {
     })
 
     if (!response.ok) {
-      throw new Error(`활동 수정 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '활동 수정')
     }
 
     return await response.json()
@@ -74,7 +75,7 @@ export const salesActivityService = {
     })
 
     if (!response.ok) {
-      throw new Error(`활동 삭제 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '활동 삭제')
     }
   },
 
@@ -97,7 +98,7 @@ export const salesActivityService = {
     })
 
     if (!response.ok) {
-      throw new Error(`파일 업로드 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '파일 업로드')
     }
 
     return await response.json()
@@ -115,7 +116,7 @@ export const salesActivityService = {
     })
 
     if (!response.ok) {
-      throw new Error(`파일 삭제 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '파일 삭제')
     }
   },
 
@@ -131,7 +132,7 @@ export const salesActivityService = {
     })
 
     if (!response.ok) {
-      throw new Error(`파일 다운로드 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '파일 다운로드')
     }
 
     const blob = await response.blob()

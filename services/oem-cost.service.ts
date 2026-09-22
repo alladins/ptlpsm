@@ -4,6 +4,7 @@
 
 import { OEM_COST_ENDPOINTS } from './api/endpoints/oem-cost.endpoints'
 import { getAuthHeaders } from './api'
+import { httpError, httpErrorMessage } from '~/utils/apiError'
 import type {
   OemCost,
   OemCostListItem,
@@ -41,7 +42,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`원가 목록 조회 실패: ${response.status}`)
+      throw httpError(response.status, '원가 목록 조회')
     }
 
     return response.json()
@@ -66,7 +67,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`트리 목록 조회 실패: ${response.status}`)
+      throw httpError(response.status, '트리 목록 조회')
     }
 
     return response.json()
@@ -90,7 +91,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
 
     return response.blob()
@@ -106,7 +107,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`원가 상세 조회 실패: ${response.status}`)
+      throw httpError(response.status, '원가 상세 조회')
     }
 
     return response.json()
@@ -122,7 +123,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`SKU별 원가 조회 실패: ${response.status}`)
+      throw httpError(response.status, 'SKU별 원가 조회')
     }
 
     return response.json()
@@ -143,7 +144,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`OEM별 원가 조회 실패: ${response.status}`)
+      throw httpError(response.status, 'OEM별 원가 조회')
     }
 
     return response.json()
@@ -164,7 +165,7 @@ class OemCostService {
       const errorData = await response.json().catch(() => ({}))
       console.error('[OemCostService] create 실패:', response.status, errorData)
       // Validation 에러의 경우 details에 필드별 에러가 담김
-      let errorMessage = errorData.message || errorData.error || `원가 등록 실패: ${response.status}`
+      let errorMessage = errorData.message || errorData.error || httpErrorMessage(response.status, '원가 등록')
       if (errorData.details) {
         const detailMessages = Object.entries(errorData.details)
           .map(([field, msg]) => `${field}: ${msg}`)
@@ -193,7 +194,7 @@ class OemCostService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || errorData.error || `과거 구간 추가 실패: ${response.status}`)
+      throw new Error(errorData.message || errorData.error || httpErrorMessage(response.status, '과거 구간 추가'))
     }
 
     return response.json()
@@ -211,7 +212,7 @@ class OemCostService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `원가 수정 실패: ${response.status}`)
+      throw new Error(errorData.message || httpErrorMessage(response.status, '원가 수정'))
     }
 
     return response.json()
@@ -228,7 +229,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`원가 삭제 실패: ${response.status}`)
+      throw httpError(response.status, '원가 삭제')
     }
   }
 
@@ -250,7 +251,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`적용구간 조회 실패: ${response.status}`)
+      throw httpError(response.status, '적용구간 조회')
     }
 
     return await response.json()
@@ -269,7 +270,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`이력 조회 실패: ${response.status}`)
+      throw httpError(response.status, '이력 조회')
     }
 
     const result = await response.json()
@@ -287,7 +288,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`SKU 이력 조회 실패: ${response.status}`)
+      throw httpError(response.status, 'SKU 이력 조회')
     }
 
     const result = await response.json()
@@ -304,7 +305,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`이력 조회 실패: ${response.status}`)
+      throw httpError(response.status, '이력 조회')
     }
 
     return response.json()
@@ -320,7 +321,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`통계 조회 실패: ${response.status}`)
+      throw httpError(response.status, '통계 조회')
     }
 
     return response.json()
@@ -336,7 +337,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`미설정 SKU 조회 실패: ${response.status}`)
+      throw httpError(response.status, '미설정 SKU 조회')
     }
 
     return response.json()
@@ -356,7 +357,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`영향 주문 조회 실패: ${response.status}`)
+      throw httpError(response.status, '영향 주문 조회')
     }
 
     return response.json()
@@ -374,7 +375,7 @@ class OemCostService {
     })
 
     if (!response.ok) {
-      throw new Error(`재계산 실패: ${response.status}`)
+      throw httpError(response.status, '재계산')
     }
 
     return response.json()

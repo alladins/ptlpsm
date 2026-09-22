@@ -8,6 +8,7 @@
 import { getAuthHeaders } from './api'
 import { WAREHOUSE_ENDPOINTS } from './api/endpoints/warehouse.endpoints'
 import type { Warehouse, WarehouseRequest } from '~/types/warehouse'
+import { httpError } from '~/utils/apiError'
 
 /**
  * 창고 서비스 클래스
@@ -42,7 +43,7 @@ class WarehouseService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`창고 목록 조회 실패: ${response.status}`)
+        throw httpError(response.status, '창고 목록 조회')
       }
 
       const data = await response.json()
@@ -83,7 +84,7 @@ class WarehouseService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`창고 상세 조회 실패: ${response.status}`)
+        throw httpError(response.status, '창고 상세 조회')
       }
 
       const data = await response.json()
@@ -116,7 +117,7 @@ class WarehouseService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`창고 등록 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '창고 등록')
       }
 
       const data = await response.json()
@@ -151,7 +152,7 @@ class WarehouseService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`창고 수정 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '창고 수정')
       }
 
       const data = await response.json()
@@ -183,7 +184,7 @@ class WarehouseService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`창고 삭제 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '창고 삭제')
       }
 
       console.log('[warehouse.service] 삭제 성공')

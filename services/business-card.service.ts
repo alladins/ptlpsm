@@ -4,6 +4,7 @@
 
 import { BUSINESS_CARD_ENDPOINTS } from './api/endpoints/business-card.endpoints'
 import { getAuthHeaders } from './api'
+import { httpError, httpErrorMessage } from '~/utils/apiError'
 
 // ==================== 타입 정의 ====================
 
@@ -75,7 +76,7 @@ export const businessCardService = {
     })
 
     if (!response.ok) {
-      throw new Error(`명함 목록 조회 실패: ${response.status}`)
+      throw httpError(response.status, '명함 목록 조회')
     }
 
     return await response.json()
@@ -91,7 +92,7 @@ export const businessCardService = {
     })
 
     if (!response.ok) {
-      throw new Error(`명함 상세 조회 실패: ${response.status}`)
+      throw httpError(response.status, '명함 상세 조회')
     }
 
     return await response.json()
@@ -116,7 +117,7 @@ export const businessCardService = {
     })
 
     if (!response.ok) {
-      throw new Error(`기관별 명함 조회 실패: ${response.status}`)
+      throw httpError(response.status, '기관별 명함 조회')
     }
 
     return await response.json()
@@ -134,7 +135,7 @@ export const businessCardService = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || `명함 등록 실패: ${response.status}`)
+      throw new Error(errorData?.message || httpErrorMessage(response.status, '명함 등록'))
     }
 
     return await response.json()
@@ -152,7 +153,7 @@ export const businessCardService = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || `명함 수정 실패: ${response.status}`)
+      throw new Error(errorData?.message || httpErrorMessage(response.status, '명함 수정'))
     }
 
     return await response.json()
@@ -168,7 +169,7 @@ export const businessCardService = {
     })
 
     if (!response.ok) {
-      throw new Error(`명함 삭제 실패: ${response.status}`)
+      throw httpError(response.status, '명함 삭제')
     }
   },
 

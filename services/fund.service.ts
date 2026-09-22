@@ -9,6 +9,7 @@
 import { getLocalDateString } from '~/utils/format'
 import { getAuthHeaders } from './api'
 import { FUND_ENDPOINTS } from './api/endpoints/fund.endpoints'
+import { httpError } from '~/utils/apiError'
 import type {
   Fund,
   FundDetail,
@@ -65,7 +66,7 @@ export const fundService = {
     })
 
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
 
     return response.blob()
@@ -915,7 +916,7 @@ export const fundService = {
     })
 
     if (!response.ok) {
-      throw new Error(`재계산 미리보기 실패: ${response.status}`)
+      throw httpError(response.status, '재계산 미리보기')
     }
 
     return response.json()
@@ -932,7 +933,7 @@ export const fundService = {
     })
 
     if (!response.ok) {
-      throw new Error(`재계산 실패: ${response.status}`)
+      throw httpError(response.status, '재계산')
     }
 
     return response.json()

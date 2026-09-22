@@ -1,5 +1,6 @@
 import { getAuthHeaders } from './api'
 import { SHIPMENT_ENDPOINTS } from './api/endpoints/shipment.endpoints'
+import { httpError, httpErrorMessage } from '~/utils/apiError'
 
 export interface ShipmentOrderStatus {
   deliveryRequestNo: string
@@ -286,7 +287,7 @@ class ShipmentService {
   async getShipmentStatusByOrder(deliveryRequestNo: string): Promise<ShipmentOrderStatus> {
     const response = await fetch(SHIPMENT_ENDPOINTS.byOrder(deliveryRequestNo))
     if (!response.ok) {
-      throw new Error(`출하 현황 조회 실패: ${response.status}`)
+      throw httpError(response.status, '출하 현황 조회')
     }
     return await response.json()
   }
@@ -311,7 +312,7 @@ class ShipmentService {
       headers: getAuthHeaders()
     })
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
     return response.blob()
   }
@@ -373,7 +374,7 @@ class ShipmentService {
           statusText: response.statusText,
           error: errorText
         })
-        throw new Error(`출하 목록 조회 실패: ${response.status}`)
+        throw httpError(response.status, '출하 목록 조회')
       }
 
       const data = await response.json()
@@ -440,7 +441,7 @@ class ShipmentService {
           statusText: response.statusText,
           errorBody: errorText
         })
-        throw new Error(`출하 상세 조회 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '출하 상세 조회')
       }
 
       const data = await response.json()
@@ -462,7 +463,7 @@ class ShipmentService {
       body: JSON.stringify(shipment)
     })
     if (!response.ok) {
-      throw new Error(`출하 등록 실패: ${response.status}`)
+      throw httpError(response.status, '출하 등록')
     }
   }
 
@@ -489,10 +490,10 @@ class ShipmentService {
       const errorText = await response.text()
       try {
         const errorJson = JSON.parse(errorText)
-        throw new Error(errorJson.message || `운송비 저장 실패: ${response.status}`)
+        throw new Error(errorJson.message || httpErrorMessage(response.status, '운송비 저장'))
       } catch (e) {
         if (e instanceof SyntaxError) {
-          throw new Error(errorText || `운송비 저장 실패: ${response.status}`)
+          throw new Error(errorText || httpErrorMessage(response.status, '운송비 저장'))
         }
         throw e
       }
@@ -509,10 +510,10 @@ class ShipmentService {
       const errorText = await response.text()
       try {
         const errorJson = JSON.parse(errorText)
-        throw new Error(errorJson.message || errorText || `출하 수정 실패: ${response.status}`)
+        throw new Error(errorJson.message || errorText || httpErrorMessage(response.status, '출하 수정'))
       } catch (e) {
         if (e instanceof SyntaxError) {
-          throw new Error(errorText || `출하 수정 실패: ${response.status}`)
+          throw new Error(errorText || httpErrorMessage(response.status, '출하 수정'))
         }
         throw e
       }
@@ -529,10 +530,10 @@ class ShipmentService {
       const errorText = await response.text()
       try {
         const errorJson = JSON.parse(errorText)
-        throw new Error(errorJson.message || errorText || `출하 삭제 실패: ${response.status}`)
+        throw new Error(errorJson.message || errorText || httpErrorMessage(response.status, '출하 삭제'))
       } catch (e) {
         if (e instanceof SyntaxError) {
-          throw new Error(errorText || `출하 삭제 실패: ${response.status}`)
+          throw new Error(errorText || httpErrorMessage(response.status, '출하 삭제'))
         }
         throw e
       }

@@ -9,6 +9,7 @@
 import { getAuthHeaders } from './api'
 import { ADVANCE_PAYMENT_ENDPOINTS } from './api/endpoints/advance-payment.endpoints'
 import type { AdvancePdfType } from '~/types/fund'
+import { httpError } from '~/utils/apiError'
 
 export const advancePaymentService = {
   /**
@@ -155,7 +156,7 @@ export const advancePaymentService = {
     })
 
     if (!response.ok) {
-      throw new Error(`PDF 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, 'PDF 다운로드')
     }
 
     const blob = await response.blob()
@@ -182,7 +183,7 @@ export const advancePaymentService = {
     })
 
     if (!response.ok) {
-      throw new Error(`전체 PDF 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '전체 PDF 다운로드')
     }
 
     const blob = await response.blob()

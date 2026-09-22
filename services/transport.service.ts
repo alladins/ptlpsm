@@ -1,5 +1,6 @@
 import { apiEnvironment, getAuthHeaders } from './api'
 import { TRANSPORT_ENDPOINTS } from './api/endpoints/transport.endpoints'
+import { httpError, httpErrorMessage } from '~/utils/apiError'
 
 // MIGRATED: 2025-01-25 - URL을 TRANSPORT_ENDPOINTS로 이전
 
@@ -105,7 +106,7 @@ class TransportService {
       headers: getAuthHeaders()
     })
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
     return response.blob()
   }
@@ -127,7 +128,7 @@ class TransportService {
 
       const response = await fetch(`${TRANSPORT_ENDPOINTS.list()}?${queryParams.toString()}`)
       if (!response.ok) {
-        throw new Error(`운송장 목록 조회 실패: ${response.status}`)
+        throw httpError(response.status, '운송장 목록 조회')
       }
 
       // 백엔드는 항상 Spring Data Page 표준(content/totalElements/totalPages/...) 으로 응답한다.
@@ -143,7 +144,7 @@ class TransportService {
     try {
       const response = await fetch(TRANSPORT_ENDPOINTS.detail(transportId))
       if (!response.ok) {
-        throw new Error(`운송장 상세 조회 실패: ${response.status}`)
+        throw httpError(response.status, '운송장 상세 조회')
       }
       return await response.json()
     } catch (error) {
@@ -157,7 +158,7 @@ class TransportService {
     try {
       const response = await fetch(TRANSPORT_ENDPOINTS.byShipment(shipmentId))
       if (!response.ok) {
-        throw new Error(`출하 ID로 운송장 조회 실패: ${response.status}`)
+        throw httpError(response.status, '출하 ID로 운송장 조회')
       }
       return await response.json()
     } catch (error) {
@@ -177,7 +178,7 @@ class TransportService {
       })
       if (!response.ok) {
         const errorData = await response.json().catch(() => null)
-        const errorMessage = errorData?.message || `운송장 등록 실패: ${response.status}`
+        const errorMessage = errorData?.message || httpErrorMessage(response.status, '운송장 등록')
         throw new Error(errorMessage)
       }
       return await response.json()
@@ -199,7 +200,7 @@ class TransportService {
       if (!response.ok) {
         // 에러 응답 파싱 (백엔드 표준 포맷: { timestamp, status, error, message, details })
         const errorData = await response.json().catch(() => ({}))
-        const error = new Error(errorData.message || `운송장 수정 실패: ${response.status}`) as any
+        const error = new Error(errorData.message || httpErrorMessage(response.status, '운송장 수정')) as any
         error.status = response.status
         error.serverMessage = errorData.message
         throw error
@@ -218,7 +219,7 @@ class TransportService {
         method: 'DELETE'
       })
       if (!response.ok) {
-        throw new Error(`운송장 삭제 실패: ${response.status}`)
+        throw httpError(response.status, '운송장 삭제')
       }
     } catch (error) {
       console.error('운송장 삭제 실패:', error)

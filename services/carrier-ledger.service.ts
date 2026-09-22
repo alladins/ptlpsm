@@ -8,6 +8,7 @@
 import { getApiBaseUrl } from './api/config'
 import { getAuthHeaders } from './api'
 import type { CarrierMonthlyLedger, CarrierSummary } from '~/types/carrier-ledger'
+import { httpError } from '~/utils/apiError'
 
 const base = () => `${getApiBaseUrl()}/admin/carrier/ledger`
 
@@ -23,7 +24,7 @@ class CarrierLedgerService {
     })
 
     if (!response.ok) {
-      throw new Error(`운송비 원장 조회 실패: ${response.status}`)
+      throw httpError(response.status, '운송비 원장 조회')
     }
 
     return await response.json()
@@ -37,7 +38,7 @@ class CarrierLedgerService {
     })
 
     if (!response.ok) {
-      throw new Error(`조회 가능 월 조회 실패: ${response.status}`)
+      throw httpError(response.status, '조회 가능 월 조회')
     }
 
     return await response.json()
@@ -55,7 +56,7 @@ class CarrierLedgerService {
     })
 
     if (!response.ok) {
-      throw new Error(`운송사 목록 조회 실패: ${response.status}`)
+      throw httpError(response.status, '운송사 목록 조회')
     }
 
     return await response.json()
@@ -72,7 +73,7 @@ class CarrierLedgerService {
     })
 
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
 
     const blob = await response.blob()

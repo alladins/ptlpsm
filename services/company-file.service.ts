@@ -1,5 +1,6 @@
 import { apiEnvironment, getAuthHeaders } from './api'
 import { safeStorage } from '~/utils/storage'
+import { httpError } from '~/utils/apiError'
 
 /**
  * 회사 파일 정보
@@ -45,7 +46,7 @@ export const companyFileService = {
     })
 
     if (!response.ok) {
-      throw new Error(`회사 파일 목록 조회 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '회사 파일 목록 조회')
     }
 
     return await response.json()
@@ -74,7 +75,7 @@ export const companyFileService = {
     }
 
     if (!response.ok) {
-      throw new Error(`회사 파일 이력 조회 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '회사 파일 이력 조회')
     }
 
     return await response.json()
@@ -104,7 +105,7 @@ export const companyFileService = {
     })
 
     if (!response.ok) {
-      throw new Error(`회사 파일 업로드 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '회사 파일 업로드')
     }
 
     return await response.json()
@@ -123,7 +124,7 @@ export const companyFileService = {
     })
 
     if (!response.ok) {
-      throw new Error(`회사 파일 수정 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '회사 파일 수정')
     }
 
     return await response.json()
@@ -141,7 +142,7 @@ export const companyFileService = {
     })
 
     if (!response.ok) {
-      throw new Error(`회사 파일 삭제 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '회사 파일 삭제')
     }
   },
 
@@ -167,7 +168,7 @@ export const companyFileService = {
     })
 
     if (!response.ok) {
-      throw new Error(`회사 파일 다운로드 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '회사 파일 다운로드')
     }
 
     const blob = await response.blob()
@@ -194,7 +195,7 @@ export const companyFileService = {
     })
 
     if (!response.ok) {
-      throw new Error(`이메일 발송 실패: ${response.status} ${response.statusText}`)
+      throw httpError(response.status, '이메일 발송')
     }
   },
 }

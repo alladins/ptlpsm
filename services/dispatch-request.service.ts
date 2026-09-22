@@ -7,6 +7,7 @@
 
 import { getAuthHeaders } from './api'
 import { DISPATCH_REQUEST_ENDPOINTS } from './api/endpoints/dispatch-request.endpoints'
+import { httpError } from '~/utils/apiError'
 import type {
   DispatchAvailabilityResponse,
   DispatchRequest,
@@ -72,7 +73,7 @@ class DispatchRequestService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`출고요청 목록 조회 실패: ${response.status}`)
+        throw httpError(response.status, '출고요청 목록 조회')
       }
 
       const data = await response.json()
@@ -125,7 +126,7 @@ class DispatchRequestService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`출고요청 상세 조회 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '출고요청 상세 조회')
       }
 
       return await response.json()
@@ -164,7 +165,7 @@ class DispatchRequestService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`출고요청 조회 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '출고요청 조회')
       }
 
       return await response.json()
@@ -199,7 +200,7 @@ class DispatchRequestService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`가용성 확인 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '가용성 확인')
       }
 
       return await response.json()
@@ -235,7 +236,7 @@ class DispatchRequestService {
         status: response.status,
         error: errorText
       })
-      throw new Error(`재고 현황 확인 실패: ${response.status}`)
+      throw httpError(response.status, '재고 현황 확인')
     }
 
     return await response.json()
@@ -263,7 +264,7 @@ class DispatchRequestService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`출고요청 생성 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '출고요청 생성')
       }
 
       const data = await response.json()
@@ -296,7 +297,7 @@ class DispatchRequestService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`출고요청 확인 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '출고요청 확인')
       }
 
       const data = await response.json()
@@ -329,7 +330,7 @@ class DispatchRequestService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`발송처리 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '발송처리')
       }
 
       const data = await response.json()
@@ -361,7 +362,7 @@ class DispatchRequestService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`출고요청 삭제 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '출고요청 삭제')
       }
 
       console.log('[dispatch-request.service] 삭제 성공')

@@ -3,6 +3,7 @@
  */
 
 import { getAuthHeaders, apiEnvironment } from './api'
+import { httpError } from '~/utils/apiError'
 import type {
   OemMonthlyLedgerResponse,
   OemLedgerPaymentRequest,
@@ -40,7 +41,7 @@ class OemLedgerService {
     const response = await fetch(`${this.getBaseUrl()}/export?${params}`, {
       headers: getAuthHeaders()
     })
-    if (!response.ok) throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    if (!response.ok) throw httpError(response.status, '엑셀 다운로드')
     return response.blob()
   }
 

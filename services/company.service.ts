@@ -1,6 +1,7 @@
 import type { Company, CompanyCreateRequest, CompanyUpdateRequest, CompanyInfoResponse } from '~/types/company'
 import { COMPANY_ENDPOINTS } from './api/endpoints/company.endpoints'
 import { getAuthHeaders } from './api'
+import { httpError, httpErrorMessage } from '~/utils/apiError'
 
 // MIGRATED: 2025-01-25 - URL을 COMPANY_ENDPOINTS로 이전
 
@@ -24,7 +25,7 @@ class CompanyService {
             console.log('🔍 [createCompany] Response Status:', response.status)
 
             if (!response.ok) {
-                throw new Error(`회사 정보 등록 실패: ${response.status}`)
+                throw httpError(response.status, '회사 정보 등록')
             }
 
             return await response.json()
@@ -47,7 +48,7 @@ class CompanyService {
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => null)
-            throw new Error(errorBody?.message || `회사 간편 등록 실패: ${response.status}`)
+            throw new Error(errorBody?.message || httpErrorMessage(response.status, '회사 간편 등록'))
         }
 
         return await response.json()
@@ -66,7 +67,7 @@ class CompanyService {
             })
 
             if (!response.ok) {
-                throw new Error(`회사 정보 수정 실패: ${response.status}`)
+                throw httpError(response.status, '회사 정보 수정')
             }
 
             return await response.json()
@@ -88,7 +89,7 @@ class CompanyService {
             })
 
             if (!response.ok) {
-                throw new Error(`회사 정보 삭제 실패: ${response.status}`)
+                throw httpError(response.status, '회사 정보 삭제')
             }
         } catch (error) {
             console.error('회사 정보 삭제 오류:', error)
@@ -114,7 +115,7 @@ class CompanyService {
             })
 
             if (!response.ok) {
-                throw new Error(`회사 목록 조회 실패: ${response.status}`)
+                throw httpError(response.status, '회사 목록 조회')
             }
 
             const data = await response.json()
@@ -136,6 +137,33 @@ class CompanyService {
     }
 
     /**
+     * 생산자 목록 조회 — 원가가 등록된 회사
+     * GET /api/basic/company/producers
+     *
+     * ★ 발주서 공급원은 이걸 쓴다. 회사 유형(제조사/본사)이 아니라
+     *   «OEM 원가 관리에 원가가 1건이라도 있는가» 로 거른다(2026-09-21 대전제 8번).
+     *   리드파워는 지금 원가가 없어 안 나오고, 원가를 등록하면 자동으로 나온다.
+     */
+    async getProducers(): Promise<CompanyInfoResponse[]> {
+        try {
+            const response = await fetch(`${COMPANY_ENDPOINTS.list()}/producers`, {
+                method: 'GET',
+                headers: getAuthHeaders()
+            })
+
+            if (!response.ok) {
+                throw httpError(response.status, '공급원 목록 조회')
+            }
+
+            const data = await response.json()
+            return Array.isArray(data) ? data : []
+        } catch (error) {
+            console.error('공급원 목록 조회 오류:', error)
+            throw error
+        }
+    }
+
+    /**
      * 회사 상세 조회
      * GET /api/basic/company/{id}
      */
@@ -147,7 +175,7 @@ class CompanyService {
             })
 
             if (!response.ok) {
-                throw new Error(`회사 상세 조회 실패: ${response.status}`)
+                throw httpError(response.status, '회사 상세 조회')
             }
 
             return await response.json()

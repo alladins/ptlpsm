@@ -4,6 +4,7 @@
  */
 import { BANK_ACCOUNT_ENDPOINTS } from './api/endpoints/bank-account.endpoints'
 import { getAuthHeaders } from './api'
+import { httpError } from '~/utils/apiError'
 import type {
   BankAccount,
   BankAccountDetail,
@@ -115,7 +116,7 @@ export const bankAccountService = {
     })
 
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
 
     return response.blob()
@@ -147,7 +148,7 @@ export const bankAccountService = {
     })
 
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
 
     return response.blob()

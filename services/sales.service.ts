@@ -2,6 +2,7 @@ import { apiEnvironment, getAuthHeaders } from './api'
 import { demandOrganizationService } from './demand-organization.service'
 import { SALES_ENDPOINTS } from './api/endpoints/sales.endpoints'
 import { codeService } from './code.service'
+import { httpError } from '~/utils/apiError'
 
 // MIGRATED: 2025-01-25 - URL을 SALES_ENDPOINTS로 이전
 
@@ -230,7 +231,7 @@ export const salesService = {
           statusText: response.statusText,
           responseText: errorText
         })
-        throw new Error(`영업관리 목록 조회 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '영업관리 목록 조회')
       }
 
       const result = await response.json()
@@ -262,7 +263,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`영업관리 상세 조회 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '영업관리 상세 조회')
       }
 
       const result = await response.json()
@@ -312,7 +313,7 @@ export const salesService = {
           statusText: response.statusText,
           responseText: errorText
         })
-        throw new Error(`영업관리 등록 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '영업관리 등록')
       }
 
       const result = await response.json()
@@ -365,7 +366,7 @@ export const salesService = {
           statusText: response.statusText,
           responseText: errorText
         })
-        throw new Error(`영업관리 수정 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '영업관리 수정')
       }
 
       const result = await response.json()
@@ -395,7 +396,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`영업관리 삭제 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '영업관리 삭제')
       }
     } catch (error) {
       console.error('영업관리 삭제 오류:', error)
@@ -418,7 +419,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`계약서 파일 업로드 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '계약서 파일 업로드')
       }
 
       return await response.json()
@@ -440,7 +441,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`계약서 파일 다운로드 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '계약서 파일 다운로드')
       }
 
       return await response.blob()
@@ -505,7 +506,7 @@ export const salesService = {
           statusText: response.statusText,
           responseText: errorText
         })
-        throw new Error(`품목 목록 조회 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '품목 목록 조회')
       }
 
       const result = await response.json()
@@ -536,7 +537,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`품목 추가 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '품목 추가')
       }
 
       return await response.json()
@@ -560,7 +561,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`품목 수정 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '품목 수정')
       }
 
       return await response.json()
@@ -583,7 +584,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`품목 삭제 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '품목 삭제')
       }
     } catch (error) {
       console.error('품목 삭제 오류:', error)
@@ -604,7 +605,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`이력 조회 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '이력 조회')
       }
 
       return await response.json()
@@ -627,7 +628,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`영업관리 복원 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '영업관리 복원')
       }
 
       return await response.json()
@@ -664,7 +665,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`삭제된 영업관리 목록 조회 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '삭제된 영업관리 목록 조회')
       }
 
       return await response.json()
@@ -689,7 +690,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`계약 연결 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '계약 연결')
       }
 
       return await response.json()
@@ -712,7 +713,7 @@ export const salesService = {
       })
 
       if (!response.ok) {
-        throw new Error(`계약 연결 해제 실패: ${response.status} ${response.statusText}`)
+        throw httpError(response.status, '계약 연결 해제')
       }
 
       return await response.json()

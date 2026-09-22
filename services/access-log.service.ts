@@ -6,6 +6,7 @@
 import { formatDate } from '~/utils/format'
 import { ACCESS_LOG_ENDPOINTS } from './api/endpoints/access-log.endpoints'
 import { getAuthHeaders } from './api'
+import { httpError } from '~/utils/apiError'
 import type {
   AccessLogSearchParams,
   AccessLogListResponse,
@@ -46,7 +47,7 @@ export const accessLogService = {
     })
 
     if (!response.ok) {
-      throw new Error(`접근로그 조회 실패: ${response.statusText}`)
+      throw httpError(response.status, '접근로그 조회')
     }
 
     return response.json()
@@ -67,7 +68,7 @@ export const accessLogService = {
     })
 
     if (!response.ok) {
-      throw new Error(`접근로그 통계 조회 실패: ${response.statusText}`)
+      throw httpError(response.status, '접근로그 통계 조회')
     }
 
     return response.json()
@@ -87,7 +88,7 @@ export const accessLogService = {
     })
 
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.statusText}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
 
     return response.blob()
