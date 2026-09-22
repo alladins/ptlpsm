@@ -203,46 +203,40 @@
                 <td>
                   <div class="message-buttons">
                     <!-- 납품확인서 메시지 (현장소장 + 감리원 서명 요청) -->
-                    <button
+                    <GuardedButton
                       class="btn-message btn-primary"
-                      :disabled="!canSendConfirmationMessage(item)"
-                      :title="canSendConfirmationMessage(item)
-                        ? '납품확인서 서명 URL 발송 (현장소장 + 감리원)'
-                        : '서명 대기 상태에서만 가능합니다'"
+                      :blocked="!canSendConfirmationMessage(item)"
+                      :reason="`납품확인서 서명 URL 은 '서명 대기' 상태에서만 발송할 수 있습니다.\n현재 상태: ${getStatusLabelWithFallback(item.status)}`"
                       @click.stop="openConfirmationMessageModal(item)"
                     >
                       <i class="fas fa-file-signature" />
                       <span>확인서</span>
-                    </button>
+                    </GuardedButton>
 
                     <!-- 납품완료계 메시지 (감리원 서명 요청) -->
-                    <button
+                    <GuardedButton
                       class="btn-message btn-info"
-                      :disabled="!canSendCompletionMessage(item)"
-                      :title="canSendCompletionMessage(item)
-                        ? '납품완료계 서명 URL 발송 (감리원)'
-                        : '납품확인서 서명 완료 후 가능합니다'"
+                      :blocked="!canSendCompletionMessage(item)"
+                      :reason="`납품완료계는 납품확인서 서명이 끝난 뒤에 발송할 수 있습니다.\n왼쪽 [확인서] 버튼으로 서명을 먼저 받으세요.\n현재 상태: ${getStatusLabelWithFallback(item.status)}`"
                       @click.stop="openCompletionMessageModal(item)"
                     >
                       <i class="fas fa-clipboard-check" />
                       <span>완료계</span>
-                    </button>
+                    </GuardedButton>
                   </div>
                 </td>
 
                 <!-- 문서보기: PDF -->
                 <td>
-                  <button
+                  <GuardedButton
                     class="btn-pdf btn-success"
-                    :disabled="!canDownloadPdf(item.status)"
-                    :title="canDownloadPdf(item.status)
-                      ? 'PDF 다운로드 (납품확인서, 납품완료계, 사진대지)'
-                      : '완료 또는 제출 상태에서만 가능합니다'"
+                    :blocked="!canDownloadPdf(item.status)"
+                    :reason="`PDF 는 '완료' 또는 '제출' 상태에서만 내려받을 수 있습니다.\n서명이 모두 끝나야 완료로 넘어갑니다.\n현재 상태: ${getStatusLabelWithFallback(item.status)}`"
                     @click.stop="openPdfModal(item)"
                   >
                     <i class="fas fa-file-pdf" />
                     <span>PDF</span>
-                  </button>
+                  </GuardedButton>
                 </td>
 
                 <!-- 관리: 수동완료 / 초기화 / 스캔본 -->

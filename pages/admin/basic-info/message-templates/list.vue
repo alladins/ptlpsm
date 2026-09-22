@@ -5,15 +5,15 @@
       <h1>메시지 템플릿 관리</h1>
       <span class="page-description">발송할 메시지 템플릿을 관리합니다</span>
       <div class="header-actions-right">
-        <button
+        <GuardedButton
           class="btn-primary"
-          :disabled="!canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          :blocked="!canWrite"
+          :reason="'이 메뉴에 등록 권한이 없습니다.\n시스템관리자에게 권한을 요청하세요.'"
           @click="goToRegister"
         >
           <i class="ri-add-line" />
           템플릿 등록
-        </button>
+        </GuardedButton>
       </div>
     </div>
 

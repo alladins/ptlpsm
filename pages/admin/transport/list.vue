@@ -18,15 +18,15 @@
           <i v-else class="fas fa-file-excel" />
           엑셀
         </button>
-        <button
+        <GuardedButton
           class="btn-action btn-primary"
-          :disabled="!canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          :blocked="!canWrite"
+          :reason="'이 메뉴에 등록 권한이 없습니다.\n시스템관리자에게 권한을 요청하세요.'"
           @click="goRegister"
         >
           <i class="fas fa-plus" />
           등록
-        </button>
+        </GuardedButton>
       </template>
     </PageHeader>
 
@@ -159,15 +159,15 @@
                 <td>{{ item.createdBy }}</td>
                 <td>{{ formatDateTime(item.createdAt) }}</td>
                 <td>
-                  <button
+                  <GuardedButton
                     class="btn-message-sm"
-                    :disabled="!canSendMessage(item)"
-                    :title="getMessageButtonTitle(item)"
+                    :blocked="!canSendMessage(item)"
+                    :reason="getMessageButtonTitle(item)"
                     @click.stop="sendMessage(item)"
                   >
                     <i class="fas fa-comment-dots" />
                     메시지
-                  </button>
+                  </GuardedButton>
                 </td>
               </tr>
             </tbody>
@@ -422,10 +422,10 @@ const canSendMessage = (transport: TransportDetail): boolean => {
 // 메시지 버튼 title 텍스트
 const getMessageButtonTitle = (transport: TransportDetail): string => {
   if (transport.status !== 'IN_PROGRESS') {
-    return '진행중 상태일 때만 메시지 전송 가능'
+    return `운송 상태가 [진행중] 일 때만 기사에게 메시지를 보낼 수 있습니다.\n현재 상태: ${formatStatus(transport.status)}`
   }
   if (!transport.driverPhone) {
-    return '기사 연락처가 등록되지 않았습니다'
+    return '기사 연락처가 등록되지 않았습니다.\n운송장 상세에서 기사 연락처를 입력하고 저장하세요.'
   }
   return '기사에게 납품확인 메시지 전송'
 }

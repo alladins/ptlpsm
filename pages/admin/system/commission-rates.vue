@@ -237,9 +237,15 @@
                 <!-- 관리 버튼 -->
                 <td class="col-actions">
                   <div v-if="editingIndex === index" class="action-buttons">
-                    <button class="btn-icon save" title="저장" :disabled="rateTotal !== 100" @click="saveTier(index)">
+                    <GuardedButton
+                      class="btn-icon save"
+                      title="저장"
+                      :blocked="rateTotal !== 100"
+                      :reason="`수령자별 요율의 합이 100% 여야 저장할 수 있습니다.\n현재 합계: ${rateTotal}%`"
+                      @click="saveTier(index)"
+                    >
                       <i class="fas fa-check" />
-                    </button>
+                    </GuardedButton>
                     <button class="btn-icon cancel" title="취소" @click="cancelEdit">
                       <i class="fas fa-times" />
                     </button>

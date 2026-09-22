@@ -93,14 +93,14 @@
 
       <!-- 운송 종료 버튼 -->
       <div class="bottom-actions">
-        <button
+        <GuardedButton
           class="btn-transport-end"
-          :class="{ 'disabled': !canCompleteTransport }"
-          :disabled="!canCompleteTransport"
+          :blocked="!canCompleteTransport"
+          :reason="completeBlockedReason"
           @click="completeTransport"
         >
           운송 종료
-        </button>
+        </GuardedButton>
       </div>
     </div>
 
@@ -367,6 +367,14 @@ const currentDate = computed(() => {
 // 운송 완료 가능 여부
 const canCompleteTransport = computed(() => {
   return isSignatureCompleted.value && isPhotoCompleted.value
+})
+
+/** 운송 종료가 막힌 이유 — 버튼 클릭 시 안내로 띄운다 */
+const completeBlockedReason = computed(() => {
+  const missing: string[] = []
+  if (!isSignatureCompleted.value) { missing.push('인수자 서명') }
+  if (!isPhotoCompleted.value) { missing.push('현장 사진') }
+  return `운송을 종료하려면 ${missing.join(' 과 ')} 이(가) 있어야 합니다.\n위 화면에서 먼저 등록하세요.`
 })
 
 // 사인 저장 가능 여부

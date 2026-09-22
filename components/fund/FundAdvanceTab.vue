@@ -2,15 +2,15 @@
   <div class="tab-content">
     <div class="tab-header">
       <h4>선급금 정보</h4>
-      <button
+      <GuardedButton
         class="btn-primary"
-        :disabled="!canRequestAdvance || hasAdvancePayment"
-        :title="advanceButtonTooltip"
+        :blocked="!canRequestAdvance || hasAdvancePayment"
+        :reason="advanceButtonTooltip || '지금은 선급금을 신청할 수 없습니다.'"
         @click="emit('openModal')"
       >
         <i class="fas fa-plus" />
         {{ hasAdvancePayment ? '선급금 신청완료' : '선급금 신청하기' }}
-      </button>
+      </GuardedButton>
     </div>
 
     <!-- 케이스 1: 선급금 미신청 -->

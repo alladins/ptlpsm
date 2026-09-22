@@ -19,15 +19,15 @@
           <i class="fas fa-print" />
           운송장 출력
         </button>
-        <button
+        <GuardedButton
           class="btn-primary"
-          :disabled="!canSave"
-          :title="!canSave ? getSaveDisabledReason : ''"
+          :blocked="!canSave"
+          :reason="getSaveDisabledReason"
           @click="saveTransport"
         >
           <i class="fas fa-save" />
           저장
-        </button>
+        </GuardedButton>
       </template>
     </PageHeader>
 
@@ -318,25 +318,25 @@
                       readonly
                       disabled
                     >
-                    <button
+                    <GuardedButton
                       class="btn-message"
-                      :disabled="!canSendMessage"
-                      title="기사에게 납품 안내 메시지 전송"
+                      :blocked="!canSendMessage"
+                      :reason="sendMessageBlockedReason"
                       @click="sendMessageToDriver"
                     >
                       <i class="fas fa-comment-dots" />
                       메시지 전송
-                    </button>
-                    <button
+                    </GuardedButton>
+                    <GuardedButton
                       type="button"
                       class="btn-signature-request"
-                      :disabled="!canRequestSignature"
-                      title="인수자에게 서명 요청 문자 발송"
+                      :blocked="!canRequestSignature"
+                      :reason="signatureRequestBlockedReason"
                       @click="openSignatureRequestModal"
                     >
                       <i class="fas fa-signature" />
                       인수자 서명 요청
-                    </button>
+                    </GuardedButton>
                   </div>
                 </FormField>
               </div>
@@ -1140,8 +1140,8 @@ const canSave = computed(() => {
 
 // 비활성화 사유 표시
 const getSaveDisabledReason = computed(() => {
-  if (!hasEditPermission.value) { return '수정 권한이 없습니다' }
-  if (!isSavableStatus.value) { return '대기 또는 진행중 상태에서만 저장할 수 있습니다' }
+  if (!hasEditPermission.value) { return '운송장 수정 권한이 없습니다.\n시스템관리자에게 권한을 요청하세요.' }
+  if (!isSavableStatus.value) { return '운송장은 [대기] 또는 [진행중] 상태에서만 저장할 수 있습니다.\n완료·취소된 건은 수정할 수 없습니다.' }
   return ''
 })
 
@@ -1150,6 +1150,20 @@ const canSendMessage = computed(() => {
   return formData.value.status === 'IN_PROGRESS' &&
          formData.value.trackingNumber &&
          formData.value.driverPhone
+})
+
+/** 메시지 전송이 막힌 이유 — 버튼 클릭 시 안내로 띄운다 */
+const sendMessageBlockedReason = computed(() => {
+  if (formData.value.status !== 'IN_PROGRESS') {
+    return '운송 상태가 [진행중] 일 때만 기사에게 메시지를 보낼 수 있습니다.\n상태를 진행중으로 바꾸고 저장하세요.'
+  }
+  if (!formData.value.trackingNumber) {
+    return '운송장번호가 아직 없습니다. 먼저 운송장을 저장하세요.'
+  }
+  if (!formData.value.driverPhone) {
+    return '기사 연락처가 입력되지 않았습니다.\n[기사 정보] 의 연락처를 입력하고 저장하세요.'
+  }
+  return ''
 })
 
 // 기사에게 메시지 전송 (deliveryService 사용)
@@ -1300,6 +1314,23 @@ const canRequestSignature = computed(() => {
   const notDone = formData.value.status !== 'COMPLETED'
   const signaturePending = !deliveryStatus.value.hasSignature
   return deliveryCreated && phoneOk && notDone && signaturePending
+})
+
+/** 서명 요청이 막힌 이유 — 버튼 클릭 시 안내로 띄운다 */
+const signatureRequestBlockedReason = computed(() => {
+  if (!(deliveryStatus.value.deliveryId > 0)) {
+    return '아직 납품확인 건이 만들어지지 않았습니다.\n[메시지 전송] 으로 기사에게 납품확인 링크를 1회 이상 발송하세요.'
+  }
+  if (!(formData.value.receiverPhone && formData.value.receiverPhone.trim())) {
+    return '인수자 연락처가 입력되지 않았습니다.\n[배송 정보] 의 인수자 연락처를 입력하고 저장하세요.'
+  }
+  if (formData.value.status === 'COMPLETED') {
+    return '이미 완료된 운송건입니다. 서명을 다시 요청할 수 없습니다.'
+  }
+  if (deliveryStatus.value.hasSignature) {
+    return '인수자 서명이 이미 완료되었습니다.'
+  }
+  return ''
 })
 
 // 서명 요청 모달 열기

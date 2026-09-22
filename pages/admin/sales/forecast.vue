@@ -13,15 +13,15 @@
           <i v-else class="fas fa-sync-alt" />
           새로고침
         </button>
-        <button
+        <GuardedButton
           class="btn-action btn-primary"
-          :disabled="!canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          :blocked="!canWrite"
+          :reason="'이 메뉴에 등록 권한이 없습니다.\n시스템관리자에게 권한을 요청하세요.'"
           @click="openCreateModal"
         >
           <i class="fas fa-plus" />
           예측 등록
-        </button>
+        </GuardedButton>
       </template>
     </PageHeader>
 

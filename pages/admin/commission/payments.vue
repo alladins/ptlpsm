@@ -133,22 +133,24 @@
               {{ payment.remarks || '-' }}
             </td>
             <td class="text-center actions-cell">
-              <button
+              <GuardedButton
                 class="btn-table-action edit"
-                :disabled="!canEdit(payment)"
+                :blocked="!canEdit(payment)"
+                :reason="`이미 ${getStatusLabel(payment.status)} 처리된 지급건이라 수정할 수 없습니다.\n금액을 바로잡으려면 이 건을 취소하고 다시 등록하세요.`"
                 title="수정"
                 @click="openEditModal(payment)"
               >
                 <i class="fas fa-pen" />
-              </button>
-              <button
+              </GuardedButton>
+              <GuardedButton
                 class="btn-table-action delete"
-                :disabled="!canDelete(payment)"
+                :blocked="!canDelete(payment)"
+                :reason="`이미 ${getStatusLabel(payment.status)} 처리된 지급건이라 삭제할 수 없습니다.\n정산에 반영된 기록은 감사를 위해 남겨 둡니다.`"
                 title="삭제"
                 @click="handleDelete(payment)"
               >
                 <i class="fas fa-trash-alt" />
-              </button>
+              </GuardedButton>
             </td>
           </tr>
         </tbody>

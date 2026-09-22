@@ -79,14 +79,16 @@
                   </span>
                 </td>
                 <td>
-                  <button
+                  <GuardedButton
                     class="btn-success"
-                    :disabled="inventoryStatusMap[shipment.shipmentId] === 'insufficient' || inventoryStatusMap[shipment.shipmentId] === 'pending-inbound'"
-                    :title="inventoryStatusMap[shipment.shipmentId] === 'insufficient' ? '재고 부족으로 운송 등록이 불가합니다' : inventoryStatusMap[shipment.shipmentId] === 'pending-inbound' ? '입고 완료 후 운송 등록이 가능합니다' : ''"
+                    :blocked="inventoryStatusMap[shipment.shipmentId] === 'insufficient' || inventoryStatusMap[shipment.shipmentId] === 'pending-inbound'"
+                    :reason="inventoryStatusMap[shipment.shipmentId] === 'insufficient'
+                      ? '이 출하건은 창고 재고가 부족해 운송을 등록할 수 없습니다.\n제조생산 > 재고현황에서 재고를 확인하거나, 발주서를 입고 처리하세요.'
+                      : '아직 입고되지 않은 출하건입니다.\n발주서 입고가 끝난 뒤에 운송을 등록할 수 있습니다.'"
                     @click="selectShipment(shipment)"
                   >
                     선택
-                  </button>
+                  </GuardedButton>
                 </td>
               </tr>
             </tbody>

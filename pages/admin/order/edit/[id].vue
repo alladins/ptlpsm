@@ -362,42 +362,46 @@
                       </span>
                     </div>
                     <div v-else class="pdf-actions">
-                      <button
+                      <GuardedButton
                         class="btn-pdf-sm"
-                        :disabled="!payment.baselineId"
+                        :blocked="!payment.baselineId"
+                        :reason="BASELINE_MISSING_REASON"
                         title="공문(갑지)"
                         @click="viewCoverPdf(payment.baselineId)"
                       >
                         <i class="fas fa-file-pdf" />
                         공문
-                      </button>
-                      <button
+                      </GuardedButton>
+                      <GuardedButton
                         class="btn-pdf-sm"
-                        :disabled="!payment.baselineId"
+                        :blocked="!payment.baselineId"
+                        :reason="BASELINE_MISSING_REASON"
                         title="납품확인서"
                         @click="viewConfirmationPdf(payment.baselineId)"
                       >
                         <i class="fas fa-file-pdf" />
                         납품확인서
-                      </button>
-                      <button
+                      </GuardedButton>
+                      <GuardedButton
                         class="btn-pdf-sm btn-pdf-photo"
-                        :disabled="!payment.baselineId"
+                        :blocked="!payment.baselineId"
+                        :reason="BASELINE_MISSING_REASON"
                         title="사진대지"
                         @click="viewPhotoSheetPdf(payment.baselineId)"
                       >
                         <i class="fas fa-images" />
                         사진대지
-                      </button>
-                      <button
+                      </GuardedButton>
+                      <GuardedButton
                         class="btn-pdf-sm"
-                        :disabled="!payment.baselineId"
+                        :blocked="!payment.baselineId"
+                        :reason="BASELINE_MISSING_REASON"
                         title="납품확인서·사진대지를 최신 양식으로 재생성"
                         @click="regenerateBaselinePdfs(payment.baselineId)"
                       >
                         <i class="fas fa-redo" />
                         재생성
-                      </button>
+                      </GuardedButton>
                     </div>
                   </td>
                   <!-- 수금확인 -->
@@ -544,6 +548,11 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
+
+/** 기성 차수가 없는 청구건이라 서류를 만들 수 없을 때의 안내 */
+const BASELINE_MISSING_REASON =
+  '이 기성 청구건에는 아직 기성 차수가 만들어지지 않아 서류를 만들 수 없습니다.\n'
+  + '자금관리 > 기성금 탭에서 차수를 먼저 등록하세요.'
 const orderId = computed(() => Number(route.params.id))
 
 // 권한

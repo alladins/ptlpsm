@@ -9,16 +9,16 @@
           <i class="fas fa-search" />
           검색
         </button>
-        <button
+        <GuardedButton
           class="btn-action"
           style="background: linear-gradient(180deg, #16a34a 0%, #15803d 100%); box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3), 0 1px 2px rgba(0, 0, 0, 0.05);"
-          :disabled="!canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          :blocked="!canWrite"
+          :reason="'이 메뉴에 등록 권한이 없습니다.\n시스템관리자에게 권한을 요청하세요.'"
           @click="goToRegister"
         >
           <i class="fas fa-plus" />
           등록
-        </button>
+        </GuardedButton>
       </div>
     </div>
     <!-- 검색 조건 섹션 -->

@@ -2,15 +2,15 @@
   <div class="tab-content">
     <div class="tab-header">
       <h4>기성금 이력</h4>
-      <button
+      <GuardedButton
         class="btn-primary"
-        :disabled="!canRequestProgress"
-        :title="progressButtonTooltip"
+        :blocked="!canRequestProgress"
+        :reason="progressButtonTooltip || '지금은 기성을 청구할 수 없습니다.'"
         @click="emit('openModal')"
       >
         <i class="fas fa-plus" />
         기성 청구하기
-      </button>
+      </GuardedButton>
     </div>
 
     <!-- 공문 수신자명 (입력 후 '저장' 버튼으로 발주에 저장). 공문/일괄/합지 다운로드에 공통 적용 -->
@@ -108,88 +108,98 @@
             <td>
               <!-- 서명 없이 발행: 납품확인서 PDF 상시 다운로드 + 서명본 스캔 업로드 -->
               <div class="pdf-actions">
-                <button
+                <GuardedButton
                   class="btn-pdf-sm"
-                  :disabled="!payment.baselineId"
+                  :blocked="!payment.baselineId"
+                  :reason="BASELINE_MISSING_REASON"
                   title="공문(갑지) — 항상 최신 양식으로 즉석 생성"
                   @click="ensureDocsSelected() && emit('viewCoverPdf', payment.baselineId, recipientName, selectedDocs)"
                 >
                   <i class="fas fa-file-pdf" />
                   공문
-                </button>
-                <button
+                </GuardedButton>
+                <GuardedButton
                   class="btn-pdf-sm"
-                  :disabled="!payment.baselineId"
+                  :blocked="!payment.baselineId"
+                  :reason="BASELINE_MISSING_REASON"
                   title="납품확인서 (서명란 공란)"
                   @click="emit('viewConfirmationPdf', payment.baselineId)"
                 >
                   <i class="fas fa-file-pdf" />
                   납품확인서
-                </button>
-                <button
+                </GuardedButton>
+                <GuardedButton
                   class="btn-pdf-sm"
-                  :disabled="!payment.baselineId"
+                  :blocked="!payment.baselineId"
+                  :reason="BASELINE_MISSING_REASON"
                   title="기성금청구 상세내역서 (품목 × 계약/금회/전회/잔여)"
                   @click="emit('viewBaselineDetailsPdf', payment.baselineId)"
                 >
                   <i class="fas fa-file-pdf" />
                   기성금청구내역
-                </button>
-                <button
+                </GuardedButton>
+                <GuardedButton
                   v-if="(payment.shipmentCount ?? 0) >= 2"
                   class="btn-pdf-sm"
-                  :disabled="!payment.baselineId"
+                  :blocked="!payment.baselineId"
+                  :reason="BASELINE_MISSING_REASON"
                   title="납품내역서 (품목 × 납품일자 매트릭스, 출하 2회 이상)"
                   @click="emit('viewDeliveryStatementPdf', payment.baselineId)"
                 >
                   <i class="fas fa-file-pdf" />
                   납품내역서
-                </button>
-                <button
+                </GuardedButton>
+                <GuardedButton
                   class="btn-pdf-sm btn-pdf-photo"
-                  :disabled="!payment.baselineId"
+                  :blocked="!payment.baselineId"
+                  :reason="BASELINE_MISSING_REASON"
                   title="사진대지"
                   @click="emit('viewPhotoSheetPdf', payment.baselineId)"
                 >
                   <i class="fas fa-images" />
                   사진대지
-                </button>
-                <button
+                </GuardedButton>
+                <GuardedButton
                   class="btn-pdf-sm btn-scan-upload"
-                  :disabled="!payment.baselineId || uploadingBaselineId === payment.baselineId"
+                  :blocked="!payment.baselineId"
+                  :reason="BASELINE_MISSING_REASON"
+                  :disabled="uploadingBaselineId === payment.baselineId"
                   title="서명받은 납품확인서 스캔본 업로드"
                   @click="triggerScanUpload(payment.baselineId)"
                 >
                   <i :class="uploadingBaselineId === payment.baselineId ? 'fas fa-spinner fa-spin' : 'fas fa-upload'" />
                   스캔업로드
-                </button>
-                <button
+                </GuardedButton>
+                <GuardedButton
                   class="btn-pdf-sm"
-                  :disabled="!payment.baselineId"
+                  :blocked="!payment.baselineId"
+                  :reason="BASELINE_MISSING_REASON"
                   title="납품확인서·사진대지를 최신 양식으로 재생성"
                   @click="emit('regeneratePdfs', payment.baselineId)"
                 >
                   <i class="fas fa-redo" />
                   재생성
-                </button>
-                <button
+                </GuardedButton>
+                <GuardedButton
                   class="btn-pdf-sm btn-merge-download"
-                  :disabled="!payment.baselineId"
+                  :blocked="!payment.baselineId"
+                  :reason="BASELINE_MISSING_REASON"
                   title="공문+납품확인서+기성금청구내역+사진대지+납품내역서를 하나의 PDF로 합쳐 다운로드"
                   @click="ensureDocsSelected() && emit('downloadMergedPdf', payment.baselineId, recipientName, selectedDocs)"
                 >
                   <i class="fas fa-file-pdf" />
                   합지 다운로드
-                </button>
-                <button
+                </GuardedButton>
+                <GuardedButton
                   class="btn-pdf-sm btn-zip-download"
-                  :disabled="!payment.baselineId"
+                  :blocked="!payment.baselineId"
+                  :reason="BASELINE_MISSING_REASON"
                   title="공문·납품확인서·기성금청구내역·사진대지·납품내역서를 ZIP으로 일괄 다운로드"
                   @click="ensureDocsSelected() && emit('downloadAllPdfs', payment.baselineId, recipientName, selectedDocs)"
                 >
                   <i class="fas fa-file-archive" />
                   일괄 다운로드
-                </button>
+                </GuardedButton>
               </div>
             </td>
             <!-- 관리 열 (수금확인 + 차수 취소) -->
@@ -318,6 +328,15 @@ const props = withDefaults(defineProps<Props>(), {
   clientName: '',
   orderId: undefined
 })
+
+/**
+ * 서류 버튼이 막힌 이유 — 기성 차수(baseline)가 아직 없는 청구건이다.
+ * 차수가 있어야 납품확인서·청구내역서를 뽑을 수 있다.
+ */
+const BASELINE_MISSING_REASON =
+  '이 기성 청구건에는 아직 기성 차수가 만들어지지 않아 서류를 만들 수 없습니다.\n'
+  + '[기성 청구하기] 로 차수를 먼저 등록하세요.\n'
+  + '(예전에 자금 화면에서 직접 만든 청구건이면 차수가 없을 수 있습니다)'
 
 // 공문 수신자명 즉석 입력값 (미입력 시 백엔드가 저장값/자동값 사용)
 const recipientName = ref('')

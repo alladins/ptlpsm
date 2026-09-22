@@ -17,15 +17,15 @@
           <i class="fas fa-undo" />
           초기화
         </button>
-        <button
+        <GuardedButton
           class="btn-action btn-primary"
-          :disabled="!canWrite"
-          :title="!canWrite ? '등록 권한이 없습니다' : ''"
+          :blocked="!canWrite"
+          :reason="'이 메뉴에 등록 권한이 없습니다.\n시스템관리자에게 권한을 요청하세요.'"
           @click="goToRegister"
         >
           <i class="fas fa-plus" />
           등록
-        </button>
+        </GuardedButton>
       </template>
     </PageHeader>
 

@@ -3,35 +3,34 @@
     <div class="tab-header">
       <h4>OEM 지급 현황</h4>
       <div class="tab-actions">
-        <button
+        <GuardedButton
           class="btn-recalc"
-          :disabled="!needsRecalculation || isRecalculating"
-          :title="recalcDisabledReason || '현재 원가 기준으로 OEM 예정총액을 재계산합니다'"
+          :blocked="!needsRecalculation"
+          :disabled="isRecalculating"
+          :reason="recalcDisabledReason || '지금은 재계산할 것이 없습니다. 원가가 이미 최신 기준으로 맞춰져 있습니다.'"
           @click="emit('recalculateOemCost')"
         >
           <i class="fas" :class="isRecalculating ? 'fa-spinner fa-spin' : 'fa-calculator'" />
           {{ isRecalculating ? '재계산 중...' : '원가 재계산' }}
-        </button>
-        <button
+        </GuardedButton>
+        <GuardedButton
           class="btn-warning"
-          :disabled="!canAdjustBgrade"
-          :title="bgradeButtonTitle"
+          :blocked="!canAdjustBgrade"
+          :reason="bgradeButtonTitle"
           @click="emit('openBgradeModal')"
         >
           <i class="fas fa-tags" />
           B급 조정
-        </button>
-        <button
+        </GuardedButton>
+        <GuardedButton
           class="btn-loss"
-          :disabled="!canAdjustBgrade"
-          :title="canAdjustBgrade
-            ? '현장 수량부족·스펙오납 손실을 등록합니다 (발주서·출하 원장은 변경되지 않습니다)'
-            : bgradeButtonTitle"
+          :blocked="!canAdjustBgrade"
+          :reason="bgradeButtonTitle"
           @click="emit('openLossModal')"
         >
           <i class="fas fa-triangle-exclamation" />
           손실 등록
-        </button>
+        </GuardedButton>
         <button
           class="btn-link-po"
           @click="goToMonthlyLedger"
