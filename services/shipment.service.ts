@@ -598,7 +598,7 @@ class ShipmentService {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      window.URL.revokeObjectURL(downloadUrl)
+      setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
     } catch (error) {
       console.error('[shipment.service] 발주서 PDF 다운로드 오류:', error)
       throw error

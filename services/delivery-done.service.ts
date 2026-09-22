@@ -384,7 +384,7 @@ export async function downloadBaselineInvoiceExcel (orderId: number): Promise<vo
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  window.URL.revokeObjectURL(downloadUrl)
+  setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
 }
 
 /**
@@ -417,7 +417,7 @@ export async function downloadAllPdfs (
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    window.URL.revokeObjectURL(downloadUrl)
+    setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
   } catch (error) {
     console.error('Error downloading all PDFs:', error)
     throw error
@@ -450,7 +450,7 @@ export async function downloadMergedPdf (
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  window.URL.revokeObjectURL(downloadUrl)
+  setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
 }
 
 // ==================== 모바일 API (토큰 기반) ====================

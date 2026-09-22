@@ -1333,7 +1333,7 @@ const getProductionRateClass = (produced: number | null, quantity: number | null
 const handleDownloadPdf = async () => {
   pdfDownloading.value = true
   try {
-    await purchaseOrderService.downloadPdf(poId.value)
+    await purchaseOrderService.downloadPdf(poId.value, poDetail.value?.poNo)
   } catch (error: any) {
     console.error('PDF 다운로드 실패:', error)
     alert(error.message || '발주서 PDF 다운로드에 실패했습니다.')

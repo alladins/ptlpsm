@@ -406,7 +406,7 @@ const handleExportExcel = async () => {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
   } catch (error) {
     console.error('엑셀 다운로드 실패:', error)
     alert('엑셀 다운로드에 실패했습니다.')

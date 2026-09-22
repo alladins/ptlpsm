@@ -786,7 +786,7 @@ export async function exportPaymentsExcel(
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-  window.URL.revokeObjectURL(downloadUrl)
+  setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
 }
 
 // ============ 정산이력 확장 ============
@@ -839,7 +839,7 @@ export async function exportSettlementsExcel(
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-  window.URL.revokeObjectURL(downloadUrl)
+  setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
 }
 
 // ============ 월별 커미션 집계 ============
@@ -877,7 +877,7 @@ export async function exportMonthlySummaryExcel(year: number): Promise<void> {
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-  window.URL.revokeObjectURL(downloadUrl)
+  setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
 }
 
 // ============ 정산이력 일괄 재계산 ============
