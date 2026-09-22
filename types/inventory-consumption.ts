@@ -5,9 +5,12 @@
  *   QUALITY_TEST : 품질관리원 시험용 발송 (1매=2㎡ ~ 30매=60㎡)
  *   LP_CONTRACT  : 리드파워 계약 (삼자단가계약. 출하 등록 없이 재고에서 소진)
  *
- * 두 경우 모두 그 물량을 만든 OEM 이 리드파워에 원가를 청구하므로,
- * 생산자(sourceOemCompanyId) 기준으로 OEM 월별 원장에 실린다.
+ * 확정하면 재고가 차감되고 원가(얼마어치가 빠졌나)가 기록된다.
+ * ★ 2026-09-21 — 원가는 FIFO: 먼저 들어온 재고부터 빠지고, 빠진 물량마다 그 발주원가를 따른다.
+ * ★ 2026-09-21 — OEM 월별 원장의 지급 금액에는 더하지 않는다(원장에는 «참고» 로만 표시).
  */
+
+import type { LotPiece } from '~/types/inventory-lot'
 
 export const CONSUMPTION_TYPE = {
   QUALITY_TEST: 'QUALITY_TEST',
@@ -52,11 +55,12 @@ export interface InventoryConsumption {
   quantity: number
   /** 매수 (참고. 1매 = 2㎡) */
   sheetCount: number | null
-  sourceOemCompanyId: number
+  /** 생산자 — 빠지는 재고가 한 곳 것일 때만. 여러 곳에 걸치면 null (producerSummary 를 볼 것) */
+  sourceOemCompanyId: number | null
   sourceOemCompanyName: string | null
-  /** 소진일 기준 as-of 원가 스냅샷 */
+  /** 평균 원가 = 금액 ÷ 수량 (표시용 역산값) */
   unitCost: number
-  /** 수량 × 원가 */
+  /** Σ(로트별 수량 × 원가) — 장부 기준값 */
   amount: number
   consumptionDate: string
   ledgerYearMonth: string
@@ -75,6 +79,14 @@ export interface InventoryConsumption {
   createdAt: string | null
   createdBy: string | null
   updatedAt: string | null
+  /** 원가 내역 — 작성중=지금 재고 기준 미리보기, 확정=기록된 값. 기능 도입 전 확정분은 빈 배열 */
+  lots: LotPiece[] | null
+  /** «(주)금성인슈텍» / «(주)금성인슈텍 외 1곳» */
+  producerSummary: string | null
+  /** 원가를 모르는 물량(0원 발주·출처 불명)이 섞였는가 — true 면 확정 불가 */
+  costUnknown: boolean | null
+  /** 재고가 모자라 출처를 못 찾은 수량 */
+  shortageQuantity: number | null
 }
 
 export interface InventoryConsumptionCreateRequest {
@@ -84,7 +96,7 @@ export interface InventoryConsumptionCreateRequest {
   /** ㎡. 비우면 sheetCount × 2 로 환산된다 */
   quantity?: number | null
   sheetCount?: number | null
-  /** 비우면 창고의 OEM 으로 자동 결정. 리드파워 창고는 자동 결정이 불가해 필수 */
+  /** 보내지 않는다 — 서버가 FIFO 로 빠지는 재고의 발주 공급원으로 정한다 */
   sourceOemCompanyId?: number | null
   consumptionDate: string
   destination?: string | null
@@ -106,9 +118,15 @@ export interface InventoryConsumptionSearchParams {
   size?: number
 }
 
-/** 확정 가능 여부 — 재고가 모자라면 확정할 수 없다 */
-export function canConfirm(c: InventoryConsumption): boolean {
+/**
+ * 확정 가능 여부 — 백엔드 confirmConsumption 과 같은 조건이어야 한다.
+ *   · 재고가 모자라면 안 된다
+ *   · 원가를 모르는 물량(0원 발주·출처 불명)이 섞이면 안 된다
+ *     ★ 본사 창고라서 0원인 것이 아니다. 창고는 원가를 바꾸지 않는다(대전제 1번).
+ *       원가는 FIFO 로 빠지는 재고가 들어온 발주의 원가다.
+ */
+export function canConfirm (c: InventoryConsumption): boolean {
   if (c.status !== CONSUMPTION_STATUS.DRAFT) { return false }
-  if (!c.unitCost || c.unitCost <= 0) { return false }
+  if (c.costUnknown) { return false }
   return (c.currentStock ?? 0) >= c.quantity
 }

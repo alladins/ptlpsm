@@ -43,22 +43,13 @@
             삭제
           </button>
           <button
-            v-if="!isEditMode && poDetail.status === 'DRAFT' && !isLeadpowerPo && canManagePo"
+            v-if="!isEditMode && poDetail.status === 'DRAFT' && canManagePo"
             class="btn-action btn-primary"
             :disabled="submitting"
             @click="handleIssue"
           >
             <i class="fas fa-paper-plane" />
             발행
-          </button>
-          <button
-            v-if="!isEditMode && poDetail.status === 'DRAFT' && isLeadpowerPo && canManagePo"
-            class="btn-action btn-success"
-            :disabled="submitting"
-            @click="handleDirectStockIn"
-          >
-            <i class="fas fa-arrow-down" />
-            바로 입고
           </button>
         </template>
 
@@ -204,32 +195,14 @@
           </FormField>
 
           <!-- 생산자 — 명의(OEM 제조사)와 실제 만든 회사가 다를 때만 값이 있다.
-               본사(리드파워) 명의 발주서는 반드시 지정되어야 한다. -->
+               화면에서 직접 입력하지 않고 승계된 값만 보여준다(창고이동 등 원천이 분명한 경로). -->
           <FormField
-            v-if="isLeadpowerPo || poDetail.sourceOemCompanyId"
+            v-if="poDetail.sourceOemCompanyId"
             label="생산자"
-            :required="isEditMode && isLeadpowerPo"
-            :error="errors.sourceOemCompanyId"
           >
-            <select
-              v-if="isEditMode"
-              v-model="editForm.sourceOemCompanyId"
-              class="form-select"
-              :disabled="loadingOemCompanies"
-            >
-              <option :value="null">선택하세요</option>
-              <option
-                v-for="company in manufacturerCompanies"
-                :key="company.id"
-                :value="company.id"
-              >
-                {{ company.companyName }}
-              </option>
-            </select>
             <input
-              v-else
               type="text"
-              :value="poDetail.sourceOemCompanyName || poDetail.oemCompanyName || '-'"
+              :value="poDetail.sourceOemCompanyName || '-'"
               class="form-input-sm"
               readonly
             >
@@ -780,66 +753,6 @@
       </div>
     </Teleport>
 
-    <!-- 본사 바로 입고 확인 모달 (PO 56 사고 재발 방지 가드) -->
-    <Teleport to="body">
-      <div v-if="showDirectStockInModal" class="modal-overlay" @click.self="closeDirectStockInModal">
-        <div class="modal-content direct-stockin-modal">
-          <div class="modal-header warning">
-            <h3>
-              <i class="fas fa-exclamation-triangle" />
-              본사 바로 입고 확인
-            </h3>
-            <button class="modal-close" @click="closeDirectStockInModal">
-              <i class="fas fa-times" />
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="warning-banner">
-              선택된 제조사는 <b>본사(리드파워)</b>로 다음과 같이 처리되니 주의 바랍니다.
-            </div>
-
-            <dl class="po-summary">
-              <dt>발주서 번호</dt>
-              <dd>{{ poDetail?.poNo }}</dd>
-              <dt>OEM 회사</dt>
-              <dd>{{ poDetail?.oemCompanyName }}</dd>
-              <dt>품목 수 / 총 수량</dt>
-              <dd>{{ poDetail?.items?.length || 0 }}건 / {{ formatQuantity(poDetail?.totalQuantity) }}</dd>
-              <dt>총 금액</dt>
-              <dd>{{ formatCurrency(poDetail?.totalAmount) }}</dd>
-            </dl>
-
-            <div class="impact-section">
-              <h4>이 작업은 다음을 한 번에 처리합니다:</h4>
-              <ol>
-                <li>모든 품목이 <b>본사 창고에 즉시 입고</b>됩니다</li>
-                <li>발주서 상태 → <b>STOCKED (입고완료)</b></li>
-                <li>각 품목의 생산완료/입고 수량 자동 동기화</li>
-                <li>본사 입고 알림 생성</li>
-              </ol>
-            </div>
-
-            <div class="impact-summary danger">
-              ⛔ 처리 후에는 <b>수정·삭제·반려가 불가</b>하며, 되돌리려면 DB 직접 정리가 필요합니다.
-              외부 OEM 발주라면 "취소" 후 "발행" 버튼으로 정상 절차를 진행하세요.
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn-action btn-secondary" @click="closeDirectStockInModal">
-              취소
-            </button>
-            <button
-              class="btn-action btn-danger"
-              :disabled="submitting"
-              @click="confirmDirectStockIn"
-            >
-              {{ submitting ? '처리 중...' : '입고 처리' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
     <!-- SKU 선택 팝업 (수정 모드용) -->
     <ItemSkuSelector
       v-model="showSkuSelector"
@@ -876,6 +789,7 @@ import type { CompanyInfoResponse } from '~/types/company'
 import type { OemCost } from '~/types/oem-cost'
 import type { Item, ItemSku } from '~/services/item.service'
 import { formatDate, formatNumber, formatCurrency, formatQuantity , formatDateTime} from '~/utils/format'
+import { reportValidationErrors } from '~/utils/formValidation'
 import FormField from '~/components/admin/forms/FormField.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import LoadingSection from '~/components/admin/common/LoadingSection.vue'
@@ -931,16 +845,9 @@ interface EditItemRow {
   stockedQuantity: number
 }
 
-// 생산자 후보 = 제조사로 등록된 회사만.
-// getManufacturers() 응답에 본사(LEADPOWER)가 섞여 들어오므로 여기서 걸러야 한다.
-// 걸러지지 않으면 명의와 같은 회사를 생산자로 고를 수 있고, 백엔드가 NULL 로 정규화한 뒤
-// "생산자를 지정해야 합니다" 400 을 던져 원인을 알기 어렵다.
-const manufacturerCompanies = computed(() =>
-  oemCompanies.value.filter(c => (c as any).companyType === 'MANUFACTURER')
-)
-
 const editForm = ref({
   oemCompanyId: null as number | null,
+  // 생산자 — 화면에서 바꾸지 않는다. 기존 값을 그대로 실어 보내 유실을 막는다.
   sourceOemCompanyId: null as number | null,
   orderDate: '',
   expectedCompletionDate: '',
@@ -1040,14 +947,28 @@ const cancelEditMode = () => {
   errors.value = {}
 }
 
-// OEM 제조사 목록 로드
+// 공급원 목록 로드 — 원가가 등록된 회사 (2026-09-21 대전제 8번)
+//
+// ⚠ 이 발주서의 현재 공급원이 목록에 없을 수 있다.
+//   예) 예전에 만든 리드파워 명의 발주서 — 리드파워는 원가가 없어 목록에서 빠진다.
+//   그대로 두면 수정 화면을 여는 순간 드롭다운이 «선택하세요» 로 비어 보이고,
+//   저장하면 «공급원을 선택하세요» 로 막혀 **공급원 외의 항목도 못 고치게** 된다.
+//   그래서 현재 공급원은 목록 맨 앞에 붙여 둔다(새로 고를 수는 없고, 유지만 된다).
 const loadOemCompanies = async () => {
   if (oemCompanies.value.length > 0) { return }
   loadingOemCompanies.value = true
   try {
-    oemCompanies.value = await companyService.getManufacturers()
+    const producers = await companyService.getProducers()
+    const currentId = poDetail.value?.oemCompanyId
+    if (currentId && !producers.some(c => c.id === currentId)) {
+      producers.unshift({
+        id: currentId,
+        companyName: `${poDetail.value?.oemCompanyName ?? '현재 공급원'} (원가 미등록)`
+      } as CompanyInfoResponse)
+    }
+    oemCompanies.value = producers
   } catch (error) {
-    console.error('OEM 제조사 목록 로드 실패:', error)
+    console.error('공급원 목록 로드 실패:', error)
   } finally {
     loadingOemCompanies.value = false
   }
@@ -1131,24 +1052,31 @@ const removeEditItem = (index: number) => {
 
 // 수정 저장
 const handleSaveEdit = async () => {
-  // 유효성 검사
+  // 유효성 검사 — 실패하면 팝업으로 알리고 첫 문제 칸으로 스크롤·포커스까지 옮긴다
   const newErrors: Record<string, string> = {}
+  const extra: string[] = []
+
   if (!editForm.value.oemCompanyId) {
-    newErrors.oemCompanyId = 'OEM 제조사를 선택하세요.'
+    newErrors.oemCompanyId = '공급원(OEM 제조사)을 선택하세요.'
   }
-  errors.value = newErrors
-  if (Object.keys(newErrors).length > 0) { return }
 
   if (editForm.value.items.length === 0) {
-    alert('품목을 최소 1개 이상 추가하세요.')
-    return
+    extra.push('품목을 최소 1개 이상 추가하세요.')
+  } else if (editForm.value.items.some(i => !i.quantity || i.quantity <= 0)) {
+    extra.push('수량이 0인 품목이 있습니다. 수량을 입력하세요.')
   }
 
-  const zeroItems = editForm.value.items.filter(i => !i.quantity || i.quantity <= 0)
-  if (zeroItems.length > 0) {
-    alert('수량이 0인 품목이 있습니다. 수량을 입력하세요.')
-    return
+  // ★ 발주원가 0원 차단 — 재고 원가는 발주서에서 정해진다(등록 화면과 같은 규칙)
+  const zeroCost = editForm.value.items.filter(i => !i.unitPrice || i.unitPrice <= 0)
+  if (zeroCost.length > 0) {
+    extra.push(
+      `발주원가가 0원인 품목이 있습니다: ${zeroCost.map(i => i.skuName || i.skuId).join(', ')}\n`
+      + '재고 원가는 발주서에서 정해지므로 0원으로 두면 이후 출하·소진·원장이 모두 0원이 됩니다.'
+    )
   }
+
+  errors.value = newErrors
+  if (!await reportValidationErrors(newErrors, extra)) { return }
 
   submitting.value = true
   try {
@@ -1231,7 +1159,6 @@ const handleIssue = async () => {
   }
 }
 
-// 본사(LEADPOWER) 발주 여부
 const permissionStore = usePermissionStore()
 
 /**
@@ -1244,39 +1171,6 @@ const permissionStore = usePermissionStore()
  *   (접수·생산완료·반려는 «만드는 쪽»의 절차라 제조사도 쓸 수 있다)
  */
 const canManagePo = computed(() => !permissionStore.isOemManager)
-
-const isLeadpowerPo = computed(() => {
-  if (!poDetail.value) { return false }
-  // companyType이 응답에 포함되어 있으면 사용, 아니면 oem_company_name으로 판별
-  return (poDetail.value as any).companyType === 'LEADPOWER'
-})
-
-// 본사 바로 입고 — 확인 모달 상태
-const showDirectStockInModal = ref(false)
-
-const handleDirectStockIn = () => {
-  // 강한 경고 모달을 띄워 사용자 인지 가드 강화 (PO 56 사고 재발 방지)
-  showDirectStockInModal.value = true
-}
-
-const closeDirectStockInModal = () => {
-  showDirectStockInModal.value = false
-}
-
-const confirmDirectStockIn = async () => {
-  submitting.value = true
-  try {
-    await purchaseOrderService.directStockIn(poId.value)
-    showDirectStockInModal.value = false
-    alert('본사 재고 입고가 완료되었습니다.')
-    await loadDetail()
-  } catch (error: any) {
-    console.error('본사 바로 입고 실패:', error)
-    alert(error.message || '본사 바로 입고에 실패했습니다.')
-  } finally {
-    submitting.value = false
-  }
-}
 
 // 발주서 접수
 const handleAccept = async () => {
@@ -1980,113 +1874,6 @@ onMounted(() => {
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid #e5e7eb;
-}
-
-/* === 본사 바로 입고 확인 모달 (PO 56 사고 재발 방지 가드) === */
-.modal-content.direct-stockin-modal {
-  max-width: 560px;
-  width: 92%;
-}
-
-.modal-header.warning {
-  background: #fef3c7;
-  border-bottom: 2px solid #f59e0b;
-}
-
-.modal-header.warning h3 {
-  color: #92400e;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.modal-header.warning h3 i {
-  color: #f59e0b;
-}
-
-.direct-stockin-modal .warning-banner {
-  background: #fef3c7;
-  border-left: 4px solid #f59e0b;
-  color: #92400e;
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.direct-stockin-modal .po-summary {
-  display: grid;
-  grid-template-columns: 8rem 1fr;
-  gap: 0.5rem 1rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-  margin: 0 0 1rem 0;
-  font-size: 0.875rem;
-}
-
-.direct-stockin-modal .po-summary dt {
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.direct-stockin-modal .po-summary dd {
-  color: #1f2937;
-  font-weight: 600;
-  margin: 0;
-}
-
-.direct-stockin-modal .impact-section {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-}
-
-.direct-stockin-modal .impact-section h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.875rem;
-  color: #1e40af;
-  font-weight: 600;
-}
-
-.direct-stockin-modal .impact-section ol {
-  margin: 0;
-  padding-left: 1.25rem;
-  color: #1f2937;
-  font-size: 0.8125rem;
-  line-height: 1.6;
-}
-
-.direct-stockin-modal .impact-summary.danger {
-  background: #fef2f2;
-  border-left: 4px solid #dc2626;
-  color: #991b1b;
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  margin: 0;
-}
-
-.direct-stockin-modal .btn-action.btn-danger {
-  background: #dc2626;
-  color: #ffffff;
-  border: 1px solid #dc2626;
-}
-
-.direct-stockin-modal .btn-action.btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
-  border-color: #b91c1c;
-}
-
-.direct-stockin-modal .btn-action.btn-danger:disabled {
-  background: #fca5a5;
-  border-color: #fca5a5;
-  cursor: not-allowed;
 }
 
 /* 품목 테이블 헤더 단위 표시 */

@@ -52,6 +52,17 @@ export const INVENTORY_ENDPOINTS = {
   },
 
   /**
+   * 재고 출처 역산 (표시 전용 — 금액 없음)
+   * @returns GET /admin/inventory/origins?warehouseId=&skuId=
+   */
+  origins: (warehouseId: number, skuId?: string | null) => {
+    const baseUrl = getApiBaseUrl()
+    const qs = new URLSearchParams({ warehouseId: String(warehouseId) })
+    if (skuId) { qs.set('skuId', skuId) }
+    return `${baseUrl}/admin/inventory/origins?${qs.toString()}`
+  },
+
+  /**
    * 입출고 이력 조회
    * @returns GET /admin/inventory/transactions
    */

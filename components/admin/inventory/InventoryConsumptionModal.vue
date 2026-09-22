@@ -36,7 +36,9 @@
               :disabled="lockSource"
               @change="onWarehouseChange"
             >
-              <option :value="0" disabled>창고를 선택하세요</option>
+              <option :value="0" disabled>
+                창고를 선택하세요
+              </option>
               <option v-for="wh in warehouseList" :key="wh.warehouseId" :value="wh.warehouseId">
                 {{ wh.warehouseName }}
               </option>
@@ -99,32 +101,39 @@
                 현재고 {{ currentStock.toLocaleString() }}㎡
               </span>
             </div>
-            <p class="form-hint">1매 = 2㎡ 입니다. 어느 쪽을 입력해도 자동으로 환산됩니다.</p>
+            <p class="form-hint">
+              1매 = 2㎡ 입니다. 어느 쪽을 입력해도 자동으로 환산됩니다.
+            </p>
             <p v-if="isOverStock" class="form-hint error">
               재고보다 많습니다. 확정할 수 없습니다.
             </p>
           </div>
 
-          <!-- 생산자 -->
+          <!--
+            원가 — 사용자가 고르지 않는다. 먼저 들어온 재고부터 빠지고(FIFO), 빠진 물량마다 그 발주원가를 따른다.
+            ★ 대전제 1번 — 창고는 원가를 바꾸지 않는다. 창고이동으로 온 물량도 원래 발주의 원가다.
+            ★ 대전제 5번 — 소진은 월별 매출원장 지급 금액을 바꾸지 않는다. «청구된다» 는 말을 쓰지 말 것.
+          -->
           <div class="form-group">
-            <label class="form-label" :class="{ required: needProducer }">생산자</label>
-            <select v-model.number="form.sourceOemCompanyId" class="form-input" :disabled="!needProducer">
-              <option :value="null">
-                {{ needProducer ? '실제로 만든 제조사를 선택하세요' : '창고의 제조사로 자동 설정됩니다' }}
-              </option>
-              <option v-for="c in manufacturers" :key="c.id" :value="c.id">
-                {{ c.companyName }}
-              </option>
-            </select>
-            <p class="form-hint" :class="{ warn: needProducer }">
-              <template v-if="needProducer">
-                이 창고는 제조사 창고가 아니라 생산자를 자동으로 정할 수 없습니다.
-                원가와 청구가 여기서 고른 제조사 기준으로 잡힙니다.
-              </template>
-              <template v-else>
-                선택한 창고의 제조사가 생산자가 됩니다.
-              </template>
+            <label class="form-label">원가 (먼저 들어온 재고부터)</label>
+            <p v-if="!form.warehouseId || !form.skuId || !form.quantity" class="form-hint">
+              창고·품목·수량을 넣으면 어느 발주에서 얼마씩 빠지는지 보여 드립니다.
             </p>
+            <p v-else-if="loadingPreview" class="form-hint">
+              원가 계산 중...
+            </p>
+            <template v-else-if="preview">
+              <LotBreakdown :pieces="preview.pieces" />
+              <p v-if="preview.costUnknown" class="form-hint error">
+                원가가 0원이거나 출처를 알 수 없는 재고가 섞여 있어 <b>확정할 수 없습니다</b>. (빨간 줄)
+                저장은 됩니다 — 해당 발주서의 원가를 바로잡은 뒤 확정하세요.
+              </p>
+              <p class="form-hint">
+                평균 원가 <b>{{ preview.unitCost.toLocaleString() }}원/㎡</b>, 금액 <b>{{ preview.totalAmount.toLocaleString() }}원</b>.
+                확정할 때 그 시점 재고로 다시 계산해 기록합니다.
+                재고만 차감되며 월별 매출원장의 <b>지급 금액에는 영향이 없습니다</b>.
+              </p>
+            </template>
           </div>
 
           <!-- 소진일 -->
@@ -132,7 +141,7 @@
             <label class="form-label required">소진일</label>
             <input v-model="form.consumptionDate" type="date" class="form-input">
             <p class="form-hint">
-              이 날짜의 원가가 적용되고, 이 달({{ ledgerYm }}) 원장에 실립니다.
+              월별 매출원장에는 이 달({{ ledgerYm }})에 «참고» 로만 표시됩니다.
             </p>
           </div>
 
@@ -157,11 +166,15 @@
             <textarea v-model="form.remarks" class="form-input" rows="2" />
           </div>
 
-          <p v-if="errorMsg" class="modal-error">{{ errorMsg }}</p>
+          <p v-if="errorMsg" class="modal-error">
+            {{ errorMsg }}
+          </p>
         </div>
 
         <div class="modal-footer">
-          <button class="btn-cancel" @click="close">취소</button>
+          <button class="btn-cancel" @click="close">
+            취소
+          </button>
           <button class="btn-save" :disabled="!canSave || saving" @click="handleSave">
             {{ saving ? '저장 중...' : '저장' }}
           </button>
@@ -175,10 +188,11 @@
 import { ref, computed, watch } from 'vue'
 import { warehouseService } from '~/services/warehouse.service'
 import { blockDecimalKey, stripDecimalOnPaste } from '~/utils/numberInput'
-import { companyService } from '~/services/company.service'
 import { inventoryService } from '~/services/inventory.service'
 import { inventoryConsumptionService } from '~/services/inventory-consumption.service'
 import { getLocalDateString } from '~/utils/format'
+import LotBreakdown from '~/components/admin/inventory/LotBreakdown.vue'
+import type { LotAllocation } from '~/types/inventory-lot'
 import {
   CONSUMPTION_TYPE_LABELS,
   SQM_PER_SHEET,
@@ -205,7 +219,6 @@ const typeOptions = (Object.keys(CONSUMPTION_TYPE_LABELS) as ConsumptionType[])
   .map(v => ({ value: v, label: CONSUMPTION_TYPE_LABELS[v] }))
 
 const warehouseList = ref<any[]>([])
-const manufacturers = ref<any[]>([])
 const stockItems = ref<{ skuId: string; skuName: string; quantity: number }[]>([])
 const loadingStock = ref(false)
 const saving = ref(false)
@@ -229,10 +242,31 @@ const form = ref({
 const isEdit = computed(() => !!props.editTarget)
 const lockSource = computed(() => !!props.warehouseId && !!props.skuId)
 
-/** 선택한 창고가 제조사 창고가 아니면 생산자를 직접 골라야 한다 */
-const needProducer = computed(() => {
-  const wh = warehouseList.value.find(w => w.warehouseId === form.value.warehouseId)
-  return !wh || wh.warehouseType !== 'OEM'
+/**
+ * FIFO 원가 미리보기 — 창고·품목·수량이 바뀌면 서버에 물어본다.
+ * 연속 입력마다 부르지 않도록 잠깐 기다렸다가 마지막 값으로만 부른다.
+ */
+const preview = ref<LotAllocation | null>(null)
+const loadingPreview = ref(false)
+let previewTimer: ReturnType<typeof setTimeout> | null = null
+let previewSeq = 0
+watch(() => [form.value.warehouseId, form.value.skuId, form.value.quantity, props.modelValue], () => {
+  if (previewTimer) { clearTimeout(previewTimer) }
+  preview.value = null
+  const { warehouseId, skuId, quantity } = form.value
+  if (!props.modelValue || !warehouseId || !skuId || !quantity || quantity <= 0 || !Number.isInteger(quantity)) { return }
+  loadingPreview.value = true
+  const seq = ++previewSeq
+  previewTimer = setTimeout(async () => {
+    try {
+      const res = await inventoryConsumptionService.fifoPreview(warehouseId, skuId, quantity)
+      if (seq === previewSeq) { preview.value = res }
+    } catch (e) {
+      console.error('원가 미리보기 실패:', e)
+    } finally {
+      if (seq === previewSeq) { loadingPreview.value = false }
+    }
+  }, 300)
 })
 
 const currentStock = computed(() => {
@@ -245,11 +279,10 @@ const isOverStock = computed(() =>
 const ledgerYm = computed(() => (form.value.consumptionDate || '').slice(0, 7) || '-')
 
 const canSave = computed(() =>
-  form.value.warehouseId > 0
-  && !!form.value.skuId
-  && !!form.value.quantity && form.value.quantity > 0
-  && !!form.value.consumptionDate
-  && (!needProducer.value || !!form.value.sourceOemCompanyId)
+  form.value.warehouseId > 0 &&
+  !!form.value.skuId &&
+  !!form.value.quantity && form.value.quantity > 0 &&
+  !!form.value.consumptionDate
 )
 
 // 매↔㎡ 상호 환산
@@ -289,12 +322,6 @@ watch(() => props.modelValue, async (open) => {
 
   if (warehouseList.value.length === 0) {
     try { warehouseList.value = await warehouseService.getWarehouseList(false) } catch (e) { console.error(e) }
-  }
-  if (manufacturers.value.length === 0) {
-    try {
-      const all = await companyService.getManufacturers()
-      manufacturers.value = all.filter((c: any) => c.companyType === 'MANUFACTURER')
-    } catch (e) { console.error(e) }
   }
 
   if (props.editTarget) {
@@ -341,7 +368,8 @@ const handleSave = async () => {
       skuId: form.value.skuId,
       quantity: form.value.quantity,
       sheetCount: form.value.sheetCount,
-      sourceOemCompanyId: needProducer.value ? form.value.sourceOemCompanyId : null,
+      // 생산자는 서버가 창고로 결정한다 (사용자 지정 불가)
+      sourceOemCompanyId: null,
       consumptionDate: form.value.consumptionDate,
       destination: form.value.destination || null,
       contractNo: form.value.contractNo || null,
@@ -364,7 +392,7 @@ const handleSave = async () => {
 @import '@/assets/css/admin-common.css';
 @import '@/assets/css/admin-buttons.css';
 
-.ic-modal { max-width: 560px; width: 100%; }
+.ic-modal { max-width: 720px; width: 100%; }
 
 .type-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .type-btn {
@@ -405,5 +433,50 @@ const handleSave = async () => {
   background: #fef2f2;
   color: #dc2626;
   font-size: 0.8125rem;
+}
+/*
+ * 모달 푸터 버튼
+ * ⚠ .btn-cancel / .btn-save 는 공용 CSS(admin-buttons.css)에 없다.
+ *   다른 모달(ItemReplaceModal 등)도 각자 scoped style 에 직접 정의한다.
+ *   정의가 없으면 버튼이 맨 텍스트로 보인다(2026-09-21 발견).
+ */
+.modal-footer .btn-cancel {
+  padding: 0.5rem 1rem;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modal-footer .btn-cancel:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modal-footer .btn-save {
+  padding: 0.5rem 1.25rem;
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modal-footer .btn-save:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.modal-footer .btn-save:disabled {
+  background: #cbd5e1;
+  border-color: #cbd5e1;
+  cursor: not-allowed;
 }
 </style>

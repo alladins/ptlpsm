@@ -7,6 +7,7 @@
 
 import { getAuthHeaders } from './api'
 import { PURCHASE_ORDER_ENDPOINTS } from './api/endpoints/purchase-order.endpoints'
+import { httpError, httpErrorMessage } from '~/utils/apiError'
 import type {
   PurchaseOrderListItem,
   PurchaseOrderDetail,
@@ -38,7 +39,7 @@ class PurchaseOrderService {
       headers: getAuthHeaders()
     })
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
     return response.blob()
   }
@@ -104,7 +105,7 @@ class PurchaseOrderService {
           statusText: response.statusText,
           error: errorText
         })
-        throw new Error(`발주서 목록 조회 실패: ${response.status}`)
+        throw httpError(response.status, '발주서 목록 조회')
       }
 
       const data = await response.json()
@@ -173,7 +174,7 @@ class PurchaseOrderService {
           statusText: response.statusText,
           errorBody: errorText
         })
-        throw new Error(`발주서 상세 조회 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '발주서 상세 조회')
       }
 
       const data = await response.json()
@@ -213,7 +214,7 @@ class PurchaseOrderService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`발주서 등록 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '발주서 등록')
       }
 
       const data = await response.json()
@@ -244,7 +245,7 @@ class PurchaseOrderService {
     })
 
     if (!response.ok) {
-      throw new Error(`연결 발주서 조회 실패: ${response.status}`)
+      throw httpError(response.status, '연결 발주서 조회')
     }
 
     return await response.json()
@@ -272,7 +273,7 @@ class PurchaseOrderService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`발주서 수정 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '발주서 수정')
       }
 
       const data = await response.json()
@@ -305,10 +306,10 @@ class PurchaseOrderService {
       const errorText = await response.text()
       try {
         const errorJson = JSON.parse(errorText)
-        throw new Error(errorJson.message || `가공비 저장 실패: ${response.status}`)
+        throw new Error(errorJson.message || httpErrorMessage(response.status, '가공비 저장'))
       } catch (e) {
         if (e instanceof SyntaxError) {
-          throw new Error(errorText || `가공비 저장 실패: ${response.status}`)
+          throw new Error(errorText || httpErrorMessage(response.status, '가공비 저장'))
         }
         throw e
       }
@@ -339,7 +340,7 @@ class PurchaseOrderService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`발주서 삭제 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '발주서 삭제')
       }
 
       console.log('[purchase-order.service] 삭제 성공')
@@ -374,7 +375,7 @@ class PurchaseOrderService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`발주서 발행 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '발주서 발행')
       }
 
       const data = await response.json()
@@ -383,23 +384,6 @@ class PurchaseOrderService {
     } catch (error) {
       console.error('[purchase-order.service] issuePurchaseOrder 에러:', error)
       throw error
-    }
-  }
-
-  /**
-   * 본사 바로 입고 (DRAFT → STOCKED)
-   * @param poId - 발주서 ID
-   */
-  async directStockIn(poId: number): Promise<void> {
-    const url = PURCHASE_ORDER_ENDPOINTS.directStockIn(poId)
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: getAuthHeaders()
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `본사 바로 입고 실패: ${response.status}`)
     }
   }
 
@@ -421,7 +405,7 @@ class PurchaseOrderService {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('[purchase-order.service] 접수 실패:', { status: response.status, error: errorText })
-        throw new Error(`발주서 접수 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '발주서 접수')
       }
 
       const data = await response.json()
@@ -454,7 +438,7 @@ class PurchaseOrderService {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('[purchase-order.service] 반려 영향 분석 실패:', { status: response.status, error: errorText })
-        throw new Error(`반려 영향 분석 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '반려 영향 분석')
       }
 
       const data = await response.json()
@@ -486,7 +470,7 @@ class PurchaseOrderService {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('[purchase-order.service] 반려 실패:', { status: response.status, error: errorText })
-        throw new Error(`발주서 반려 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '발주서 반려')
       }
 
       const data = await response.json()
@@ -512,7 +496,7 @@ class PurchaseOrderService {
 
       if (!response.ok) {
         const errorText = await response.text()
-        throw new Error(errorText || `PDF 다운로드 실패: ${response.status}`)
+        throw new Error(errorText || httpErrorMessage(response.status, 'PDF 다운로드'))
       }
 
       const blob = await response.blob()
@@ -555,7 +539,7 @@ class PurchaseOrderService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`생산완료 체크 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '생산완료 체크')
       }
 
       const data = await response.json()

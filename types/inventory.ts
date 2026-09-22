@@ -211,3 +211,26 @@ export const TRANSACTION_TYPE_COLORS: Record<string, string> = {
   TRANSFER_IN: 'bg-blue-100 text-blue-700',
   TRANSFER_OUT: 'bg-orange-100 text-orange-700'
 }
+
+/**
+ * 재고 출처 한 줄 — "이 창고의 이 SKU 는 어디서 들어왔나"
+ *
+ * ⚠ 누적 입고 내역이지 현재고 구성비가 아니다.
+ *   inventory 는 (창고, SKU, 수량) 뿐이라 들어온 뒤로는 물량이 섞이고,
+ *   출고가 어느 쪽에서 빠졌는지는 남지 않는다.
+ * ⚠ 금액·원가가 없는 것은 의도다. 창고이동분은 이미 제조사 발주서에서
+ *   원가가 계상·지급된 물량이라, 다시 값을 매기면 이중계상이 된다.
+ */
+export interface InventoryOrigin {
+  /** PO: 발주 입고 / TRANSFER: 창고이동 입고 */
+  originType: 'PO' | 'TRANSFER'
+  sourceWarehouseId: number | null
+  sourceWarehouseName: string | null
+  /** 생산자 — 출처가 제조사일 때만. 본사 직접입고면 null */
+  producerCompanyId: number | null
+  producerCompanyName: string | null
+  /** 누적 입고 수량 (㎡) */
+  quantity: number
+  transactionCount: number
+  lastInboundDate: string | null
+}

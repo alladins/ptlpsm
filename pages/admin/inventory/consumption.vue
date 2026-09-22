@@ -86,73 +86,143 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 130px">소진번호</th>
-              <th style="width: 110px">유형</th>
-              <th style="width: 100px">소진일</th>
-              <th style="width: 130px">창고</th>
-              <th style="width: 130px">품목</th>
-              <th style="width: 110px" class="text-right">수량</th>
-              <th style="width: 120px">생산자</th>
-              <th style="width: 100px" class="text-right">원가</th>
-              <th style="width: 120px" class="text-right">금액</th>
-              <th style="width: 150px">보낸 곳 / 계약</th>
-              <th style="width: 80px" class="text-center">상태</th>
-              <th style="width: 160px" class="text-center">관리</th>
+              <th style="width: 130px">
+                소진번호
+              </th>
+              <th style="width: 110px">
+                유형
+              </th>
+              <th style="width: 100px">
+                소진일
+              </th>
+              <th style="width: 130px">
+                창고
+              </th>
+              <th style="width: 130px">
+                품목
+              </th>
+              <th style="width: 110px" class="text-right">
+                수량
+              </th>
+              <th style="width: 120px">
+                생산자
+              </th>
+              <th style="width: 100px" class="text-right">
+                원가
+              </th>
+              <th style="width: 120px" class="text-right">
+                금액
+              </th>
+              <th style="width: 150px">
+                보낸 곳 / 계약
+              </th>
+              <th style="width: 80px" class="text-center">
+                상태
+              </th>
+              <th style="width: 160px" class="text-center">
+                관리
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="12" class="empty-message">조회 중...</td>
+              <td colspan="12" class="empty-message">
+                조회 중...
+              </td>
             </tr>
             <tr v-else-if="rows.length === 0">
               <td colspan="12" class="empty-message">
                 등록된 재고 소진이 없습니다. "소진 등록" 으로 추가하세요.
               </td>
             </tr>
-            <tr v-for="r in rows" :key="r.consumptionId" :class="{ cancelled: r.status === 'CANCELLED' }">
-              <td>{{ r.consumptionNo }}</td>
-              <td>
-                <span class="type-chip" :class="r.consumptionType">
-                  {{ typeLabel(r.consumptionType) }}
-                </span>
-              </td>
-              <td>{{ formatDate(r.consumptionDate) }}</td>
-              <td>{{ r.warehouseName || '-' }}</td>
-              <td>{{ r.skuName || r.skuId }}</td>
-              <td class="text-right">
-                {{ r.quantity.toLocaleString() }}㎡
-                <small v-if="r.sheetCount" class="sheet">({{ r.sheetCount }}매)</small>
-              </td>
-              <td>{{ r.sourceOemCompanyName || '-' }}</td>
-              <td class="text-right">{{ formatCurrency(r.unitCost) }}</td>
-              <td class="text-right strong">{{ formatCurrency(r.amount) }}</td>
-              <td class="ellipsis">{{ r.destination || r.contractNo || '-' }}</td>
-              <td class="text-center">
-                <span class="status-chip" :class="r.status">{{ statusLabel(r.status) }}</span>
-              </td>
-              <td class="text-center">
-                <!--
+            <template v-for="r in rows" :key="r.consumptionId">
+              <tr :class="{ cancelled: r.status === 'CANCELLED' }">
+                <td>{{ r.consumptionNo }}</td>
+                <td>
+                  <span class="type-chip" :class="r.consumptionType">
+                    {{ typeLabel(r.consumptionType) }}
+                  </span>
+                </td>
+                <td>{{ formatDate(r.consumptionDate) }}</td>
+                <td>{{ r.warehouseName || '-' }}</td>
+                <td>{{ r.skuName || r.skuId }}</td>
+                <td class="text-right">
+                  {{ r.quantity.toLocaleString() }}㎡
+                  <small v-if="r.sheetCount" class="sheet">({{ r.sheetCount }}매)</small>
+                </td>
+                <!-- 생산자·원가는 FIFO 로 빠지는 재고에서 나온다. 여러 곳에 걸치면 «외 N곳», 원가는 평균 -->
+                <td>{{ r.producerSummary || r.sourceOemCompanyName || '-' }}</td>
+                <td class="text-right">
+                  <button
+                    v-if="r.lots && r.lots.length"
+                    type="button"
+                    class="cost-toggle"
+                    :class="{ warn: r.costUnknown }"
+                    :title="r.lots.length > 1 ? '여러 발주에 걸친 평균 원가입니다. 눌러서 내역 보기' : '원가 내역 보기'"
+                    @click="toggleLots(r.consumptionId)"
+                  >
+                    {{ formatCurrency(r.unitCost) }}
+                    <small v-if="r.lots.length > 1">평균</small>
+                    <i :class="['fas', expanded.has(r.consumptionId) ? 'fa-chevron-up' : 'fa-chevron-down']" />
+                  </button>
+                  <template v-else>
+                    {{ formatCurrency(r.unitCost) }}
+                  </template>
+                </td>
+                <td class="text-right strong">
+                  {{ formatCurrency(r.amount) }}
+                </td>
+                <td class="ellipsis">
+                  {{ r.destination || r.contractNo || '-' }}
+                </td>
+                <td class="text-center">
+                  <span class="status-chip" :class="r.status">{{ statusLabel(r.status) }}</span>
+                </td>
+                <td class="text-center">
+                  <!--
                   확정·취소·삭제는 돈이 확정되는 지점이라 관리자만 한다(서버도 막혀 있다).
                   제조사에게 보여주면 눌러도 403 만 난다. 등록·수정까지는 제조사도 한다.
                 -->
-                <template v-if="r.status === 'DRAFT'">
-                  <button class="btn-mini" @click="openEdit(r)">수정</button>
-                  <button
-                    v-if="canSettle"
-                    class="btn-mini primary"
-                    :disabled="!canConfirm(r)"
-                    :title="confirmHint(r)"
-                    @click="handleConfirm(r)"
-                  >확정</button>
-                  <button v-if="canSettle" class="btn-mini danger" @click="handleDelete(r)">삭제</button>
-                </template>
-                <template v-else-if="r.status === 'CONFIRMED'">
-                  <button v-if="canSettle" class="btn-mini danger" @click="handleCancel(r)">취소</button>
+                  <template v-if="r.status === 'DRAFT'">
+                    <button class="btn-mini" @click="openEdit(r)">
+                      수정
+                    </button>
+                    <!--
+                    ★ 비활성화가 아니라 GuardedButton 이다.
+                      "확정 버튼이 안 눌린다"는 고객 문의가 실제로 접수됐다(2026-09-21).
+                      이유가 마우스오버 툴팁에만 있어 사용자가 찾을 방법이 없었다.
+                  -->
+                    <GuardedButton
+                      v-if="canSettle"
+                      class="btn-mini primary"
+                      :blocked="!canConfirm(r)"
+                      :reason="confirmHint(r)"
+                      @click="handleConfirm(r)"
+                    >
+                      확정
+                    </GuardedButton>
+                    <button v-if="canSettle" class="btn-mini danger" @click="handleDelete(r)">
+                      삭제
+                    </button>
+                  </template>
+                  <template v-else-if="r.status === 'CONFIRMED'">
+                    <button v-if="canSettle" class="btn-mini danger" @click="handleCancel(r)">
+                      취소
+                    </button>
+                    <span v-else class="muted">-</span>
+                  </template>
                   <span v-else class="muted">-</span>
-                </template>
-                <span v-else class="muted">-</span>
-              </td>
-            </tr>
+                </td>
+              </tr>
+              <tr v-if="expanded.has(r.consumptionId) && r.lots && r.lots.length" class="lots-row">
+                <td colspan="12">
+                  <div class="lots-caption">
+                    {{ r.status === 'DRAFT' ? '확정하면 이렇게 빠집니다 (지금 재고 기준 미리보기 — 확정 시점에 다시 계산)' : '확정 때 빠진 내역' }}
+                  </div>
+                  <LotBreakdown :pieces="r.lots" />
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -174,12 +244,13 @@
 </template>
 
 <script setup lang="ts">
-import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, reactive, computed, onMounted } from 'vue'
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { usePermissionStore } from '~/stores/permission'
 import { inventoryConsumptionService } from '~/services/inventory-consumption.service'
 import { companyService } from '~/services/company.service'
 import InventoryConsumptionModal from '~/components/admin/inventory/InventoryConsumptionModal.vue'
+import LotBreakdown from '~/components/admin/inventory/LotBreakdown.vue'
 import {
   CONSUMPTION_TYPE_LABELS,
   CONSUMPTION_STATUS_LABELS,
@@ -224,14 +295,24 @@ const filter = reactive({
   size: 20
 })
 
+/** 원가 내역 펼침 — 소진 ID 집합 */
+const expanded = ref(new Set<number>())
+const toggleLots = (id: number) => {
+  const next = new Set(expanded.value)
+  if (next.has(id)) { next.delete(id) } else { next.add(id) }
+  expanded.value = next
+}
+
 const confirmHint = (r: InventoryConsumption) => {
-  if (!r.unitCost || r.unitCost <= 0) {
-    return '원가가 0원입니다. 해당 생산자·품목의 원가를 먼저 등록하세요.'
+  if ((r.currentStock ?? 0) >= r.quantity && r.costUnknown) {
+    const bad = (r.lots || []).filter(p => p.costUnknown)
+      .map(p => `· ${p.originType === 'PO' ? `${p.originPoNo} (${p.producerCompanyName || '-'})` : p.originType === 'RECEIPT' ? p.originReceiptNo : '출처 확인 불가'} ${p.quantity.toLocaleString()}㎡`)
+    return `원가가 0원이거나 출처를 알 수 없는 재고가 먼저 빠지게 되어 확정할 수 없습니다.\n\n${bad.join('\n')}\n\n해당 발주서의 원가를 바로잡은 뒤 확정하세요. (원가 칸을 누르면 내역이 보입니다)`
   }
   if ((r.currentStock ?? 0) < r.quantity) {
-    return `재고가 부족합니다 (현재고 ${r.currentStock ?? 0}㎡ / 필요 ${r.quantity}㎡)`
+    return `${r.warehouseName || '출고 창고'} 의 재고가 부족해 확정할 수 없습니다.\n\n현재고 ${(r.currentStock ?? 0).toLocaleString()}㎡ / 필요 ${r.quantity.toLocaleString()}㎡ (${(r.quantity - (r.currentStock ?? 0)).toLocaleString()}㎡ 부족)\n\n소진 수량을 줄이거나, 발주서를 입고 처리해 재고를 채우세요.`
   }
-  return '재고를 차감하고 원장에 반영합니다.'
+  return '재고를 차감합니다. 월별 매출원장의 지급 금액에는 영향이 없습니다.'
 }
 
 const load = async () => {
@@ -279,7 +360,20 @@ const openEdit = (r: InventoryConsumption) => { editTarget.value = r; showModal.
 const onSaved = () => { load() }
 
 const handleConfirm = async (r: InventoryConsumption) => {
-  if (!confirm(`${r.consumptionNo} 을 확정합니다.\n재고 ${r.quantity}㎡ 가 차감되고 ${r.ledgerYearMonth} 원장에 ${formatCurrency(r.amount)}원이 반영됩니다.`)) { return }
+  // ⚠ formatCurrency 가 '원' 까지 붙인다. 뒤에 '원' 을 또 쓰면 "0원원" 이 된다.
+  // ★ 2026-09-21 대전제 5번 — 소진은 월별 매출원장의 지급 금액을 바꾸지 않는다.
+  //   예전 문구 «○○ 원장에 ○원이 청구됩니다» 는 정책 확정 전의 것이라 틀렸다.
+  //   (고객이 확인창을 보고 «청구된다는 게 맞냐» 고 물어 발견)
+  // ★ 원가는 FIFO — 먼저 들어온 재고의 발주원가. 확정 시점 재고로 다시 계산하므로 «약» 으로 적는다
+  const costLine = (r.lots?.length ?? 0) > 1
+    ? `먼저 들어온 재고부터 ${r.lots!.length}개 발주에 걸쳐 빠지며, 원가 약 ${formatCurrency(r.amount)}어치(평균 ${formatCurrency(r.unitCost)}/㎡)로 기록됩니다.`
+    : `원가 약 ${formatCurrency(r.amount)}어치가 소진으로 기록됩니다.`
+  if (!confirm(
+    `${r.consumptionNo} 을 확정합니다.\n\n` +
+    `재고 ${r.quantity}㎡ 가 차감됩니다.\n` +
+    `${costLine}\n\n` +
+    '월별 매출원장의 지급 금액은 바뀌지 않습니다. (원장에는 «참고» 로만 표시)'
+  )) { return }
   try {
     await inventoryConsumptionService.confirm(r.consumptionId)
     await load()
@@ -289,7 +383,7 @@ const handleConfirm = async (r: InventoryConsumption) => {
 }
 
 const handleCancel = async (r: InventoryConsumption) => {
-  const reason = prompt(`${r.consumptionNo} 을 취소합니다.\n재고 ${r.quantity}㎡ 가 복구되고 원장에서도 빠집니다.\n\n취소 사유를 입력하세요.`)
+  const reason = prompt(`${r.consumptionNo} 을 취소합니다.\n재고 ${r.quantity}㎡ 가 원래 들어온 발주 그대로 되돌아옵니다.\n\n취소 사유를 입력하세요.`)
   if (reason === null) { return }
   try {
     await inventoryConsumptionService.cancel(r.consumptionId, reason)
@@ -362,4 +456,20 @@ tr.cancelled .status-chip { text-decoration: none; }
 .btn-mini:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-mini.primary { border-color: #2563eb; color: #2563eb; }
 .btn-mini.danger  { border-color: #dc2626; color: #dc2626; }
+
+/* 원가 칸 — 눌러서 FIFO 내역 펼치기 */
+.cost-toggle {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #1d4ed8;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cost-toggle small { margin-left: 0.2rem; color: #6b7280; }
+.cost-toggle i { margin-left: 0.25rem; font-size: 0.625rem; }
+.cost-toggle.warn { color: #dc2626; }
+.lots-row td { background: #f8fafc; padding: 0.5rem 1rem 0.75rem; }
+.lots-caption { margin-bottom: 0.375rem; font-size: 0.75rem; color: #6b7280; }
 </style>

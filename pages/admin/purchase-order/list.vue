@@ -48,7 +48,7 @@
               <option value="">
                 전체
               </option>
-              <option v-for="(label, key) in PO_STATUS_LABELS" :key="key" :value="key">
+              <option v-for="(label, key) in PO_STATUS_SEARCH_LABELS" :key="key" :value="key">
                 {{ label }}
               </option>
             </select>
@@ -207,7 +207,7 @@ import { useRouter, useRoute } from '#imports'
 import { purchaseOrderService } from '~/services/purchase-order.service'
 import { companyService } from '~/services/company.service'
 import type { PurchaseOrderListItem, PurchaseOrderStatus } from '~/types/purchase-order'
-import { PO_STATUS_LABELS, PO_STATUS_COLORS } from '~/types/purchase-order'
+import { PO_STATUS_LABELS, PO_STATUS_SEARCH_LABELS, PO_STATUS_COLORS } from '~/types/purchase-order'
 import type { CompanyInfoResponse } from '~/types/company'
 import { formatDate, formatCurrency, formatQuantity, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'

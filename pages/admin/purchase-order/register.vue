@@ -2,9 +2,7 @@
   <div class="po-register">
     <PageHeader
       title="발주서 등록"
-      :description="isLeadpowerSelected
-        ? '본사 재고를 등록합니다. 저장 후 상세 페이지에서 [바로 입고] 버튼으로 입고 처리합니다.'
-        : 'OEM 제조사에 발주서를 등록 및 본사의 재고 등록합니다.'"
+      description="원가가 등록된 공급원에 발주서를 등록합니다. 발주 없이 재고만 넣을 때는 재고현황의 [재고 직접 입고]를 쓰세요."
       icon="order"
       icon-color="blue"
     >
@@ -22,7 +20,6 @@
           {{ submitting ? '저장 중...' : '저장' }}
         </button>
         <button
-          v-if="!isLeadpowerSelected"
           class="btn-action btn-primary"
           :disabled="submitting"
           @click="handleSaveAndIssue"
@@ -51,52 +48,11 @@
                   :key="company.id"
                   :value="company.id"
                 >
-                  {{ company.companyName }}{{ company.companyType === 'LEADPOWER' ? ' [본사 직접입고용]' : '' }}
+                  {{ company.companyName }}
                 </option>
               </select>
               <span v-if="isOemManager" class="form-hint">본인 소속 회사로 자동 설정됩니다.</span>
             </FormField>
-
-            <!-- 본사(LEADPOWER) 선택 시 경고 패널 — PO 56 사고 재발 방지 가드 -->
-            <div v-if="isLeadpowerSelected" class="leadpower-warning-panel">
-              <div class="leadpower-warning-header">
-                <i class="fas fa-exclamation-triangle" />
-                <strong>선택된 제조사는 본사로 다음과 같이 처리되니 주의 바랍니다</strong>
-              </div>
-              <ul class="leadpower-warning-body">
-                <li>발주서 상세 화면에 <b>"바로 입고"</b> 버튼이 노출됩니다.</li>
-                <li>바로 입고 시 모든 품목이 본사 창고에 즉시 입고되며 <b>되돌릴 수 없습니다</b>.</li>
-                <li>외부 OEM 발주라면 다른 제조사를 선택해 주세요.</li>
-              </ul>
-
-              <!-- 생산자 지정 — 본사는 생산 설비가 없어 지급 대상이 될 수 없다.
-                   돈은 실제로 만든 제조사에게 가야 하므로 여기서 반드시 받는다. -->
-              <div class="source-oem-field">
-                <label class="source-oem-label">
-                  생산자 <span class="required-mark">*</span>
-                </label>
-                <select
-                  v-model="formData.sourceOemCompanyId"
-                  class="form-select-sm"
-                  :class="{ 'is-error': errors.sourceOemCompanyId }"
-                >
-                  <option :value="null">선택하세요</option>
-                  <option
-                    v-for="company in manufacturerCompanies"
-                    :key="company.id"
-                    :value="company.id"
-                  >
-                    {{ company.companyName }}
-                  </option>
-                </select>
-                <p class="source-oem-hint">
-                  이 물량을 실제로 만든 제조사입니다. 원가와 지급이 이 회사 기준으로 잡힙니다.
-                </p>
-                <p v-if="errors.sourceOemCompanyId" class="source-oem-error">
-                  {{ errors.sourceOemCompanyId }}
-                </p>
-              </div>
-            </div>
 
             <!-- 발주일자 -->
             <FormField label="발주일자" required :error="errors.orderDate">
@@ -343,6 +299,7 @@ import type { PurchaseOrderCreateRequest, PurchaseOrderItemInput } from '~/types
 import type { OemCost } from '~/types/oem-cost'
 import type { Item, ItemSku } from '~/services/item.service'
 import { formatCurrency, formatQuantity } from '~/utils/format'
+import { reportValidationErrors } from '~/utils/formValidation'
 import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
 import ShipmentPickerModal from '~/components/admin/ShipmentPickerModal.vue'
 import type { SelectedShipmentItem } from '~/components/admin/ShipmentPickerModal.vue'
@@ -362,20 +319,6 @@ const router = useRouter()
 // OEM 제조사 목록
 const oemCompanies = ref<CompanyInfoResponse[]>([])
 const loadingOemCompanies = ref(false)
-
-// 본사 선택 여부
-// 생산자 후보 = 제조사로 등록된 회사만.
-// 원가 마스터(item_sku_oem_cost)에 행이 있는 회사와 정확히 일치하므로
-// 여기 없는 회사를 고르면 원가를 못 찾는다.
-const manufacturerCompanies = computed(() =>
-  oemCompanies.value.filter(c => c.companyType === 'MANUFACTURER')
-)
-
-const isLeadpowerSelected = computed(() => {
-  if (!formData.value.oemCompanyId) { return false }
-  const selected = oemCompanies.value.find(c => c.id === formData.value.oemCompanyId)
-  return selected?.companyType === 'LEADPOWER'
-})
 
 // OEM 원가 캐시 (skuId → costPrice)
 const oemCostMap = ref<Map<string, number>>(new Map())
@@ -404,8 +347,8 @@ interface PoItemRow extends PurchaseOrderItemInput {
 // 폼 데이터
 const formData = ref({
   oemCompanyId: null as number | null,
-  // 생산자 — 본사(리드파워) 명의일 때만 입력받는다.
-  // 제조사 명의면 명의=생산자이므로 null 로 보내고 백엔드가 COALESCE 로 해석한다.
+  // 생산자 — 등록 화면에서는 입력받지 않는다(항상 null).
+  // 귀속처가 명의와 다른 경우(창고이동 등)에만 값이 채워지고, 여기서는 공급원=귀속처다.
   sourceOemCompanyId: null as number | null,
   // 가공비 — 원장에 가산되는 부대비용
   processingFee: null as number | null,
@@ -469,18 +412,12 @@ const totalAmount = computed(() => {
 
 // OEM 제조사 변경 시 원가 조회
 // 원가 조회 대상 = 생산자 우선, 없으면 공급원.
-// ⚠ 본사(리드파워) 명의로 등록할 때 공급원으로 조회하면 리드파워는 원가 마스터 행이 없어
-//   모든 품목 단가가 0 으로 저장된다. purchase_order_items.unit_price 는 원장의 2순위
-//   원가 소스이므로, 그대로 두면 0원 발주서가 그대로 원장에 실린다.
+// ⚠ 본사(리드파워) 명의는 원가 마스터 행이 없어 자동 조회가 비어 온다.
+//   purchase_order_items.unit_price 는 원장의 2순위 원가 소스이므로,
+//   본사 재고 등록 시 발주원가는 사용자가 직접 입력해야 한다.
 const costLookupCompanyId = computed(
   () => formData.value.sourceOemCompanyId ?? formData.value.oemCompanyId
 )
-
-watch(() => formData.value.oemCompanyId, () => {
-  // 공급원이 바뀌면 생산자는 초기화한다.
-  // 제조사 명의로 되돌렸는데 이전 생산자가 남아 있으면 백엔드 검증에 걸린다.
-  formData.value.sourceOemCompanyId = null
-})
 
 // 원가는 ★발주일 시점★ 구간으로 잡는다.
 //   과거 실적을 소급 입력할 때 '지금 원가'가 들어가면 발주서 금액이 통째로 틀리고,
@@ -629,15 +566,16 @@ const removeItem = (index: number) => {
 }
 
 // 유효성 검사
-const validate = (): boolean => {
+//
+// ★ 실패를 입력칸 아래 빨간 글씨로만 두지 않는다.
+//   화면이 길어 에러가 스크롤 밖에 있으면 [저장] 을 눌러도 아무 일이 없는 것처럼 보인다.
+//   reportValidationErrors 가 팝업으로 알리고 첫 문제 칸으로 스크롤·포커스까지 옮겨 준다.
+const validate = async (): Promise<boolean> => {
   const newErrors: Record<string, string> = {}
+  const extra: string[] = []
 
   if (!formData.value.oemCompanyId) {
-    newErrors.oemCompanyId = 'OEM 제조사를 선택하세요.'
-  }
-
-  if (isLeadpowerSelected.value && !formData.value.sourceOemCompanyId) {
-    newErrors.sourceOemCompanyId = '본사 명의 발주서는 생산자(실제 제조사)를 지정해야 합니다.'
+    newErrors.oemCompanyId = '공급원(OEM 제조사)을 선택하세요.'
   }
 
   if (!formData.value.orderDate) {
@@ -648,20 +586,26 @@ const validate = (): boolean => {
     newErrors.expectedCompletionDate = '납기 예정일을 입력하세요.'
   }
 
+  // 품목 관련은 특정 입력칸에 매달리지 않으므로 extra 로 넘긴다.
   if (formData.value.items.length === 0) {
-    alert('품목을 최소 1개 이상 추가하세요.')
-    return false
+    extra.push('품목을 최소 1개 이상 추가하세요.')
+  } else if (formData.value.items.some(item => !item.quantity || item.quantity <= 0)) {
+    extra.push('수량이 0인 품목이 있습니다. 수량을 입력하세요.')
   }
 
-  // 수량이 0인 품목 체크
-  const zeroQuantityItems = formData.value.items.filter(item => !item.quantity || item.quantity <= 0)
-  if (zeroQuantityItems.length > 0) {
-    alert('수량이 0인 품목이 있습니다. 수량을 입력하세요.')
-    return false
+  // ★ 발주원가 0원 차단 — 재고 원가는 발주서에서 정해진다.
+  //   0원으로 저장하면 그 물량이 입고된 뒤 출하·소진·원장이 전부 0원으로 따라간다.
+  //   본사 명의는 원가 자동조회가 비어 오므로 직접 입력해야 한다.
+  const zeroCost = formData.value.items.filter(item => !item.unitPrice || item.unitPrice <= 0)
+  if (zeroCost.length > 0) {
+    extra.push(
+      `발주원가가 0원인 품목이 있습니다: ${zeroCost.map(i => i.skuName || i.skuId).join(', ')}\n`
+      + '재고 원가는 발주서에서 정해지므로 0원으로 두면 이후 출하·소진·원장이 모두 0원이 됩니다.'
+    )
   }
 
   errors.value = newErrors
-  return Object.keys(newErrors).length === 0
+  return await reportValidationErrors(newErrors, extra)
 }
 
 // 저장 요청 데이터 생성
@@ -685,7 +629,7 @@ const buildRequestData = (): PurchaseOrderCreateRequest => {
 
 // 저장 (DRAFT)
 const handleSaveDraft = async () => {
-  if (!validate()) { return }
+  if (!await validate()) { return }
 
   submitting.value = true
   try {
@@ -703,7 +647,7 @@ const handleSaveDraft = async () => {
 
 // 저장 후 발행 (DRAFT -> ISSUED + PDF 생성)
 const handleSaveAndIssue = async () => {
-  if (!validate()) { return }
+  if (!await validate()) { return }
 
   submitting.value = true
   try {
@@ -734,11 +678,11 @@ const goBack = () => {
 onMounted(async () => {
   loadingOemCompanies.value = true
   try {
-    // OEM 제조사 + 본사(LEADPOWER) 모두 조회
-    // OEM 담당자는 백엔드 필터에 의해 본인 회사만 반환됨
-    const manufacturers = await companyService.getManufacturers()
-    const leadpower = await companyService.getCompanies('LEADPOWER')
-    oemCompanies.value = [...leadpower, ...manufacturers]
+    // ★ 공급원 = 원가가 등록된 회사 (2026-09-21 대전제 8번)
+    //   회사 유형으로 고르지 않는다. 리드파워는 원가가 없어 지금은 안 나오고,
+    //   자체 생산을 시작해 원가를 등록하면 코드 수정 없이 자동으로 나온다.
+    //   OEM 담당자는 백엔드가 본인 회사만 돌려준다.
+    oemCompanies.value = await companyService.getProducers()
 
     // OEM 담당자: 본인 회사 1건만 반환되므로 자동 선택
     if (isOemManager.value && oemCompanies.value.length === 1) {
@@ -886,50 +830,6 @@ onMounted(async () => {
   font-size: 0.7rem;
 }
 
-/* === 본사(LEADPOWER) 선택 경고 패널 (PO 56 사고 재발 방지 가드) === */
-.leadpower-warning-panel {
-  grid-column: 1 / -1;
-  background: #fef3c7;
-  border-left: 4px solid #f59e0b;
-  border-radius: 4px;
-  padding: 0.875rem 1rem;
-  margin-top: 0.5rem;
-}
-
-/* 생산자 지정 — 경고 패널 안쪽 */
-.source-oem-field {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #fcd34d;
-}
-
-.source-oem-label {
-  display: block;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #78350f;
-  margin-bottom: 0.375rem;
-}
-
-.source-oem-field .required-mark {
-  color: #dc2626;
-}
-
-.source-oem-field .form-select-sm {
-  width: 100%;
-  max-width: 320px;
-}
-
-.source-oem-field .form-select-sm.is-error {
-  border-color: #dc2626;
-}
-
-.source-oem-hint {
-  margin: 0.375rem 0 0;
-  font-size: 0.75rem;
-  color: #92400e;
-}
-
 /*
  * 가공비 입력칸
  *
@@ -969,38 +869,6 @@ onMounted(async () => {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: #1e293b;
-}
-
-.source-oem-error {
-  margin: 0.25rem 0 0;
-  font-size: 0.75rem;
-  color: #dc2626;
-}
-
-.leadpower-warning-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #92400e;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-.leadpower-warning-header i {
-  color: #f59e0b;
-  font-size: 1rem;
-}
-
-.leadpower-warning-body {
-  margin: 0;
-  padding-left: 1.25rem;
-  color: #78350f;
-  font-size: 0.8125rem;
-  line-height: 1.65;
-}
-
-.leadpower-warning-body li {
-  margin: 0.125rem 0;
 }
 
 /* 반응형 */

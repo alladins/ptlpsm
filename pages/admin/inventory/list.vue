@@ -13,6 +13,11 @@
           <i v-else class="fas fa-search" />
           검색
         </button>
+        <!-- 발주서 없이 재고만 늘리는 입고 (무상·파손 보전·기초 재고·실사 보정). 소진 등록의 대칭 -->
+        <button v-if="!isOemManager" class="btn-action" @click="openReceiptCreate">
+          <i class="fas fa-plus-square" />
+          재고 직접 입고
+        </button>
         <button v-if="!isOemManager" class="btn-action" @click="showConsumptionModal = true">
           <i class="fas fa-flask" />
           소진 등록
@@ -41,7 +46,23 @@
           <i class="fas fa-history" />
           입출고 이력
         </button>
+        <button
+          v-if="!isOemManager"
+          :class="['tab-btn', { active: activeTab === 'receipts' }]"
+          @click="switchTab('receipts')"
+        >
+          <i class="fas fa-plus-square" />
+          직접 입고
+        </button>
       </div>
+
+      <!-- 직접 입고 탭 — 한 번 열면 유지해 검색조건이 날아가지 않게 v-show -->
+      <InventoryReceiptTab
+        v-if="receiptTabMounted"
+        v-show="activeTab === 'receipts'"
+        ref="receiptTabRef"
+        @changed="handleSearch"
+      />
 
       <!-- 재고 현황 탭 -->
       <div v-if="activeTab === 'inventory'">
@@ -223,6 +244,43 @@
                           </div>
                           <div class="card-date">
                             {{ formatDateTime(detail.lastUpdated) }}
+                          </div>
+                          <!--
+                            출처 역산 — 이 재고가 어느 제조사에서 왔는지.
+                            ⚠ 표시 전용이다. 창고이동분은 이미 제조사 발주서에서
+                              원가가 계상·지급됐으므로 여기 금액은 없다(붙이면 이중계상).
+                          -->
+                          <div class="card-origin">
+                            <button
+                              class="origin-toggle"
+                              @click.stop="toggleOrigins(detail.warehouseId, group.skuId)"
+                            >
+                              <i class="fas fa-route" />
+                              출처
+                            </button>
+                            <div v-if="originsMap[originKey(detail.warehouseId, group.skuId)]" class="origin-list">
+                              <template v-if="originsMap[originKey(detail.warehouseId, group.skuId)].length > 0">
+                                <div
+                                  v-for="(o, oi) in originsMap[originKey(detail.warehouseId, group.skuId)]"
+                                  :key="oi"
+                                  class="origin-row"
+                                >
+                                  <span class="origin-from">
+                                    {{ o.originType === 'TRANSFER'
+                                      ? (o.sourceWarehouseName || '알 수 없는 창고') + ' 에서 이동'
+                                      : '발주 입고' }}
+                                  </span>
+                                  <span class="origin-producer">
+                                    {{ o.producerCompanyName || '생산자 미상' }}
+                                  </span>
+                                  <span class="origin-qty">{{ o.quantity.toLocaleString() }}㎡</span>
+                                </div>
+                                <p class="origin-note">
+                                  누적 입고 기준입니다. 들어온 뒤로는 물량이 섞여 현재고의 구성비는 알 수 없습니다.
+                                </p>
+                              </template>
+                              <p v-else class="origin-note">입고 이력이 없습니다.</p>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -556,6 +614,23 @@
               </span>
             </div>
 
+            <!--
+              옮겨질 재고 미리보기 — 출발 창고에서 먼저 들어온 재고부터 빠지고,
+              도착 창고에서도 발주서·원가·순서를 그대로 이어받는다 (대전제 1·3번)
+            -->
+            <div v-if="transferPreviewEntries.length > 0" class="form-group">
+              <label class="form-label">옮겨질 재고 (먼저 들어온 순 · 도착 창고에서도 원가 그대로)</label>
+              <div v-for="entry in transferPreviewEntries" :key="entry.skuId" class="transfer-lot-block">
+                <div class="transfer-lot-title">
+                  <b>{{ entry.skuName }}</b>
+                  <span v-if="entry.allocation.shortageQuantity > 0" class="form-error">
+                    재고 이력과 {{ entry.allocation.shortageQuantity.toLocaleString() }}㎡ 가 맞지 않습니다 (출처 불명으로 옮겨짐)
+                  </span>
+                </div>
+                <LotBreakdown :pieces="entry.allocation.pieces" />
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label">비고</label>
               <input
@@ -589,11 +664,15 @@ import SearchDateRange from '~/components/ui/SearchDateRange.vue'
  * - 입출고 이력 조회
  * - 창고간 이동 처리
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import InventoryReceiptTab from '~/components/admin/inventory/InventoryReceiptTab.vue'
 import { inventoryService } from '~/services/inventory.service'
 import { warehouseService } from '~/services/warehouse.service'
 import InventoryConsumptionModal from '~/components/admin/inventory/InventoryConsumptionModal.vue'
-import type { InventoryItem, InventoryTransaction, TransferRequest, SkuTransactionSummary } from '~/types/inventory'
+import LotBreakdown from '~/components/admin/inventory/LotBreakdown.vue'
+import { inventoryLotService } from '~/services/inventory-lot.service'
+import type { LotAllocation } from '~/types/inventory-lot'
+import type { InventoryItem, InventoryTransaction, TransferRequest, SkuTransactionSummary, InventoryOrigin } from '~/types/inventory'
 import { TRANSACTION_TYPE_LABELS, TRANSACTION_TYPE_COLORS } from '~/types/inventory'
 import type { Warehouse } from '~/types/warehouse'
 import { formatDate, formatDateTime, getSearchStartDate, getSearchEndDate } from '~/utils/format'
@@ -608,7 +687,17 @@ definePageMeta({
 const { isOemManager } = usePermission()
 
 // 탭 상태
-const activeTab = ref<'inventory' | 'transactions'>('inventory')
+const activeTab = ref<'inventory' | 'transactions' | 'receipts'>('inventory')
+
+// ======== 재고 직접 입고 탭 ========
+const receiptTabMounted = ref(false)
+const receiptTabRef = ref<InstanceType<typeof InventoryReceiptTab> | null>(null)
+/** 헤더 버튼 — 직접 입고 탭으로 옮긴 뒤 입력창을 연다 (저장 결과를 바로 목록에서 보도록) */
+const openReceiptCreate = async () => {
+  switchTab('receipts')
+  await nextTick()
+  receiptTabRef.value?.openCreate()
+}
 
 // 창고 목록
 const warehouseList = ref<Warehouse[]>([])
@@ -694,6 +783,31 @@ const expandedSkuIds = ref<Record<string, boolean>>({})
 
 const toggleGroup = (skuId: string) => {
   expandedSkuIds.value[skuId] = !expandedSkuIds.value[skuId]
+}
+
+/**
+ * 재고 출처 역산 — "이 재고가 어느 제조사에서 왔나"
+ *
+ * ⚠ 표시 전용이다. 여기 나온 생산자로 원가를 매기면 이중계상이 된다.
+ *   창고이동으로 들어온 물량은 이미 제조사 발주서에서 계상·지급이 끝났다.
+ * ⚠ 누적 입고 기준이다. inventory 는 (창고, SKU, 수량) 뿐이라 들어온 뒤로는
+ *   물량이 한 덩어리로 섞이고 출고가 어느 쪽에서 빠졌는지는 남지 않는다.
+ */
+const originsMap = ref<Record<string, InventoryOrigin[]>>({})
+const originKey = (warehouseId: number, skuId: string) => `${warehouseId}-${skuId}`
+
+const toggleOrigins = async (warehouseId: number, skuId: string) => {
+  const key = originKey(warehouseId, skuId)
+  if (originsMap.value[key]) {
+    delete originsMap.value[key]
+    return
+  }
+  try {
+    originsMap.value[key] = await inventoryService.getInventoryOrigins(warehouseId, skuId)
+  } catch (e) {
+    console.error('[inventory] 출처 조회 실패:', e)
+    alert('재고 출처를 불러오지 못했습니다.')
+  }
 }
 
 // SKU별 그룹핑
@@ -970,8 +1084,9 @@ const handleTxPageSizeChange = () => {
 }
 
 // 탭 전환
-const switchTab = (tab: 'inventory' | 'transactions') => {
+const switchTab = (tab: 'inventory' | 'transactions' | 'receipts') => {
   activeTab.value = tab
+  if (tab === 'receipts') { receiptTabMounted.value = true; return }
   if (tab === 'inventory' && inventoryItems.value.length === 0) {
     inventorySearch()
   } else if (tab === 'transactions' && txItems.value.length === 0) {
@@ -1008,9 +1123,46 @@ const hasOddQuantity = computed(() => {
   return transferableItems.value.some(item => item.transferQuantity > 0 && item.transferQuantity % 2 !== 0)
 })
 
+// 옮겨질 로트 미리보기 — 수량 입력이 멈추면(0.4초) 짝수·재고 이내 품목만 조회
+const transferPreviews = ref<Record<string, LotAllocation>>({})
+let transferPreviewTimer: ReturnType<typeof setTimeout> | null = null
+const transferPreviewEntries = computed(() =>
+  transferableItems.value
+    .filter(item => transferPreviews.value[item.skuId])
+    .map(item => ({ skuId: item.skuId, skuName: item.skuName || item.skuId, allocation: transferPreviews.value[item.skuId] }))
+)
+watch(
+  () => transferableItems.value.map(item => `${item.skuId}:${item.transferQuantity || 0}`).join(','),
+  () => {
+    if (transferPreviewTimer) { clearTimeout(transferPreviewTimer) }
+    transferPreviewTimer = setTimeout(loadTransferPreviews, 400)
+  }
+)
+const loadTransferPreviews = async () => {
+  const fromId = transferForm.value.fromWarehouseId
+  const targets = transferableItems.value.filter(item =>
+    item.transferQuantity > 0 && item.transferQuantity % 2 === 0 && item.transferQuantity <= item.quantity)
+  if (!fromId || targets.length === 0) {
+    transferPreviews.value = {}
+    return
+  }
+  try {
+    const results = await Promise.all(targets.map(item =>
+      inventoryLotService.preview(fromId, item.skuId, item.transferQuantity)))
+    const next: Record<string, LotAllocation> = {}
+    targets.forEach((item, i) => { next[item.skuId] = results[i] })
+    transferPreviews.value = next
+  } catch (error) {
+    // 미리보기는 참고용 — 실패해도 이동은 막지 않는다
+    console.error('이동 로트 미리보기 실패:', error)
+    transferPreviews.value = {}
+  }
+}
+
 /** 출발 창고 변경 시 해당 창고 재고 SKU 목록 로드 */
 const onFromWarehouseChange = async () => {
   transferableItems.value = []
+  transferPreviews.value = {}
 
   if (!transferForm.value.fromWarehouseId) { return }
 
@@ -1036,6 +1188,7 @@ const onFromWarehouseChange = async () => {
 const openTransferModal = () => {
   transferForm.value = { fromWarehouseId: 0, toWarehouseId: 0, remarks: '' }
   transferableItems.value = []
+  transferPreviews.value = {}
   showTransferModal.value = true
 }
 
@@ -1337,6 +1490,19 @@ onMounted(async () => {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+.transfer-lot-block + .transfer-lot-block {
+  margin-top: 0.5rem;
+}
+
+.transfer-lot-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+}
+
 .transfer-items-table {
   width: 100%;
   border-collapse: collapse;
@@ -1673,6 +1839,64 @@ onMounted(async () => {
   font-size: 0.7rem;
   color: #cbd5e1;
   margin-top: 2px;
+}
+
+/* === 재고 출처 역산 (표시 전용 — 금액 없음) === */
+.card-origin {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
+  padding-top: 4px;
+}
+
+.origin-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.origin-toggle:hover {
+  color: #e2e8f0;
+  text-decoration: underline;
+}
+
+.origin-list {
+  margin-top: 4px;
+}
+
+.origin-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: #e2e8f0;
+  padding: 1px 0;
+}
+
+.origin-from {
+  color: #94a3b8;
+}
+
+.origin-producer {
+  font-weight: 600;
+}
+
+.origin-qty {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.origin-note {
+  margin: 4px 0 0;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  line-height: 1.4;
 }
 
 /* 합계 행 */

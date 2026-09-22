@@ -33,6 +33,20 @@ export const PO_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
 }
 
 /**
+ * 발주서 목록 «상태» 검색 드롭다운용 라벨
+ *
+ * ★ 입고완료(STOCKED)는 뺀다 (2026-09-21).
+ *   본사 «바로 입고» 발주서(기능은 2026-09-21 제거, 기존분만 남음)가 이 상태이고, 서버가 목록에서 아예 제외하므로
+ *   드롭다운에 남겨 두면 고를 수는 있는데 결과가 늘 0건이 된다.
+ *   그 물량의 입출고 내역은 재고현황 히스토리에서 확인한다.
+ * ⚠ 상세 화면의 상태 배지는 PO_STATUS_LABELS 를 그대로 쓴다 — 거기서는 표시되어야 한다.
+ */
+export const PO_STATUS_SEARCH_LABELS: Partial<Record<PurchaseOrderStatus, string>> =
+  Object.fromEntries(
+    Object.entries(PO_STATUS_LABELS).filter(([key]) => key !== PO_STATUS.STOCKED)
+  ) as Partial<Record<PurchaseOrderStatus, string>>
+
+/**
  * 발주서 상태 색상 매핑 (Tailwind 클래스)
  */
 export const PO_STATUS_COLORS: Record<PurchaseOrderStatus, string> = {

@@ -7,6 +7,7 @@
 
 import { getAuthHeaders } from './api'
 import { INVENTORY_ENDPOINTS } from './api/endpoints/inventory.endpoints'
+import { httpError } from '~/utils/apiError'
 import type {
   InventoryItem,
   InventoryListFilter,
@@ -15,7 +16,8 @@ import type {
   InboundRequest,
   OutboundRequest,
   TransferRequest,
-  SkuTransactionSummary
+  SkuTransactionSummary,
+  InventoryOrigin
 } from '~/types/inventory'
 
 /**
@@ -39,7 +41,7 @@ class InventoryService {
     const url = `${INVENTORY_ENDPOINTS.exportInventory()}?${queryParams.toString()}`
     const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
     return response.blob()
   }
@@ -58,7 +60,7 @@ class InventoryService {
     const url = `${INVENTORY_ENDPOINTS.exportTransactions()}?${queryParams.toString()}`
     const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
     if (!response.ok) {
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
     return response.blob()
   }
@@ -108,7 +110,7 @@ class InventoryService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`재고 목록 조회 실패: ${response.status}`)
+        throw httpError(response.status, '재고 목록 조회')
       }
 
       const data = await response.json()
@@ -155,12 +157,39 @@ class InventoryService {
       })
 
       if (!response.ok) {
-        throw new Error(`SKU 현황 조회 실패: ${response.status}`)
+        throw httpError(response.status, 'SKU 현황 조회')
       }
 
       return await response.json()
     } catch (error) {
       console.error('[inventory.service] SKU 현황 조회 오류:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 재고 출처 역산 조회 — 이 창고의 재고가 어디서 들어왔는지
+   *
+   * ⚠ 표시 전용이다. 여기 나온 생산자로 원가를 매기면 이중계상이 된다.
+   *   창고이동분은 이미 제조사 발주서에서 계상·지급이 끝난 물량이다.
+   */
+  async getInventoryOrigins(warehouseId: number, skuId?: string | null): Promise<InventoryOrigin[]> {
+    try {
+      const response = await fetch(INVENTORY_ENDPOINTS.origins(warehouseId, skuId), {
+        method: 'GET',
+        headers: {
+          ...getAuthHeaders(),
+          'Accept': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw httpError(response.status, '재고 출처 조회')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('[inventory.service] 재고 출처 조회 오류:', error)
       throw error
     }
   }
@@ -218,7 +247,7 @@ class InventoryService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`입출고 이력 조회 실패: ${response.status}`)
+        throw httpError(response.status, '입출고 이력 조회')
       }
 
       const data = await response.json()
@@ -269,7 +298,7 @@ class InventoryService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`입고 처리 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '입고 처리')
       }
 
       console.log('[inventory.service] 입고 성공')
@@ -300,7 +329,7 @@ class InventoryService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`출고 처리 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '출고 처리')
       }
 
       console.log('[inventory.service] 출고 성공')
@@ -331,7 +360,7 @@ class InventoryService {
           status: response.status,
           error: errorText
         })
-        throw new Error(`창고간 이동 실패: ${response.status} - ${errorText}`)
+        throw httpError(response.status, '창고간 이동')
       }
 
       console.log('[inventory.service] 이동 성공')
