@@ -7,7 +7,9 @@ import { httpError } from '~/utils/apiError'
 import type {
   OemMonthlyLedgerResponse,
   OemLedgerPaymentRequest,
-  OemLedgerPendingItem
+  OemLedgerPendingItem,
+  OemPaymentDocumentInfo,
+  OemPaymentAttachment
 } from '~/types/oem-ledger'
 
 class OemLedgerService {
@@ -57,6 +59,74 @@ class OemLedgerService {
     })
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     return response.json()
+  }
+
+  // ==================== 지급요청서(서류) + 첨부파일 — 2026-09-22 ====================
+
+  /** 지급요청서 발신 정보 (제조사 회사 정보 + 지난 입금 계좌) */
+  async getDocumentInfo (oemCompanyId: number | null): Promise<OemPaymentDocumentInfo> {
+    const params = new URLSearchParams()
+    if (oemCompanyId) { params.set('oemCompanyId', String(oemCompanyId)) }
+    const response = await fetch(`${this.getBaseUrl()}/document-info?${params}`, { headers: getAuthHeaders() })
+    if (!response.ok) { throw httpError(response.status, '지급요청서 정보 조회') }
+    return response.json()
+  }
+
+  /** 첨부파일 목록 */
+  async listAttachments (oemCompanyId: number | null, yearMonth: string): Promise<OemPaymentAttachment[]> {
+    const params = new URLSearchParams({ yearMonth })
+    if (oemCompanyId) { params.set('oemCompanyId', String(oemCompanyId)) }
+    const response = await fetch(`${this.getBaseUrl()}/attachments?${params}`, { headers: getAuthHeaders() })
+    if (!response.ok) { throw httpError(response.status, '첨부파일 조회') }
+    return response.json()
+  }
+
+  /**
+   * 첨부파일 올리기 (한 번에 1개)
+   * ⚠ multipart 라 Content-Type 을 직접 넣지 않는다 — 브라우저가 boundary 를 붙인다
+   */
+  async uploadAttachment (oemCompanyId: number | null, yearMonth: string, file: File): Promise<OemPaymentAttachment> {
+    const form = new FormData()
+    form.append('yearMonth', yearMonth)
+    if (oemCompanyId) { form.append('oemCompanyId', String(oemCompanyId)) }
+    form.append('file', file)
+    const headers: Record<string, string> = { ...(getAuthHeaders() as Record<string, string>) }
+    delete headers['Content-Type']
+    const response = await fetch(`${this.getBaseUrl()}/attachments`, { method: 'POST', headers, body: form })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.message || `파일 올리기에 실패했습니다 (${response.status})`)
+    }
+    return response.json()
+  }
+
+  /** 첨부파일 내려받기 — 원래 파일명으로 저장 */
+  async downloadAttachment (attachment: OemPaymentAttachment): Promise<void> {
+    const response = await fetch(`${this.getBaseUrl()}/attachments/${attachment.attachmentId}/download`, {
+      headers: getAuthHeaders()
+    })
+    if (!response.ok) { throw httpError(response.status, '첨부파일 내려받기') }
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = attachment.originalName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
+  }
+
+  /** 첨부파일 삭제 (청구 전·반려 후에만) */
+  async deleteAttachment (attachmentId: number): Promise<void> {
+    const response = await fetch(`${this.getBaseUrl()}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.message || `첨부파일 삭제에 실패했습니다 (${response.status})`)
+    }
   }
 
   /**

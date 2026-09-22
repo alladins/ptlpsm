@@ -82,6 +82,41 @@ export interface OemMonthlyLedgerResponse {
   lastRejectReason?: string | null
   lastRejectedBy?: string | null
   lastRejectedAt?: string | null
+
+  /** 지급요청서(서류) 내용 — 2026-09-22 */
+  requestRemarks?: string | null
+  bankName?: string | null
+  bankAccountNo?: string | null
+  bankAccountHolder?: string | null
+  requestedByName?: string | null
+}
+
+/** 지급요청서 발신 정보 — 제조사 회사 정보 + 지난 청구의 입금 계좌 */
+export interface OemPaymentDocumentInfo {
+  oemCompanyId: number
+  companyName: string
+  businessNumber: string | null
+  representative: string | null
+  address: string | null
+  detailAddress: string | null
+  tel: string | null
+  lastBankName: string | null
+  lastBankAccountNo: string | null
+  lastBankAccountHolder: string | null
+}
+
+/** 지급요청서 첨부파일 (영수증 등) — 제조사·월 단위 */
+export interface OemPaymentAttachment {
+  attachmentId: number
+  oemCompanyId: number
+  yearMonth: string
+  paymentId: number | null
+  originalName: string
+  fileSize: number
+  contentType: string | null
+  uploadedBy: string | null
+  uploadedByName: string | null
+  uploadedAt: string | null
 }
 
 /** 원장에 표시되는 손실 차감 행 (백엔드 LossAdjustmentResponse 의 부분집합) */
@@ -167,6 +202,10 @@ export interface OemLedgerPaymentRequest {
   yearMonth: string
   totalAmount: number
   remarks?: string
+  /** 지급요청서에서 입력하는 입금 계좌 */
+  bankName?: string
+  bankAccountNo?: string
+  bankAccountHolder?: string
   paidAmount?: number
   paidDate?: string
 }

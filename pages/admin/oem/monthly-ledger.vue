@@ -117,6 +117,15 @@
           </span>
         </div>
         <div class="status-actions">
+          <!-- 제출된 지급요청서 보기 (리드파워·제조사 공통) -->
+          <button
+            v-if="ledgerData.paymentStatus !== 'NONE'"
+            class="btn-action"
+            @click="openDocumentView"
+          >
+            <i class="fas fa-file-invoice" />
+            지급요청서 보기
+          </button>
           <!-- OEM 담당자: 지급 요청 -->
           <button
             v-if="isOemManager && ledgerData.paymentStatus === 'NONE' && ledgerData.items.length > 0"
@@ -423,6 +432,18 @@
       </div>
     </div>
 
+    <!-- 지급요청서 (작성·보기) -->
+    <PaymentRequestDocument
+      :show="showDocument"
+      :mode="documentMode"
+      :oem-company-id="selectedOemCompanyId"
+      :year-month="yearMonth"
+      :ledger="ledgerData"
+      :is-oem="isOemManager"
+      @close="showDocument = false"
+      @submitted="handleDocumentSubmitted"
+    />
+
     <!-- 반려 모달 -->
     <Teleport to="body">
       <div v-if="showRejectModal" class="modal-overlay" @click.self="showRejectModal = false">
@@ -520,6 +541,7 @@ import type { CompanyInfoResponse } from '~/types/company'
 import { formatCurrency, formatQuantity, getLocalDateString, formatDateTime } from '~/utils/format'
 import { usePermission } from '~/composables/usePermission'
 import { useAuthStore } from '~/stores/auth'
+import PaymentRequestDocument from '~/components/admin/oem/PaymentRequestDocument.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -760,29 +782,26 @@ async function loadLedger () {
 }
 
 // 지급 요청
-async function handlePaymentRequest () {
+// 지급요청서(서류) — 2026-09-22
+//   [지급요청] 을 누르면 확인창 대신 서류를 띄우고, 거기서 입금 계좌·비고·첨부를 넣고 제출한다.
+//   제출 후에는 [지급요청서 보기] 로 같은 서류를 리드파워·제조사가 함께 본다.
+const showDocument = ref(false)
+const documentMode = ref<'create' | 'view'>('create')
+
+function handlePaymentRequest () {
   if (!ledgerData.value) { return }
+  documentMode.value = 'create'
+  showDocument.value = true
+}
 
-  // ⚠ 요청 금액은 payableAmount(지급 예정 공급가액) 다.
-  //   = 발주 합계 + 비출하 소진 + 운송비 + 가공비 − 손실 차감
-  //   totalAmount(발주 합계)로 보내면 화면에 보이는 금액과 실제 요청액이 갈라진다.
-  const requestAmount = ledgerData.value.payableAmount ?? ledgerData.value.totalAmount
-  const withVat = ledgerData.value.totalWithVat
-  const vatText = withVat ? ` (부가세 포함 ${formatCurrency(withVat)})` : ''
-  if (!confirm(`${yearMonth.value} 매출원장 기준 공급가액 ${formatCurrency(requestAmount)}${vatText} 지급을 요청하시겠습니까?`)) { return }
+function openDocumentView () {
+  documentMode.value = 'view'
+  showDocument.value = true
+}
 
-  try {
-    await oemLedgerService.createPaymentRequest({
-      oemCompanyId: selectedOemCompanyId.value!,
-      yearMonth: yearMonth.value,
-      totalAmount: requestAmount
-    })
-    alert('지급 요청이 등록되었습니다.')
-    await loadLedger()
-  } catch (error) {
-    console.error('지급 요청 실패:', error)
-    alert(error instanceof Error ? error.message : '지급 요청에 실패했습니다.')
-  }
+async function handleDocumentSubmitted () {
+  showDocument.value = false
+  await loadLedger()
 }
 
 // 요청 취소
