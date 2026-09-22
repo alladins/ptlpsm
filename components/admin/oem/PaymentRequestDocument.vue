@@ -192,7 +192,7 @@
 
             <!-- 입금 계좌 -->
             <h2 class="doc-h2">
-              3. 입금 계좌
+              3. 입금 계좌 <span v-if="mode === 'create'" class="doc-optional">(선택)</span>
             </h2>
             <div v-if="mode === 'create'" class="doc-bank-inputs">
               <input v-model="form.bankName" class="doc-input" placeholder="은행 (예: 국민은행)">
@@ -222,7 +222,7 @@
 
             <!-- 첨부 -->
             <h2 class="doc-h2">
-              5. 첨부파일
+              5. 첨부파일 <span v-if="mode === 'create'" class="doc-optional">(선택)</span>
             </h2>
             <ul v-if="attachments.length > 0" class="doc-attachments">
               <li v-for="a in attachments" :key="a.attachmentId">
@@ -265,6 +265,15 @@
         </div>
 
         <div class="doc-modal-foot">
+          <button
+            v-if="viewPaymentId"
+            class="btn-action"
+            :disabled="pdfLoading || loading"
+            @click="downloadPdf"
+          >
+            <i :class="pdfLoading ? 'fas fa-spinner fa-spin' : 'fas fa-file-pdf'" />
+            PDF 내려받기
+          </button>
           <button class="btn-action" @click="$emit('close')">
             {{ mode === 'create' ? '취소' : '닫기' }}
           </button>
@@ -439,12 +448,31 @@ async function download (a: OemPaymentAttachment) {
   }
 }
 
+/** PDF 로 내려받을 요청 — 이력 차수면 그 차수, 아니면 지금 살아 있는 청구. 작성 중(미제출)에는 없다 */
+const viewPaymentId = computed(() => {
+  if (props.mode !== 'view') { return null }
+  return props.history?.paymentId ?? props.ledger?.paymentId ?? null
+})
+const pdfLoading = ref(false)
+
+async function downloadPdf () {
+  if (!viewPaymentId.value) { return }
+  const company = info.value?.companyName || props.ledger?.oemCompanyName || '제조사'
+  const seq = props.history ? `_${props.history.seq}차` : ''
+  pdfLoading.value = true
+  try {
+    // 파일명은 서버도 내려주지만 blob 저장은 여기서 정한 이름을 쓴다
+    await oemLedgerService.downloadPaymentRequestPdf(viewPaymentId.value, `지급요청서_${company}_${props.yearMonth}${seq}.pdf`)
+  } catch (e) {
+    alert(e instanceof Error ? e.message : '지급요청서 PDF 를 내려받지 못했습니다.')
+  } finally {
+    pdfLoading.value = false
+  }
+}
+
 async function submit () {
   if (!props.ledger || !props.oemCompanyId) { return }
-  if (!form.value.bankName.trim() || !form.value.bankAccountNo.trim()) {
-    alert('입금 받을 은행과 계좌번호를 입력하세요.')
-    return
-  }
+  // 입금 계좌·첨부는 필수가 아니다 (2026-09-22 고객 확인) — 비우면 서류에 «입력하지 않음» 으로 남는다
   const total = props.ledger.totalWithVat ?? props.ledger.payableAmount ?? props.ledger.totalAmount
   if (!confirm(`${yearMonthLabel.value} 지급요청서를 제출합니다.\n청구 금액(부가세 포함) ${formatCurrency(total)}`)) { return }
   submitting.value = true
@@ -719,6 +747,12 @@ function formatSize (bytes: number) {
   margin: 0;
   padding: 0.4rem 0.2rem;
   white-space: pre-wrap;
+}
+
+.doc-optional {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #94a3b8;
 }
 
 .doc-text.muted,
