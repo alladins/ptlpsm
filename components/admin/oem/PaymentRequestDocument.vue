@@ -26,9 +26,26 @@
 
           <!-- ===== 서류 ===== -->
           <div v-else class="doc-paper">
+            <!--
+              반려 사유 — 서류 맨 위에 둔다.
+                create: 지난 요청이 반려됐으면 «무엇을 보완할지» 를 서류 안에서 바로 보이게 (고객 요청 2026-09-22)
+                view(이력): 반려된 차수의 서류면 왜 돌아갔는지
+            -->
+            <div v-if="rejectBox" class="doc-reject">
+              <i class="fas fa-circle-exclamation" />
+              <div>
+                <strong>{{ rejectBox.title }}</strong>
+                <p>{{ rejectBox.reason }}</p>
+                <span>{{ rejectBox.meta }}</span>
+              </div>
+            </div>
+
             <h1 class="doc-title">
               지 급 요 청 서
             </h1>
+            <p v-if="history" class="doc-seq">
+              {{ history.seq }}차 요청
+            </p>
 
             <table class="doc-meta">
               <tbody>
@@ -41,7 +58,7 @@
                 <tr v-if="mode === 'view'">
                   <th>상태</th>
                   <td colspan="3">
-                    <span class="doc-status" :class="`st-${ledger?.paymentStatus || 'NONE'}`">{{ statusLabel }}</span>
+                    <span class="doc-status" :class="`st-${viewStatus}`">{{ statusLabel }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -200,7 +217,7 @@
               placeholder="전달할 내용이 있으면 적어 주세요 (예: 반려 사유의 영수증 3건 첨부했습니다)"
             />
             <p v-else class="doc-text">
-              {{ ledger?.requestRemarks || '-' }}
+              {{ viewRemarks || '-' }}
             </p>
 
             <!-- 첨부 -->
@@ -236,7 +253,7 @@
               </label>
               <span class="doc-hint">PDF·이미지·엑셀·한글·워드·ZIP, 파일당 20MB</span>
             </div>
-            <p v-else-if="mode === 'view' && isOem && ledger?.paymentStatus !== 'NONE'" class="doc-hint">
+            <p v-else-if="mode === 'view' && isOem && !history && ledger?.paymentStatus !== 'NONE'" class="doc-hint">
               접수된 요청은 첨부를 바꿀 수 없습니다. 요청을 취소하거나 반려되면 다시 올릴 수 있습니다.
             </p>
 
@@ -269,7 +286,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { oemLedgerService } from '~/services/oem-ledger.service'
-import type { OemMonthlyLedgerResponse, OemPaymentDocumentInfo, OemPaymentAttachment } from '~/types/oem-ledger'
+import type { OemMonthlyLedgerResponse, OemPaymentDocumentInfo, OemPaymentAttachment, OemPaymentRequestHistory } from '~/types/oem-ledger'
 import { formatCurrency, formatNumber, formatDateTime, getLocalDateString } from '~/utils/format'
 import { useAuthStore } from '~/stores/auth'
 
@@ -280,6 +297,8 @@ const props = defineProps<{
   yearMonth: string
   ledger: OemMonthlyLedgerResponse | null
   isOem: boolean
+  /** 이력(차수) 서류 보기 — 있으면 그 차수의 계좌·비고·첨부·상태로 보여준다 */
+  history?: OemPaymentRequestHistory | null
 }>()
 
 const emit = defineEmits<{
@@ -299,32 +318,62 @@ const yearMonthLabel = computed(() => {
   const [y, m] = (props.yearMonth || '').split('-')
   return y && m ? `${y}년 ${Number(m)}월` : props.yearMonth
 })
+/**
+ * 보기 모드의 내용 출처
+ *   history 가 있으면 그 차수(반려분 포함)의 서류, 없으면 지금 살아 있는 청구(원장 응답)
+ * ★ 금액(청구 내역·발주 명세)은 두 경우 모두 원장 응답을 쓴다 — 청구액은 원장에서 다시 계산되는 값이라
+ *   차수마다 따로 저장하지 않는다(차수별 청구 공급가액은 이력 목록에 따로 보인다).
+ */
+const viewStatus = computed(() => props.history?.status || props.ledger?.paymentStatus || 'NONE')
+const viewRemarks = computed(() => props.history ? props.history.remarks : props.ledger?.requestRemarks)
+
 const requestDateLabel = computed(() => {
-  if (props.mode === 'view' && props.ledger?.requestedAt) {
-    return formatDateTime(props.ledger.requestedAt).slice(0, 13)
+  const at = props.history?.createdAt || (props.mode === 'view' ? props.ledger?.requestedAt : null)
+  if (props.mode === 'view' && at) {
+    return formatDateTime(at).slice(0, 13)
   }
   const d = getLocalDateString()
   const [y, m, day] = d.split('-')
   return `${y}. ${m}. ${day}.`
 })
 const requesterLabel = computed(() => {
+  if (props.history) { return props.history.createdByName || props.history.createdBy || '-' }
   if (props.mode === 'view') {
     return props.ledger?.requestedByName || props.ledger?.requestedBy || '-'
   }
   return authStore.user?.userName || authStore.user?.loginId || '-'
 })
 const bankLabel = computed(() => {
-  const l = props.ledger
-  if (!l?.bankAccountNo) { return '입력하지 않음' }
-  return [l.bankName, l.bankAccountNo, l.bankAccountHolder ? `예금주 ${l.bankAccountHolder}` : ''].filter(Boolean).join(' · ')
+  const s = props.history || props.ledger
+  if (!s?.bankAccountNo) { return '입력하지 않음' }
+  return [s.bankName, s.bankAccountNo, s.bankAccountHolder ? `예금주 ${s.bankAccountHolder}` : ''].filter(Boolean).join(' · ')
 })
 const statusLabel = computed(() => ({
-  NONE: '미요청', PENDING: '요청완료(확인 대기)', CONFIRMED: '확인완료', PAID: '지급완료'
-} as Record<string, string>)[props.ledger?.paymentStatus || 'NONE'] || '-')
+  NONE: '미요청', PENDING: '요청완료(확인 대기)', CONFIRMED: '확인완료', PAID: '지급완료', REJECTED: '반려'
+} as Record<string, string>)[viewStatus.value] || '-')
 
-/** 첨부를 올리고 지울 수 있는가 — 서버 규칙과 같다(살아 있는 청구가 없을 때만) */
+/** 서류 맨 위 반려 안내 — 작성 시엔 «지난 요청» 의 사유, 이력 보기에선 그 차수의 사유 */
+const rejectBox = computed(() => {
+  if (props.history?.status === 'REJECTED') {
+    return {
+      title: '이 요청은 반려되었습니다',
+      reason: props.history.rejectReason || '-',
+      meta: `${props.history.rejectedBy || ''} · ${props.history.rejectedAt ? formatDateTime(props.history.rejectedAt) : ''}`
+    }
+  }
+  if (props.mode === 'create' && props.ledger?.lastRejectReason) {
+    return {
+      title: '지난 요청이 반려되었습니다 — 아래 사유를 보완해 다시 제출해 주세요',
+      reason: props.ledger.lastRejectReason,
+      meta: `${props.ledger.lastRejectedBy || ''} · ${props.ledger.lastRejectedAt ? formatDateTime(props.ledger.lastRejectedAt) : ''}`
+    }
+  }
+  return null
+})
+
+/** 첨부를 올리고 지울 수 있는가 — 서버 규칙과 같다(살아 있는 청구가 없을 때만). 이력 서류는 읽기 전용 */
 const canEditAttachments = computed(() =>
-  props.isOem && (props.mode === 'create' || props.ledger?.paymentStatus === 'NONE'))
+  !props.history && props.isOem && (props.mode === 'create' || props.ledger?.paymentStatus === 'NONE'))
 
 watch(() => props.show, async (open) => {
   if (!open) { return }
@@ -332,7 +381,10 @@ watch(() => props.show, async (open) => {
   try {
     const [docInfo, files] = await Promise.all([
       oemLedgerService.getDocumentInfo(props.oemCompanyId),
-      oemLedgerService.listAttachments(props.oemCompanyId, props.yearMonth)
+      // 이력 서류는 «그 차수 제출 당시 첨부» 를 이미 들고 온다
+      props.history
+        ? Promise.resolve(props.history.attachments || [])
+        : oemLedgerService.listAttachments(props.oemCompanyId, props.yearMonth)
     ])
     info.value = docInfo
     attachments.value = files
@@ -478,6 +530,32 @@ function formatSize (bytes: number) {
   text-align: center;
   color: #64748b;
 }
+
+/* 반려 안내 (서류 맨 위) */
+.doc-reject {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.2rem;
+  padding: 0.8rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #991b1b;
+}
+
+.doc-reject i { margin-top: 0.15rem; }
+.doc-reject strong { display: block; margin-bottom: 0.2rem; }
+.doc-reject p { margin: 0 0 0.25rem; color: #7f1d1d; white-space: pre-wrap; }
+.doc-reject span { font-size: 0.75rem; color: #b91c1c; }
+
+.doc-seq {
+  margin: -1rem 0 1rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.st-REJECTED { background: #fee2e2; color: #991b1b; }
 
 /* 종이 */
 .doc-paper {

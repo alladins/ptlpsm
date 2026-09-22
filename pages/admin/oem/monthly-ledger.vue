@@ -121,7 +121,7 @@
           <button
             v-if="ledgerData.paymentStatus !== 'NONE'"
             class="btn-action"
-            @click="openDocumentView"
+            @click="openDocumentView()"
           >
             <i class="fas fa-file-invoice" />
             지급요청서 보기
@@ -199,6 +199,66 @@
             {{ ledgerData.lastRejectedBy }} · {{ formatDateTime(ledgerData.lastRejectedAt) }}
           </span>
         </div>
+      </div>
+
+      <!--
+        지급요청 이력 (차수별) — 2026-09-22
+        반려되면 상태가 «미요청» 으로 돌아가 처음 올린 서류를 다시 볼 수 없었다.
+        돈이 걸린 분쟁에서 «그때 무엇을 올렸고 왜 돌려보냈는지» 가 남아야 한다.
+      -->
+      <div v-if="paymentHistory.length > 0 && selectedOemCompanyId !== 0" class="history-box">
+        <div class="history-title">
+          <i class="fas fa-clock-rotate-left" /> 지급요청 이력 ({{ paymentHistory.length }}건)
+        </div>
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>차수</th>
+              <th>요청일시</th>
+              <th>요청자</th>
+              <th class="text-right">
+                청구 공급가액
+              </th>
+              <th>상태</th>
+              <th>반려 사유 / 처리</th>
+              <th>첨부</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="h in paymentHistory" :key="h.paymentId">
+              <td>{{ h.seq }}차</td>
+              <td>{{ formatDateTime(h.createdAt) }}</td>
+              <td>{{ h.createdByName || h.createdBy }}</td>
+              <td class="text-right">
+                {{ formatCurrency(h.paymentAmount) }}
+              </td>
+              <td>
+                <span class="history-status" :class="`hs-${h.status}`">{{ HISTORY_STATUS_LABELS[h.status] || h.status }}</span>
+              </td>
+              <td class="history-note">
+                <template v-if="h.status === 'REJECTED'">
+                  {{ h.rejectReason }} <span class="muted">({{ h.rejectedBy }})</span>
+                </template>
+                <template v-else-if="h.status === 'PAID'">
+                  {{ formatCurrency(h.paidAmount ?? 0) }} 지급 · {{ h.paidDate }}
+                </template>
+                <template v-else-if="h.status === 'CONFIRMED'">
+                  확인 {{ h.confirmedBy }}
+                </template>
+                <template v-else>
+                  확인 대기
+                </template>
+              </td>
+              <td>{{ h.attachments?.length || 0 }}건</td>
+              <td>
+                <button class="btn-history-doc" @click="openDocumentView(h)">
+                  <i class="fas fa-file-invoice" /> 서류 보기
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- 로딩 -->
@@ -440,6 +500,7 @@
       :year-month="yearMonth"
       :ledger="ledgerData"
       :is-oem="isOemManager"
+      :history="selectedHistory"
       @close="showDocument = false"
       @submitted="handleDocumentSubmitted"
     />
@@ -536,7 +597,7 @@ import { oemLedgerService } from '~/services/oem-ledger.service'
 import { companyService } from '~/services/company.service'
 import type { OemMonthlyLedgerResponse } from '~/types/oem-ledger'
 import { OEM_LEDGER_PAYMENT_STATUS_LABELS, OEM_LEDGER_COST_SOURCE_LABELS, OEM_LEDGER_COST_SOURCE_HINTS } from '~/types/oem-ledger'
-import type { OemLedgerCostSource, OemLedgerItem, OemLedgerPendingItem } from '~/types/oem-ledger'
+import type { OemLedgerCostSource, OemLedgerItem, OemLedgerPendingItem, OemPaymentRequestHistory } from '~/types/oem-ledger'
 import type { CompanyInfoResponse } from '~/types/company'
 import { formatCurrency, formatQuantity, getLocalDateString, formatDateTime } from '~/utils/format'
 import { usePermission } from '~/composables/usePermission'
@@ -773,6 +834,13 @@ async function loadLedger () {
         ledgerData.value.payableAmount ?? ledgerData.value.totalAmount ?? 0
       completeForm.value.paidDate = getLocalDateString()
     }
+    // 지급요청 이력 (차수별, 반려 포함) — 개별 제조사 조회일 때만. 실패해도 원장은 보여준다
+    paymentHistory.value = []
+    if (oemId) {
+      oemLedgerService.getPaymentHistory(oemId, yearMonth.value)
+        .then((rows) => { paymentHistory.value = rows })
+        .catch(e => console.error('지급요청 이력 조회 실패:', e))
+    }
   } catch (error) {
     console.error('원장 조회 실패:', error)
     alert('원장 조회에 실패했습니다.')
@@ -787,16 +855,26 @@ async function loadLedger () {
 //   제출 후에는 [지급요청서 보기] 로 같은 서류를 리드파워·제조사가 함께 본다.
 const showDocument = ref(false)
 const documentMode = ref<'create' | 'view'>('create')
+/** 지급요청 이력 (차수별, 반려 포함) — 반려되면 처음 서류를 다시 볼 방법이 없던 것 보완 */
+const paymentHistory = ref<OemPaymentRequestHistory[]>([])
+/** 이력에서 연 차수 — null 이면 지금 살아 있는 청구의 서류 */
+const selectedHistory = ref<OemPaymentRequestHistory | null>(null)
 
 function handlePaymentRequest () {
   if (!ledgerData.value) { return }
+  selectedHistory.value = null
   documentMode.value = 'create'
   showDocument.value = true
 }
 
-function openDocumentView () {
+function openDocumentView (history: OemPaymentRequestHistory | null = null) {
+  selectedHistory.value = history
   documentMode.value = 'view'
   showDocument.value = true
+}
+
+const HISTORY_STATUS_LABELS: Record<string, string> = {
+  PENDING: '요청완료', CONFIRMED: '확인완료', PAID: '지급완료', REJECTED: '반려'
 }
 
 async function handleDocumentSubmitted () {
@@ -1014,6 +1092,66 @@ onMounted(async () => {
 }
 
 /* 반려 사유 알림 */
+/* 지급요청 이력 */
+.history-box {
+  margin-bottom: 1rem;
+  padding: 0.8rem 1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.history-title {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.history-table th,
+.history-table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+}
+
+.history-table th {
+  color: #64748b;
+  font-weight: 600;
+  background: #f8fafc;
+}
+
+.history-table .text-right { text-align: right; }
+.history-note { max-width: 360px; }
+.history-note .muted { color: #94a3b8; }
+
+.history-status {
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.hs-PENDING { background: #fef3c7; color: #92400e; }
+.hs-CONFIRMED { background: #dbeafe; color: #1e40af; }
+.hs-PAID { background: #dcfce7; color: #166534; }
+.hs-REJECTED { background: #fee2e2; color: #991b1b; }
+
+.btn-history-doc {
+  padding: 0.2rem 0.55rem;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
 /* 지급완료 창 — 공급가액 + 부가세 = 지급액 내역 */
 .paid-breakdown {
   margin-top: 0.35rem;

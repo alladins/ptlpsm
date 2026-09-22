@@ -9,7 +9,8 @@ import type {
   OemLedgerPaymentRequest,
   OemLedgerPendingItem,
   OemPaymentDocumentInfo,
-  OemPaymentAttachment
+  OemPaymentAttachment,
+  OemPaymentRequestHistory
 } from '~/types/oem-ledger'
 
 class OemLedgerService {
@@ -69,6 +70,15 @@ class OemLedgerService {
     if (oemCompanyId) { params.set('oemCompanyId', String(oemCompanyId)) }
     const response = await fetch(`${this.getBaseUrl()}/document-info?${params}`, { headers: getAuthHeaders() })
     if (!response.ok) { throw httpError(response.status, '지급요청서 정보 조회') }
+    return response.json()
+  }
+
+  /** 지급요청 이력 (차수별, 반려 포함) */
+  async getPaymentHistory (oemCompanyId: number | null, yearMonth: string): Promise<OemPaymentRequestHistory[]> {
+    const params = new URLSearchParams({ yearMonth })
+    if (oemCompanyId) { params.set('oemCompanyId', String(oemCompanyId)) }
+    const response = await fetch(`${this.getBaseUrl()}/payment-requests/history?${params}`, { headers: getAuthHeaders() })
+    if (!response.ok) { throw httpError(response.status, '지급요청 이력 조회') }
     return response.json()
   }
 

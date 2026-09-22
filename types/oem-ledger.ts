@@ -105,6 +105,30 @@ export interface OemPaymentDocumentInfo {
   lastBankAccountHolder: string | null
 }
 
+/** 지급요청 이력 1건 (차수) — 반려 포함. attachments 는 그 차수를 제출할 때 붙어 있던 첨부 */
+export interface OemPaymentRequestHistory {
+  seq: number
+  paymentId: number
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'PAID'
+  paymentAmount: number
+  paidAmount: number | null
+  paidDate: string | null
+  remarks: string | null
+  bankName: string | null
+  bankAccountNo: string | null
+  bankAccountHolder: string | null
+  createdBy: string | null
+  createdByName: string | null
+  createdAt: string | null
+  confirmedBy: string | null
+  confirmedAt: string | null
+  paidBy: string | null
+  rejectedBy: string | null
+  rejectedAt: string | null
+  rejectReason: string | null
+  attachments: OemPaymentAttachment[]
+}
+
 /** 지급요청서 첨부파일 (영수증 등) — 제조사·월 단위 */
 export interface OemPaymentAttachment {
   attachmentId: number
