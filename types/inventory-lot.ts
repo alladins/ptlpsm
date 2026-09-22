@@ -26,6 +26,8 @@ export interface LotPiece {
   amount: number
   /** 원가를 모름 — 출처 불명이거나 0원 발주서. 재고 직접 입고는 0원이어도 사실로 본다(무상·이월 재고) */
   costUnknown: boolean
+  /** 가림 — 제조사 계정에서 다른 생산자 물량. 수량만 오고 출처·원가는 비어 있다 */
+  masked?: boolean
 }
 
 export interface LotAllocation {
@@ -37,12 +39,15 @@ export interface LotAllocation {
   /** 금액 ÷ 수량 — 표시용 역산값 (대전제 10번). 이 값으로 금액을 다시 계산하지 말 것 */
   unitCost: number
   costUnknown: boolean
+  /** 가린 수량 — 0 이 아니면 합계 금액·평균 원가는 «자기 물량» 기준 */
+  maskedQuantity?: number
   singleProducerCompanyId: number | null
   producerSummary: string | null
 }
 
 /** 출처 표시 — «PO202609-030» / «IR-202606-001» / «출처 불명» */
 export function lotOriginLabel (p: LotPiece): string {
+  if (p.masked) { return '다른 생산자 물량' }
   if (p.originType === 'PO') { return p.originPoNo || '발주서' }
   if (p.originType === 'RECEIPT') { return p.originReceiptNo || '직접 입고' }
   return '출처 불명'

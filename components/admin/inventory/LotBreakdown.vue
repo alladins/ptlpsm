@@ -33,19 +33,25 @@
           <td class="num">
             {{ p.quantity.toLocaleString() }}㎡
           </td>
+          <!-- 가린 줄(제조사 계정의 다른 생산자 물량)은 원가·금액을 비운다 -->
           <td class="num">
-            {{ (p.unitCost ?? 0).toLocaleString() }}
-            <span v-if="p.costUnknown" class="flag">원가 없음</span>
+            <template v-if="p.masked">
+              -
+            </template>
+            <template v-else>
+              {{ (p.unitCost ?? 0).toLocaleString() }}
+              <span v-if="p.costUnknown" class="flag">원가 없음</span>
+            </template>
           </td>
           <td class="num">
-            {{ (p.amount ?? 0).toLocaleString() }}
+            {{ p.masked ? '-' : (p.amount ?? 0).toLocaleString() }}
           </td>
         </tr>
       </tbody>
       <tfoot v-if="pieces.length > 1">
         <tr>
           <td colspan="4">
-            합계 (평균 원가 = 금액 ÷ 수량)
+            합계 (평균 원가 = 금액 ÷ 수량<template v-if="maskedQuantity > 0">, 자기 물량 기준</template>)
           </td>
           <td class="num">
             {{ totalQuantity.toLocaleString() }}㎡
@@ -72,9 +78,12 @@ const totalQuantity = computed(() => props.pieces.reduce((s, p) => s + p.quantit
 // 금액 먼저 합산
 const totalAmount = computed(() => props.pieces.reduce((s, p) => s + (p.amount ?? 0), 0))
 // 단가는 역산 (서버와 같이 소수 둘째 자리 반올림)
-const averageCost = computed(() =>
-  totalQuantity.value ? Math.round((totalAmount.value / totalQuantity.value) * 100) / 100 : 0
-)
+// 가린 줄은 금액이 없으므로 평균의 분모에서도 뺀다 (서버 LotAllocation.getUnitCost 와 같은 규칙)
+const maskedQuantity = computed(() => props.pieces.filter(p => p.masked).reduce((s, p) => s + p.quantity, 0))
+const averageCost = computed(() => {
+  const qty = totalQuantity.value - maskedQuantity.value
+  return qty > 0 ? Math.round((totalAmount.value / qty) * 100) / 100 : 0
+})
 </script>
 
 <style scoped>
