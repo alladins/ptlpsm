@@ -190,7 +190,11 @@
           그래야 제조사가 금액을 고쳐 재청구할 수 있다. 다만 «왜 한 번 돌아왔는지» 는 남아야 해서
           상태와 무관하게 이 줄을 띄운다.
       -->
-      <div v-if="ledgerData && ledgerData.lastRejectReason" class="reject-notice">
+      <!--
+        ★ 재요청이 접수되면(요청완료·확인완료·지급완료) 숨긴다. 남겨 두면 아직 반려 상태처럼 보인다(2026-09-22 테스트).
+          반려 내역은 아래 «지급요청 이력» 에 차수별로 남는다.
+      -->
+      <div v-if="ledgerData && ledgerData.lastRejectReason && ledgerData.paymentStatus === 'NONE'" class="reject-notice">
         <i class="fas fa-circle-exclamation" />
         <div class="reject-body">
           <strong>반려됨</strong>
