@@ -8,26 +8,27 @@
     >
       <template #actions>
         <!-- 출고요청 버튼 (재고부족 시 비활성화) -->
-        <button
+        <GuardedButton
           v-if="canShowDispatchRequestButton"
           class="btn-action btn-warning"
-          :disabled="checkingInventory || (inventoryPreChecked && !inventoryCanDispatch)"
-          :title="inventoryPreChecked && !inventoryCanDispatch ? '재고가 부족하여 출고요청할 수 없습니다' : 'OEM 제조사에 출고요청'"
+          :disabled="checkingInventory"
+          :blocked="inventoryPreChecked && !inventoryCanDispatch"
+          :reason="'제조사 창고의 재고가 부족해 출고요청을 보낼 수 없습니다.\n제조생산 > 재고현황에서 재고를 확인하고, 부족하면 발주서를 먼저 입고 처리하세요.'"
           @click="handleDispatchRequestClick"
         >
           <i v-if="checkingInventory" class="fas fa-spinner fa-spin" />
           <i v-else class="fas fa-paper-plane" />
           {{ checkingInventory ? '확인 중...' : (inventoryPreChecked && !inventoryCanDispatch ? '재고부족' : '출고요청') }}
-        </button>
-        <button
+        </GuardedButton>
+        <GuardedButton
           class="btn-action btn-delete"
-          :disabled="!canDelete"
-          :title="!canDelete ? getDeleteDisabledReason : ''"
+          :blocked="!canDelete"
+          :reason="getDeleteDisabledReason"
           @click="handleDelete"
         >
           <i class="fas fa-trash" />
           삭제
-        </button>
+        </GuardedButton>
         <!--
           사후 처리 — 출하가 끝난 뒤에야 확정되는 값(운송비·손실·가공비)
           목록에서는 배지로 상태만 보여주고, 실제 처리는 여기와 '출하 사후 처리' 화면에서 한다.
@@ -636,6 +637,9 @@
                       <div v-if="it.mergeRole" class="merge-rel">
                         {{ mergeRelText(it) }}
                       </div>
+                      <div v-if="it.conversionRemainder" class="conv-rel" title="짝수올림 끝수를 납품된 것으로 처리한 수량 (청구 금액 변동 없음)">
+                        환산잔량 {{ formatNumber(it.conversionRemainder) }}㎡
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -644,6 +648,38 @@
             <p class="recon-note">
               ※ 출고(완료)된 출하수량 기준 참고 비교입니다. 청구·납품완료는 원계약 수량·금액으로 진행됩니다. (미출고 품목은 비교 제외)
               <span v-if="!reconciliation.amountMatched"> 짝수 포장 반올림·대체로 출고량이 원계약과 다를 수 있습니다(참고).</span>
+            </p>
+          </div>
+        </FormSection>
+
+        <!--
+          출고 원가 내역 (FIFO) — 운송장 등록(출고) 때 창고에서 먼저 들어온 재고부터 빠진 내역
+          ★ 제조사에게는 보이지 않는다 (본사 창고 로트에 다른 제조사 원가가 섞여 있다. API 도 막혀 있음)
+          ★ 원가 장부다. OEM 지급(원장·선급금)은 발주 기준이라 이 값과 무관하다 (대전제 9번)
+        -->
+        <FormSection v-if="!isOemManager && shipmentLotEntries.length > 0" style="margin-top: 1rem">
+          <div class="recon-wrapper">
+            <div class="items-section-header" style="margin-bottom: 0.75rem">
+              <div class="header-left">
+                <i class="fas fa-layer-group" />
+                <span>출고 원가 내역 (먼저 들어온 재고부터)</span>
+              </div>
+            </div>
+            <div v-for="entry in shipmentLotEntries" :key="entry.skuId" class="lot-sku-block">
+              <div class="lot-sku-title">
+                <b>{{ entry.skuName }}</b>
+                <span class="lot-sku-summary">
+                  {{ formatNumber(entry.allocation.totalQuantity) }}㎡ ·
+                  평균 원가 {{ formatNumber(entry.allocation.unitCost) }}원/㎡ ·
+                  금액 {{ formatCurrency(entry.allocation.totalAmount) }}
+                  <span v-if="entry.allocation.costUnknown" class="lot-flag">원가 없는 재고 포함</span>
+                </span>
+              </div>
+              <LotBreakdown :pieces="entry.allocation.pieces" />
+            </div>
+            <p class="recon-note">
+              ※ 이 금액은 원가(손익) 기준입니다. 제조사 지급액은 발주서 기준이라 이 금액과 관계없습니다.
+              평균 원가는 금액 ÷ 수량으로 역산한 참고값입니다.
             </p>
           </div>
         </FormSection>
@@ -724,6 +760,9 @@ import type { DispatchRequest, InventoryStatusResponse } from '~/types/dispatch-
 import { DISPATCH_STATUS_LABELS, DISPATCH_STATUS_COLORS } from '~/types/dispatch-request'
 import { getDeliveryDoneByOrderId, getAmountReconciliation } from '~/services/delivery-done.service'
 import type { AmountReconciliation, AmountReconciliationItem } from '~/types/delivery-done'
+import LotBreakdown from '~/components/admin/inventory/LotBreakdown.vue'
+import { inventoryLotService } from '~/services/inventory-lot.service'
+import type { LotAllocation } from '~/types/inventory-lot'
 
 definePageMeta({
   layout: 'admin',
@@ -779,6 +818,29 @@ const mergeRelText = (it: AmountReconciliationItem): string => {
   const arrow = it.mergeRole === 'TARGET' ? '←' : '→'
   const qty = (it.mergeRole === 'TARGET' && it.mergeQuantity != null) ? ` (${formatNumber(it.mergeQuantity)})` : ''
   return `${arrow} ${names}${qty}`
+}
+
+// 출고 원가 내역 (FIFO) — 관리자만. 출고 전이면 비어 있어 칸이 안 보인다
+const shipmentLots = ref<Record<string, LotAllocation>>({})
+const shipmentLotEntries = computed(() => {
+  const names = new Map<string, string>()
+  for (const it of shipmentData.value?.items || []) {
+    if (it.skuId) { names.set(it.skuId, it.skuName || it.skuId) }
+  }
+  return Object.entries(shipmentLots.value).map(([skuId, allocation]) => ({
+    skuId,
+    skuName: names.get(skuId) || skuId,
+    allocation
+  }))
+})
+const loadShipmentLots = async (id: number) => {
+  if (isOemManager.value) { return }
+  try {
+    shipmentLots.value = await inventoryLotService.getShipmentLots(id)
+  } catch (lotError) {
+    console.error('출고 원가 내역 조회 실패:', lotError)
+    shipmentLots.value = {}
+  }
 }
 
 // 발주 ID로 금액 정합 비교 로드 (실패해도 본문 표시)
@@ -847,6 +909,7 @@ const {
 
       // 원계약↔실출하 금액 정합 비교 로드 (저장 기준, 비차단)
       loadReconciliation(data.orderId)
+      if (shipmentId.value) { loadShipmentLots(Number(shipmentId.value)) }
 
       // 품목 데이터 매핑
       // 서버에서 받은 수량 정보를 그대로 사용:
@@ -1146,8 +1209,8 @@ const getEditDisabledReason = computed(() => {
 })
 
 const getDeleteDisabledReason = computed(() => {
-  if (!hasDeletePermission.value) { return '삭제 권한이 없습니다' }
-  if (!isDeletableStatus.value) { return '대기 또는 취소 상태에서만 삭제할 수 있습니다' }
+  if (!hasDeletePermission.value) { return '출하 삭제 권한이 없습니다.\n시스템관리자에게 권한을 요청하세요.' }
+  if (!isDeletableStatus.value) { return '출하는 [대기] 또는 [취소] 상태에서만 삭제할 수 있습니다.\n이미 운송·납품이 진행된 건은 삭제할 수 없습니다.' }
   return ''
 })
 
@@ -1915,6 +1978,17 @@ const handleDelete = async () => {
   color: #6d28d9;
   white-space: nowrap;
 }
+/* 환산잔량 처리 표시 (청구 금액과 무관한 수량 처리) */
+.conv-rel {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.72rem;
+  color: #0f766e;
+  background: #ccfbf1;
+  border-radius: 4px;
+  white-space: nowrap;
+}
 
 .recon-cell b {
   margin-left: 0.25rem;
@@ -1924,6 +1998,33 @@ const handleDelete = async () => {
   margin-top: 0.5rem;
   font-size: 0.8rem;
   color: #6b7280;
+}
+
+.lot-sku-block + .lot-sku-block {
+  margin-top: 0.75rem;
+}
+
+.lot-sku-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.lot-sku-summary {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.lot-flag {
+  margin-left: 0.25rem;
+  padding: 0 0.3rem;
+  border-radius: 3px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.7rem;
 }
 
 .text-additional {

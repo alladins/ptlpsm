@@ -440,6 +440,9 @@
                   <div v-if="it.mergeRole" class="merge-rel">
                     {{ mergeRelText(it) }}
                   </div>
+                  <div v-if="it.conversionRemainder" class="conv-rel" title="짝수올림 끝수를 납품된 것으로 처리한 수량 (청구 금액 변동 없음)">
+                    환산잔량 {{ formatNumber(it.conversionRemainder) }}㎡
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -1753,6 +1756,17 @@ onUnmounted(() => {
   margin-top: 0.2rem;
   font-size: 0.72rem;
   color: #6d28d9;
+  white-space: nowrap;
+}
+/* 환산잔량 처리 표시 (청구 금액과 무관한 수량 처리) */
+.conv-rel {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.72rem;
+  color: #0f766e;
+  background: #ccfbf1;
+  border-radius: 4px;
   white-space: nowrap;
 }
 

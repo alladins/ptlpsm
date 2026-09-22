@@ -18,6 +18,7 @@ import type {
   SubmitToNaraResponse
 } from '~/types/delivery-done'
 import type { StatusCode } from '~/types/common'
+import { httpError, httpErrorMessage } from '~/utils/apiError'
 
 /**
  * 납품완료보고서 붙임 서류 종류 (백엔드 DeliveryDoneDocType 과 1:1)
@@ -141,7 +142,7 @@ export async function exportDeliveryDoneExcel (
   })
 
   if (!response.ok) {
-    throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+    throw httpError(response.status, '엑셀 다운로드')
   }
 
   return response.blob()
@@ -185,7 +186,7 @@ export async function fetchHtmlPreview (
     headers: getAuthHeaders()
   })
   if (!response.ok) {
-    throw new Error(`HTML 미리보기 로드 실패: ${response.statusText}`)
+    throw httpError(response.status, 'HTML 미리보기 로드')
   }
   const blob = await response.blob()
   return URL.createObjectURL(blob)
@@ -364,13 +365,13 @@ export async function downloadBaselineInvoiceExcel (orderId: number): Promise<vo
     // 에러 응답에서 메시지 추출
     try {
       const errorData = await response.json()
-      throw new Error(errorData.message || `엑셀 다운로드 실패: ${response.status}`)
+      throw new Error(errorData.message || httpErrorMessage(response.status, '엑셀 다운로드'))
     } catch (parseError) {
       // JSON 파싱 실패 시 기본 메시지
-      if (parseError instanceof Error && parseError.message !== `엑셀 다운로드 실패: ${response.status}`) {
+      if (parseError instanceof Error && parseError.message !== httpErrorMessage(response.status, '엑셀 다운로드')) {
         throw parseError
       }
-      throw new Error(`엑셀 다운로드 실패: ${response.status}`)
+      throw httpError(response.status, '엑셀 다운로드')
     }
   }
 
@@ -438,7 +439,7 @@ export async function downloadMergedPdf (
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || `합지 다운로드 실패: ${response.status}`)
+    throw new Error(errorData?.message || httpErrorMessage(response.status, '합지 다운로드'))
   }
 
   const blob = await response.blob()
@@ -675,7 +676,7 @@ export async function getConversionRemainderCandidates (
   })
 
   if (!response.ok) {
-    throw new Error(`환산잔량 후보 조회 실패: ${response.statusText}`)
+    throw httpError(response.status, '환산잔량 후보 조회')
   }
 
   return await response.json()
@@ -697,7 +698,7 @@ export async function processConversionRemainder (
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || `환산잔량 처리 실패: ${response.statusText}`)
+    throw new Error(errorData?.message || httpErrorMessage(response.status, '환산잔량 처리'))
   }
 }
 
@@ -830,7 +831,7 @@ export async function completeManually (deliveryDoneId: number, basis: PdfBasis 
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || `수동 완료 처리 실패: ${response.statusText}`)
+    throw new Error(errorData?.message || httpErrorMessage(response.status, '수동 완료 처리'))
   }
 }
 
@@ -848,7 +849,7 @@ export async function resetDeliveryDone (deliveryDoneId: number): Promise<void> 
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || `초기화 실패: ${response.statusText}`)
+    throw new Error(errorData?.message || httpErrorMessage(response.status, '초기화'))
   }
 }
 
@@ -868,7 +869,7 @@ export async function regenerateDeliveryDonePdfs (deliveryDoneId: number, basis:
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || `PDF 재발행 실패: ${response.statusText}`)
+    throw new Error(errorData?.message || httpErrorMessage(response.status, 'PDF 재발행'))
   }
 }
 
@@ -887,7 +888,7 @@ export async function recalculateDeliveryDone (deliveryDoneId: number): Promise<
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || `재계산 실패: ${response.statusText}`)
+    throw new Error(errorData?.message || httpErrorMessage(response.status, '재계산'))
   }
 }
 
@@ -925,7 +926,7 @@ export async function uploadScanPdf (
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || `스캔본 업로드 실패: ${response.statusText}`)
+    throw new Error(errorData?.message || httpErrorMessage(response.status, '스캔본 업로드'))
   }
 }
 
@@ -966,7 +967,7 @@ export async function replaceDeliveryDonePhoto (
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || `사진 교체 실패: ${response.statusText}`)
+    throw new Error(errorData?.message || httpErrorMessage(response.status, '사진 교체'))
   }
   return await response.json()
 }
@@ -993,7 +994,7 @@ export async function addDeliveryDonePhoto (
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || `사진 추가 실패: ${response.statusText}`)
+    throw new Error(errorData?.message || httpErrorMessage(response.status, '사진 추가'))
   }
   return await response.json()
 }
@@ -1015,7 +1016,7 @@ export async function updateDeliveryDonePhotoSelection (
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || `사진대지 선택 변경 실패: ${response.statusText}`)
+    throw new Error(errorData?.message || httpErrorMessage(response.status, '사진대지 선택 변경'))
   }
   return await response.json()
 }

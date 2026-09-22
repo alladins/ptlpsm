@@ -507,6 +507,8 @@ export interface AmountReconciliationItem {
   mergeCounterparts?: string[] | null
   /** 관계 수량 */
   mergeQuantity?: number | null
+  /** 환산잔량 처리 수량(㎡). 짝수올림 끝수를 납품된 것으로 처리한 수량 */
+  conversionRemainder?: number | null
 }
 
 /** 원계약↔실출하 금액 정합 비교 응답 */
