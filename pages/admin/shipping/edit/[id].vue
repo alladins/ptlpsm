@@ -671,7 +671,7 @@
                 <b>{{ entry.skuName }}</b>
                 <span class="lot-sku-summary">
                   {{ formatNumber(entry.allocation.totalQuantity) }}㎡ ·
-                  평균 원가 {{ formatNumber(entry.allocation.unitCost) }}원/㎡ ·
+                  평균 원가 {{ formatNumber(Math.round(entry.allocation.unitCost)) }}원/㎡ ·
                   금액 {{ formatCurrency(entry.allocation.totalAmount) }}
                   <span v-if="entry.allocation.costUnknown" class="lot-flag">원가 없는 재고 포함</span>
                 </span>
@@ -680,7 +680,7 @@
             </div>
             <p class="recon-note">
               ※ 이 금액은 원가(손익) 기준입니다. 제조사 지급액은 발주서 기준이라 이 금액과 관계없습니다.
-              평균 원가는 금액 ÷ 수량으로 역산한 참고값입니다.
+              위 요약 줄의 평균 원가는 원가를 더한 값이 아니라 금액 ÷ 수량으로 나눈 참고값입니다(원 단위 반올림).
             </p>
           </div>
         </FormSection>

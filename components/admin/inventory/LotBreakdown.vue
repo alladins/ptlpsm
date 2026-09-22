@@ -45,13 +45,18 @@
       <tfoot v-if="pieces.length > 1">
         <tr>
           <td colspan="4">
-            합계 (평균 원가 = 금액 ÷ 수량)
+            합계
           </td>
           <td class="num">
             {{ totalQuantity.toLocaleString() }}㎡
           </td>
+          <!--
+            ★ 합계 줄의 원가 칸은 비운다. 수량·금액은 «더한 값» 인데 원가는 더할 수 없는 값이라
+              평균을 넣으면 «원가를 더한 게 아니다» / «평균 × 수량 ≠ 금액(반올림 몇 원)» 으로 어긋나 보인다(고객 지적 2회).
+              평균 원가는 표 밖 요약 줄에서만 보여준다.
+          -->
           <td class="num">
-            {{ averageCost.toLocaleString() }}
+            -
           </td>
           <td class="num">
             {{ totalAmount.toLocaleString() }}
@@ -69,12 +74,8 @@ import { lotOriginLabel, type LotPiece } from '~/types/inventory-lot'
 const props = defineProps<{ pieces: LotPiece[] }>()
 
 const totalQuantity = computed(() => props.pieces.reduce((s, p) => s + p.quantity, 0))
-// 금액 먼저 합산
+// 금액 먼저 합산 (평균 원가는 표 밖에서 금액 ÷ 수량으로 보여준다)
 const totalAmount = computed(() => props.pieces.reduce((s, p) => s + (p.amount ?? 0), 0))
-// 단가는 역산 (서버와 같이 소수 둘째 자리 반올림)
-const averageCost = computed(() =>
-  totalQuantity.value ? Math.round((totalAmount.value / totalQuantity.value) * 100) / 100 : 0
-)
 </script>
 
 <style scoped>
