@@ -328,14 +328,19 @@
                 <td />
               </tr>
 
-              <!-- 비출하 재고 소진 (품질관리 발송 / 리드파워 계약) -->
-              <tr v-if="hasConsumption" class="add-row">
+              <!--
+                비출하 재고 소진 (품질관리 발송 / 리드파워 계약)
+                ★ 지급액에 더하지 않는다 (2026-09-21 정책). 물건값은 발주에서 이미 계상됐고
+                  소진은 재고만 빼는 것이다. 여기 금액은 «이번 달 이 제조사 물량이 이만큼
+                  소진됐다» 는 참고 표기다. 그래서 «+» 를 쓰지 않고 회색으로 둔다.
+              -->
+              <tr v-if="hasConsumption" class="note-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
-                  비출하 재고 소진
-                  <span class="deduct-hint">{{ consumptionLabel }}</span>
+                  (참고) 비출하 재고 소진
+                  <span class="deduct-hint">{{ consumptionLabel }} · 지급액에는 포함되지 않습니다</span>
                 </td>
                 <td />
-                <td class="text-right">+ {{ formatCurrency(ledgerData.consumptionTotal) }}</td>
+                <td class="text-right">{{ formatCurrency(ledgerData.consumptionTotal) }}</td>
                 <td />
                 <td />
               </tr>
@@ -1170,6 +1175,18 @@ onMounted(async () => {
 .add-row td {
   color: #15803d;
   font-weight: 500;
+}
+
+/*
+ * 참고 표기 행 — 지급액 계산에 들어가지 않는 항목
+ * 가산(초록)·차감(주황)과 섞이지 않도록 회색으로 눌러 둔다.
+ */
+.note-row {
+  background: #f8fafc !important;
+}
+.note-row td {
+  color: #94a3b8;
+  font-weight: 400;
 }
 
 /* 공급가액 행 (손실 차감 후) */
