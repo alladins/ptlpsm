@@ -654,8 +654,8 @@
 
         <!--
           출고 원가 내역 (FIFO) — 운송장 등록(출고) 때 창고에서 먼저 들어온 재고부터 빠진 내역
-          ★ 제조사도 본다(2026-09-22 결정). 단 자기 회사 출하만, 다른 생산자 로트는 서버가
-            원가·발주서를 비워 «다른 생산자 물량 N㎡» 로만 내려준다 (InventoryLotService.getShipmentLots)
+          ★ 제조사도 본다(2026-09-22 결정). 단 자기 회사 출하만, 자기가 생산한 로트만 서버가 내려준다.
+            다른 생산자 로트는 가려서라도 보이면 추측할 수 있어 아예 뺀다 (InventoryLotService.getShipmentLots)
           ★ 원가 장부다. OEM 지급(원장·선급금)은 발주 기준이라 이 값과 무관하다 (대전제 9번)
         -->
         <FormSection v-if="shipmentLotEntries.length > 0" style="margin-top: 1rem">
@@ -673,9 +673,6 @@
                   {{ formatNumber(entry.allocation.totalQuantity) }}㎡ ·
                   평균 원가 {{ formatNumber(entry.allocation.unitCost) }}원/㎡ ·
                   금액 {{ formatCurrency(entry.allocation.totalAmount) }}
-                  <template v-if="(entry.allocation.maskedQuantity || 0) > 0">
-                    (자기 물량 기준 · 다른 생산자 물량 {{ formatNumber(entry.allocation.maskedQuantity || 0) }}㎡ 제외)
-                  </template>
                   <span v-if="entry.allocation.costUnknown" class="lot-flag">원가 없는 재고 포함</span>
                 </span>
               </div>
@@ -824,7 +821,7 @@ const mergeRelText = (it: AmountReconciliationItem): string => {
   return `${arrow} ${names}${qty}`
 }
 
-// 출고 원가 내역 (FIFO) — 출고 전이면 비어 있어 칸이 안 보인다. 제조사는 자기 물량만 원가가 보인다
+// 출고 원가 내역 (FIFO) — 출고 전이면 비어 있어 칸이 안 보인다. 제조사는 자기가 생산한 로트만 온다
 const shipmentLots = ref<Record<string, LotAllocation>>({})
 const shipmentLotEntries = computed(() => {
   const names = new Map<string, string>()
