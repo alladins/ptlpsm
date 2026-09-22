@@ -473,7 +473,19 @@
           <div class="modal-body">
             <div class="form-group">
               <label>지급 금액</label>
-              <input v-model.number="completeForm.paidAmount" type="number" class="form-input" placeholder="실제 지급 금액">
+              <!-- 쉼표 표시 — 8자리 금액을 눈으로 확인하기 어렵다(고객 요청). 저장값은 숫자(completeForm.paidAmount) -->
+              <input
+                v-model="paidAmountText"
+                type="text"
+                inputmode="numeric"
+                class="form-input text-right"
+                placeholder="실제 지급 금액"
+              >
+              <p v-if="ledgerData" class="paid-breakdown">
+                공급가액 {{ formatCurrency(ledgerData.payableAmount ?? ledgerData.totalAmount) }}
+                + 부가세 {{ formatCurrency(ledgerData.vatAmount) }}
+                = <strong>{{ formatCurrency(ledgerData.totalWithVat) }}</strong> (부가세 포함 지급)
+              </p>
             </div>
             <div class="form-group">
               <label>지급일</label>
@@ -542,6 +554,13 @@ const showCompleteModal = ref(false)
 const completeForm = ref({
   paidAmount: 0,
   paidDate: ''
+})
+// 지급 금액 입력칸 표시용 — 51795800 → «51,795,800». 숫자 외 문자는 버린다
+const paidAmountText = computed({
+  get: () => (completeForm.value.paidAmount ? completeForm.value.paidAmount.toLocaleString('ko-KR') : ''),
+  set: (text: string) => {
+    completeForm.value.paidAmount = Number(String(text).replace(/[^\d]/g, '')) || 0
+  }
 })
 
 // 반려 모달
@@ -671,7 +690,7 @@ function downloadBlob (blob: Blob, filename: string) {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  window.URL.revokeObjectURL(url)
+  setTimeout(() => window.URL.revokeObjectURL(url), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
 }
 
 // 엑셀 다운로드 (원장 + 원가이력 2시트, 현재 조회 조건 기준)
@@ -723,12 +742,13 @@ async function loadLedger () {
     )
     // 지급 완료 모달 기본값 설정
     //
-    // ⚠ totalAmount(발주 합계)가 아니라 payableAmount 를 써야 한다.
-    //   payableAmount = 발주 합계 + 비출하 소진 + 운송비 + 가공비 − 손실 차감
-    //   화면에는 이 값이 "지급 예정"으로 표시되는데 지급 기록에 합계만 남기면
-    //   소진·운송비·가공비는 영영 지급되지 않고 손실은 차감되지 않는다.
+    // ★ 실제로는 부가세 포함액을 지급한다(2026-09-22 고객 확인). 기본값 = totalWithVat.
+    //   청구 금액(payment_amount)은 공급가액 그대로 두고, 실지급액(paid_amount)만 부가세 포함.
+    // ⚠ totalAmount(발주 합계)가 아니라 payableAmount 기반이어야 한다.
+    //   payableAmount = 발주 합계 + 운송비 + 가공비 − 손실 차감 (소진은 2026-09-21 부터 제외)
     if (ledgerData.value) {
-      completeForm.value.paidAmount = ledgerData.value.payableAmount ?? ledgerData.value.totalAmount ?? 0
+      completeForm.value.paidAmount = ledgerData.value.totalWithVat ??
+        ledgerData.value.payableAmount ?? ledgerData.value.totalAmount ?? 0
       completeForm.value.paidDate = getLocalDateString()
     }
   } catch (error) {
@@ -747,7 +767,9 @@ async function handlePaymentRequest () {
   //   = 발주 합계 + 비출하 소진 + 운송비 + 가공비 − 손실 차감
   //   totalAmount(발주 합계)로 보내면 화면에 보이는 금액과 실제 요청액이 갈라진다.
   const requestAmount = ledgerData.value.payableAmount ?? ledgerData.value.totalAmount
-  if (!confirm(`${yearMonth.value} 매출원장 기준 ${formatCurrency(requestAmount)} 지급을 요청하시겠습니까?`)) { return }
+  const withVat = ledgerData.value.totalWithVat
+  const vatText = withVat ? ` (부가세 포함 ${formatCurrency(withVat)})` : ''
+  if (!confirm(`${yearMonth.value} 매출원장 기준 공급가액 ${formatCurrency(requestAmount)}${vatText} 지급을 요청하시겠습니까?`)) { return }
 
   try {
     await oemLedgerService.createPaymentRequest({
@@ -973,6 +995,13 @@ onMounted(async () => {
 }
 
 /* 반려 사유 알림 */
+/* 지급완료 창 — 공급가액 + 부가세 = 지급액 내역 */
+.paid-breakdown {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
 .reject-notice {
   display: flex;
   align-items: flex-start;
