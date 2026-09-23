@@ -228,6 +228,18 @@
                     </GuardedButton>
                     <span v-else class="muted">-</span>
                   </template>
+                  <!--
+                  취소 건은 «목록에서 감추기» 만 한다(soft delete).
+                  잘못 취소하고 다시 넣은 건이 목록에 남아 지저분해지므로 치울 수 있게 하되,
+                  재고를 뺐다 되돌린 거래 2줄(ADJUST ±)은 그대로 남긴다 —
+                  행까지 지우면 그 거래가 주인 없는 기록이 되어 «왜 재고가 출렁였나» 를 못 찾는다.
+                -->
+                  <template v-else-if="r.status === 'CANCELLED'">
+                    <button v-if="canSettle" class="btn-mini" @click="handleHide(r)">
+                      삭제
+                    </button>
+                    <span v-else class="muted">-</span>
+                  </template>
                   <span v-else class="muted">-</span>
                 </td>
               </tr>
@@ -549,6 +561,28 @@ const handleDelete = async (r: InventoryConsumption) => {
     await load()
   } catch (e: any) {
     alert(e?.message || '삭제에 실패했습니다.')
+  }
+}
+
+/**
+ * 취소 건 감추기 — 작성중 삭제와 같은 API 지만 뜻이 다르다.
+ *
+ * 취소 건에는 재고를 뺐다가 되돌린 거래 2줄(ADJUST −/+)과 로트 기록이 딸려 있다.
+ * 그것까지 지우면 «3월 재고가 왜 출렁였나» 를 나중에 찾을 수 없으므로 남기고,
+ * 목록에서만 감춘다(deleted_at). 거래 비고에 소진번호가 찍혀 있어 역추적은 된다.
+ */
+const handleHide = async (r: InventoryConsumption) => {
+  const ok = confirm(
+    `${r.consumptionNo} 을 목록에서 감춥니다.\n\n` +
+    '취소된 건이라 재고에는 영향이 없습니다.\n' +
+    '재고 입출고 이력은 추적을 위해 그대로 남습니다.'
+  )
+  if (!ok) { return }
+  try {
+    await inventoryConsumptionService.remove(r.consumptionId)
+    await load()
+  } catch (e: any) {
+    alert(e?.message || '처리에 실패했습니다.')
   }
 }
 
