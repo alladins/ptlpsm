@@ -35,9 +35,14 @@ export const inventoryConsumptionService = {
     return apiClient.put<InventoryConsumption>(`${BASE}/${consumptionId}`, data)
   },
 
-  /** FIFO 원가 미리보기 — 이 수량을 빼면 어느 발주에서 얼마씩 빠지는지. 저장하지 않는다 */
-  fifoPreview (warehouseId: number, skuId: string, quantity: number): Promise<LotAllocation> {
-    return apiClient.get<LotAllocation>(`${BASE}/fifo-preview`, { warehouseId, skuId, quantity })
+  /**
+   * FIFO 원가 미리보기 — 이 수량을 빼면 어느 발주에서 얼마씩 빠지는지. 저장하지 않는다.
+   *
+   * ⚠ consumptionDate 를 꼭 같이 보낼 것. 확정도 «소진일 그 날 시점» 재고로 계산하므로,
+   *   안 보내면 화면에 보인 원가와 확정 결과가 달라진다(과거 날짜 소진일 때).
+   */
+  fifoPreview (warehouseId: number, skuId: string, quantity: number, consumptionDate?: string): Promise<LotAllocation> {
+    return apiClient.get<LotAllocation>(`${BASE}/fifo-preview`, { warehouseId, skuId, quantity, consumptionDate })
   },
 
   /** 확정 — 재고가 차감되고 FIFO 원가 내역이 기록된다. 원장 지급 금액에는 영향 없음(«참고» 표시만) */
