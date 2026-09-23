@@ -8,6 +8,9 @@
  */
 
 import { apiClient, type PageResponse } from '~/services/api/client'
+import { getApiBaseUrl } from '~/services/api/config'
+import { getAuthHeaders } from '~/services/api'
+import { getLocalDateString } from '~/utils/format'
 import type { LotAllocation } from '~/types/inventory-lot'
 import type {
   InventoryConsumption,
@@ -17,6 +20,20 @@ import type {
 
 const BASE = '/admin/inventory/consumptions'
 
+/**
+ * 응답 헤더의 파일명을 꺼낸다.
+ * 서버가 한글 파일명을 RFC 5987(`filename*=UTF-8''...`)로 보내므로 그쪽을 먼저 본다.
+ * 못 읽으면 호출한 쪽에서 기본 이름을 쓴다.
+ */
+function fileNameFrom (res: Response): string | null {
+  const cd = res.headers.get('content-disposition')
+  if (!cd) { return null }
+  const star = cd.match(/filename\*=UTF-8''([^;]+)/i)
+  if (star) { try { return decodeURIComponent(star[1]) } catch { /* 깨진 인코딩은 무시 */ } }
+  const plain = cd.match(/filename="?([^";]+)"?/i)
+  return plain ? plain[1] : null
+}
+
 export const inventoryConsumptionService = {
   /** 목록 조회 (0-indexed page) */
   async getList (params: InventoryConsumptionSearchParams): Promise<PageResponse<InventoryConsumption>> {
@@ -25,6 +42,41 @@ export const inventoryConsumptionService = {
 
   async getDetail (consumptionId: number): Promise<InventoryConsumption> {
     return apiClient.get<InventoryConsumption>(`${BASE}/${consumptionId}`)
+  },
+
+  /**
+   * 내역서 PDF 를 «받아만» 온다 — 저장은 하지 않는다.
+   *
+   * 화면에서 먼저 미리보기로 확인한 뒤 내려받게 하기 위해 blob 만 돌려준다.
+   * 바로 저장해 버리면 내용이 틀렸을 때 파일만 쌓인다.
+   *
+   * 쪽 나눔(page/size)은 보내지 않는다 — 서버가 조회된 전체를 한 벌로 만든다.
+   * apiClient 는 JSON 전제라 여기서는 fetch 를 직접 쓴다.
+   */
+  async fetchPdf (params: InventoryConsumptionSearchParams): Promise<{ blob: Blob, fileName: string }> {
+    const qs = new URLSearchParams()
+    Object.entries(params).forEach(([k, v]) => {
+      if (k === 'page' || k === 'size') { return }
+      if (v !== null && v !== undefined && v !== '') { qs.append(k, String(v)) }
+    })
+
+    const res = await fetch(`${getApiBaseUrl()}${BASE}/pdf?${qs.toString()}`, { headers: getAuthHeaders() })
+    if (!res.ok) {
+      // 서버가 «조회된 내역이 없습니다» 처럼 이유를 주므로 그대로 보여준다
+      let message = 'PDF 를 만들지 못했습니다.'
+      try {
+        const body = await res.json()
+        if (body?.message) { message = body.message }
+      } catch { /* 본문이 JSON 이 아니면 기본 문구 */ }
+      throw new Error(message)
+    }
+
+    const blob = await res.blob()
+    // ★ 서버가 application/pdf 로 줘도, 중간 프록시나 브라우저 설정 때문에 형식이 어긋난 채
+    //   저장되는 일이 있었다. 저장 단계에서 형식을 확실히 못 박기 위해 여기서 다시 감싼다.
+    const pdfBlob = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' })
+    const fileName = fileNameFrom(res) || `재고소진내역서_${getLocalDateString().replace(/-/g, '')}.pdf`
+    return { blob: pdfBlob, fileName }
   },
 
   async create (data: InventoryConsumptionCreateRequest): Promise<InventoryConsumption> {
