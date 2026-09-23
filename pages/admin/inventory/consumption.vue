@@ -460,32 +460,14 @@ const downloadPdf = async () => {
  *   속성은 정상적으로 지정되는데도 그렇다(2026-09-23 실측). 그래서 저장 대화상자 API 를
  *   먼저 쓰고, 없을 때만 예전 방식으로 떨어진다. 대화상자는 파일명이 확실히 유지된다.
  */
-const savePdf = async () => {
+const savePdf = () => {
   if (!pdfBlob) { return }
   const name = pdfName.value || '재고소진내역서.pdf'
 
-  // 1순위 — 저장 위치·파일명을 사용자가 보는 대화상자 (Chrome/Edge)
-  const picker = (window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker
-  if (typeof picker === 'function') {
-    try {
-      const handle = await (picker as (o: unknown) => Promise<{
-        createWritable: () => Promise<{ write: (d: Blob) => Promise<void>, close: () => Promise<void> }>
-      }>)({
-        suggestedName: name,
-        types: [{ description: 'PDF 문서', accept: { 'application/pdf': ['.pdf'] } }]
-      })
-      const w = await handle.createWritable()
-      await w.write(pdfBlob)
-      await w.close()
-      return
-    } catch (e) {
-      // 사용자가 대화상자를 닫은 경우는 그냥 끝낸다. 그 외에는 아래 방식으로 한 번 더 시도
-      if ((e as DOMException)?.name === 'AbortError') { return }
-      console.warn('저장 대화상자 실패 — 기본 방식으로 내려받습니다:', e)
-    }
-  }
-
-  // 2순위 — a[download]
+  // ⚠ 예전에 저장 대화상자(showSaveFilePicker)를 먼저 쓰게 했더니, 대화상자가 취소되면
+  //   아무 일도 일어나지 않아 «버튼이 안 눌린다» 가 됐다(2026-09-23). 경로를 하나로 둔다.
+  //   미리보기 iframe 의 #toolbar=0 로 크롬 뷰어의 내려받기 아이콘도 없앴으므로,
+  //   내려받는 길은 이 버튼 하나뿐이다.
   const url = window.URL.createObjectURL(pdfBlob)
   const link = document.createElement('a')
   link.href = url

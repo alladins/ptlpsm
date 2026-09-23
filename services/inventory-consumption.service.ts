@@ -62,12 +62,24 @@ export const inventoryConsumptionService = {
 
     const res = await fetch(`${getApiBaseUrl()}${BASE}/pdf?${qs.toString()}`, { headers: getAuthHeaders() })
     if (!res.ok) {
-      // 서버가 «조회된 내역이 없습니다» 처럼 이유를 주므로 그대로 보여준다
-      let message = 'PDF 를 만들지 못했습니다.'
+      // 서버가 «조회 조건에 확정된 소진 내역이 없습니다» 처럼 이유를 주면 그대로 보여준다
+      let message = ''
       try {
         const body = await res.json()
         if (body?.message) { message = body.message }
-      } catch { /* 본문이 JSON 이 아니면 기본 문구 */ }
+      } catch { /* 본문이 JSON 이 아니면 아래 상태별 문구 */ }
+
+      if (!message) {
+        // ⚠ 이유를 못 밝히면 사용자가 «PDF 기능이 고장났다» 고 오해한다.
+        //   실제로 가장 흔한 원인은 배포로 세션이 끊긴 것이다(토큰이 서버 메모리에 있다).
+        if (res.status === 401 || res.status === 403) {
+          message = '로그인이 풀렸습니다. 다시 로그인한 뒤 내려받아 주세요.\n(서버가 재시작되면 로그인이 끊깁니다)'
+        } else if (res.status === 502 || res.status === 503 || res.status === 504) {
+          message = '서버가 재시작 중입니다. 잠시 뒤 다시 시도해 주세요.'
+        } else {
+          message = `PDF 를 만들지 못했습니다. (오류 ${res.status})`
+        }
+      }
       throw new Error(message)
     }
 
