@@ -20,7 +20,9 @@
           주문 요청 목록
           <span v-if="pendingBadge > 0" class="badge badge-pending">{{ pendingBadge }}</span>
         </button>
+        <!-- 현장 관리는 모바일 접속 토큰이 보이는 곳이라 영업 역할(대리점 직원 포함)에게는 닫는다 — 서버도 /sites 를 막는다 -->
         <button
+          v-if="!isSalesRole"
           class="tab-button"
           :class="{ active: activeTab === 'sites' }"
           @click="activeTab = 'sites'"
@@ -33,23 +35,26 @@
       <!-- 탭 콘텐츠 -->
       <div class="tab-content">
         <RequestListTab v-if="activeTab === 'requests'" @pending-count="onPendingCount" />
-        <SiteManagementTab v-if="activeTab === 'sites'" />
+        <SiteManagementTab v-if="activeTab === 'sites' && !isSalesRole" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import PageHeader from '~/components/ui/PageHeader.vue'
 import RequestListTab from '~/components/admin/order-requests/RequestListTab.vue'
 import SiteManagementTab from '~/components/admin/order-requests/SiteManagementTab.vue'
+import { useAuthStore } from '~/stores/auth'
 
 definePageMeta({
   layout: 'admin',
   pageTitle: '납품요청'
 })
 
+const authStore = useAuthStore()
+const isSalesRole = computed(() => authStore.user?.role === 'SALES_MANAGER')
 const activeTab = ref<'requests' | 'sites'>('requests')
 const pendingBadge = ref(0)
 

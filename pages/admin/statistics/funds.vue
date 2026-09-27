@@ -126,7 +126,7 @@
               </div>
             </div>
           </div>
-          <div class="overview-card purple">
+          <div v-if="!hideCost" class="overview-card purple">
             <div class="card-icon">
               <i class="fas fa-industry" />
             </div>
@@ -139,7 +139,7 @@
               </div>
             </div>
           </div>
-          <div class="overview-card orange">
+          <div v-if="!hideCost" class="overview-card orange">
             <div class="card-icon">
               <i class="fas fa-clock" />
             </div>
@@ -152,7 +152,7 @@
               </div>
             </div>
           </div>
-          <div class="overview-card teal">
+          <div v-if="!hideCost" class="overview-card teal">
             <div class="card-icon">
               <i class="fas fa-coins" />
             </div>
@@ -165,7 +165,7 @@
               </div>
             </div>
           </div>
-          <div class="overview-card indigo">
+          <div v-if="!hideCost" class="overview-card indigo">
             <div class="card-icon">
               <i class="fas fa-percentage" />
             </div>
@@ -248,17 +248,17 @@
                 <th class="col-rate">
                   수금률
                 </th>
-                <th class="col-amount">
+                <th v-if="!hideCost" class="col-amount">
                   OEM 지급
                 </th>
-                <th class="col-amount">
+                <th v-if="!hideCost" class="col-amount">
                   수익
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="!statistics.fundDetails || statistics.fundDetails.length === 0">
-                <td colspan="8" class="no-data">
+                <td :colspan="hideCost ? 6 : 8" class="no-data">
                   자금 데이터가 없습니다.
                 </td>
               </tr>
@@ -286,10 +286,10 @@
                   </div>
                   <span class="progress-text">{{ fund.collectionRate?.toFixed(1) || 0 }}%</span>
                 </td>
-                <td class="col-amount text-right">
+                <td v-if="!hideCost" class="col-amount text-right">
                   {{ formatCurrency(fund.oemPaid) }}
                 </td>
-                <td class="col-amount text-right" :class="(fund.profit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
+                <td v-if="!hideCost" class="col-amount text-right" :class="(fund.profit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
                   {{ formatCurrency(fund.profit ?? 0) }}
                 </td>
               </tr>
@@ -311,10 +311,10 @@
                 <td class="col-rate text-center">
                   <strong>{{ getCollectionRate() }}%</strong>
                 </td>
-                <td class="col-amount text-right">
+                <td v-if="!hideCost" class="col-amount text-right">
                   <strong>{{ formatCurrency(statistics.totalOemPaid) }}</strong>
                 </td>
-                <td class="col-amount text-right" :class="(statistics.currentProfit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
+                <td v-if="!hideCost" class="col-amount text-right" :class="(statistics.currentProfit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
                   <strong>{{ formatCurrency(statistics.currentProfit ?? 0) }}</strong>
                 </td>
               </tr>
@@ -332,6 +332,7 @@ import { useRouter } from '#imports'
 import { fundService } from '~/services/fund.service'
 import { formatCurrency } from '~/utils/format'
 import type { FundStatistics, FundStatisticsParams, PeriodType } from '~/types/fund'
+import { useAuthStore } from '~/stores/auth'
 
 definePageMeta({
   layout: 'admin',
@@ -339,6 +340,10 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// 영업 역할(리드파워 영업·대리점 직원 공통)은 원가(OEM 지급·미지급)와 수익을 보지 않는다 — 서버도 값을 비워 보낸다 (2026-09-27)
+const authStore = useAuthStore()
+const hideCost = computed(() => authStore.user?.role === 'SALES_MANAGER')
 
 // 현재 분기 계산 헬퍼
 function getCurrentQuarter (): number {
@@ -391,7 +396,7 @@ const monthlyMatrix = computed(() => {
     categories: md.map(d => `${d.month}월`),
     series: [
       { name: '수금액', values: md.map(d => d.receivedAmount || 0), color: '#10b981' },
-      { name: '수익', values: md.map(d => d.profitAmount || 0), color: '#3b82f6' }
+      ...(hideCost.value ? [] : [{ name: '수익', values: md.map(d => d.profitAmount || 0), color: '#3b82f6' }])
     ]
   }
 })

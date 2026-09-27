@@ -949,7 +949,6 @@ const getRoleClass = (roleCode: string) => {
     SITE_MANAGER: 'role-site',
     SITE_INSPECTOR: 'role-inspector',
     SALES_MANAGER: 'role-sales',
-    AGENCY_SALES: 'role-agency',
     DELIVERY_DRIVER: 'role-driver',
     VIEWER: 'role-readonly'
   }

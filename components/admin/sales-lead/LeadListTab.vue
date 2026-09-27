@@ -46,7 +46,8 @@
             </option>
           </select>
         </div>
-        <div class="search-item">
+        <!-- 대리점 목록은 리드파워 전용 API 라 관리자에게만 (대리점 소속은 서버가 자기 대리점 것만 준다) -->
+        <div v-if="showAgencyFilter" class="search-item">
           <label>담당 대리점:</label>
           <select v-model="searchForm.agencyId" class="status-select" @change="search">
             <option :value="null">
@@ -213,6 +214,8 @@ import Pagination from '~/components/ui/Pagination.vue'
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import LeadKindBadge from '~/components/admin/sales-lead/LeadKindBadge.vue'
 import LeadDetailModal from '~/components/admin/sales-lead/LeadDetailModal.vue'
+
+const props = withDefaults(defineProps<{ showAgencyFilter?: boolean }>(), { showAgencyFilter: true })
 import { salesLeadService } from '~/services/sales-lead.service'
 import { agencyService } from '~/services/agency.service'
 import { formatNumber } from '~/utils/format'
@@ -309,7 +312,9 @@ const loadAgencies = async () => {
 
 onMounted(() => {
   loadPage()
-  loadAgencies()
+  if (props.showAgencyFilter) {
+    loadAgencies()
+  }
 })
 </script>
 
