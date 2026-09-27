@@ -80,7 +80,7 @@
 
         <div class="modal-footer">
           <button class="btn-secondary" @click="$emit('close')">닫기</button>
-          <template v-if="detail && detail.status === 'PENDING'">
+          <template v-if="detail && detail.status === 'PENDING' && canEdit">
             <template v-if="!rejectMode">
               <button class="btn-danger" @click="rejectMode = true">
                 <i class="fas fa-times" /> 반려
@@ -106,6 +106,7 @@
 import { formatDate, formatDateTime } from '~/utils/format'
 import { ref, onMounted } from 'vue'
 import { mobileOrderService } from '~/services/mobile-order.service'
+import { usePermission } from '~/composables/usePermission'
 import {
   REQUEST_STATUS_DISPLAY,
   URGENCY_DISPLAY,
@@ -117,6 +118,8 @@ import {
 const props = defineProps<{ requestId: number }>()
 const emit = defineEmits<{ (e: 'close'): void; (e: 'processed'): void }>()
 
+// 승인·반려는 메뉴권한 «수정»이 있을 때만 — 영업 역할은 조회뿐이고 서버도 POST 를 막는다
+const { canEdit } = usePermission('ORDER_REQUESTS')
 const detail = ref<MobileOrderRequest | null>(null)
 const loading = ref(false)
 const rejectMode = ref(false)

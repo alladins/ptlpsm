@@ -98,7 +98,7 @@ const loadStaff = async () => {
 const goAddStaff = () => {
   router.push({
     path: '/admin/basic-info/user',
-    query: { openAdd: '1', role: 'AGENCY_SALES', companyId: String(props.agencyId) }
+    query: { openAdd: '1', role: 'SALES_MANAGER', companyId: String(props.agencyId) }
   })
 }
 

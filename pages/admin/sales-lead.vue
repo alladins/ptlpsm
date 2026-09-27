@@ -7,7 +7,7 @@
     />
 
     <!-- 인증키 미설정 안내 -->
-    <div v-if="collectStatus && !collectStatus.keyConfigured" class="key-banner">
+    <div v-if="isLpAdmin && collectStatus && !collectStatus.keyConfigured" class="key-banner">
       <i class="fas fa-key" />
       <div>
         나라장터 API 인증키가 아직 없습니다 — 공공데이터포털에서 낙찰정보(15129397)·입찰공고(15129394)·계약정보(15129427)
@@ -23,7 +23,7 @@
         <button type="button" class="tab-button" :class="{ active: activeTab === 'digest' }" @click="activeTab = 'digest'">
           <i class="fas fa-sun" /> 아침 요약
         </button>
-        <button type="button" class="tab-button" :class="{ active: activeTab === 'runs' }" @click="activeTab = 'runs'">
+        <button v-if="isLpAdmin" type="button" class="tab-button" :class="{ active: activeTab === 'runs' }" @click="activeTab = 'runs'">
           <i class="fas fa-history" /> 수집 기록
           <i v-if="collectStatus?.running" class="fas fa-spinner fa-spin running-dot" />
         </button>
@@ -31,12 +31,12 @@
 
       <!-- 탭은 v-if 로 바꿔 끼운다 — 수집 기록 탭을 떠나면 폴링 타이머도 같이 정리된다 -->
       <div v-if="activeTab === 'leads'" class="tab-content">
-        <LeadListTab />
+        <LeadListTab :show-agency-filter="isLpAdmin" />
       </div>
       <div v-else-if="activeTab === 'digest'" class="tab-content">
         <LeadDigestTab />
       </div>
-      <div v-else class="tab-content">
+      <div v-else-if="isLpAdmin" class="tab-content">
         <CollectRunsTab
           :status="collectStatus"
           :can-collect="canWrite"
@@ -73,6 +73,8 @@ definePageMeta({
 const { canWrite, isViewOnly } = usePermission('SALES_LEAD')
 const authStore = useAuthStore()
 const isSystemAdmin = computed(() => authStore.user?.role === 'SYSTEM_ADMIN')
+// 수집 실행·기록·상태와 대리점 필터는 리드파워 관리자 전용 — 서버도 /collect/**·/agencies 를 막는다 (2026-09-27 영업 역할 통합)
+const isLpAdmin = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(authStore.user?.role ?? ''))
 
 const activeTab = ref<'leads' | 'digest' | 'runs'>('leads')
 
@@ -80,6 +82,7 @@ const activeTab = ref<'leads' | 'digest' | 'runs'>('leads')
 const collectStatus = ref<SalesCollectStatus | null>(null)
 
 const loadStatus = async () => {
+  if (!isLpAdmin.value) { return }
   try {
     collectStatus.value = await salesLeadService.getStatus()
   } catch (e) {
