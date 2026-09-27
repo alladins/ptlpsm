@@ -44,6 +44,7 @@ function getRoleLabel (role: string | undefined | null): string {
     SITE_MANAGER: '시공사 담당자',
     SITE_INSPECTOR: '시공사 감리원',
     SALES_MANAGER: '영업 담당자',
+    AGENCY_SALES: '대리점 영업직원',
     DELIVERY_DRIVER: '운송기사',
     VIEWER: '조회 전용'
   }
