@@ -3,6 +3,7 @@
     <PageHeader
       title="공모·낙찰 수집"
       description="나라장터 낙찰·계약 정보를 매일 모아 건축설계·공사 건을 가려내고, 설계사무소 연결과 담당 대리점 판정까지 해 둡니다."
+      :view-only="isViewOnly"
     />
 
     <!-- 인증키 미설정 안내 -->
@@ -36,7 +37,12 @@
         <LeadDigestTab />
       </div>
       <div v-else class="tab-content">
-        <CollectRunsTab :status="collectStatus" @status-change="collectStatus = $event" />
+        <CollectRunsTab
+          :status="collectStatus"
+          :can-collect="canWrite"
+          :can-import="isSystemAdmin"
+          @status-change="collectStatus = $event"
+        />
       </div>
     </div>
   </div>
@@ -49,17 +55,24 @@
  * ② 아침 요약: 대리점별 발송 미리보기
  * ③ 수집 기록: 상태·지금 수집·실행 기록·붙여넣기 적재
  */
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import LeadListTab from '~/components/admin/sales-lead/LeadListTab.vue'
 import LeadDigestTab from '~/components/admin/sales-lead/LeadDigestTab.vue'
 import CollectRunsTab from '~/components/admin/sales-lead/CollectRunsTab.vue'
 import { salesLeadService } from '~/services/sales-lead.service'
+import { usePermission } from '~/composables/usePermission'
+import { useAuthStore } from '~/stores/auth'
 import type { SalesCollectStatus } from '~/types/sales-lead'
 
 definePageMeta({
   layout: 'admin',
   pageTitle: '공모·낙찰 수집'
 })
+
+// 메뉴권한(SALES_LEAD) — «지금 수집»=등록 권한. 붙여넣기 적재는 서버가 시스템관리자만 허용하므로 역할로 가른다
+const { canWrite, isViewOnly } = usePermission('SALES_LEAD')
+const authStore = useAuthStore()
+const isSystemAdmin = computed(() => authStore.user?.role === 'SYSTEM_ADMIN')
 
 const activeTab = ref<'leads' | 'digest' | 'runs'>('leads')
 

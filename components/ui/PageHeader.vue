@@ -67,6 +67,9 @@
         <div class="header-text">
           <h1 class="page-title">
             {{ title }}
+            <span v-if="viewOnly" class="view-only-chip" title="이 메뉴는 조회 권한만 있습니다">
+              <i class="fas fa-eye" /> 조회 전용
+            </span>
           </h1>
           <p v-if="description" class="page-description">
             {{ description }}
@@ -92,10 +95,13 @@ interface Props {
   icon?: 'chart' | 'chart-line' | 'order' | 'shipping' | 'transport' | 'delivery' | 'warehouse' | 'boxes' | 'default'
   /** 아이콘 색상 (blue, green, orange, purple, cyan) */
   iconColor?: 'blue' | 'green' | 'orange' | 'purple' | 'cyan'
+  /** 조회 전용 표시 (메뉴권한상 등록·수정·삭제가 모두 없을 때 제목 옆 작은 칩) */
+  viewOnly?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
-  iconColor: 'blue'
+  iconColor: 'blue',
+  viewOnly: false
 })
 
 const slots = useSlots()
@@ -179,6 +185,22 @@ const slots = useSlots()
   color: #1e293b;
   margin: 0;
   line-height: 1.3;
+}
+
+/* 조회 전용 칩 */
+.view-only-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  vertical-align: middle;
 }
 
 .page-description {

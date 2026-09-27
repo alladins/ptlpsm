@@ -3,9 +3,10 @@
     <PageHeader
       title="담당판정확인"
       description="수요기관이 어느 권역·대리점 담당으로 판정되는지 확인하고, 틀린 판정은 수동으로 바로잡습니다."
+      :view-only="isViewOnly"
     >
       <template #actions>
-        <button class="btn-action btn-warning" :disabled="rebuilding" @click="showRebuildConfirm = true">
+        <button v-if="canWrite" class="btn-action btn-warning" :disabled="rebuilding" @click="showRebuildConfirm = true">
           <i :class="rebuilding ? 'fas fa-spinner fa-spin' : 'fas fa-redo'" />
           자동 판정 재실행
         </button>
@@ -172,7 +173,7 @@
                       <button type="button" class="btn-action btn-info btn-mini" @click="openResolve(item)">
                         판정 보기
                       </button>
-                      <button type="button" class="btn-action btn-secondary btn-mini" @click="openManual(item)">
+                      <button v-if="canEdit" type="button" class="btn-action btn-secondary btn-mini" @click="openManual(item)">
                         수동 보정
                       </button>
                     </div>
@@ -224,7 +225,7 @@
             <ResolveResultCard v-else-if="resolveResult" :result="resolveResult" />
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn-secondary" @click="openManualFromResolve">
+            <button v-if="canEdit" type="button" class="btn-secondary" @click="openManualFromResolve">
               수동 보정
             </button>
             <button type="button" class="btn-primary" @click="resolveTarget = null">
@@ -296,6 +297,7 @@ import DemandOrgManualModal from '~/components/admin/agency/DemandOrgManualModal
 import { agencyService, demandOrgAttrService, salesRegionService } from '~/services/agency.service'
 import { formatNumber } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
+import { usePermission } from '~/composables/usePermission'
 import {
   AGENCY_CHANNEL_LABELS,
   ATTR_SOURCE_LABELS,
@@ -315,6 +317,9 @@ definePageMeta({
   layout: 'admin',
   pageTitle: '담당판정확인'
 })
+
+// 메뉴권한(AGENCY_RESOLVE) — 자동 판정 재실행=등록, 수동 보정·자동으로 되돌리기=수정. 판정 보기·미리보기는 조회만으로 가능
+const { canWrite, canEdit, isViewOnly } = usePermission('AGENCY_RESOLVE')
 
 const activeTab = ref<'org' | 'preview'>('org')
 
@@ -395,6 +400,7 @@ const openResolve = (item: DemandOrgSalesAttr) => {
 const manualTarget = ref<DemandOrgSalesAttr | null>(null)
 
 const openManual = (item: DemandOrgSalesAttr) => {
+  if (!canEdit.value) { return }
   manualTarget.value = item
 }
 

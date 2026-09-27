@@ -12,7 +12,22 @@
       </template>
     </PageHeader>
 
-    <div class="content-section">
+    <!-- 권한 확인 전에는 폼도 안내도 띄우지 않는다 (잘못된 상태 깜빡임 방지) -->
+    <div v-if="!permissionReady" class="loading-message">
+      <i class="fas fa-spinner fa-spin" />
+      <p>권한을 확인하는 중...</p>
+    </div>
+
+    <div v-else-if="!canWrite" class="no-data-message">
+      <i class="fas fa-lock" />
+      <p>대리점 등록 권한이 없습니다</p>
+      <button class="btn-action btn-secondary no-auth-back" @click="goList">
+        <i class="fas fa-arrow-left" />
+        목록으로
+      </button>
+    </div>
+
+    <div v-else class="content-section">
       <AgencyForm mode="create" :saving="saving" @submit="handleCreate" @cancel="goList" />
     </div>
   </div>
@@ -23,11 +38,12 @@
  * 대리점 등록
  * - 등록이 끝나면 수정 화면으로 이동해 담당 권역·영업직원을 이어서 지정한다
  */
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from '#imports'
 import AgencyForm from '~/components/admin/agency/AgencyForm.vue'
 import { agencyService } from '~/services/agency.service'
 import { toApiError } from '~/utils/api-error'
+import { usePermission } from '~/composables/usePermission'
 import type { AgencyRequest } from '~/types/agency'
 
 definePageMeta({
@@ -37,6 +53,10 @@ definePageMeta({
 
 const router = useRouter()
 const saving = ref(false)
+
+// 메뉴권한(AGENCY) — 등록 권한이 없으면 폼 대신 안내 블록
+const { canWrite, initialized, isFullAccess } = usePermission('AGENCY')
+const permissionReady = computed(() => initialized.value || isFullAccess.value)
 
 const handleCreate = async (data: AgencyRequest) => {
   saving.value = true
@@ -53,3 +73,9 @@ const handleCreate = async (data: AgencyRequest) => {
 
 const goList = () => router.push('/admin/agency/list')
 </script>
+
+<style scoped>
+.no-auth-back {
+  margin-top: 1rem;
+}
+</style>

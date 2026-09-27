@@ -16,7 +16,7 @@
         <button type="button" class="btn-action btn-secondary" :disabled="loading" @click="loadStaff">
           <i class="fas fa-sync-alt" /> 새로고침
         </button>
-        <button type="button" class="btn-action btn-primary" @click="goAddStaff">
+        <button v-if="canWrite" type="button" class="btn-action btn-primary" @click="goAddStaff">
           <i class="fas fa-user-plus" /> 영업직원 추가
         </button>
       </div>
@@ -77,7 +77,8 @@ import { formatDateTime } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
 import type { AgencyStaff } from '~/types/agency'
 
-const props = defineProps<{ agencyId: number }>()
+// canWrite: «영업직원 추가» (메뉴권한 AGENCY — 수정 화면에서 넘겨준다. 계정 등록 자체는 사용자관리 권한이 따로 필요)
+const props = defineProps<{ agencyId: number, canWrite?: boolean }>()
 
 const router = useRouter()
 const staff = ref<AgencyStaff[]>([])

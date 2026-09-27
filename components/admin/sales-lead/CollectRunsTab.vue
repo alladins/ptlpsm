@@ -39,7 +39,7 @@
         </div>
       </div>
 
-      <div class="collect-action">
+      <div v-if="canCollect" class="collect-action">
         <label class="item-label" for="collect-window-days">기간(일)</label>
         <input
           id="collect-window-days"
@@ -148,7 +148,7 @@
       </div>
     </div>
 
-    <CollectImportPanel @imported="onImported" />
+    <CollectImportPanel v-if="canImport" @imported="onImported" />
   </div>
 </template>
 
@@ -169,7 +169,8 @@ import {
   type SalesCollectStatus
 } from '~/types/sales-lead'
 
-const props = defineProps<{ status: SalesCollectStatus | null }>()
+// canCollect: «지금 수집»(메뉴권한 SALES_LEAD 등록) / canImport: 붙여넣기 적재(시스템관리자 전용)
+const props = defineProps<{ status: SalesCollectStatus | null, canCollect?: boolean, canImport?: boolean }>()
 
 const emit = defineEmits<{ 'status-change': [status: SalesCollectStatus] }>()
 

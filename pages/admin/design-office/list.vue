@@ -5,6 +5,7 @@
       description="설계사무소(건축사사무소)를 회사로 등록하고 소재 시군구·신고번호를 관리합니다."
       icon="order"
       icon-color="blue"
+      :view-only="isViewOnly"
     >
       <template #actions>
         <button class="btn-action" :disabled="loading" @click="loadList">
@@ -16,7 +17,7 @@
           <i class="fas fa-undo" />
           초기화
         </button>
-        <button class="btn-action btn-primary" @click="openCreateModal">
+        <button v-if="canWrite" class="btn-action btn-primary" @click="openCreateModal">
           <i class="fas fa-plus" />
           등록
         </button>
@@ -111,13 +112,14 @@
       <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
         <div class="modal-content office-modal">
           <div class="modal-header">
-            <h3>{{ editingId !== null ? '설계사무소 수정' : '설계사무소 등록' }}</h3>
+            <h3>{{ modalReadonly ? '설계사무소 정보' : (editingId !== null ? '설계사무소 수정' : '설계사무소 등록') }}</h3>
             <button type="button" class="modal-close" @click="closeModal">
               <i class="fas fa-times" />
             </button>
           </div>
           <div class="modal-body">
-            <div class="form-row-2">
+            <!-- 저장 권한이 없으면(신규=등록, 기존=수정) 조회 전용으로 입력을 잠근다 -->
+            <fieldset class="form-row-2 form-fieldset" :disabled="modalReadonly">
               <div class="form-group span-2">
                 <label class="required">회사명</label>
                 <input v-model="form.companyName" type="text" class="form-input full" placeholder="예: (주)아키원 건축사사무소">
@@ -153,7 +155,7 @@
                 <label>주소</label>
                 <div class="input-with-button">
                   <input v-model="form.zipCode" type="text" class="form-input zip" readonly placeholder="우편번호">
-                  <button type="button" class="btn-secondary" @click="openPostalSearch">
+                  <button v-if="!modalReadonly" type="button" class="btn-secondary" @click="openPostalSearch">
                     <i class="fas fa-search" /> 우편번호 검색
                   </button>
                 </div>
@@ -186,13 +188,14 @@
                 <label>비고</label>
                 <textarea v-model="form.remarks" class="form-textarea full" rows="2" />
               </div>
-            </div>
+            </fieldset>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn-secondary" @click="closeModal">
-              취소
+              {{ modalReadonly ? '닫기' : '취소' }}
             </button>
             <GuardedButton
+              v-if="!modalReadonly"
               class="btn-primary"
               :blocked="!form.companyName.trim()"
               reason="회사명을 입력하세요."
@@ -220,12 +223,16 @@ import GuardedButton from '~/components/ui/GuardedButton.vue'
 import { designOfficeService, salesRegionService } from '~/services/agency.service'
 import { formatDate, formatBusinessNumberInput, formatPhoneNumberInput } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
+import { usePermission } from '~/composables/usePermission'
 import { SIDO_LIST, type DesignOffice, type Sigungu } from '~/types/agency'
 
 definePageMeta({
   layout: 'admin',
   pageTitle: '설계사무소관리'
 })
+
+// 메뉴권한(DESIGN_OFFICE) — 등록=등록 권한, 기존 수정=수정 권한 (영업담당자는 등록·수정 가능, 삭제 없음)
+const { canWrite, canEdit, isViewOnly } = usePermission('DESIGN_OFFICE')
 
 const offices = ref<DesignOffice[]>([])
 const allSigungu = ref<Sigungu[]>([])
@@ -292,6 +299,8 @@ const emptyForm = (): OfficeForm => ({
 
 const showModal = ref(false)
 const editingId = ref<number | null>(null)
+/** 모달 저장 가능 여부 — 신규는 등록 권한, 기존은 수정 권한. 둘 다 아니면 조회 전용 */
+const modalReadonly = computed(() => (editingId.value !== null ? !canEdit.value : !canWrite.value))
 const form = ref<OfficeForm>(emptyForm())
 const formSidoCd = ref('')
 
@@ -358,6 +367,7 @@ const openPostalSearch = () => {
 const blankToNull = (v: string) => (v.trim() ? v.trim() : null)
 
 const submit = async () => {
+  if (modalReadonly.value) { return }
   const f = form.value
   if (!f.companyName.trim()) { return }
   if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) {
@@ -407,6 +417,14 @@ onMounted(() => {
 
 .office-modal {
   max-width: 680px;
+}
+
+/* fieldset 기본 테두리·여백 제거 (조회 전용 잠금용) */
+.form-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
 }
 
 .form-row-2 {

@@ -3,6 +3,7 @@
     <PageHeader
       :title="agency ? `대리점 수정 — ${agency.companyName}` : '대리점 수정'"
       :description="agency ? `${agency.agencyCode} · ${codeLabel(AGENCY_CHANNEL_LABELS, agency.channel)}` : ''"
+      :view-only="isViewOnly"
     >
       <template #actions>
         <button class="btn-action btn-secondary" @click="goList">
@@ -12,7 +13,7 @@
       </template>
     </PageHeader>
 
-    <div v-if="loading" class="loading-message">
+    <div v-if="loading || !permissionReady" class="loading-message">
       <i class="fas fa-spinner fa-spin" />
       <p>대리점 정보를 불러오는 중...</p>
     </div>
@@ -23,11 +24,23 @@
     </div>
 
     <div v-else-if="agency" class="content-section">
-      <AgencyForm mode="edit" :initial-data="agency" :saving="saving" @submit="handleUpdate" @cancel="goList" />
+      <AgencyForm
+        mode="edit"
+        :initial-data="agency"
+        :saving="saving"
+        :readonly="!canEdit"
+        @submit="handleUpdate"
+        @cancel="goList"
+      />
 
       <div class="panel-stack">
-        <AgencyTerritoryPanel :agency-id="agencyId" @changed="reloadAgency" />
-        <AgencyStaffPanel :agency-id="agencyId" />
+        <AgencyTerritoryPanel
+          :agency-id="agencyId"
+          :can-write="canWrite"
+          :can-edit="canEdit"
+          @changed="reloadAgency"
+        />
+        <AgencyStaffPanel :agency-id="agencyId" :can-write="canWrite" />
       </div>
     </div>
   </div>
@@ -46,6 +59,7 @@ import AgencyTerritoryPanel from '~/components/admin/agency/AgencyTerritoryPanel
 import AgencyStaffPanel from '~/components/admin/agency/AgencyStaffPanel.vue'
 import { agencyService } from '~/services/agency.service'
 import { toApiError } from '~/utils/api-error'
+import { usePermission } from '~/composables/usePermission'
 import { AGENCY_CHANNEL_LABELS, codeLabel, type Agency, type AgencyRequest } from '~/types/agency'
 
 definePageMeta({
@@ -55,6 +69,10 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+
+// 메뉴권한(AGENCY) — 수정 권한 없으면 폼 읽기 전용, 권역 추가·영업직원 추가는 등록 권한, 종료일은 수정 권한
+const { canWrite, canEdit, isViewOnly, initialized, isFullAccess } = usePermission('AGENCY')
+const permissionReady = computed(() => initialized.value || isFullAccess.value)
 
 const agencyId = computed(() => Number(route.params.id))
 const agency = ref<Agency | null>(null)
