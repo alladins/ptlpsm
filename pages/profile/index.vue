@@ -949,6 +949,7 @@ const getRoleClass = (roleCode: string) => {
     SITE_MANAGER: 'role-site',
     SITE_INSPECTOR: 'role-inspector',
     SALES_MANAGER: 'role-sales',
+    AGENCY_SALES: 'role-agency',
     DELIVERY_DRIVER: 'role-driver',
     VIEWER: 'role-readonly'
   }
@@ -1263,6 +1264,7 @@ onMounted(async () => {
 .role-site { background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); color: #c2410c; }
 .role-inspector { background: linear-gradient(135deg, #a5f3fc 0%, #67e8f9 100%); color: #0e7490; }
 .role-sales { background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%); color: #1e40af; }
+.role-agency { background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%); color: #115e59; }
 .role-driver { background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%); color: #166534; }
 .role-readonly { background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%); color: #374151; }
 .role-default { background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%); color: #374151; }

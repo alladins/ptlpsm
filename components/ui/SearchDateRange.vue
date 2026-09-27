@@ -139,8 +139,9 @@ watch(() => [props.startDate, props.endDate], () => {
   flex-wrap: wrap;
 }
 
+/* «yyyy-MM-dd - yyyy-MM-dd» + 달력 아이콘이 딱 들어가는 폭 */
 .sdr-picker {
-  width: 250px;
+  width: 200px;
 }
 
 .sdr-presets {

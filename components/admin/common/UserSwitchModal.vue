@@ -194,6 +194,7 @@ const roleFilters = [
   { value: 'SITE_MANAGER', label: '시공사 담당자' },
   { value: 'SITE_INSPECTOR', label: '시공사 감리원' },
   { value: 'SALES_MANAGER', label: '영업 담당자' },
+  { value: 'AGENCY_SALES', label: '대리점 영업직원' },
   { value: 'DELIVERY_DRIVER', label: '운송기사' },
   { value: 'VIEWER', label: '조회 전용' }
 ]
@@ -207,6 +208,7 @@ function getRoleLabel (role: string | undefined | null): string {
     SITE_MANAGER: '시공사 담당자',
     SITE_INSPECTOR: '시공사 감리원',
     SALES_MANAGER: '영업 담당자',
+    AGENCY_SALES: '대리점 영업직원',
     DELIVERY_DRIVER: '운송기사',
     VIEWER: '조회 전용'
   }

@@ -627,6 +627,7 @@ const getRoleClass = (role: string) => {
     case 'SITE_MANAGER': return 'role-site-manager' // 파랑 - 시공사 담당자
     case 'SITE_INSPECTOR': return 'role-inspector' // 초록 - 시공사 감리원
     case 'SALES_MANAGER': return 'role-sales' // 남색 - 영업 담당자
+    case 'AGENCY_SALES': return 'role-agency' // 청록(짙은) - 대리점 영업직원
     case 'DELIVERY_DRIVER': return 'role-driver' // 청록 - 운송기사
     case 'VIEWER': return 'role-readonly' // 회색 - 조회 전용
     default: return 'role-default'
@@ -761,7 +762,7 @@ const closePasswordModal = () => {
 // 유효성 검사
 // 소속회사 필수 여부 (role에 따라 동적)
 const isCompanyRequired = computed(() => {
-  return ['SITE_MANAGER', 'SITE_INSPECTOR', 'OEM_MANAGER'].includes(userForm.value.role)
+  return ['SITE_MANAGER', 'SITE_INSPECTOR', 'OEM_MANAGER', 'AGENCY_SALES'].includes(userForm.value.role)
 })
 
 // 회사 간편 등록
@@ -854,9 +855,9 @@ const validateForm = (): boolean => {
   }
 
   // 소속회사 필수 검증 (시공사/OEM 관련 role)
-  const companyRequiredRoles = ['SITE_MANAGER', 'SITE_INSPECTOR', 'OEM_MANAGER']
+  const companyRequiredRoles = ['SITE_MANAGER', 'SITE_INSPECTOR', 'OEM_MANAGER', 'AGENCY_SALES']
   if (companyRequiredRoles.includes(userForm.value.role) && !userForm.value.companyId) {
-    alert('시공사 담당자, 시공사 감리원, OEM 담당자 권한은 소속회사 선택이 필수입니다.')
+    alert('시공사 담당자, 시공사 감리원, OEM 담당자, 대리점 영업직원 권한은 소속회사 선택이 필수입니다.')
     isValid = false
   }
 
@@ -999,11 +1000,39 @@ const loadCompanies = async () => {
 }
 
 // 초기 로드
-onMounted(() => {
-  loadUserRoles()
+onMounted(async () => {
   refresh()
-  loadCompanies()
+  await Promise.all([loadUserRoles(), loadCompanies()])
+  openAddModalFromQuery()
 })
+
+/**
+ * 다른 화면에서 «미리 채운 등록»으로 들어온 경우 (예: 대리점 화면의 «영업직원 추가»)
+ * ?openAdd=1&role=AGENCY_SALES&companyId=123 → 권한·소속회사를 채운 등록 모달을 연다.
+ * 권한·회사 목록이 로드된 뒤에 호출해야 select 에 값이 제대로 잡힌다.
+ */
+const route = useRoute()
+const openAddModalFromQuery = () => {
+  const query = route.query
+  if (query.openAdd !== '1') { return }
+
+  openAddModal()
+
+  const role = typeof query.role === 'string' ? query.role : ''
+  if (role && userRoles.value.some(r => r.code === role)) {
+    userForm.value.role = role
+  }
+
+  const companyId = Number(query.companyId)
+  if (Number.isFinite(companyId) && companyId > 0) {
+    if (companies.value.some(c => c.id === companyId)) {
+      userForm.value.companyId = companyId
+      onCompanyChange()
+    } else {
+      alert('소속회사 목록에서 해당 대리점을 찾지 못했습니다. 소속회사를 직접 선택해주세요.')
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -1087,6 +1116,7 @@ onMounted(() => {
 .role-site-manager { background: #2563eb; color: white; }    /* 파랑 - 시공사 담당자 (SITE_MANAGER) */
 .role-inspector { background: #059669; color: white; }       /* 초록 - 시공사 감리원 (SITE_INSPECTOR) */
 .role-sales { background: #1e40af; color: white; }           /* 남색 - 영업 담당자 (SALES_MANAGER) */
+.role-agency { background: #0f766e; color: white; }          /* 짙은 청록 - 대리점 영업직원 (AGENCY_SALES) */
 .role-driver { background: #0891b2; color: white; }          /* 청록 - 운송기사 (DELIVERY_DRIVER) */
 .role-readonly { background: #6b7280; color: white; }        /* 회색 - 조회 전용 (READ_ONLY) */
 .role-default { background: #f3f4f6; color: #374151; }       /* 기본 */
