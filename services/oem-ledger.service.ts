@@ -127,6 +127,29 @@ class OemLedgerService {
     setTimeout(() => window.URL.revokeObjectURL(url), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
   }
 
+  /** 제출된 지급요청서 PDF 내려받기 (반려 차수 포함) */
+  async downloadPaymentRequestPdf (paymentId: number, fileName: string): Promise<void> {
+    const response = await fetch(`${this.getBaseUrl()}/payment-request/${paymentId}/pdf`, {
+      headers: getAuthHeaders()
+    })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.message || `지급요청서 PDF 내려받기에 실패했습니다 (${response.status})`)
+    }
+    // 서버가 차수까지 넣은 파일명을 내려준다 (filename*=UTF-8''...) — 없으면 넘겨받은 이름
+    const disposition = response.headers.get('Content-Disposition') || ''
+    const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = encoded ? decodeURIComponent(encoded) : fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
+  }
+
   /** 첨부파일 삭제 (청구 전·반려 후에만) */
   async deleteAttachment (attachmentId: number): Promise<void> {
     const response = await fetch(`${this.getBaseUrl()}/attachments/${attachmentId}`, {

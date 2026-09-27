@@ -117,6 +117,12 @@ export interface TransferRequest {
   skuId?: string
   /** 이동 수량 (단일 이동 시) */
   quantity?: number
+  /**
+   * 이동일 — 실제로 물건을 옮긴 날 (YYYY-MM-DD).
+   * 창고이동은 출하·발주와 달리 날짜를 가져올 원천 문서가 없다.
+   * 안 보내면 서버가 «등록하는 날»로 기록하며, 과거 이동을 나중에 입력하면 FIFO 순서가 어긋난다.
+   */
+  moveDate?: string
   /** 비고 */
   remarks?: string
   /** 다중 품목 이동 */

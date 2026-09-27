@@ -72,7 +72,7 @@ export const ROLE_LIST: RoleInfo[] = [
   { roleCode: 'SITE_MANAGER', roleName: '시공사 담당자', description: '시공사 현장 담당자', sortOrder: 3 },
   { roleCode: 'SITE_INSPECTOR', roleName: '시공사 감리원', description: '시공사 감리 담당', sortOrder: 4 },
   { roleCode: 'DELIVERY_DRIVER', roleName: '운송기사', description: '배송/운송 담당', sortOrder: 5 },
-  { roleCode: 'SALES_MANAGER', roleName: '영업 담당자', description: '영업 업무 담당', sortOrder: 6 },
+  { roleCode: 'SALES_MANAGER', roleName: '영업 담당자', description: '영업 업무 담당 (리드파워 영업·대리점 직원 공통)', sortOrder: 6 },
   { roleCode: 'VIEWER', roleName: '조회 전용', description: '조회만 가능한 역할', sortOrder: 7 }
 ]
 

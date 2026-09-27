@@ -462,6 +462,22 @@ export const useAuthStore = defineStore('auth', () => {
           return false
         }
 
+        // ★ 이 검증은 plugins/api-interceptor.ts 가 fetch 를 가로채기 전에 불린다 (01.auth-init).
+        //   만료 임박이면 서버가 이 응답 헤더로 새 토큰을 주는데, 여기서 받지 않으면 새 토큰을 잃고
+        //   화면이 옛 토큰을 계속 써서 세션이 끊겼다 (2026-09-27). 가로채기와 같은 방식으로 저장한다.
+        const renewedAccess = response.headers.get('X-New-Access-Token')
+        if (renewedAccess && renewedAccess.trim() !== '') {
+          const renewedRefresh = response.headers.get('X-New-Refresh-Token')
+          accessToken.value = renewedAccess
+          tokenExpiry.value = Date.now() + ACCESS_TOKEN_VALIDITY_MS
+          safeStorage.setItem('auth_access_token', renewedAccess)
+          safeStorage.setItem('auth_token_expiry', tokenExpiry.value.toString())
+          if (renewedRefresh && renewedRefresh.trim() !== '') {
+            refreshToken.value = renewedRefresh
+            safeStorage.setItem('auth_refresh_token', renewedRefresh)
+          }
+        }
+
         const data = await response.json()
 
         // 서버에서 받은 사용자 정보로 업데이트

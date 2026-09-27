@@ -218,7 +218,7 @@
       <!-- 차트 영역 -->
       <div class="chart-section">
         <!-- OEM 제조사별 월별 제조원가 -->
-        <div class="chart-card chart-main">
+        <div class="chart-card chart-main" v-if="!isSalesRole">
           <h2>
             <i class="fas fa-industry" />
             OEM 제조사별 월별 제조원가
@@ -351,6 +351,7 @@ import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { getOemMonthlyChart, getShipmentStatistics } from '~/services/statistics.service'
 import { getCommissionPeriods } from '~/services/commission.service'
 import { orderService } from '~/services/order.service'
+import { useAuthStore } from '~/stores/auth'
 import type { ShipmentStatisticsResponse, OemChartData } from '~/types/statistics'
 import type { LowRemainingOrder } from '~/types/order'
 
@@ -385,6 +386,10 @@ const statistics = ref<ShipmentStatisticsResponse>({
   recentShipments: [],
   skuOrderStats: []
 })
+
+// 영업 역할(리드파워 영업·대리점 직원 공통)은 원가 차트를 보지 않는다 — 서버도 /statistics/oem 을 막는다 (2026-09-27)
+const authStore = useAuthStore()
+const isSalesRole = computed(() => authStore.user?.role === 'SALES_MANAGER')
 
 // OEM 차트 데이터
 const oemChartData = ref<OemChartData[]>([])
@@ -534,6 +539,7 @@ const recentActivities = ref([
 
 // OEM 차트 데이터 로드
 async function loadOemChartData () {
+  if (isSalesRole.value) { return }
   try {
     const currentYear = new Date().getFullYear()
     oemChartData.value = await getOemMonthlyChart(currentYear)

@@ -22,7 +22,8 @@
             <option value="LOW">여유</option>
           </select>
         </div>
-        <div class="search-item">
+        <!-- 현장 목록 API 는 영업 역할에게 닫혀 있다 (모바일 접속 토큰 포함) -->
+        <div v-if="!isSalesRole" class="search-item">
           <label>현장:</label>
           <select v-model.number="filters.siteId" class="status-select" @change="search">
             <option :value="undefined">전체</option>
@@ -132,6 +133,7 @@ import { formatDate, formatDateTime } from '~/utils/format'
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useMobileOrderRequestStore } from '~/stores/mobileOrderRequest'
 import { useSiteStore } from '~/stores/site'
+import { useAuthStore } from '~/stores/auth'
 import {
   URGENCY_DISPLAY,
   REQUEST_STATUS_DISPLAY,
@@ -144,6 +146,8 @@ const emit = defineEmits<{ (e: 'pending-count', n: number): void }>()
 
 const store = useMobileOrderRequestStore()
 const siteStore = useSiteStore()
+const authStore = useAuthStore()
+const isSalesRole = computed(() => authStore.user?.role === 'SALES_MANAGER')
 
 const filters = reactive({
   keyword: '',
@@ -203,7 +207,9 @@ function statusBadge(s: OrderRequestStatus) { return REQUEST_STATUS_DISPLAY[s]?.
 
 
 onMounted(async () => {
-  await siteStore.fetchList({ size: 200, active: true })
+  if (!isSalesRole.value) {
+    await siteStore.fetchList({ size: 200, active: true })
+  }
   await loadList(1)
 })
 </script>

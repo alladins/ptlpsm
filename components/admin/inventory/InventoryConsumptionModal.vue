@@ -250,16 +250,18 @@ const preview = ref<LotAllocation | null>(null)
 const loadingPreview = ref(false)
 let previewTimer: ReturnType<typeof setTimeout> | null = null
 let previewSeq = 0
-watch(() => [form.value.warehouseId, form.value.skuId, form.value.quantity, props.modelValue], () => {
+// 소진일이 바뀌어도 다시 계산한다 — 원가가 «그 날짜 시점에 남아 있던 로트」로 정해지기 때문이다
+watch(() => [form.value.warehouseId, form.value.skuId, form.value.quantity, form.value.consumptionDate, props.modelValue], () => {
   if (previewTimer) { clearTimeout(previewTimer) }
   preview.value = null
-  const { warehouseId, skuId, quantity } = form.value
+  const { warehouseId, skuId, quantity, consumptionDate } = form.value
   if (!props.modelValue || !warehouseId || !skuId || !quantity || quantity <= 0 || !Number.isInteger(quantity)) { return }
   loadingPreview.value = true
   const seq = ++previewSeq
   previewTimer = setTimeout(async () => {
     try {
-      const res = await inventoryConsumptionService.fifoPreview(warehouseId, skuId, quantity)
+      // 확정도 소진일 기준으로 계산하므로 같은 날짜를 보내야 화면과 결과가 일치한다
+      const res = await inventoryConsumptionService.fifoPreview(warehouseId, skuId, quantity, consumptionDate)
       if (seq === previewSeq) { preview.value = res }
     } catch (e) {
       console.error('원가 미리보기 실패:', e)

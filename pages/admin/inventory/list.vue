@@ -632,6 +632,19 @@
             </div>
 
             <div class="form-group">
+              <label class="form-label required">이동일</label>
+              <input
+                v-model="transferForm.moveDate"
+                type="date"
+                class="form-input"
+              >
+              <small class="form-hint">
+                실제로 물건을 옮긴 날입니다. 재고 원가(FIFO)를 이 날짜 순서로 계산하므로,
+                지난 날짜의 이동을 뒤늦게 입력할 때는 꼭 그날로 맞춰 주세요.
+              </small>
+            </div>
+
+            <div class="form-group">
               <label class="form-label">비고</label>
               <input
                 v-model="transferForm.remarks"
@@ -675,7 +688,7 @@ import type { LotAllocation } from '~/types/inventory-lot'
 import type { InventoryItem, InventoryTransaction, TransferRequest, SkuTransactionSummary, InventoryOrigin } from '~/types/inventory'
 import { TRANSACTION_TYPE_LABELS, TRANSACTION_TYPE_COLORS } from '~/types/inventory'
 import type { Warehouse } from '~/types/warehouse'
-import { formatDate, formatDateTime, getSearchStartDate, getSearchEndDate } from '~/utils/format'
+import { formatDate, formatDateTime, getSearchStartDate, getSearchEndDate, getLocalDateString } from '~/utils/format'
 import { usePermission } from '~/composables/usePermission'
 import { useDataTable } from '~/composables/useDataTable'
 
@@ -1110,6 +1123,8 @@ const transferableItems = ref<TransferableItem[]>([])
 const transferForm = ref({
   fromWarehouseId: 0,
   toWarehouseId: 0,
+  // 이동일 기본값 = 오늘. 과거 이동을 입력할 때는 실제 옮긴 날로 바꿔야 한다
+  moveDate: getLocalDateString(),
   remarks: ''
 })
 
@@ -1186,7 +1201,7 @@ const onFromWarehouseChange = async () => {
 }
 
 const openTransferModal = () => {
-  transferForm.value = { fromWarehouseId: 0, toWarehouseId: 0, remarks: '' }
+  transferForm.value = { fromWarehouseId: 0, toWarehouseId: 0, moveDate: getLocalDateString(), remarks: '' }
   transferableItems.value = []
   transferPreviews.value = {}
   showTransferModal.value = true
@@ -1208,6 +1223,11 @@ const handleTransfer = async () => {
   }
   if (transferForm.value.fromWarehouseId === transferForm.value.toWarehouseId) {
     alert('출발 창고와 도착 창고가 같을 수 없습니다.')
+    return
+  }
+  // 이동일은 재고 원가(FIFO) 계산 순서를 정한다. 비면 서버가 «오늘»로 넣어 과거 이동이 어긋난다.
+  if (!transferForm.value.moveDate) {
+    alert('이동일을 입력해주세요. 실제로 물건을 옮긴 날짜여야 합니다.')
     return
   }
 
@@ -1240,6 +1260,7 @@ const handleTransfer = async () => {
     await inventoryService.processTransfer({
       fromWarehouseId: transferForm.value.fromWarehouseId,
       toWarehouseId: transferForm.value.toWarehouseId,
+      moveDate: transferForm.value.moveDate,
       remarks: transferForm.value.remarks,
       items: itemsToTransfer
     })
@@ -1568,6 +1589,15 @@ onMounted(async () => {
   margin-top: 4px;
   font-size: 0.8rem;
   color: #dc2626;
+}
+
+/* 입력칸 아래 안내 문구 — 이동일처럼 «왜 정확해야 하는지» 를 알려야 하는 칸에 쓴다 */
+.form-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #6b7280;
 }
 
 /* 품목별 그룹핑 테이블 */
