@@ -7,7 +7,8 @@
 -->
 <template>
   <form class="agency-form" @submit.prevent="handleSubmit">
-    <div class="form-two-column">
+    <!-- readonly(수정 권한 없음)면 fieldset 째로 입력을 막는다 -->
+    <fieldset class="form-two-column form-fieldset" :disabled="readonly">
       <!-- 회사 정보 -->
       <div class="info-group">
         <div class="info-group-header">
@@ -57,7 +58,7 @@
           <FormField label="우편번호">
             <div class="input-with-button">
               <input v-model="formData.zipCode" type="text" class="form-input" readonly placeholder="우편번호">
-              <button type="button" class="btn-secondary" @click="openPostalSearch">
+              <button v-if="!readonly" type="button" class="btn-secondary" @click="openPostalSearch">
                 <i class="fas fa-search" /> 우편번호 검색
               </button>
             </div>
@@ -112,7 +113,7 @@
                 :class="{ error: errors.agencyCode }"
                 placeholder="AG-061-01"
               >
-              <button type="button" class="btn-secondary" @click="openSuggestModal">
+              <button v-if="!readonly" type="button" class="btn-secondary" @click="openSuggestModal">
                 <i class="fas fa-magic" /> 코드 제안
               </button>
             </div>
@@ -136,13 +137,13 @@
           </FormField>
         </div>
       </div>
-    </div>
+    </fieldset>
 
     <div class="form-actions">
       <button type="button" class="btn-secondary" @click="$emit('cancel')">
         <i class="fas fa-times" /> 취소
       </button>
-      <button type="submit" class="btn-primary" :disabled="saving">
+      <button v-if="!readonly" type="submit" class="btn-primary" :disabled="saving">
         <i v-if="saving" class="fas fa-spinner fa-spin" />
         <i v-else class="fas fa-save" />
         {{ mode === 'create' ? '등록' : '저장' }}
@@ -228,11 +229,14 @@ interface Props {
   mode: 'create' | 'edit'
   initialData?: Agency | null
   saving?: boolean
+  /** 읽기 전용 (메뉴권한상 수정 권한이 없을 때) — 입력 잠금 + 저장 버튼 숨김 */
+  readonly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   initialData: null,
-  saving: false
+  saving: false,
+  readonly: false
 })
 
 const emit = defineEmits<{
@@ -375,6 +379,7 @@ const validate = (): boolean => {
 const blankToNull = (v: string | null) => (v && v.trim() ? v.trim() : null)
 
 const handleSubmit = () => {
+  if (props.readonly) { return }
   if (!validate()) { return }
   const f = formData.value
   emit('submit', {
@@ -408,6 +413,14 @@ onMounted(loadRegions)
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   align-items: start;
+}
+
+/* fieldset 기본 테두리·여백 제거 (레이아웃은 form-two-column 그대로) */
+.form-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
 }
 
 .input-with-button {

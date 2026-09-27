@@ -3,6 +3,7 @@
     <PageHeader
       title="권역관리"
       description="영업 권역을 만들고 각 말단 권역에 시군구를 넣고 뺍니다. 대리점 담당은 말단 권역에 지정됩니다."
+      :view-only="isViewOnly"
     >
       <template #actions>
         <button
@@ -17,7 +18,7 @@
         <button class="btn-action btn-secondary" :disabled="loading" @click="reloadAll">
           <i class="fas fa-sync-alt" /> 새로고침
         </button>
-        <button class="btn-action btn-primary" @click="openCreateModal(null)">
+        <button v-if="canWrite" class="btn-action btn-primary" @click="openCreateModal(null)">
           <i class="fas fa-plus" /> 권역 추가
         </button>
       </template>
@@ -131,6 +132,7 @@
             </span>
             <div class="head-actions">
               <GuardedButton
+                v-if="canWrite"
                 class="btn-action btn-secondary"
                 :blocked="!!addChildBlockReason"
                 :reason="addChildBlockReason"
@@ -138,11 +140,11 @@
               >
                 <i class="fas fa-level-down-alt" /> 하위 권역 추가
               </GuardedButton>
-              <button class="btn-action btn-secondary" @click="openEditModal(selectedRegion)">
+              <button v-if="canEdit" class="btn-action btn-secondary" @click="openEditModal(selectedRegion)">
                 <i class="fas fa-edit" /> 수정
               </button>
               <GuardedButton
-                v-if="selectedRegion.useYn === 'Y'"
+                v-if="selectedRegion.useYn === 'Y' && canDelete"
                 class="btn-action btn-delete"
                 :blocked="!!retireBlockReason"
                 :reason="retireBlockReason"
@@ -152,7 +154,7 @@
                 <i class="fas fa-ban" /> 폐지
               </GuardedButton>
               <button
-                v-else
+                v-else-if="selectedRegion.useYn !== 'Y' && canEdit"
                 class="btn-action btn-secondary"
                 :disabled="saving"
                 @click="restoreRegion(selectedRegion)"
@@ -219,7 +221,7 @@
               <span class="text-muted">
                 체크 = 이 권역 소속. 다른 권역 소속을 체크하면 저장할 때 이 권역으로 <strong>옮겨집니다</strong>.
               </span>
-              <div class="toolbar-actions">
+              <div v-if="canEdit" class="toolbar-actions">
                 <button type="button" class="btn-action btn-secondary" @click="checkAllUnassignedInSido">
                   이 시도 미배정 모두 체크
                 </button>
@@ -237,7 +239,12 @@
                   other: !!s.regionId && s.regionId !== selectedRegion.regionId
                 }"
               >
-                <input type="checkbox" :checked="!!draft[s.sigunguCd]" @change="onToggle(s, $event)">
+                <input
+                  type="checkbox"
+                  :checked="!!draft[s.sigunguCd]"
+                  :disabled="!canEdit"
+                  @change="onToggle(s, $event)"
+                >
                 <span class="sg-name">{{ shortSigunguName(s) }}</span>
                 <span v-if="s.regionId && s.regionId !== selectedRegion.regionId" class="sg-region">{{ s.regionName }}</span>
                 <span v-else-if="!s.regionId" class="sg-region unassigned">미배정</span>
@@ -254,10 +261,17 @@
                   바뀐 내용 없음 · 현재 시군구 {{ selectedRegion.sigunguCount }}곳
                 </template>
               </span>
-              <button type="button" class="btn-action btn-secondary" :disabled="!hasChanges || saving" @click="resetDraft">
+              <button
+                v-if="canEdit"
+                type="button"
+                class="btn-action btn-secondary"
+                :disabled="!hasChanges || saving"
+                @click="resetDraft"
+              >
                 되돌리기
               </button>
               <GuardedButton
+                v-if="canEdit"
                 class="btn-action btn-primary"
                 :blocked="!hasChanges"
                 reason="바뀐 시군구가 없습니다. 체크를 바꾼 뒤 저장하세요."
@@ -408,6 +422,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import GuardedButton from '~/components/ui/GuardedButton.vue'
 import { salesRegionService } from '~/services/agency.service'
 import { toApiError } from '~/utils/api-error'
+import { usePermission } from '~/composables/usePermission'
 import {
   AGENCY_CHANNEL_LABELS,
   SIDO_LIST,
@@ -422,6 +437,9 @@ definePageMeta({
   layout: 'admin',
   pageTitle: '권역관리'
 })
+
+// 메뉴권한(SALES_REGION) — 추가=등록, 수정·복원·시군구 편집=수정, 폐지=삭제
+const { canWrite, canEdit, canDelete, isViewOnly } = usePermission('SALES_REGION')
 
 const regions = ref<SalesRegion[]>([])
 const allSigungu = ref<Sigungu[]>([])

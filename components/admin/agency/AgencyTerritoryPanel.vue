@@ -12,7 +12,7 @@
         <span>담당 권역</span>
         <span class="panel-count">{{ territories.length }}건</span>
       </div>
-      <button type="button" class="btn-action btn-primary" @click="openAddModal">
+      <button v-if="canWrite" type="button" class="btn-action btn-primary" @click="openAddModal">
         <i class="fas fa-plus" /> 담당 권역 추가
       </button>
     </div>
@@ -34,7 +34,9 @@
             <th>담당 기간</th>
             <th>비고</th>
             <th>등록</th>
-            <th>관리</th>
+            <th v-if="canEdit">
+              관리
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -55,7 +57,7 @@
               {{ formatDate(t.createdAt) }}
               <span v-if="t.createdBy" class="text-muted">· {{ t.createdBy }}</span>
             </td>
-            <td>
+            <td v-if="canEdit">
               <GuardedButton
                 type="button"
                 class="btn-action btn-secondary btn-mini"
@@ -180,7 +182,8 @@ import { formatDate } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
 import { todayKst, type SalesRegion, type Territory } from '~/types/agency'
 
-const props = defineProps<{ agencyId: number }>()
+// canWrite: «담당 권역 추가» / canEdit: «종료일 입력·변경» (메뉴권한 AGENCY — 수정 화면에서 넘겨준다)
+const props = defineProps<{ agencyId: number, canWrite?: boolean, canEdit?: boolean }>()
 const emit = defineEmits<{ changed: [] }>()
 
 const territories = ref<Territory[]>([])

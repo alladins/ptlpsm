@@ -5,6 +5,7 @@
       description="지자체·교육청 대리점과 담당 권역, 소속 영업직원을 관리합니다."
       icon="order"
       icon-color="blue"
+      :view-only="isViewOnly"
     >
       <template #actions>
         <button class="btn-action" :disabled="loading" @click="loadAgencies">
@@ -16,7 +17,7 @@
           <i class="fas fa-undo" />
           초기화
         </button>
-        <button class="btn-action btn-primary" @click="goRegister">
+        <button v-if="canWrite" class="btn-action btn-primary" @click="goRegister">
           <i class="fas fa-plus" />
           등록
         </button>
@@ -157,6 +158,7 @@ import { useRouter } from '#imports'
 import { agencyService, salesRegionService } from '~/services/agency.service'
 import { formatDate } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
+import { usePermission } from '~/composables/usePermission'
 import {
   AGENCY_CHANNEL_LABELS,
   AGENCY_STATUS_BADGE,
@@ -172,6 +174,8 @@ definePageMeta({
 })
 
 const router = useRouter()
+// 메뉴권한(AGENCY) — 등록 버튼은 등록 권한이 있을 때만
+const { canWrite, isViewOnly } = usePermission('AGENCY')
 
 const agencies = ref<Agency[]>([])
 const regions = ref<SalesRegion[]>([])
