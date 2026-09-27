@@ -117,7 +117,9 @@ const load = async () => {
   try {
     groups.value = await salesLeadService.digest(date.value || undefined) || []
   } catch (e) {
-    alert(toApiError(e).message)
+    const err = toApiError(e)
+    // 세션 만료(401·403)는 로그인 화면으로 넘어가므로 목록 불러오기 실패 팝업을 띄우지 않는다
+    if (err.status !== 401 && err.status !== 403) { alert(err.message) }
   } finally {
     loading.value = false
   }
