@@ -1,5 +1,5 @@
 <template>
-  <div class="sales-register">
+  <div class="sales-register m-form">
     <!-- 페이지 헤더 -->
     <PageHeader
       title="영업 등록"
@@ -18,13 +18,9 @@
         <!-- 고객 정보 (펼침) -->
         <AccordionSection title="고객 정보" :default-expanded="true">
           <div class="info-grid grid-2">
-            <FormField label="수요기관" required :error="errors.dminsttCd">
-              <!-- 입력하면 바로 검색해서 고른다 (팝업 없음 — 휴대폰·태블릿에서 영업 현장 입력) -->
-              <DemandOrgPicker
-                :selected-name="formData.dminsttCd ? formData.dminsttNm : ''"
-                @selected="handleOrganizationSelected"
-                @cleared="formData.dminsttCd = ''; formData.dminsttNm = ''"
-              />
+            <FormField label="고객 소속" required :error="errors.dminsttNm">
+              <!-- 수요기관 / 조달업체 / 기타 — 입력하면 바로 검색해서 고른다 (팝업 없음 — 휴대폰·태블릿에서 영업 현장 입력) -->
+              <CustomerOrgPicker v-model="customerOrg" />
             </FormField>
 
             <FormField label="담당자명" required :error="errors.customerNm">
@@ -35,9 +31,13 @@
                   class="form-input"
                   placeholder="담당자명을 입력하세요"
                 >
-                <BusinessCardSelector
+                <!-- 명함에서 고르기 — 팝업 대신 바로 아래에 펼친다 -->
+                <BusinessCardPicker
+                  :org-type="formData.orgType"
                   :dminstt-cd="formData.dminsttCd"
-                  @card-selected="handleCardSelected"
+                  :company-id="formData.companyId"
+                  :org-name="formData.dminsttNm"
+                  @selected="handleCardSelected"
                 />
               </div>
             </FormField>
@@ -244,14 +244,14 @@ import { usePermission } from '~/composables/usePermission'
 import { formatPhoneNumberInput } from '~/utils/format'
 import { salesService, type SalesRequest } from '~/services/sales.service'
 import { salesActivityService } from '~/services/sales-activity.service'
-import { type DemandOrganization } from '~/services/demand-organization.service'
+import CustomerOrgPicker from '~/components/CustomerOrgPicker.vue'
+import BusinessCardPicker from '~/components/BusinessCardPicker.vue'
 import { type SalesActivityRequest, VISIT_PURPOSE_OPTIONS, ACTIVITY_TYPE_OPTIONS } from '~/types/sales'
-import BusinessCardSelector from '~/components/admin/BusinessCardSelector.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import AccordionSection from '~/components/admin/forms/AccordionSection.vue'
 import SalesProgressStepper from '~/components/admin/SalesProgressStepper.vue'
 import { useSalesStatus } from '~/composables/useSalesStatus'
-import { type BusinessCardResponse } from '~/services/business-card.service'
+import { type BusinessCardResponse, type CustomerOrgValue, type OrgType } from '~/services/business-card.service'
 
 definePageMeta({
   layout: 'admin',
@@ -294,6 +294,9 @@ const defaultFormData: SalesRequest = {
   expectedDeliveryDeadline: '',
   dminsttCd: '',
   dminsttNm: '',
+  orgType: 'DEMAND_ORG',
+  companyId: null,
+  orgBizno: null,
   remark: ''
 }
 
@@ -330,7 +333,7 @@ const { formData, submitting, submit, goBack, reset } = useRegisterForm<SalesReq
 const { errors, validateField, validateAll, clearErrors, rules } = useFormValidation({
   customerNm: '',
   salesTitle: '',
-  dminsttCd: '',
+  dminsttNm: '',
   customerTel: '',
   customerEmail: ''
 })
@@ -392,16 +395,35 @@ onMounted(async () => {
 })
 
 // 수요기관 선택
-const handleOrganizationSelected = (organization: DemandOrganization) => {
-  formData.dminsttCd = organization.dminsttCd
-  formData.dminsttNm = organization.dminsttNm
-}
+/** 고객 소속 한 묶음 — CustomerOrgPicker 와 formData 의 칸을 잇는다 */
+const customerOrg = computed<CustomerOrgValue>({
+  get: () => ({
+    orgType: (formData.orgType || 'DEMAND_ORG') as OrgType,
+    dminsttCd: formData.dminsttCd || '',
+    dminsttNm: formData.dminsttNm || '',
+    companyId: formData.companyId ?? null,
+    orgBizno: formData.orgBizno ?? null
+  }),
+  set: (v) => {
+    formData.orgType = v.orgType
+    formData.dminsttCd = v.dminsttCd
+    formData.dminsttNm = v.dminsttNm
+    formData.companyId = v.companyId
+    formData.orgBizno = v.orgBizno
+  }
+})
 
 // 명함 선택 → 수요기관 + 담당자 정보 자동 채움
 const handleCardSelected = (card: BusinessCardResponse) => {
-  if (card.dminsttCd) {
-    formData.dminsttCd = card.dminsttCd
-    formData.dminsttNm = card.dminsttNm || ''
+  // 고객 소속을 아직 안 골랐으면 명함의 소속을 그대로 쓴다
+  if (!formData.dminsttNm && card.dminsttNm) {
+    customerOrg.value = {
+      orgType: (card.orgType || (card.dminsttCd ? 'DEMAND_ORG' : 'ETC')) as OrgType,
+      dminsttCd: card.dminsttCd || '',
+      dminsttNm: card.dminsttNm,
+      companyId: card.companyId ?? null,
+      orgBizno: card.orgBizno ?? null
+    }
   }
   formData.customerNm = card.contactNm || ''
   formData.customerTel = card.contactTel || ''
@@ -463,7 +485,7 @@ const handleSubmit = async () => {
   const validationRules = {
     customerNm: [rules.required('담당자명')],
     salesTitle: [rules.required('사업명')],
-    dminsttCd: [rules.required('수요기관')]
+    dminsttNm: [rules.required('고객 소속')]
   }
 
   if (!validateAll(formData, validationRules)) {
@@ -568,6 +590,7 @@ const handleReset = () => {
 
 .input-with-card-btn {
   display: flex;
+  flex-wrap: wrap; /* 명함 목록(BusinessCardPicker)이 입력칸 아래 한 줄로 펼쳐지게 */
   gap: 0.5rem;
   align-items: flex-start;
 }

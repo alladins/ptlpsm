@@ -100,7 +100,28 @@
         <p>조건에 맞는 수집 결과가 없습니다.</p>
       </div>
       <div v-else class="table-container">
-        <table class="data-table">
+        <!-- 휴대폰: 카드 — 누르면 상세 -->
+        <ul class="m-card-list m-narrow-only">
+          <li v-for="item in items" :key="`c-${item.leadId}`">
+            <button type="button" class="m-card" @click="openDetail(item)">
+              <div class="m-card-head">
+                <span class="m-card-title">{{ item.title || '-' }}</span>
+                <LeadKindBadge :kind="item.projectKind || item.leadKind" />
+              </div>
+              <div class="m-card-meta">
+                <span class="stage-badge" :class="`stage-${leadStage(item)}`">{{ LEAD_STAGE_LABELS[leadStage(item)] }}</span>
+                {{ item.dminsttNm || '-' }}
+              </div>
+              <div class="m-card-meta">
+                {{ item.winnerNm || '-' }} · {{ item.amount === null || item.amount === undefined ? '-' : formatNumber(item.amount) + '원' }} · {{ item.eventDate || '-' }}
+              </div>
+              <div class="m-card-meta">
+                {{ item.agencyId ? (item.agencyName || '-') : codeLabel(RESOLVE_STATUS_LABELS, item.resolveStatus) }}
+              </div>
+            </button>
+          </li>
+        </ul>
+        <table class="data-table m-wide-only">
           <thead>
             <tr>
               <th>첫 수집일</th>

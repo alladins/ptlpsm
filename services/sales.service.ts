@@ -22,7 +22,11 @@ export interface Sales {
   contractFileNm?: string
   contractFileSize?: number
   dminsttCd?: string // 수요기관코드
-  dminsttNm?: string // 수요기관명
+  dminsttNm?: string // 고객 소속명 (수요기관명·업체명)
+  /** 고객 소속 구분 DEMAND_ORG / SUPPLIER / ETC (V3.34.0) */
+  orgType?: 'DEMAND_ORG' | 'SUPPLIER' | 'ETC'
+  companyId?: number | null
+  orgBizno?: string | null
   delYn?: string // 삭제여부
   useYn: string
   createdBy: string
@@ -69,7 +73,11 @@ export interface SalesRequest {
   expectedDeliveryDate?: string // 예상납품요구일
   expectedDeliveryDeadline?: string // 예상상납품기한
   dminsttCd?: string // 수요기관코드
-  dminsttNm?: string // 수요기관명
+  dminsttNm?: string // 고객 소속명 (수요기관명·업체명)
+  /** 고객 소속 구분 DEMAND_ORG / SUPPLIER / ETC (V3.34.0) */
+  orgType?: 'DEMAND_ORG' | 'SUPPLIER' | 'ETC'
+  companyId?: number | null
+  orgBizno?: string | null
   remark?: string
   useYn?: string
 }
@@ -85,7 +93,11 @@ export interface SalesUpdateRequest {
   expectedDeliveryDate?: string // 예상납품요구일
   expectedDeliveryDeadline?: string // 예상납품기한
   dminsttCd?: string // 수요기관코드
-  dminsttNm?: string // 수요기관명
+  dminsttNm?: string // 고객 소속명 (수요기관명·업체명)
+  /** 고객 소속 구분 DEMAND_ORG / SUPPLIER / ETC (V3.34.0) */
+  orgType?: 'DEMAND_ORG' | 'SUPPLIER' | 'ETC'
+  companyId?: number | null
+  orgBizno?: string | null
   useYn?: string
   remark?: string
 }
@@ -138,23 +150,23 @@ export const salesService = {
   /**
    * API 연결 상태 확인
    */
-  async checkApiConnection(): Promise<boolean> {
+  async checkApiConnection (): Promise<boolean> {
     try {
       const baseUrl = apiEnvironment.getApiBaseUrl()
       console.log('🔍 영업관리 API 연결 확인:', baseUrl)
-      
+
       // 영업관리 API 엔드포인트
       const testUrl = `${SALES_ENDPOINTS.list()}?page=0&size=1`
       console.log('📡 테스트 URL:', testUrl)
-      
+
       try {
         const response = await fetch(testUrl, {
           method: 'GET',
-          headers: getAuthHeaders(),
+          headers: getAuthHeaders()
         })
-        
+
         console.log('📊 API 응답 상태:', response.status, response.statusText)
-        
+
         if (response.ok) {
           console.log('✅ 영업관리 API 연결 성공')
           return true
@@ -179,19 +191,19 @@ export const salesService = {
   /**
    * 영업관리 목록 조회
    */
-  async getSalesList(params: SalesSearchRequest = {}): Promise<SalesListResponse> {
+  async getSalesList (params: SalesSearchRequest = {}): Promise<SalesListResponse> {
     try {
       const baseUrl = apiEnvironment.getApiBaseUrl()
       console.log('🔍 영업관리 목록 조회 시작:', baseUrl)
 
       const queryParams = new URLSearchParams()
-      
+
       // 검색 파라미터 추가
-      if (params.keyword) queryParams.append('keyword', params.keyword)
-      if (params.customerNm) queryParams.append('customerNm', params.customerNm)
-      if (params.salesTitle) queryParams.append('salesTitle', params.salesTitle)
-      if (params.salesStatus) queryParams.append('salesStatus', params.salesStatus)
-      
+      if (params.keyword) { queryParams.append('keyword', params.keyword) }
+      if (params.customerNm) { queryParams.append('customerNm', params.customerNm) }
+      if (params.salesTitle) { queryParams.append('salesTitle', params.salesTitle) }
+      if (params.salesStatus) { queryParams.append('salesStatus', params.salesStatus) }
+
       // 날짜 형식 처리 (YYYY-MM-DD 그대로 전달, UTC 변환 방지)
       if (params.expectedDeliveryDateFrom) {
         queryParams.append('expectedDeliveryDateFrom', params.expectedDeliveryDateFrom)
@@ -205,9 +217,9 @@ export const salesService = {
       if (params.expectedDeliveryDeadlineTo) {
         queryParams.append('expectedDeliveryDeadlineTo', params.expectedDeliveryDeadlineTo)
       }
-      
-      if (params.useYn) queryParams.append('useYn', params.useYn)
-      
+
+      if (params.useYn) { queryParams.append('useYn', params.useYn) }
+
       // 페이징 파라미터 기본값 처리
       const page = params.page !== undefined ? params.page : 0
       const size = params.size !== undefined ? params.size : 10
@@ -216,10 +228,10 @@ export const salesService = {
 
       const url = `${SALES_ENDPOINTS.list()}?${queryParams.toString()}`
       console.log('📡 영업관리 목록 조회 URL:', url)
-      
+
       const response = await fetch(url, {
         method: 'GET',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders()
       })
 
       console.log('📊 영업관리 목록 조회 응답:', response.status, response.statusText)
@@ -236,9 +248,7 @@ export const salesService = {
 
       const result = await response.json()
       console.log('✅ 영업관리 목록 조회 성공:', result)
-      
-      
-      
+
       return result
     } catch (error) {
       console.error('🚨 영업관리 목록 조회 오류:', error)
@@ -253,13 +263,13 @@ export const salesService = {
   /**
    * 영업관리 상세 조회
    */
-  async getSalesById(id: number): Promise<Sales> {
+  async getSalesById (id: number): Promise<Sales> {
     try {
       const url = SALES_ENDPOINTS.detail(id)
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -267,8 +277,6 @@ export const salesService = {
       }
 
       const result = await response.json()
-      
-      
 
       return result
     } catch (error) {
@@ -280,13 +288,13 @@ export const salesService = {
   /**
    * 영업관리 등록
    */
-  async createSales(salesData: SalesRequest): Promise<Sales> {
+  async createSales (salesData: SalesRequest): Promise<Sales> {
     try {
       const url = SALES_ENDPOINTS.create()
 
       // 날짜는 YYYY-MM-DD 그대로 전달 (UTC 변환 방지)
       const processedData = {
-        ...salesData,
+        ...salesData
       }
 
       console.log('📡 영업관리 등록 요청 URL:', url)
@@ -297,11 +305,11 @@ export const salesService = {
         hasDminsttNm: 'dminsttNm' in processedData,
         dminsttNmType: typeof processedData.dminsttNm
       })
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(processedData),
+        body: JSON.stringify(processedData)
       })
 
       console.log('📊 영업관리 등록 응답:', response.status, response.statusText)
@@ -318,7 +326,7 @@ export const salesService = {
 
       const result = await response.json()
       console.log('✅ 영업관리 등록 성공:', result)
-      
+
       return result
     } catch (error) {
       console.error('🚨 영업관리 등록 오류:', error)
@@ -333,13 +341,13 @@ export const salesService = {
   /**
    * 영업관리 수정
    */
-  async updateSales(id: number, salesData: SalesUpdateRequest): Promise<Sales> {
+  async updateSales (id: number, salesData: SalesUpdateRequest): Promise<Sales> {
     try {
       const url = SALES_ENDPOINTS.update(id)
 
       // 날짜는 YYYY-MM-DD 그대로 전달 (UTC 변환 방지)
       const processedData = {
-        ...salesData,
+        ...salesData
       }
 
       console.log('📡 영업관리 수정 요청 URL:', url)
@@ -350,11 +358,11 @@ export const salesService = {
         hasDminsttNm: 'dminsttNm' in processedData,
         dminsttNmType: typeof processedData.dminsttNm
       })
-      
+
       const response = await fetch(url, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(processedData),
+        body: JSON.stringify(processedData)
       })
 
       console.log('📊 영업관리 수정 응답:', response.status, response.statusText)
@@ -371,7 +379,7 @@ export const salesService = {
 
       const result = await response.json()
       console.log('✅ 영업관리 수정 성공:', result)
-      
+
       return result
     } catch (error) {
       console.error('🚨 영업관리 수정 오류:', error)
@@ -386,13 +394,13 @@ export const salesService = {
   /**
    * 영업관리 삭제
    */
-  async deleteSales(id: number): Promise<void> {
+  async deleteSales (id: number): Promise<void> {
     try {
       const url = SALES_ENDPOINTS.delete(id)
 
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -407,7 +415,7 @@ export const salesService = {
   /**
    * 계약서 파일 업로드
    */
-  async uploadContractFile(id: number, file: File): Promise<Sales> {
+  async uploadContractFile (id: number, file: File): Promise<Sales> {
     try {
       const url = SALES_ENDPOINTS.uploadContractFile(id)
       const formData = new FormData()
@@ -415,7 +423,7 @@ export const salesService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        body: formData,
+        body: formData
       })
 
       if (!response.ok) {
@@ -432,12 +440,12 @@ export const salesService = {
   /**
    * 계약서 파일 다운로드
    */
-  async downloadContractFile(id: number): Promise<Blob> {
+  async downloadContractFile (id: number): Promise<Blob> {
     try {
       const url = SALES_ENDPOINTS.contractFile(id)
 
       const response = await fetch(url, {
-        method: 'GET',
+        method: 'GET'
       })
 
       if (!response.ok) {
@@ -455,7 +463,7 @@ export const salesService = {
    * 영업상태 옵션 가져오기 (DB 기반)
    * SALES_STATUS 코드 그룹에서 한글 상태 코드 조회
    */
-  async getSalesStatusOptions() {
+  async getSalesStatusOptions () {
     try {
       const response = await codeService.getCodeDetails('SALES_STATUS')
       return response.map((detail: any) => ({
@@ -472,29 +480,27 @@ export const salesService = {
   /**
    * 사용여부 옵션 가져오기
    */
-  getUseYnOptions() {
+  getUseYnOptions () {
     return [
       { value: 'Y', label: '사용' },
-      { value: 'N', label: '미사용' },
+      { value: 'N', label: '미사용' }
     ]
   },
-
-
 
   /**
    * 품목 목록 조회
    */
-  async getSalesItems(salesId: number): Promise<SalesItem[]> {
+  async getSalesItems (salesId: number): Promise<SalesItem[]> {
     try {
       const url = SALES_ENDPOINTS.items(salesId)
       console.log('📡 품목 목록 조회 URL:', url)
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           ...getAuthHeaders(),
-          'Accept': 'application/json'
-        },
+          Accept: 'application/json'
+        }
       })
 
       console.log('📊 품목 목록 조회 응답:', response.status, response.statusText)
@@ -511,7 +517,7 @@ export const salesService = {
 
       const result = await response.json()
       console.log('✅ 품목 목록 조회 성공:', result)
-      
+
       return result
     } catch (error) {
       console.error('🚨 품목 목록 조회 오류:', error)
@@ -526,14 +532,14 @@ export const salesService = {
   /**
    * 품목 추가
    */
-  async addSalesItem(salesId: number, itemData: SalesItemRequest): Promise<SalesItem> {
+  async addSalesItem (salesId: number, itemData: SalesItemRequest): Promise<SalesItem> {
     try {
       const url = SALES_ENDPOINTS.createItem(salesId)
 
       const response = await fetch(url, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(itemData),
+        body: JSON.stringify(itemData)
       })
 
       if (!response.ok) {
@@ -550,14 +556,14 @@ export const salesService = {
   /**
    * 품목 수정
    */
-  async updateSalesItem(salesId: number, itemId: number, itemData: SalesItemRequest): Promise<SalesItem> {
+  async updateSalesItem (salesId: number, itemId: number, itemData: SalesItemRequest): Promise<SalesItem> {
     try {
       const url = SALES_ENDPOINTS.updateItem(salesId, itemId)
 
       const response = await fetch(url, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(itemData),
+        body: JSON.stringify(itemData)
       })
 
       if (!response.ok) {
@@ -574,13 +580,13 @@ export const salesService = {
   /**
    * 품목 삭제
    */
-  async deleteSalesItem(salesId: number, itemId: number): Promise<void> {
+  async deleteSalesItem (salesId: number, itemId: number): Promise<void> {
     try {
       const url = SALES_ENDPOINTS.deleteItem(salesId, itemId)
 
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -595,13 +601,13 @@ export const salesService = {
   /**
    * 영업관리 이력 조회
    */
-  async getSalesHistory(salesId: number): Promise<SalesHistory[]> {
+  async getSalesHistory (salesId: number): Promise<SalesHistory[]> {
     try {
       const url = SALES_ENDPOINTS.history(salesId)
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -618,13 +624,13 @@ export const salesService = {
   /**
    * 영업관리 복원
    */
-  async restoreSales(salesId: number): Promise<Sales> {
+  async restoreSales (salesId: number): Promise<Sales> {
     try {
       const url = SALES_ENDPOINTS.restore(salesId)
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -641,15 +647,15 @@ export const salesService = {
   /**
    * 삭제된 영업관리 목록 조회
    */
-  async getDeletedSalesList(params: SalesSearchRequest = {}): Promise<SalesListResponse> {
+  async getDeletedSalesList (params: SalesSearchRequest = {}): Promise<SalesListResponse> {
     try {
       const queryParams = new URLSearchParams()
 
       // 검색 파라미터 추가
-      if (params.keyword) queryParams.append('keyword', params.keyword)
-      if (params.customerNm) queryParams.append('customerNm', params.customerNm)
-      if (params.salesTitle) queryParams.append('salesTitle', params.salesTitle)
-      if (params.salesStatus) queryParams.append('salesStatus', params.salesStatus)
+      if (params.keyword) { queryParams.append('keyword', params.keyword) }
+      if (params.customerNm) { queryParams.append('customerNm', params.customerNm) }
+      if (params.salesTitle) { queryParams.append('salesTitle', params.salesTitle) }
+      if (params.salesStatus) { queryParams.append('salesStatus', params.salesStatus) }
 
       // 페이징 파라미터
       const page = params.page !== undefined ? params.page : 0
@@ -661,7 +667,7 @@ export const salesService = {
 
       const response = await fetch(fullUrl, {
         method: 'GET',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -678,7 +684,7 @@ export const salesService = {
   /**
    * 계약 연결 (분할납품요구번호로 연결)
    */
-  async linkToContract(salesId: number, deliveryRequestNo: string): Promise<Sales> {
+  async linkToContract (salesId: number, deliveryRequestNo: string): Promise<Sales> {
     try {
       const url = SALES_ENDPOINTS.linkContract(salesId)
       const queryParams = new URLSearchParams()
@@ -686,7 +692,7 @@ export const salesService = {
 
       const response = await fetch(`${url}?${queryParams.toString()}`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {
@@ -703,13 +709,13 @@ export const salesService = {
   /**
    * 계약 연결 해제
    */
-  async unlinkFromContract(salesId: number): Promise<Sales> {
+  async unlinkFromContract (salesId: number): Promise<Sales> {
     try {
       const url = SALES_ENDPOINTS.unlinkContract(salesId)
 
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {

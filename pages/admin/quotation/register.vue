@@ -1,5 +1,5 @@
 <template>
-  <div class="quotation-register">
+  <div class="quotation-register m-form">
     <!-- 페이지 헤더 -->
     <PageHeader
       title="견적서 등록"
@@ -85,18 +85,16 @@
 
           <!-- 우측: 거래처 정보 -->
           <div class="header-right">
-            <FormSection title="거래처 (수요기관) 정보" grid-class="form-grid-single">
+            <FormSection title="거래처 정보" grid-class="form-grid-single">
               <div class="info-group">
                 <div class="info-group-header">
                   <i class="fas fa-building" />
                   <span>거래처 정보</span>
                 </div>
                 <div class="client-info-grid">
-                  <FormField label="거래처 (수요기관)" required>
-                    <DemandOrganizationSelector
-                      v-model="formData.clientCode"
-                      @organization-selected="handleOrganizationSelected"
-                    />
+                  <FormField label="거래처 (고객 소속)" required>
+                    <!-- 수요기관 / 조달업체 / 기타 — 입력 즉시 검색 (팝업 없음) -->
+                    <CustomerOrgPicker v-model="clientOrg" />
                   </FormField>
 
                   <FormField label="거래처 담당자">
@@ -107,9 +105,12 @@
                         class="form-input"
                         placeholder="거래처 담당자명"
                       >
-                      <BusinessCardSelector
+                      <BusinessCardPicker
+                        :org-type="formData.clientOrgType"
                         :dminstt-cd="formData.clientCode"
-                        @card-selected="handleCardSelected"
+                        :company-id="formData.clientCompanyId"
+                        :org-name="formData.clientName"
+                        @selected="handleCardSelected"
                       />
                     </div>
                   </FormField>
@@ -280,15 +281,15 @@ import { useRouter } from '#imports'
 import { usePermission } from '~/composables/usePermission'
 import { formatPhoneNumberInput } from '~/utils/format'
 import { quotationService, type QuotationRequest, type QuotationItem } from '~/services/quotation.service'
-import { type DemandOrganization } from '~/services/demand-organization.service'
+import CustomerOrgPicker from '~/components/CustomerOrgPicker.vue'
+import BusinessCardPicker from '~/components/BusinessCardPicker.vue'
 import { userService } from '~/services/user.service'
 import { useAuthStore } from '~/stores/auth'
 import type { UserByRole } from '~/types/user'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
-import BusinessCardSelector from '~/components/admin/BusinessCardSelector.vue'
-import { type BusinessCardResponse } from '~/services/business-card.service'
+import { type BusinessCardResponse, type CustomerOrgValue, type OrgType } from '~/services/business-card.service'
 
 definePageMeta({
   layout: 'admin',
@@ -335,6 +336,9 @@ const formData = ref<QuotationRequest>({
   projectName: '',
   clientCode: '',
   clientName: '',
+  clientOrgType: 'DEMAND_ORG',
+  clientCompanyId: null,
+  clientBizno: null,
   clientManager: '',
   clientTel: '',
   clientEmail: '',
@@ -355,17 +359,34 @@ const totalAmountKorean = computed(() => {
   return `₩ ${totalAmount.value.toLocaleString()}`
 })
 
-// 수요기관 선택
-const handleOrganizationSelected = (org: DemandOrganization) => {
-  formData.value.clientCode = org.dminsttCd
-  formData.value.clientName = org.dminsttNm
-}
+/** 거래처(고객 소속) 한 묶음 — CustomerOrgPicker 와 견적 칸(client_code·client_name…)을 잇는다 */
+const clientOrg = computed<CustomerOrgValue>({
+  get: () => ({
+    orgType: (formData.value.clientOrgType || 'DEMAND_ORG') as OrgType,
+    dminsttCd: formData.value.clientCode || '',
+    dminsttNm: formData.value.clientName || '',
+    companyId: formData.value.clientCompanyId ?? null,
+    orgBizno: formData.value.clientBizno ?? null
+  }),
+  set: (v) => {
+    formData.value.clientOrgType = v.orgType
+    formData.value.clientCode = v.dminsttCd
+    formData.value.clientName = v.dminsttNm
+    formData.value.clientCompanyId = v.companyId
+    formData.value.clientBizno = v.orgBizno
+  }
+})
 
-// 명함 선택 → 거래처 정보 자동 채움
+// 명함 선택 → 거래처 정보 자동 채움 (거래처를 아직 안 골랐으면 명함의 소속까지)
 const handleCardSelected = (card: BusinessCardResponse) => {
-  if (card.dminsttCd) {
-    formData.value.clientCode = card.dminsttCd
-    formData.value.clientName = card.dminsttNm || ''
+  if (!formData.value.clientName && card.dminsttNm) {
+    clientOrg.value = {
+      orgType: (card.orgType || (card.dminsttCd ? 'DEMAND_ORG' : 'ETC')) as OrgType,
+      dminsttCd: card.dminsttCd || '',
+      dminsttNm: card.dminsttNm,
+      companyId: card.companyId ?? null,
+      orgBizno: card.orgBizno ?? null
+    }
   }
   formData.value.clientManager = card.contactNm || ''
   formData.value.clientTel = card.contactTel || ''
@@ -611,6 +632,7 @@ const goBack = () => router.push('/admin/quotation/list')
 /* 명함선택 버튼 + 입력필드 조합 */
 .input-with-card-btn {
   display: flex;
+  flex-wrap: wrap; /* 명함 목록(BusinessCardPicker)이 입력칸 아래 한 줄로 펼쳐지게 */
   gap: 0.5rem;
   align-items: flex-start;
 }
@@ -711,6 +733,42 @@ const goBack = () => router.push('/admin/quotation/list')
   }
   .header-row {
     flex-direction: column;
+  }
+  .basic-info-row {
+    grid-template-columns: 1fr;
+  }
+}
+/* 휴대폰 — 거래처 3구분 칩·명함 패널이 2열에서 쪼개지므로 1열로 */
+@media (max-width: 640px) {
+  .content-section {
+    padding: 0.75rem;
+  }
+  .basic-info-row,
+  .client-info-grid {
+    grid-template-columns: 1fr;
+    padding: 0.75rem;
+  }
+  .sales-manager-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .sales-manager-row :deep(.form-field) {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+  .sales-manager-info {
+    flex-wrap: wrap;
+  }
+  .items-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .items-actions button {
+    flex: 1;
+    min-height: 44px;
   }
 }
 </style>

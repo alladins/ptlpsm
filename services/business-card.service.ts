@@ -17,6 +17,15 @@ export const ORG_TYPE_LABELS: Record<OrgType, string> = {
   ETC: '기타'
 }
 
+/** 고객 소속 한 묶음 — CustomerOrgPicker v-model (명함·영업·견적 공통) */
+export interface CustomerOrgValue {
+  orgType: OrgType
+  dminsttCd: string
+  dminsttNm: string
+  companyId: number | null
+  orgBizno: string | null
+}
+
 /** 조달업체 검색 결과 — COMPANY 회사 마스터 / G2B 나라장터에서 사업자번호로 조회 */
 export interface SupplierOption {
   companyId: number | null

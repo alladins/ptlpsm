@@ -1,5 +1,5 @@
 <template>
-  <div class="sales-edit">
+  <div class="sales-edit m-form">
     <!-- 페이지 헤더 -->
     <PageHeader
       title="영업 상세"
@@ -22,11 +22,11 @@
         <!-- 고객 정보 (펼침) -->
         <AccordionSection title="고객 정보" :default-expanded="true">
           <div class="info-grid grid-2">
-            <FormField label="수요기관" required full-width>
+            <FormField label="고객 소속" required full-width>
               <input
                 type="text"
-                :value="formData.dminsttNm ? `${formData.dminsttNm} (${formData.dminsttCd})` : ''"
-                placeholder="수요기관"
+                :value="formData.dminsttNm ? `[${orgTypeLabel}] ${formData.dminsttNm}` : ''"
+                placeholder="고객 소속"
                 class="form-input"
                 readonly
               >
@@ -352,6 +352,7 @@ import AccordionSection from '~/components/admin/forms/AccordionSection.vue'
 import SalesProgressStepper from '~/components/admin/SalesProgressStepper.vue'
 import { useSalesStatus } from '~/composables/useSalesStatus'
 import { usePermission } from '~/composables/usePermission'
+import { ORG_TYPE_LABELS, type OrgType } from '~/services/business-card.service'
 
 definePageMeta({
   layout: 'admin',
@@ -442,6 +443,11 @@ const {
       expectedDeliveryDeadline: sales.expectedDeliveryDeadline ? formatDateOnly(sales.expectedDeliveryDeadline) : '',
       dminsttCd: sales.dminsttCd || '',
       dminsttNm: sales.dminsttNm || '',
+      // 고객 소속은 수정 화면에서 바꾸지 않지만 저장 때 그대로 돌려보내야 한다 — 안 보내면 서버가 기관코드 유무로 다시 정해
+      // 조달업체 고객이 «기타»로 바뀐다
+      orgType: sales.orgType || (sales.dminsttCd ? 'DEMAND_ORG' : 'ETC'),
+      companyId: sales.companyId ?? null,
+      orgBizno: sales.orgBizno ?? null,
       useYn: sales.useYn || 'Y',
       remark: sales.remark || ''
     }
@@ -462,6 +468,9 @@ const {
 
 // 원본 데이터
 const salesData = ref<Sales | null>(null)
+
+/** 고객 소속 구분 라벨 (수요기관 / 조달업체 / 기타) */
+const orgTypeLabel = computed(() => ORG_TYPE_LABELS[(formData.orgType || 'DEMAND_ORG') as OrgType] || '수요기관')
 
 // 활동 기록 로드
 const loadActivities = async () => {

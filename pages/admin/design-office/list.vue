@@ -150,7 +150,22 @@
               <p>조건에 맞는 설계사무소가 없습니다.</p>
             </div>
             <div v-else class="table-container">
-              <table class="data-table">
+              <!-- 휴대폰: 카드 — 누르면 상세, 전화 바로 걸기 -->
+              <ul class="m-card-list m-narrow-only">
+                <li v-for="o in offices" :key="`c-${o.designOfficeId}`" class="m-card" @click="openEditModal(o)">
+                  <div class="m-card-head">
+                    <span class="m-card-title">{{ o.companyName }}</span>
+                    <span class="m-card-meta">{{ o.sigunguNm || '미판정' }}</span>
+                  </div>
+                  <div class="m-card-meta">
+                    {{ o.representative || '-' }} · {{ o.businessNumber || '-' }}
+                  </div>
+                  <div v-if="o.tel" class="m-card-actions" @click.stop>
+                    <a :href="`tel:${o.tel}`"><i class="fas fa-phone" /> {{ o.tel }}</a>
+                  </div>
+                </li>
+              </ul>
+              <table class="data-table m-wide-only">
                 <thead>
                   <tr>
                     <th>No</th>
@@ -747,7 +762,8 @@ onMounted(async () => {
 
 @media (max-width: 900px) {
   .office-layout {
-    grid-template-columns: 1fr;
+    /* 1fr 이면 칸이 안쪽 내용 폭만큼 늘어나 카드가 화면 밖으로 밀린다 */
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

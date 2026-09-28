@@ -403,3 +403,64 @@
     padding: 0.375rem;
   }
 }
+
+/* ==========================================================================
+   영업 현장 입력 폼 — 휴대폰(≤640px) 보정
+   사용: 페이지 최상위 div 에 class="m-form" (영업 등록·수정, 견적 등록·수정)
+   - 전역 .form-input 폭 80% 를 100% 로 (좁은 화면에서 오른쪽이 비어 보임)
+   - 여백 세 겹(페이지·아코디언·그리드)을 줄여 입력칸 폭 확보
+   - 입력칸·버튼 높이 44px, 글자 16px(아이폰 입력 시 화면 확대 방지)
+   - 저장 버튼 줄은 화면 아래 고정 — 긴 폼 끝까지 내리지 않아도 저장
+   ========================================================================== */
+@media (max-width: 640px) {
+  .m-form .form-input,
+  .m-form .form-select,
+  .m-form .form-textarea {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* 공통 .content-section 의 overflow:hidden 이 있으면 저장 줄 sticky 가 동작하지 않는다 */
+  .m-form .content-section {
+    overflow: visible;
+  }
+
+  .m-form .accordion-body {
+    padding: 0.75rem;
+  }
+
+  .m-form .info-grid {
+    padding: 0;
+    gap: 0.75rem;
+  }
+
+  .m-form .activity-form {
+    padding: 0.625rem;
+  }
+
+  .m-form .form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 0 -0.25rem;
+    padding: 0.625rem 0.25rem calc(0.625rem + env(safe-area-inset-bottom));
+    background: #fff;
+    box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.08);
+  }
+
+  .m-form .form-actions > div:empty {
+    display: none;
+  }
+
+  .m-form .form-actions-right,
+  .m-form .form-actions {
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .m-form .form-actions button {
+    flex: 1;
+    min-height: 44px;
+  }
+}

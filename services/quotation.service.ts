@@ -24,6 +24,10 @@ export interface QuotationListResponse {
   quotationNo: string
   submitDate: string
   clientName: string
+  /** 고객 소속 구분 DEMAND_ORG / SUPPLIER / ETC (V3.34.0) — 수요기관이면 clientCode 가 기관코드 */
+  clientOrgType?: 'DEMAND_ORG' | 'SUPPLIER' | 'ETC'
+  clientCompanyId?: number | null
+  clientBizno?: string | null
   projectName: string
   totalAmount: number
   status: string
@@ -53,6 +57,10 @@ export interface Quotation {
   projectName: string
   clientCode: string
   clientName: string
+  /** 고객 소속 구분 DEMAND_ORG / SUPPLIER / ETC (V3.34.0) — 수요기관이면 clientCode 가 기관코드 */
+  clientOrgType?: 'DEMAND_ORG' | 'SUPPLIER' | 'ETC'
+  clientCompanyId?: number | null
+  clientBizno?: string | null
   clientManager: string
   clientTel: string
   clientEmail: string
@@ -77,6 +85,10 @@ export interface QuotationRequest {
   projectName?: string
   clientCode?: string
   clientName?: string
+  // 고객 소속 3구분 — 수요기관(clientCode)/조달업체(clientCompanyId·clientBizno)/기타(이름만)
+  clientOrgType?: 'DEMAND_ORG' | 'SUPPLIER' | 'ETC'
+  clientCompanyId?: number | null
+  clientBizno?: string | null
   clientManager?: string
   clientTel?: string
   clientEmail?: string
@@ -102,23 +114,23 @@ export const quotationService = {
   /**
    * 견적서 목록 조회
    */
-  async getQuotationList(params: QuotationSearchRequest = {}): Promise<QuotationPageResponse> {
+  async getQuotationList (params: QuotationSearchRequest = {}): Promise<QuotationPageResponse> {
     const queryParams = new URLSearchParams()
 
-    if (params.startDate) queryParams.append('startDate', params.startDate)
-    if (params.endDate) queryParams.append('endDate', params.endDate)
-    if (params.clientName) queryParams.append('clientName', params.clientName)
-    if (params.projectName) queryParams.append('projectName', params.projectName)
-    if (params.status) queryParams.append('status', params.status)
-    if (params.keyword) queryParams.append('keyword', params.keyword)
-    if (params.page !== undefined) queryParams.append('page', params.page.toString())
-    if (params.size !== undefined) queryParams.append('size', params.size.toString())
+    if (params.startDate) { queryParams.append('startDate', params.startDate) }
+    if (params.endDate) { queryParams.append('endDate', params.endDate) }
+    if (params.clientName) { queryParams.append('clientName', params.clientName) }
+    if (params.projectName) { queryParams.append('projectName', params.projectName) }
+    if (params.status) { queryParams.append('status', params.status) }
+    if (params.keyword) { queryParams.append('keyword', params.keyword) }
+    if (params.page !== undefined) { queryParams.append('page', params.page.toString()) }
+    if (params.size !== undefined) { queryParams.append('size', params.size.toString()) }
 
     const url = `${QUOTATION_ENDPOINTS.list()}?${queryParams.toString()}`
 
     const response = await fetch(url, {
       method: 'GET',
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -131,10 +143,10 @@ export const quotationService = {
   /**
    * 견적서 상세 조회
    */
-  async getQuotationById(id: number): Promise<Quotation> {
+  async getQuotationById (id: number): Promise<Quotation> {
     const response = await fetch(QUOTATION_ENDPOINTS.detail(id), {
       method: 'GET',
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -147,11 +159,11 @@ export const quotationService = {
   /**
    * 견적서 등록
    */
-  async createQuotation(data: QuotationRequest): Promise<Quotation> {
+  async createQuotation (data: QuotationRequest): Promise<Quotation> {
     const response = await fetch(QUOTATION_ENDPOINTS.create(), {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(data)
     })
 
     if (!response.ok) {
@@ -164,11 +176,11 @@ export const quotationService = {
   /**
    * 견적서 수정
    */
-  async updateQuotation(id: number, data: QuotationRequest): Promise<Quotation> {
+  async updateQuotation (id: number, data: QuotationRequest): Promise<Quotation> {
     const response = await fetch(QUOTATION_ENDPOINTS.update(id), {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(data)
     })
 
     if (!response.ok) {
@@ -181,10 +193,10 @@ export const quotationService = {
   /**
    * 견적서 삭제
    */
-  async deleteQuotation(id: number): Promise<void> {
+  async deleteQuotation (id: number): Promise<void> {
     const response = await fetch(QUOTATION_ENDPOINTS.delete(id), {
       method: 'DELETE',
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -195,10 +207,10 @@ export const quotationService = {
   /**
    * PDF 생성
    */
-  async generatePdf(id: number): Promise<Quotation> {
+  async generatePdf (id: number): Promise<Quotation> {
     const response = await fetch(QUOTATION_ENDPOINTS.generatePdf(id), {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -211,10 +223,10 @@ export const quotationService = {
   /**
    * PDF 미리보기 (새 탭에서 브라우저 PDF 뷰어로 표시)
    */
-  async previewPdf(id: number): Promise<void> {
+  async previewPdf (id: number): Promise<void> {
     const response = await fetch(QUOTATION_ENDPOINTS.downloadPdf(id), {
       method: 'GET',
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -229,10 +241,10 @@ export const quotationService = {
   /**
    * PDF 다운로드
    */
-  async downloadPdf(id: number): Promise<void> {
+  async downloadPdf (id: number): Promise<void> {
     const response = await fetch(QUOTATION_ENDPOINTS.downloadPdf(id), {
       method: 'GET',
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -264,15 +276,15 @@ export const quotationService = {
   /**
    * 이메일 발송
    */
-  async sendEmail(id: number, data?: { subject: string, body: string, companyFileIds?: number[] }): Promise<void> {
+  async sendEmail (id: number, data?: { subject: string, body: string, companyFileIds?: number[] }): Promise<void> {
     const response = await fetch(QUOTATION_ENDPOINTS.sendEmail(id), {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: data ? JSON.stringify(data) : undefined,
+      body: data ? JSON.stringify(data) : undefined
     })
 
     if (!response.ok) {
       throw httpError(response.status, '견적서 이메일 발송')
     }
-  },
+  }
 }
