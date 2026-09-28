@@ -8,7 +8,7 @@
       :view-only="isViewOnly"
     >
       <template #actions>
-        <button class="btn-action" :disabled="loading" @click="loadList">
+        <button class="btn-action" :disabled="loading" @click="handleSearch">
           <i v-if="loading" class="fas fa-spinner fa-spin" />
           <i v-else class="fas fa-search" />
           검색
@@ -17,6 +17,18 @@
           <i class="fas fa-undo" />
           초기화
         </button>
+        <GuardedButton
+          v-if="canEdit"
+          class="btn-action btn-secondary"
+          :blocked="!canEnrich"
+          reason="나라장터 업체정보 채우기는 시스템관리자·리드파워 관리자만 실행할 수 있습니다."
+          :disabled="enriching"
+          title="주소나 소재 시군구가 빈 설계사무소를 나라장터 조달업체 정보로 채웁니다 (빈 칸만)"
+          @click="enrichFromG2b"
+        >
+          <i :class="enriching ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-download-alt'" />
+          나라장터 업체정보로 채우기
+        </GuardedButton>
         <button v-if="canWrite" class="btn-action btn-primary" @click="openCreateModal">
           <i class="fas fa-plus" />
           등록
@@ -34,12 +46,12 @@
               type="text"
               class="keyword-input"
               placeholder="회사명, 대표자, 사업자번호"
-              @keyup.enter="loadList"
+              @keyup.enter="handleSearch"
             >
           </div>
           <div class="search-item">
             <label>시도:</label>
-            <select v-model="searchForm.sidoCd" class="status-select" @change="loadList">
+            <select v-model="searchForm.sidoCd" class="status-select" @change="handleSearch">
               <option value="">
                 전체
               </option>
@@ -51,58 +63,139 @@
         </div>
       </div>
 
-      <div class="table-section">
-        <div class="table-header">
-          <div class="table-info">
-            <span>총 <strong>{{ offices.length }}</strong>곳</span>
+      <div class="office-layout">
+        <!-- 좌: 권역 트리 — 권역을 고르면 그 권역(+하위) 시군구의 사무소만. 대리점 직원은 «내 권역»이 먼저 골라진다 -->
+        <aside class="tree-panel">
+          <div class="tree-head">
+            <i class="fas fa-sitemap" /> 권역
           </div>
-        </div>
+          <button type="button" class="tree-node" :class="{ active: isSelected({ kind: 'all' }) }" @click="selectNode({ kind: 'all' })">
+            <span>전체</span><span class="cnt">{{ tree?.total ?? '-' }}</span>
+          </button>
+          <template v-for="top in treeNodes" :key="top.regionId">
+            <button
+              type="button"
+              class="tree-node"
+              :class="{ active: isSelected({ kind: 'region', regionId: top.regionId }), mine: myRegionSet.has(top.regionId) }"
+              @click="selectNode({ kind: 'region', regionId: top.regionId })"
+            >
+              <span><i class="fas" :class="top.children.length ? 'fa-folder' : 'fa-map-marker-alt'" /> {{ top.regionName }}
+                <span v-if="myRegionSet.has(top.regionId)" class="mine-badge">내 권역</span></span>
+              <span class="cnt">{{ top.total }}</span>
+            </button>
+            <button
+              v-for="c in top.children"
+              :key="c.regionId"
+              type="button"
+              class="tree-node child"
+              :class="{ active: isSelected({ kind: 'region', regionId: c.regionId }), mine: myRegionSet.has(c.regionId) }"
+              @click="selectNode({ kind: 'region', regionId: c.regionId })"
+            >
+              <span><i class="fas fa-map-marker-alt" /> {{ c.regionName }}
+                <span v-if="myRegionSet.has(c.regionId)" class="mine-badge">내 권역</span></span>
+              <span class="cnt">{{ c.officeCount }}</span>
+            </button>
+          </template>
+          <div class="tree-sep" />
+          <button
+            type="button"
+            class="tree-node"
+            :class="{ active: isSelected({ kind: 'unassigned' }) }"
+            title="시군구는 있으나 어느 권역에도 속하지 않은 곳 (광역시·세종·제주 등)"
+            @click="selectNode({ kind: 'unassigned' })"
+          >
+            <span><i class="fas fa-question-circle" /> 권역 미배정</span><span class="cnt">{{ tree?.unassigned ?? '-' }}</span>
+          </button>
+          <button
+            type="button"
+            class="tree-node"
+            :class="{ active: isSelected({ kind: 'noSigungu' }) }"
+            title="주소가 없어 소재 시군구를 못 정한 곳 — «나라장터 업체정보로 채우기»로 채울 수 있습니다"
+            @click="selectNode({ kind: 'noSigungu' })"
+          >
+            <span><i class="fas fa-exclamation-circle" /> 시군구 미판정</span><span class="cnt">{{ tree?.noSigungu ?? '-' }}</span>
+          </button>
+        </aside>
 
-        <div v-if="loading" class="loading-message">
-          <i class="fas fa-spinner fa-spin" />
-          <p>데이터를 불러오는 중...</p>
-        </div>
-        <div v-else-if="offices.length === 0" class="no-data-message">
-          <i class="fas fa-drafting-compass" />
-          <p>조건에 맞는 설계사무소가 없습니다.</p>
-        </div>
-        <div v-else class="table-container">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>회사명</th>
-                <th>대표자</th>
-                <th>사업자번호</th>
-                <th>소재 시군구</th>
-                <th>신고번호</th>
-                <th>연락처</th>
-                <th>등록일</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(o, index) in offices"
-                :key="o.designOfficeId"
-                class="table-row clickable-row"
-                @click="openEditModal(o)"
-              >
-                <td>{{ index + 1 }}</td>
-                <td class="text-left">
-                  {{ o.companyName }}
-                </td>
-                <td>{{ o.representative || '-' }}</td>
-                <td>{{ o.businessNumber || '-' }}</td>
-                <td>
-                  <span v-if="o.sigunguNm">{{ o.sigunguNm }}</span>
-                  <span v-else class="text-muted">미판정</span>
-                </td>
-                <td>{{ o.architectRegNo || '-' }}</td>
-                <td>{{ o.tel || '-' }}</td>
-                <td>{{ formatDate(o.createdAt) }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="list-col">
+          <div class="table-section">
+            <div class="table-header">
+              <div class="table-info">
+                <span>총 <strong>{{ totalElements }}</strong>곳 중 {{ startIndex }}-{{ endIndex }} 표시</span>
+              </div>
+              <div class="table-actions">
+                <select v-model="pageSize" class="page-size-select" @change="handleSearch">
+                  <option :value="10">
+                    10개씩
+                  </option>
+                  <option :value="20">
+                    20개씩
+                  </option>
+                  <option :value="50">
+                    50개씩
+                  </option>
+                  <option :value="100">
+                    100개씩
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="loading" class="loading-message">
+              <i class="fas fa-spinner fa-spin" />
+              <p>데이터를 불러오는 중...</p>
+            </div>
+            <div v-else-if="offices.length === 0" class="no-data-message">
+              <i class="fas fa-drafting-compass" />
+              <p>조건에 맞는 설계사무소가 없습니다.</p>
+            </div>
+            <div v-else class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>회사명</th>
+                    <th>대표자</th>
+                    <th>사업자번호</th>
+                    <th>소재 시군구</th>
+                    <th>신고번호</th>
+                    <th>연락처</th>
+                    <th>등록일</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(o, index) in offices"
+                    :key="o.designOfficeId"
+                    class="table-row clickable-row"
+                    @click="openEditModal(o)"
+                  >
+                    <td>{{ startIndex + index }}</td>
+                    <td class="text-left">
+                      {{ o.companyName }}
+                    </td>
+                    <td>{{ o.representative || '-' }}</td>
+                    <td>{{ o.businessNumber || '-' }}</td>
+                    <td>
+                      <span v-if="o.sigunguNm">{{ o.sigunguNm }}</span>
+                      <span v-else class="text-muted">미판정</span>
+                    </td>
+                    <td>{{ o.architectRegNo || '-' }}</td>
+                    <td>{{ o.tel || '-' }}</td>
+                    <td>{{ formatDate(o.createdAt) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <Pagination
+              v-if="totalPages > 0"
+              :current-page="currentPage"
+              :total-pages="totalPages"
+              :disabled="loading"
+              @change="changePage"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -189,6 +282,46 @@
                 <textarea v-model="form.remarks" class="form-textarea full" rows="2" />
               </div>
             </fieldset>
+
+            <!-- 담당자(명함) — 명함관리의 소속 «조달업체»로 이 사무소를 고른 명함. 영업담당자는 자기가 등록한 명함만 보인다 -->
+            <section v-if="editingId !== null" class="cards-section">
+              <div class="cards-head">
+                <h4><i class="fas fa-address-card" /> 담당자(명함)</h4>
+                <button type="button" class="btn-action btn-secondary btn-sm" @click="goAddCard">
+                  <i class="fas fa-plus" /> 명함 추가
+                </button>
+              </div>
+              <p v-if="cardsLoading" class="text-muted small">
+                불러오는 중...
+              </p>
+              <p v-else-if="officeCards.length === 0" class="text-muted small">
+                등록된 명함이 없습니다. 건축사·담당자 명함을 받으면 [명함 추가]로 넣어 두세요.
+              </p>
+              <table v-else class="data-table cards-table">
+                <thead>
+                  <tr>
+                    <th>담당자</th>
+                    <th>연락처</th>
+                    <th>이메일</th>
+                    <th>메모</th>
+                    <th>등록자</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="c in officeCards" :key="c.cardId">
+                    <td>{{ c.contactNm }}</td>
+                    <td class="nowrap">
+                      {{ c.contactTel || '-' }}
+                    </td>
+                    <td>{{ c.contactEmail || '-' }}</td>
+                    <td class="text-left">
+                      {{ c.memo || '-' }}
+                    </td>
+                    <td>{{ c.ownerName || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn-secondary" @click="closeModal">
@@ -219,12 +352,16 @@
  * - 소재 시군구는 방문지 정보 — 대리점 배정에는 쓰지 않는다
  */
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from '#imports'
 import GuardedButton from '~/components/ui/GuardedButton.vue'
+import Pagination from '~/components/ui/Pagination.vue'
+import { useAuthStore } from '~/stores/auth'
 import { designOfficeService, salesRegionService } from '~/services/agency.service'
+import { businessCardService, type BusinessCardResponse } from '~/services/business-card.service'
 import { formatDate, formatBusinessNumberInput, formatPhoneNumberInput } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
 import { usePermission } from '~/composables/usePermission'
-import { SIDO_LIST, type DesignOffice, type Sigungu } from '~/types/agency'
+import { SIDO_LIST, type DesignOffice, type DesignOfficeRegionTree, type Sigungu } from '~/types/agency'
 
 definePageMeta({
   layout: 'admin',
@@ -233,6 +370,8 @@ definePageMeta({
 
 // 메뉴권한(DESIGN_OFFICE) — 등록=등록 권한, 기존 수정=수정 권한 (영업담당자는 등록·수정 가능, 삭제 없음)
 const { canWrite, canEdit, isViewOnly } = usePermission('DESIGN_OFFICE')
+const route = useRoute()
+const router = useRouter()
 
 const offices = ref<DesignOffice[]>([])
 const allSigungu = ref<Sigungu[]>([])
@@ -241,17 +380,106 @@ const saving = ref(false)
 
 const searchForm = ref({ keyword: '', sidoCd: '' })
 
+// ===== 권역 트리 (왼쪽) =====
+type TreeSel = { kind: 'all' } | { kind: 'region', regionId: number } | { kind: 'unassigned' } | { kind: 'noSigungu' }
+
+const tree = ref<DesignOfficeRegionTree | null>(null)
+const selected = ref<TreeSel>({ kind: 'all' })
+const myRegionSet = computed(() => new Set(tree.value?.myRegionIds || []))
+
+/** 최상위 권역 + 하위 권역 (상위 합계 = 자기 + 하위) */
+const treeNodes = computed(() => {
+  const rows = tree.value?.regions || []
+  return rows
+    .filter(r => r.parentRegionId === null)
+    .map((top) => {
+      const children = rows.filter(r => r.parentRegionId === top.regionId)
+      return { ...top, children, total: top.officeCount + children.reduce((s, c) => s + c.officeCount, 0) }
+    })
+})
+
+const isSelected = (s: TreeSel) =>
+  s.kind === selected.value.kind &&
+  (s.kind !== 'region' || (selected.value.kind === 'region' && selected.value.regionId === s.regionId))
+
+const selectNode = (s: TreeSel) => {
+  selected.value = s
+  handleSearch()
+}
+
+const loadTree = async () => {
+  try {
+    tree.value = await designOfficeService.getRegionTree()
+    // 대리점 직원은 자기 담당 권역부터 (여러 개면 트리 순서상 첫 번째)
+    const mine = tree.value.myRegionIds || []
+    if (mine.length > 0 && selected.value.kind === 'all') {
+      const first = tree.value.regions.find(r => mine.includes(r.regionId))
+      if (first) {
+        selected.value = { kind: 'region', regionId: first.regionId }
+      }
+    }
+  } catch (e) {
+    console.error('권역 트리 로드 실패:', e)
+  }
+}
+
+// 수집이 매일 설계사무소를 자동 등록하므로 서버에서 페이지로 나눈다 (0-based — Pagination 계약과 같음)
+const currentPage = ref(0)
+const pageSize = ref(20)
+const totalPages = ref(0)
+const totalElements = ref(0)
+const startIndex = computed(() => (totalElements.value === 0 ? 0 : currentPage.value * pageSize.value + 1))
+const endIndex = computed(() => Math.min((currentPage.value + 1) * pageSize.value, totalElements.value))
+
 const loadList = async () => {
   loading.value = true
   try {
-    offices.value = await designOfficeService.getDesignOffices({
+    const res = await designOfficeService.getDesignOffices({
       keyword: searchForm.value.keyword.trim() || undefined,
-      sidoCd: searchForm.value.sidoCd || undefined
+      sidoCd: searchForm.value.sidoCd || undefined,
+      regionId: selected.value.kind === 'region' ? selected.value.regionId : undefined,
+      unassigned: selected.value.kind === 'unassigned' || undefined,
+      noSigungu: selected.value.kind === 'noSigungu' || undefined,
+      page: currentPage.value,
+      size: pageSize.value
     })
+    offices.value = res.content || []
+    totalPages.value = res.totalPages || 0
+    totalElements.value = res.totalElements || 0
   } catch (e) {
     alert(toApiError(e).message)
   } finally {
     loading.value = false
+  }
+}
+
+const handleSearch = () => {
+  currentPage.value = 0
+  loadList()
+}
+
+const changePage = (page: number) => {
+  currentPage.value = page
+  loadList()
+}
+
+// ===== 나라장터 업체정보로 채우기 (서버가 리드파워 관리자만 허용) =====
+const authStore = useAuthStore()
+const canEnrich = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(authStore.user?.role || ''))
+const enriching = ref(false)
+
+const enrichFromG2b = async () => {
+  if (!confirm('주소나 소재 시군구가 빈 설계사무소(최대 300곳)를 나라장터 조달업체 정보로 채웁니다.\n빈 칸만 채우고 입력된 값은 바꾸지 않습니다. 진행할까요?')) { return }
+  enriching.value = true
+  try {
+    const r = await designOfficeService.enrichFromG2b()
+    alert(`확인 ${r.checked}곳 · 채움 ${r.filled}곳 (시군구 판정 ${r.sigunguResolved}곳) · 못 채움 ${r.notFound}곳`)
+    loadList()
+    loadTree()
+  } catch (e) {
+    alert(toApiError(e).message)
+  } finally {
+    enriching.value = false
   }
 }
 
@@ -265,7 +493,9 @@ const loadSigungu = async () => {
 
 const handleReset = () => {
   searchForm.value = { keyword: '', sidoCd: '' }
-  loadList()
+  selected.value = { kind: 'all' }
+  handleSearch()
+  loadTree()
 }
 
 // ===== 등록/수정 모달 =====
@@ -334,6 +564,39 @@ const openEditModal = (o: DesignOffice) => {
   // 저장된 시군구의 시도를 찾아 선택해 둔다
   formSidoCd.value = allSigungu.value.find(s => s.sigunguCd === o.sigunguCd)?.sidoCd || ''
   showModal.value = true
+  loadOfficeCards(o.designOfficeId)
+}
+
+// ===== 담당자(명함) =====
+const officeCards = ref<BusinessCardResponse[]>([])
+const cardsLoading = ref(false)
+
+const loadOfficeCards = async (companyId: number) => {
+  officeCards.value = []
+  cardsLoading.value = true
+  try {
+    const res = await businessCardService.getBusinessCardList({ orgType: 'SUPPLIER', companyId, page: 0, size: 50 })
+    officeCards.value = res.content || []
+  } catch (e) {
+    // 명함은 부가 정보 — 못 불러와도 사무소 정보는 볼 수 있게
+    console.error('명함 로드 실패:', e)
+  } finally {
+    cardsLoading.value = false
+  }
+}
+
+/** 명함관리 등록 창을 이 사무소가 소속으로 채워진 채로 연다 */
+const goAddCard = () => {
+  if (editingId.value === null) { return }
+  router.push({
+    path: '/admin/business-card/list',
+    query: {
+      newCard: '1',
+      companyId: String(editingId.value),
+      name: form.value.companyName,
+      bizno: (form.value.businessNumber || '').replace(/[^0-9]/g, '')
+    }
+  })
 }
 
 const closeModal = () => {
@@ -396,6 +659,7 @@ const submit = async () => {
     }
     showModal.value = false
     await loadList()
+    loadTree()
   } catch (e) {
     // 사업자번호 중복 등 서버 메시지 그대로
     alert(toApiError(e).message)
@@ -404,9 +668,29 @@ const submit = async () => {
   }
 }
 
-onMounted(() => {
+/**
+ * 다른 화면(공모·낙찰 수집의 설계사무소 링크)에서 ?id= 로 들어오면 그 사무소 상세를 바로 연다.
+ * 목록 페이지에 없을 수 있어 단건 조회로 연다.
+ */
+
+const openFromQuery = async () => {
+  const id = Number(route.query.id)
+  if (!Number.isInteger(id) || id <= 0) { return }
+  try {
+    openEditModal(await designOfficeService.getDesignOffice(id))
+  } catch (e) {
+    alert(toApiError(e).message)
+  }
+  // 새로고침·뒤로가기 때 모달이 다시 뜨지 않게 주소에서 id 를 뗀다
+  router.replace({ query: { ...route.query, id: undefined } })
+}
+
+onMounted(async () => {
+  // 트리를 먼저 받아야 대리점 직원의 «내 권역»으로 첫 목록을 거를 수 있다
+  await loadTree()
   loadList()
   loadSigungu()
+  openFromQuery()
 })
 </script>
 
@@ -451,6 +735,131 @@ onMounted(() => {
 
 .form-input.zip {
   width: 140px;
+}
+
+/* 좌 권역 트리 + 우 목록 */
+.office-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .office-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tree-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  position: sticky;
+  top: 1rem;
+}
+
+.tree-head {
+  padding: 0.375rem 0.5rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4375rem 0.625rem;
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  background: none;
+  font-size: 0.8125rem;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tree-node.child {
+  padding-left: 1.5rem;
+}
+
+.tree-node:hover {
+  background: #f8fafc;
+}
+
+.tree-node.active {
+  background: #eff6ff;
+  border-left-color: #2563eb;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.tree-node .fas {
+  margin-right: 0.25rem;
+  color: #94a3b8;
+}
+
+.tree-node .cnt {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.mine-badge {
+  margin-left: 0.25rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.tree-sep {
+  height: 1px;
+  margin: 0.375rem 0;
+  background: #e2e8f0;
+}
+
+/* 담당자(명함) */
+.cards-section {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.cards-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.cards-head h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cards-table {
+  font-size: 0.8125rem;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 .sigungu-select {

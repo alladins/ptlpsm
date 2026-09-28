@@ -5,10 +5,34 @@
 import { BUSINESS_CARD_ENDPOINTS } from './api/endpoints/business-card.endpoints'
 import { getAuthHeaders } from './api'
 import { httpError, httpErrorMessage } from '~/utils/apiError'
+import { apiClient } from '~/services/api/client'
 
 // ==================== 타입 정의 ====================
 
+/** 명함 소속 구분 — 수요기관(발주처) / 조달업체(설계사무소·건설사 등) / 기타(직접 입력) */
+export type OrgType = 'DEMAND_ORG' | 'SUPPLIER' | 'ETC'
+export const ORG_TYPE_LABELS: Record<OrgType, string> = {
+  DEMAND_ORG: '수요기관',
+  SUPPLIER: '조달업체',
+  ETC: '기타'
+}
+
+/** 조달업체 검색 결과 — COMPANY 회사 마스터 / G2B 나라장터에서 사업자번호로 조회 */
+export interface SupplierOption {
+  companyId: number | null
+  companyName: string
+  bizno: string | null
+  companyType: string | null
+  representative: string | null
+  address: string | null
+  source: 'COMPANY' | 'G2B'
+}
+
 export interface BusinessCardSearchRequest {
+  /** 소속 구분 DEMAND_ORG / SUPPLIER / ETC */
+  orgType?: OrgType
+  /** 조달업체 회사 ID — 설계사무소 상세의 «담당자(명함)» */
+  companyId?: number
   dminsttCd?: string
   dminsttNm?: string
   contactNm?: string
@@ -19,6 +43,9 @@ export interface BusinessCardSearchRequest {
 
 export interface BusinessCardResponse {
   cardId: number
+  orgType: OrgType
+  companyId: number | null
+  orgBizno: string | null
   dminsttCd: string
   dminsttNm: string
   contactNm: string
@@ -33,7 +60,10 @@ export interface BusinessCardResponse {
 }
 
 export interface BusinessCardRequest {
+  orgType?: OrgType
   dminsttCd?: string
+  companyId?: number | null
+  orgBizno?: string | null
   dminsttNm: string
   contactNm: string
   contactTel?: string
@@ -55,24 +85,31 @@ export interface BusinessCardPageResponse {
 // ==================== 서비스 ====================
 
 export const businessCardService = {
+  /** 조달업체 검색 (명함 소속 선택) — 업체명·사업자번호. 없고 사업자번호 10자리면 나라장터 조회 */
+  searchSuppliers (keyword: string): Promise<SupplierOption[]> {
+    return apiClient.get<SupplierOption[]>('/admin/business-cards/suppliers', { keyword })
+  },
+
   /**
    * 명함 목록 조회
    */
-  async getBusinessCardList(params: BusinessCardSearchRequest = {}): Promise<BusinessCardPageResponse> {
+  async getBusinessCardList (params: BusinessCardSearchRequest = {}): Promise<BusinessCardPageResponse> {
     const queryParams = new URLSearchParams()
 
-    if (params.dminsttCd) queryParams.append('dminsttCd', params.dminsttCd)
-    if (params.dminsttNm) queryParams.append('dminsttNm', params.dminsttNm)
-    if (params.contactNm) queryParams.append('contactNm', params.contactNm)
-    if (params.keyword) queryParams.append('keyword', params.keyword)
-    if (params.page !== undefined) queryParams.append('page', params.page.toString())
-    if (params.size !== undefined) queryParams.append('size', params.size.toString())
+    if (params.orgType) { queryParams.append('orgType', params.orgType) }
+    if (params.companyId) { queryParams.append('companyId', String(params.companyId)) }
+    if (params.dminsttCd) { queryParams.append('dminsttCd', params.dminsttCd) }
+    if (params.dminsttNm) { queryParams.append('dminsttNm', params.dminsttNm) }
+    if (params.contactNm) { queryParams.append('contactNm', params.contactNm) }
+    if (params.keyword) { queryParams.append('keyword', params.keyword) }
+    if (params.page !== undefined) { queryParams.append('page', params.page.toString()) }
+    if (params.size !== undefined) { queryParams.append('size', params.size.toString()) }
 
     const url = `${BUSINESS_CARD_ENDPOINTS.list()}?${queryParams.toString()}`
 
     const response = await fetch(url, {
       method: 'GET',
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -85,10 +122,10 @@ export const businessCardService = {
   /**
    * 명함 상세 조회
    */
-  async getBusinessCardById(id: number): Promise<BusinessCardResponse> {
+  async getBusinessCardById (id: number): Promise<BusinessCardResponse> {
     const response = await fetch(BUSINESS_CARD_ENDPOINTS.detail(id), {
       method: 'GET',
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -101,19 +138,19 @@ export const businessCardService = {
   /**
    * 기관별 명함 조회 (선택 모달용)
    */
-  async getBusinessCardsByOrg(params: BusinessCardSearchRequest = {}): Promise<BusinessCardPageResponse> {
+  async getBusinessCardsByOrg (params: BusinessCardSearchRequest = {}): Promise<BusinessCardPageResponse> {
     const queryParams = new URLSearchParams()
 
-    if (params.dminsttCd) queryParams.append('dminsttCd', params.dminsttCd)
-    if (params.keyword) queryParams.append('keyword', params.keyword)
-    if (params.page !== undefined) queryParams.append('page', params.page.toString())
-    if (params.size !== undefined) queryParams.append('size', params.size.toString())
+    if (params.dminsttCd) { queryParams.append('dminsttCd', params.dminsttCd) }
+    if (params.keyword) { queryParams.append('keyword', params.keyword) }
+    if (params.page !== undefined) { queryParams.append('page', params.page.toString()) }
+    if (params.size !== undefined) { queryParams.append('size', params.size.toString()) }
 
     const url = `${BUSINESS_CARD_ENDPOINTS.byOrg()}?${queryParams.toString()}`
 
     const response = await fetch(url, {
       method: 'GET',
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -126,11 +163,11 @@ export const businessCardService = {
   /**
    * 명함 등록
    */
-  async createBusinessCard(data: BusinessCardRequest): Promise<BusinessCardResponse> {
+  async createBusinessCard (data: BusinessCardRequest): Promise<BusinessCardResponse> {
     const response = await fetch(BUSINESS_CARD_ENDPOINTS.create(), {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(data)
     })
 
     if (!response.ok) {
@@ -144,11 +181,11 @@ export const businessCardService = {
   /**
    * 명함 수정
    */
-  async updateBusinessCard(id: number, data: BusinessCardRequest): Promise<BusinessCardResponse> {
+  async updateBusinessCard (id: number, data: BusinessCardRequest): Promise<BusinessCardResponse> {
     const response = await fetch(BUSINESS_CARD_ENDPOINTS.update(id), {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(data)
     })
 
     if (!response.ok) {
@@ -162,10 +199,10 @@ export const businessCardService = {
   /**
    * 명함 삭제
    */
-  async deleteBusinessCard(id: number): Promise<void> {
+  async deleteBusinessCard (id: number): Promise<void> {
     const response = await fetch(BUSINESS_CARD_ENDPOINTS.delete(id), {
       method: 'DELETE',
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
@@ -176,15 +213,15 @@ export const businessCardService = {
   /**
    * 명함 자동 저장 (견적서/영업일지에서 호출)
    */
-  async autoSave(data: BusinessCardRequest): Promise<void> {
+  async autoSave (data: BusinessCardRequest): Promise<void> {
     const response = await fetch(BUSINESS_CARD_ENDPOINTS.autoSave(), {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(data)
     })
 
     if (!response.ok) {
       console.warn('명함 자동 저장 실패:', response.status)
     }
-  },
+  }
 }

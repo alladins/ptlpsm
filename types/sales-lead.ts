@@ -36,6 +36,17 @@ export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   G2B_CONTRACT: '계약(수의)'
 }
 
+/**
+ * 목록 «단계» 필터 (서버 source 파라미터)
+ * - G2B_AWARD: 낙찰 (계약까지 온 것 포함) / AWARD_CONTRACT: 낙찰 뒤 계약까지 / G2B_CONTRACT: 낙찰 없이 수의계약만
+ */
+export const LEAD_STAGE_FILTER_OPTIONS: { value: string, label: string }[] = [
+  { value: '', label: '전체' },
+  { value: 'G2B_AWARD', label: '낙찰' },
+  { value: 'AWARD_CONTRACT', label: '낙찰 → 계약' },
+  { value: 'G2B_CONTRACT', label: '계약(수의)만' }
+]
+
 /** 업무 구분 */
 export type LeadBizType = 'SERVC' | 'CNSTWK'
 export const LEAD_BIZ_TYPE_LABELS: Record<LeadBizType, string> = {
@@ -57,6 +68,7 @@ export const COLLECT_JOB_LABELS: Record<string, string> = {
   NOTICE_ENRICH: '입찰공고 보강',
   CONTRACT_SERVC: '계약(수의)',
   POST_PROCESS: '후처리(판별·설계사무소·담당)',
+  RECLASSIFY: '다시 분류 (키워드 변경 후)',
   ALL: '전체'
 }
 
@@ -151,6 +163,54 @@ export interface SalesLead {
   agencyCode: string | null
   regionName: string | null
   designOfficeName: string | null
+  /** 연결된 설계사무소 주소·전화 (계약 응답에는 업체 주소가 없어 상세에서 대신 보여준다) */
+  designOfficeAddress?: string | null
+  designOfficeTel?: string | null
+  /** 계약 행의 공고번호 (낙찰과 잇는 키) */
+  ntceNo?: string | null
+  /** 계약 행 → 같은 사업의 낙찰 리드 ID (있으면 목록에서는 낙찰 행에 합쳐 보인다) */
+  awardLeadId?: number | null
+  /** 사업 종류 — 낙찰이 기타여도 이어진 계약이 설계·공사면 그 종류 (목록·요약) */
+  projectKind?: LeadKind | null
+  /** 낙찰 행: 이어진 계약 수·계약일·계약금액 */
+  contractCount?: number | null
+  contractDate?: string | null
+  contractAmount?: number | null
+  /** 계약 행: 이어진 낙찰의 낙찰일 */
+  awardDate?: string | null
+  /** 상세: 같은 사업의 다른 낙찰·계약 행 */
+  linkedLeads?: SalesLead[] | null
+}
+
+/**
+ * 사업 단계 — 낙찰 → 계약 흐름에서 이 행이 어디까지 왔는지
+ * - AWARD: 낙찰만 / AWARD_CONTRACT: 낙찰 뒤 계약까지 / CONTRACT: 낙찰 없이 수의계약
+ * - AWARD_CONTRACT 는 낙찰 행(이어진 계약 있음) 또는 이어진 계약 행
+ */
+export type LeadStage = 'AWARD' | 'AWARD_CONTRACT' | 'CONTRACT'
+export const LEAD_STAGE_LABELS: Record<LeadStage, string> = {
+  AWARD: '낙찰',
+  AWARD_CONTRACT: '낙찰 → 계약',
+  CONTRACT: '계약(수의)'
+}
+
+export function leadStage (lead: SalesLead): LeadStage {
+  if (lead.source === 'G2B_AWARD') {
+    return (lead.contractCount || 0) > 0 ? 'AWARD_CONTRACT' : 'AWARD'
+  }
+  return lead.awardLeadId ? 'AWARD_CONTRACT' : 'CONTRACT'
+}
+
+/** 분류 키워드 묶음 (공통코드 LEAD_KW_* 하나) */
+export interface LeadKeywordGroup {
+  groupCode: string
+  title: string
+  description: string
+  /** 어느 칸을 보는지 — 공고명 / 공공조달분류 / 주공종 */
+  target: string
+  words: { code: string, word: string, useYn: string, sortOrder: number | null }[]
+  /** 사용 중인 키워드가 없어 코드 기본값으로 판별 중 */
+  usingDefault: boolean
 }
 
 export interface SalesLeadSearchParams {

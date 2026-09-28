@@ -24,20 +24,20 @@
       </template>
     </PageHeader>
 
-    <!-- 분할 절차 안내 -->
-    <div class="help-box">
-      <div class="help-title">
-        <i class="fas fa-lightbulb" /> 권역을 나누는 순서
-      </div>
-      <ol>
+    <!-- 분할 절차 안내 — 공통 안내(GuideNotice): 사고 막는 한 줄만 늘 보이고 순서는 펼쳐 본다 -->
+    <GuideNotice class="region-guide" icon="fa-lightbulb" open-label="권역을 나누는 순서 보기">
+      <template #summary>
+        시군구를 옮기면 그 지역의 담당 대리점 판정이 <b>즉시</b> 바뀝니다
+      </template>
+      <ol class="guide-steps">
         <li>나눌 권역의 시군구를 다른 권역(또는 미배정)으로 옮기고, 그 권역의 담당 대리점에 종료일을 넣습니다.</li>
         <li>비워진 권역을 선택해 «하위 권역 추가»로 하위 권역을 만듭니다. (시군구·담당이 남아 있으면 만들 수 없습니다)</li>
         <li>하위 권역에 시군구를 넣고, 대리점관리에서 하위 권역에 담당 대리점을 지정합니다.</li>
       </ol>
-      <p class="help-note">
-        합치기는 시군구를 한 권역으로 옮긴 뒤 빈 권역을 폐지합니다. 시군구를 옮기면 그 지역의 담당 대리점 판정이 <strong>즉시</strong> 바뀝니다.
-      </p>
-    </div>
+      <template #note>
+        합치기는 시군구를 한 권역으로 옮긴 뒤 빈 권역을 폐지합니다.
+      </template>
+    </GuideNotice>
 
     <div class="region-layout">
       <!-- 좌: 권역 트리 -->
@@ -420,6 +420,7 @@
  */
 import { ref, computed, watch, onMounted } from 'vue'
 import GuardedButton from '~/components/ui/GuardedButton.vue'
+import GuideNotice from '~/components/ui/GuideNotice.vue'
 import { salesRegionService } from '~/services/agency.service'
 import { toApiError } from '~/utils/api-error'
 import { usePermission } from '~/composables/usePermission'
@@ -672,7 +673,7 @@ const addChildBlockReason = computed(() => {
   }
   if (r.sigunguCount > 0 || r.activeTerritoryCount > 0) {
     return `이 권역에 시군구 ${r.sigunguCount}곳·담당 대리점 ${r.activeTerritoryCount}곳이 남아 있습니다. ` +
-      '시군구를 다른 권역으로 옮기고 담당에 종료일을 넣은 뒤 하위 권역을 만들 수 있습니다 (위 «권역을 나누는 순서» 참고).'
+      '시군구를 다른 권역으로 옮기고 담당에 종료일을 넣은 뒤 하위 권역을 만들 수 있습니다 (위 안내의 «권역을 나누는 순서 보기» 참고).'
   }
   return ''
 })
@@ -834,30 +835,14 @@ onMounted(reloadAll)
 </script>
 
 <style scoped>
-.help-box {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
+.region-guide {
   margin-bottom: 1rem;
-  font-size: 0.8125rem;
-  color: #78350f;
 }
 
-.help-title {
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-}
-
-.help-box ol {
-  margin: 0.25rem 0 0.25rem 1.25rem;
-  padding: 0;
+.guide-steps {
+  margin: 0;
+  padding-left: 1.25rem;
   line-height: 1.7;
-}
-
-.help-note {
-  margin: 0.25rem 0 0;
-  color: #92400e;
 }
 
 .unassigned-badge {

@@ -16,7 +16,11 @@ import type {
   DemandOrgSalesAttrRequest,
   DemandOrgSearchParams,
   DesignOffice,
+  DesignOfficeEnrichResult,
+  DesignOfficePage,
+  DesignOfficeRegionTree,
   DesignOfficeRequest,
+  DesignOfficeSearchParams,
   RebuildResult,
   RegionSigunguUpdateRequest,
   ResolvePreviewBasis,
@@ -124,8 +128,19 @@ export const agencyService = {
 
 /** 설계사무소 */
 export const designOfficeService = {
-  getDesignOffices (params: { keyword?: string, sidoCd?: string } = {}): Promise<DesignOffice[]> {
-    return apiClient.get<DesignOffice[]>(DESIGN_OFFICE_BASE, { ...params })
+  /** 목록 (페이지, page 는 0-based) */
+  getDesignOffices (params: DesignOfficeSearchParams): Promise<DesignOfficePage> {
+    return apiClient.get<DesignOfficePage>(DESIGN_OFFICE_BASE, { ...params })
+  },
+
+  /** 권역 트리 — 권역별 사무소 수·미배정·미판정·내 권역 */
+  getRegionTree (): Promise<DesignOfficeRegionTree> {
+    return apiClient.get<DesignOfficeRegionTree>(`${DESIGN_OFFICE_BASE}/region-tree`)
+  },
+
+  /** 주소·소재 시군구가 빈 곳을 나라장터 업체정보로 채운다 (리드파워 관리자만, 최대 300곳) */
+  enrichFromG2b (): Promise<DesignOfficeEnrichResult> {
+    return apiClient.post<DesignOfficeEnrichResult>(`${DESIGN_OFFICE_BASE}/enrich-g2b`)
   },
 
   getDesignOffice (id: number): Promise<DesignOffice> {
