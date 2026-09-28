@@ -17,6 +17,16 @@
           <i class="fas fa-rotate-left" />
           초기화
         </button>
+        <!-- 등록은 출하를 골라야 해서 «출하 사후 처리» 화면에서 한다. 여기서는 그리로 보내 준다 -->
+        <NuxtLink
+          v-if="canSettle"
+          to="/admin/shipping/post-process/register"
+          class="btn-action btn-primary"
+          title="출하 사후 처리 화면에서 출하를 골라 납품 차이를 등록합니다"
+        >
+          <i class="fas fa-plus" />
+          납품 차이 등록
+        </NuxtLink>
       </template>
     </PageHeader>
 
