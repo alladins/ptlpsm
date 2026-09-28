@@ -239,7 +239,7 @@
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
-import { useFormValidation } from '~/composables/admin/useFormValidation'
+import { useFormValidation, revalidateOnChange } from '~/composables/admin/useFormValidation'
 import { usePermission } from '~/composables/usePermission'
 import { formatPhoneNumberInput } from '~/utils/format'
 import { salesService, type SalesRequest } from '~/services/sales.service'
@@ -341,6 +341,14 @@ const { errors, validateField, validateAll, clearErrors, rules } = useFormValida
 // 검증 규칙
 const phoneRules = [rules.phone()]
 const emailRules = [rules.email()]
+
+// 필수 항목 — 제출 검사와 «고치면 오류 지우기»에 같이 쓴다
+const requiredRules = {
+  customerNm: [rules.required('담당자명')],
+  salesTitle: [rules.required('사업명')],
+  dminsttNm: [rules.required('고객 소속')]
+}
+revalidateOnChange(formData, { errors, validateField }, { ...requiredRules, customerTel: phoneRules, customerEmail: emailRules })
 
 // 계약 필드 조건부 표시
 const showContractFields = computed(() => {
@@ -482,13 +490,7 @@ const removeFile = () => {
 const handleSubmit = async () => {
   clearErrors()
 
-  const validationRules = {
-    customerNm: [rules.required('담당자명')],
-    salesTitle: [rules.required('사업명')],
-    dminsttNm: [rules.required('고객 소속')]
-  }
-
-  if (!validateAll(formData, validationRules)) {
+  if (!validateAll(formData, requiredRules)) {
     return
   }
 
