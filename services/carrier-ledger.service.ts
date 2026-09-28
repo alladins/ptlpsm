@@ -62,6 +62,13 @@ class CarrierLedgerService {
     return await response.json()
   }
 
+  /** PDF 주소 — PdfPreviewModal 이 fetch 해서 미리보기·내려받기 한다 */
+  pdfUrl (yearMonth: string, carrierCompanyId?: number | null): string {
+    const params = new URLSearchParams({ yearMonth })
+    if (carrierCompanyId) { params.append('carrierCompanyId', String(carrierCompanyId)) }
+    return `${base()}/pdf?${params.toString()}`
+  }
+
   /** 엑셀 다운로드 — 운송사에 보내는 정산 근거 */
   async downloadExcel (yearMonth: string, carrierCompanyId?: number | null): Promise<void> {
     const params = new URLSearchParams({ yearMonth })
