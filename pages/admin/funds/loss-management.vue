@@ -17,6 +17,15 @@
           <i class="fas fa-rotate-left" />
           초기화
         </button>
+        <button class="btn-action" :disabled="exporting" @click="handleExportExcel">
+          <i v-if="exporting" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-file-excel" />
+          엑셀
+        </button>
+        <button class="btn-action" @click="openPdf">
+          <i class="fas fa-file-pdf" />
+          PDF
+        </button>
         <!-- 등록은 출하를 골라야 해서 «출하 사후 처리» 화면에서 한다. 여기서는 그리로 보내 준다 -->
         <NuxtLink
           v-if="canSettle"
@@ -96,14 +105,17 @@
       <div class="summary-card">
         <span class="card-label">총 손실액</span>
         <strong class="card-value">{{ formatCurrency(totals.gross) }}</strong>
+        <small class="card-vat">부가세 포함 {{ formatCurrency(withVat(totals.gross)) }}</small>
       </div>
       <div class="summary-card oem">
         <span class="card-label">제조사 부담 (지급 차감)</span>
         <strong class="card-value">{{ formatCurrency(totals.oemDeduction) }}</strong>
+        <small class="card-vat">부가세 포함 {{ formatCurrency(withVat(totals.oemDeduction)) }}</small>
       </div>
       <div class="summary-card company">
         <span class="card-label">리드파워 부담</span>
         <strong class="card-value">{{ formatCurrency(totals.companyLoss) }}</strong>
+        <small class="card-vat">부가세 포함 {{ formatCurrency(withVat(totals.companyLoss)) }}</small>
       </div>
       <div class="summary-card pending">
         <span class="card-label">미정산</span>
@@ -164,7 +176,10 @@
             <td class="num" :class="{ negative: loss.grossLossAmount < 0 }">
               {{ formatCurrency(loss.grossLossAmount) }}
             </td>
-            <td class="num oem-amount">{{ formatCurrency(loss.oemDeductionAmount) }}</td>
+            <td class="num oem-amount">
+              {{ formatCurrency(loss.oemDeductionAmount) }}
+              <small v-if="Number(loss.oemDeductionAmount)" class="cell-vat">VAT포함 {{ formatCurrency(withVat(loss.oemDeductionAmount)) }}</small>
+            </td>
             <td class="num company-amount" :class="{ negative: loss.companyLossAmount < 0 }">
               {{ formatCurrency(loss.companyLossAmount) }}
             </td>
@@ -339,6 +354,15 @@
       @close="showInventory = false"
       @saved="onSubModalSaved('재고를 조정했습니다.')"
     />
+
+    <!-- 목록 PDF 미리보기·내려받기 (검색 조건 전체 건) -->
+    <PdfPreviewModal
+      :show="showPdf"
+      :pdf-url="pdfUrl"
+      title="납품 차이(손실) 내역서"
+      :file-name="`납품차이_손실내역서_${todayStr()}.pdf`"
+      @close="showPdf = false"
+    />
   </div>
 </template>
 
@@ -350,6 +374,7 @@ import { lossService } from '~/services/loss.service'
 import LossAdjustmentModal from '~/components/loss/LossAdjustmentModal.vue'
 import RecoveryLinkModal from '~/components/loss/RecoveryLinkModal.vue'
 import InventoryAdjustModal from '~/components/loss/InventoryAdjustModal.vue'
+import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { formatDate, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import {
   SETTLEMENT_STATUS_OPTIONS,
@@ -519,6 +544,52 @@ const settleLoss = async (loss: LossAdjustmentResponse, status: SettlementStatus
   }
 }
 
+/**
+ * 부가세 포함 금액 — 공급가 × 1.1, 부가세는 원 단위 반올림.
+ * 월별 매출원장(OemLedgerService)·엑셀·PDF 와 같은 규칙이라 숫자가 서로 맞는다.
+ */
+const withVat = (supply: unknown): number => {
+  const v = Number(supply || 0)
+  // Java HALF_UP 과 맞추려고 부호를 떼고 반올림한다 (JS Math.round(-2.5) 는 -2)
+  const vat = Math.sign(v) * Math.round(Math.abs(v) * 0.1)
+  return v + vat
+}
+
+const todayStr = (): string => {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
+}
+
+/** 엑셀 — 화면 검색 조건의 전체 건 */
+const exporting = ref(false)
+const handleExportExcel = async () => {
+  exporting.value = true
+  try {
+    const blob = await lossService.exportExcel(search.value)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `납품차이_손실목록_${todayStr()}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 1000) // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
+  } catch (error) {
+    window.alert(error instanceof Error ? error.message : '엑셀 내려받기에 실패했습니다.')
+  } finally {
+    exporting.value = false
+  }
+}
+
+/** PDF — 미리보기 창에서 보고 내려받는다 */
+const showPdf = ref(false)
+const pdfUrl = ref('')
+const openPdf = () => {
+  pdfUrl.value = lossService.pdfUrl(search.value)
+  showPdf.value = true
+}
+
 /** 차감·면제 → 미정산. 차감을 풀면 그 달 매출원장 지급액이 다시 늘어난다. */
 const revertSettlement = async (loss: LossAdjustmentResponse) => {
   const isDeducted = loss.settlementStatus === 'DEDUCTED'
@@ -666,6 +737,8 @@ onMounted(() => {
 .block { display: block; color: #6b7280; font-size: 0.72rem; }
 
 .oem-amount { color: #b45309; }
+.card-vat { display: block; margin-top: 2px; font-size: 0.72rem; color: #6b7280; }
+.cell-vat { display: block; font-size: 0.68rem; color: #9ca3af; white-space: nowrap; }
 .company-amount { color: #dc2626; }
 .negative { color: #059669 !important; }
 
