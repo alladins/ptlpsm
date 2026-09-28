@@ -23,6 +23,9 @@
         <button type="button" class="tab-button" :class="{ active: activeTab === 'digest' }" @click="activeTab = 'digest'">
           <i class="fas fa-sun" /> 아침 요약
         </button>
+        <button type="button" class="tab-button" :class="{ active: activeTab === 'keywords' }" @click="activeTab = 'keywords'">
+          <i class="fas fa-filter" /> 분류 키워드
+        </button>
         <button v-if="isLpAdmin" type="button" class="tab-button" :class="{ active: activeTab === 'runs' }" @click="activeTab = 'runs'">
           <i class="fas fa-history" /> 수집 기록
           <i v-if="collectStatus?.running" class="fas fa-spinner fa-spin running-dot" />
@@ -35,6 +38,10 @@
       </div>
       <div v-else-if="activeTab === 'digest'" class="tab-content">
         <LeadDigestTab />
+      </div>
+      <div v-else-if="activeTab === 'keywords'" class="tab-content">
+        <!-- 키워드 변경·다시 분류는 리드파워 관리자만 (서버 SecurityConfig 도 같은 기준) -->
+        <LeadKeywordTab :can-edit="isLpAdmin" />
       </div>
       <div v-else-if="isLpAdmin" class="tab-content">
         <CollectRunsTab
@@ -53,11 +60,13 @@
  * 영업관리 > 공모·낙찰 수집 (5단계-A)
  * ① 수집 결과: 영업 리드 목록·상세
  * ② 아침 요약: 대리점별 발송 미리보기
- * ③ 수집 기록: 상태·지금 수집·실행 기록·붙여넣기 적재
+ * ③ 분류 키워드: 종류 판별 키워드(공통코드 LEAD_KW_*) 관리·다시 분류
+ * ④ 수집 기록: 상태·지금 수집·실행 기록·붙여넣기 적재
  */
 import { computed, onMounted, ref } from 'vue'
 import LeadListTab from '~/components/admin/sales-lead/LeadListTab.vue'
 import LeadDigestTab from '~/components/admin/sales-lead/LeadDigestTab.vue'
+import LeadKeywordTab from '~/components/admin/sales-lead/LeadKeywordTab.vue'
 import CollectRunsTab from '~/components/admin/sales-lead/CollectRunsTab.vue'
 import { salesLeadService } from '~/services/sales-lead.service'
 import { usePermission } from '~/composables/usePermission'
@@ -76,7 +85,7 @@ const isSystemAdmin = computed(() => authStore.user?.role === 'SYSTEM_ADMIN')
 // 수집 실행·기록·상태와 대리점 필터는 리드파워 관리자 전용 — 서버도 /collect/**·/agencies 를 막는다 (2026-09-27 영업 역할 통합)
 const isLpAdmin = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(authStore.user?.role ?? ''))
 
-const activeTab = ref<'leads' | 'digest' | 'runs'>('leads')
+const activeTab = ref<'leads' | 'digest' | 'keywords' | 'runs'>('leads')
 
 /** 수집 상태 — 인증키 안내 배너와 수집 기록 탭이 같이 쓴다 */
 const collectStatus = ref<SalesCollectStatus | null>(null)

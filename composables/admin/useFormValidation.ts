@@ -26,7 +26,7 @@
  * ```
  */
 
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 
 /**
  * 검증 룰 함수 타입
@@ -349,6 +349,28 @@ export const validationRuleHelpers: ValidationRuleHelpers = {
     }
 
     return null
+  }
+}
+
+/**
+ * 오류가 떠 있는 칸은 값이 바뀌면 다시 검사해 오류를 지운다
+ *
+ * 사용 예시: revalidateOnChange(formData, { errors, validateField }, requiredRules)
+ */
+export function revalidateOnChange<T extends Record<string, any>>(
+  data: Record<string, any>,
+  validation: Pick<UseFormValidationReturn<T>, 'errors' | 'validateField'>,
+  ruleMap: Partial<Record<keyof T, ValidationRule[]>>
+) {
+  // 제출 때 뜬 오류가 값을 채운 뒤에도 남아 빨갛게 보이던 문제(09-28) —
+  // 오류가 떠 있는 칸만 값이 바뀔 때 다시 검사한다 (입력 전부터 빨갛게 만들지 않음)
+  for (const field of Object.keys(ruleMap) as (keyof T)[]) {
+    const rules = ruleMap[field] || []
+    watch(() => data[field as string], (value) => {
+      if (validation.errors[field]) {
+        validation.validateField(field, value, rules)
+      }
+    })
   }
 }
 

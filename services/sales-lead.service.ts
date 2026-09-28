@@ -10,6 +10,7 @@ import type {
   ImportKind,
   LeadBizType,
   LeadDigestGroup,
+  LeadKeywordGroup,
   SalesCollectRun,
   SalesCollectStatus,
   SalesLead,
@@ -33,6 +34,32 @@ export const salesLeadService = {
   /** 아침 요약 미리보기 — date 생략 시 오늘(KST) */
   digest (date?: string): Promise<LeadDigestGroup[]> {
     return apiClient.get<LeadDigestGroup[]>(`${BASE}/digest`, { date })
+  },
+
+  /** 분류 키워드 5묶음 (사용 안 함 포함) */
+  getKeywords (): Promise<LeadKeywordGroup[]> {
+    return apiClient.get<LeadKeywordGroup[]>(`${BASE}/keywords`)
+  },
+
+  /** 키워드 추가 — 바뀐 5묶음을 돌려준다 */
+  addKeyword (groupCode: string, word: string): Promise<LeadKeywordGroup[]> {
+    const query = new URLSearchParams({ groupCode, word }).toString()
+    return apiClient.post<LeadKeywordGroup[]>(`${BASE}/keywords?${query}`)
+  },
+
+  removeKeyword (groupCode: string, code: string): Promise<LeadKeywordGroup[]> {
+    const query = new URLSearchParams({ groupCode, code }).toString()
+    return apiClient.delete<LeadKeywordGroup[]>(`${BASE}/keywords?${query}`)
+  },
+
+  setKeywordUse (groupCode: string, code: string, use: boolean): Promise<LeadKeywordGroup[]> {
+    const query = new URLSearchParams({ groupCode, code, use: String(use) }).toString()
+    return apiClient.put<LeadKeywordGroup[]>(`${BASE}/keywords/use?${query}`)
+  },
+
+  /** 최근 days 일 리드를 지금 키워드로 다시 분류 (백그라운드) */
+  reclassify (days: number): Promise<SalesCollectStatus> {
+    return apiClient.post<SalesCollectStatus>(`${BASE}/reclassify?days=${days}`)
   },
 
   /** 수집 상태 (키 설정·진행 중·막힌 이유) */

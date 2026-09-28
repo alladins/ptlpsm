@@ -25,13 +25,10 @@
           </select>
         </div>
         <div class="search-item">
-          <label>출처:</label>
+          <label>단계:</label>
           <select v-model="searchForm.source" class="status-select" @change="search">
-            <option value="">
-              전체
-            </option>
-            <option v-for="(label, code) in LEAD_SOURCE_LABELS" :key="code" :value="code">
-              {{ label }}
+            <option v-for="opt in LEAD_STAGE_FILTER_OPTIONS" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
             </option>
           </select>
         </div>
@@ -103,12 +100,33 @@
         <p>조건에 맞는 수집 결과가 없습니다.</p>
       </div>
       <div v-else class="table-container">
-        <table class="data-table">
+        <!-- 휴대폰: 카드 — 누르면 상세 -->
+        <ul class="m-card-list m-narrow-only">
+          <li v-for="item in items" :key="`c-${item.leadId}`">
+            <button type="button" class="m-card" @click="openDetail(item)">
+              <div class="m-card-head">
+                <span class="m-card-title">{{ item.title || '-' }}</span>
+                <LeadKindBadge :kind="item.projectKind || item.leadKind" />
+              </div>
+              <div class="m-card-meta">
+                <span class="stage-badge" :class="`stage-${leadStage(item)}`">{{ LEAD_STAGE_LABELS[leadStage(item)] }}</span>
+                {{ item.dminsttNm || '-' }}
+              </div>
+              <div class="m-card-meta">
+                {{ item.winnerNm || '-' }} · {{ item.amount === null || item.amount === undefined ? '-' : formatNumber(item.amount) + '원' }} · {{ item.eventDate || '-' }}
+              </div>
+              <div class="m-card-meta">
+                {{ item.agencyId ? (item.agencyName || '-') : codeLabel(RESOLVE_STATUS_LABELS, item.resolveStatus) }}
+              </div>
+            </button>
+          </li>
+        </ul>
+        <table class="data-table m-wide-only">
           <thead>
             <tr>
               <th>첫 수집일</th>
               <th>종류</th>
-              <th>출처</th>
+              <th>단계</th>
               <th>사업명</th>
               <th>수요기관</th>
               <th>낙찰·계약업체</th>
@@ -124,10 +142,12 @@
                 {{ item.firstSeenDate || '-' }}
               </td>
               <td>
-                <LeadKindBadge :kind="item.leadKind" />
+                <LeadKindBadge :kind="item.projectKind || item.leadKind" />
               </td>
               <td class="nowrap">
-                {{ codeLabel(LEAD_SOURCE_LABELS, item.source) }}
+                <span class="stage-badge" :class="`stage-${leadStage(item)}`">
+                  {{ LEAD_STAGE_LABELS[leadStage(item)] }}
+                </span>
                 <div class="text-muted small">
                   {{ codeLabel(LEAD_BIZ_TYPE_LABELS, item.bizType) }}
                 </div>
@@ -153,9 +173,17 @@
               </td>
               <td class="text-right nowrap">
                 {{ item.amount === null || item.amount === undefined ? '-' : formatNumber(item.amount) }}
+                <div v-if="item.contractCount" class="text-muted small">
+                  계약 {{ item.contractAmount === null || item.contractAmount === undefined ? '-' : formatNumber(item.contractAmount) }}
+                </div>
               </td>
               <td class="nowrap">
                 {{ item.eventDate || '-' }}
+                <div v-if="item.contractCount" class="text-muted small">
+                  계약 {{ item.contractDate || '-' }}<template v-if="item.contractCount > 1">
+                    외 {{ item.contractCount - 1 }}건
+                  </template>
+                </div>
               </td>
               <td>
                 <template v-if="item.agencyId">
@@ -176,7 +204,7 @@
               <td class="text-left">
                 <NuxtLink
                   v-if="item.designOfficeId"
-                  to="/admin/design-office/list"
+                  :to="`/admin/design-office/list?id=${item.designOfficeId}`"
                   class="link"
                   :title="item.officeNote || ''"
                   @click.stop
@@ -214,8 +242,6 @@ import Pagination from '~/components/ui/Pagination.vue'
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import LeadKindBadge from '~/components/admin/sales-lead/LeadKindBadge.vue'
 import LeadDetailModal from '~/components/admin/sales-lead/LeadDetailModal.vue'
-
-const props = withDefaults(defineProps<{ showAgencyFilter?: boolean }>(), { showAgencyFilter: true })
 import { salesLeadService } from '~/services/sales-lead.service'
 import { agencyService } from '~/services/agency.service'
 import { formatNumber } from '~/utils/format'
@@ -230,11 +256,15 @@ import {
 import {
   LEAD_BIZ_TYPE_LABELS,
   LEAD_KIND_FILTER_OPTIONS,
-  LEAD_SOURCE_LABELS,
+  LEAD_STAGE_FILTER_OPTIONS,
+  LEAD_STAGE_LABELS,
   addDays,
   formatBizno,
+  leadStage,
   type SalesLead
 } from '~/types/sales-lead'
+
+const props = withDefaults(defineProps<{ showAgencyFilter?: boolean }>(), { showAgencyFilter: true })
 
 // 기본 기간: 오늘 포함 최근 7일 (KST)
 const today = todayKst()
@@ -352,6 +382,26 @@ onMounted(() => {
 
 .org-cell {
   max-width: 200px;
+}
+
+.stage-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.stage-AWARD_CONTRACT {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.stage-CONTRACT {
+  background: #e0f2fe;
+  color: #075985;
 }
 
 .link {

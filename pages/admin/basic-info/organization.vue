@@ -34,7 +34,14 @@
         <button class="btn-search-inline" style="background: #16a34a; color: white; border-color: #16a34a;" @click="openAddModal">
           <i class="fas fa-plus" /> 등록
         </button>
-        <button v-if="isSystemAdmin" class="btn-secondary-sm" :disabled="syncing" @click="openSyncModal">
+        <!-- 옆 [검색]·[등록]과 같은 버튼 모양 (btn-secondary-sm 은 이 화면에 스타일이 없어 글자만 보였다) -->
+        <button
+          v-if="isSystemAdmin"
+          class="btn-search-inline"
+          style="background: #475569; color: white; border-color: #475569;"
+          :disabled="syncing"
+          @click="openSyncModal"
+        >
           <i class="fas" :class="syncing ? 'fa-spinner fa-spin' : 'fa-sync'" />
           {{ syncing ? '동기화 중...' : '나라장터 동기화' }}
         </button>
