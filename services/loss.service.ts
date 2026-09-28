@@ -12,6 +12,7 @@
  */
 
 import { apiClient } from '~/services/api/client'
+import { getApiBaseUrl, getAuthHeaders } from './api'
 import type {
   LossAdjustmentRequest,
   LossAdjustmentResponse,
@@ -25,7 +26,38 @@ import type {
 
 const BASE = '/admin/losses'
 
+/** 검색 조건 → 쿼리스트링 (빈 값·페이지 정보는 뺀다 — 엑셀·PDF 는 전체 건) */
+const toExportQuery = (params: LossSearchRequest): string => {
+  const qs = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (key === 'page' || key === 'size') { return }
+    if (value === undefined || value === null || value === '') { return }
+    qs.append(key, String(value))
+  })
+  return qs.toString()
+}
+
 export const lossService = {
+  /**
+   * 목록 엑셀 (검색 조건 전체 건, 제조사 부담 부가세 포함 금액 포함)
+   */
+  async exportExcel(params: LossSearchRequest = {}): Promise<Blob> {
+    const response = await fetch(`${getApiBaseUrl()}${BASE}/export?${toExportQuery(params)}`, {
+      headers: getAuthHeaders()
+    })
+    if (!response.ok) {
+      throw new Error(`엑셀 내려받기에 실패했습니다. (HTTP ${response.status})`)
+    }
+    return response.blob()
+  },
+
+  /**
+   * 목록 PDF 주소 — PdfPreviewModal 이 fetch 해서 미리보기·내려받기 한다
+   */
+  pdfUrl(params: LossSearchRequest = {}): string {
+    return `${getApiBaseUrl()}${BASE}/pdf?${toExportQuery(params)}`
+  },
+
   /**
    * 손실 목록 조회
    * @param params 검색 조건 (page 는 0-indexed)
