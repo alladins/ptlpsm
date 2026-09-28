@@ -1,43 +1,48 @@
 <template>
   <div class="admin-page">
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">
-          운송비 원장
-        </h1>
-        <p class="page-desc">
-          리드파워가 부담한 운송비를 운송사별·월별로 모아 봅니다. 운송사 정산 근거로 씁니다.
-        </p>
-      </div>
-      <div class="header-actions">
-        <button class="btn-excel" :disabled="loading || !ledger" @click="downloadExcel">
-          <i class="fas fa-file-excel" />
-          엑셀 내려받기
+    <!-- 페이지 헤더 — 다른 목록 화면과 같은 공용 컴포넌트. 검색·엑셀·PDF 는 오른쪽 위 -->
+    <PageHeader
+      title="운송비 원장"
+      description="리드파워가 부담한 운송비를 운송사별·월별로 모아 봅니다. 운송사 정산 근거로 씁니다."
+      icon="transport"
+      icon-color="blue"
+    >
+      <template #actions>
+        <button class="btn-action" :disabled="loading" @click="load">
+          <i v-if="loading" class="fas fa-spinner fa-spin" />
+          <i v-else class="fas fa-search" />
+          검색
         </button>
-      </div>
-    </div>
+        <button class="btn-action" :disabled="loading || !ledger" @click="downloadExcel">
+          <i class="fas fa-file-excel" />
+          엑셀
+        </button>
+        <button class="btn-action" :disabled="loading || !ledger" @click="openPdf">
+          <i class="fas fa-file-pdf" />
+          PDF
+        </button>
+      </template>
+    </PageHeader>
 
-    <!-- 검색 -->
-    <div class="search-box">
-      <div class="search-field">
-        <label>조회 월</label>
-        <input v-model="yearMonth" type="month" class="form-input" @change="load">
+    <!-- 검색 조건 — 공용 search-section-compact 규격 -->
+    <div class="search-section-compact">
+      <div class="search-row-single">
+        <div class="search-item">
+          <label>조회 월:</label>
+          <input v-model="yearMonth" type="month" class="text-input" @change="load">
+        </div>
+        <div class="search-item">
+          <label>운송사:</label>
+          <select v-model="selectedCarrierId" class="status-select" @change="load">
+            <option :value="null">
+              전체
+            </option>
+            <option v-for="c in carriers" :key="c.carrierCompanyId" :value="c.carrierCompanyId">
+              {{ c.carrierCompanyName }}
+            </option>
+          </select>
+        </div>
       </div>
-      <div class="search-field">
-        <label>운송사</label>
-        <select v-model="selectedCarrierId" class="form-select" @change="load">
-          <option :value="null">
-            전체
-          </option>
-          <option v-for="c in carriers" :key="c.carrierCompanyId" :value="c.carrierCompanyId">
-            {{ c.carrierCompanyName }}
-          </option>
-        </select>
-      </div>
-      <button class="btn-search" :disabled="loading" @click="load">
-        <i class="fas fa-search" />
-        조회
-      </button>
     </div>
 
     <!--
@@ -155,12 +160,22 @@
         </tfoot>
       </table>
     </div>
+
+    <!-- PDF 미리보기·내려받기 -->
+    <PdfPreviewModal
+      :show="showPdf"
+      :pdf-url="pdfUrl"
+      title="운송비 원장"
+      :file-name="`운송비원장_${yearMonth}.pdf`"
+      @close="showPdf = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { carrierLedgerService } from '~/services/carrier-ledger.service'
+import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { formatCurrency, formatDate, getLocalDateString } from '~/utils/format'
 import type { CarrierMonthlyLedger, CarrierSummary } from '~/types/carrier-ledger'
 
@@ -222,6 +237,14 @@ const downloadExcel = async () => {
   }
 }
 
+/** PDF — 미리보기 창에서 보고 내려받는다 (엑셀과 같은 내용) */
+const showPdf = ref(false)
+const pdfUrl = ref('')
+const openPdf = () => {
+  pdfUrl.value = carrierLedgerService.pdfUrl(yearMonth.value, selectedCarrierId.value)
+  showPdf.value = true
+}
+
 onMounted(load)
 </script>
 
@@ -231,44 +254,6 @@ onMounted(load)
 @import '@/assets/css/admin-tables.css';
 @import '@/assets/css/admin-search.css';
 
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.page-desc {
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.search-box {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.75rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-}
-
-.search-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.search-field label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-/* 요약 */
 .summary-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

@@ -6,7 +6,7 @@
         <div class="modal-header">
           <h3>
             <i class="fas fa-file-pdf" />
-            납품 인수증 PDF
+            {{ title || '납품 인수증 PDF' }}
           </h3>
           <button class="btn-close" @click="$emit('close')">
             <i class="fas fa-times" />
@@ -63,6 +63,8 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 
 interface Props {
   pdfUrl: string
+  /** 창 제목 (없으면 기존 «납품 인수증 PDF») */
+  title?: string
   deliveryId?: number
   fileName?: string
   show: boolean
