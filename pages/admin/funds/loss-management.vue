@@ -217,6 +217,16 @@
               >
                 면제
               </button>
+              <!-- 차감·면제를 잘못 눌렀을 때 미정산으로 되돌린다.
+                   차감 건은 그 달 지급요청이 살아 있으면 서버가 거부하고 이유를 알려준다. -->
+              <button
+                v-if="canSettle && loss.status === 'CONFIRMED' && (loss.settlementStatus === 'DEDUCTED' || loss.settlementStatus === 'WAIVED')"
+                class="btn-mini btn-revert"
+                :title="loss.settlementStatus === 'DEDUCTED' ? '차감을 취소하고 미정산으로 되돌림' : '면제를 취소하고 미정산으로 되돌림'"
+                @click="revertSettlement(loss)"
+              >
+                {{ loss.settlementStatus === 'DEDUCTED' ? '차감 취소' : '면제 취소' }}
+              </button>
               <button
                 v-if="canSettle && loss.status === 'CONFIRMED' && loss.settlementStatus !== 'DEDUCTED'"
                 class="btn-mini btn-danger"
@@ -499,6 +509,23 @@ const settleLoss = async (loss: LossAdjustmentResponse, status: SettlementStatus
   }
 }
 
+/** 차감·면제 → 미정산. 차감을 풀면 그 달 매출원장 지급액이 다시 늘어난다. */
+const revertSettlement = async (loss: LossAdjustmentResponse) => {
+  const isDeducted = loss.settlementStatus === 'DEDUCTED'
+  const effect = isDeducted
+    ? `\n· ${loss.settlementYearMonth || ''} 매출원장에서 빠졌던 ${formatCurrency(loss.oemDeductionAmount)}원이 다시 지급액에 포함됩니다.`
+    : ''
+  const msg = `${loss.lossNo} 건의 ${isDeducted ? '차감을' : '면제를'} 취소하고 «미정산»으로 되돌립니다.${effect}\n· 되돌린 뒤에는 다시 수정·취소할 수 있습니다.\n\n진행하시겠습니까?`
+  if (!window.confirm(msg)) return
+
+  try {
+    await lossService.settle(loss.lossId, 'PENDING', loss.settlementYearMonth || undefined)
+    await loadList()
+  } catch (error) {
+    window.alert(error instanceof Error ? error.message : '되돌리기에 실패했습니다.')
+  }
+}
+
 const cancelLoss = async (loss: LossAdjustmentResponse) => {
   // 손실 등록은 출하 수량 자체를 바꾸지 않는다. 되돌아가는 것은 비고 표기·계산상 차감·재고 조정이다.
   const revertInventory = loss.inventoryAdjusted
@@ -661,6 +688,7 @@ onMounted(() => {
 .btn-mini { margin-bottom: 0.2rem; }
 .btn-mini.btn-deduct { border-color: #059669; color: #059669; }
 .btn-mini.btn-danger { border-color: #dc2626; color: #dc2626; }
+.btn-mini.btn-revert { border-color: #6b7280; color: #4b5563; }
 .btn-mini.btn-recovery { border-color: #2563eb; color: #2563eb; }
 .btn-mini.btn-reissue { border-color: #7c3aed; color: #7c3aed; }
 .btn-mini.btn-inventory { border-color: #b45309; color: #b45309; }
