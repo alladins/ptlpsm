@@ -63,6 +63,22 @@ const totalElements = ref(0)
 const loading = ref(false)
 const message = ref('')
 
+/**
+ * 검색어와 가까운 이름 먼저 — ① 이름이 같음 ② 이름이 검색어로 끝남(«전남광주통합특별시 순천시») ③ 짧은 이름
+ * (기관 본청은 이름이 짧고 검색어로 끝나는 경우가 많다)
+ */
+const rankByName = (list: DemandOrganization[], kw: string) => {
+  const k = kw.replace(/\s+/g, '')
+  const score = (o: DemandOrganization) => {
+    const n = (o.dminsttNm || '').replace(/\s+/g, '')
+    if (n === k) { return 0 }
+    if (n.endsWith(k)) { return 1 }
+    if (n.startsWith(k)) { return 2 }
+    return 3
+  }
+  return [...list].sort((a, b) => score(a) - score(b) || (a.dminsttNm || '').length - (b.dminsttNm || '').length)
+}
+
 /** 늦게 도착한 이전 검색 결과가 새 결과를 덮지 않게 */
 let seq = 0
 
@@ -78,15 +94,16 @@ const search = async () => {
   loading.value = true
   message.value = ''
   try {
+    // 넉넉히 받아 «가까운 이름» 순으로 다시 세운다 — 이름순이면 «순천시» 검색에 «(사)…순천시지회» 가 시청보다 먼저 나왔다
     const res = await demandOrganizationService.searchDemandOrganizations({
       searchKeyword: kw,
       page: 0,
-      size: 15,
+      size: 60,
       sortBy: 'dminsttNm',
       sortDirection: 'asc'
     })
     if (my !== seq) { return }
-    options.value = res.content || []
+    options.value = rankByName(res.content || [], kw).slice(0, 15)
     totalElements.value = res.totalElements || 0
     if (options.value.length === 0) {
       message.value = '찾는 수요기관이 없습니다. 이름을 줄여서 넣어 보세요 (예: «순천시»).'

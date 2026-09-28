@@ -101,7 +101,26 @@
         </div>
 
         <div class="table-container">
-          <table class="data-table">
+          <!-- 휴대폰: 카드 — 누르면 상세, 전화·메일은 바로 걸기/쓰기 -->
+          <ul v-if="cardData.length > 0" class="m-card-list m-narrow-only">
+            <li v-for="item in cardData" :key="`c-${item.cardId}`" class="m-card" @click="openDetailModal(item)">
+              <div class="m-card-head">
+                <span class="m-card-title">{{ item.contactNm }}</span>
+                <span class="org-badge" :class="`org-${item.orgType || 'DEMAND_ORG'}`">{{ orgLabel(item.orgType) }}</span>
+              </div>
+              <div class="m-card-meta">
+                {{ item.dminsttNm || '-' }}
+              </div>
+              <div v-if="item.memo" class="m-card-meta">
+                {{ item.memo }}
+              </div>
+              <div v-if="item.contactTel || item.contactEmail" class="m-card-actions" @click.stop>
+                <a v-if="item.contactTel" :href="`tel:${item.contactTel}`"><i class="fas fa-phone" /> {{ item.contactTel }}</a>
+                <a v-if="item.contactEmail" :href="`mailto:${item.contactEmail}`"><i class="fas fa-envelope" /> 메일</a>
+              </div>
+            </li>
+          </ul>
+          <table class="data-table m-wide-only">
             <thead>
               <tr>
                 <th>No</th>

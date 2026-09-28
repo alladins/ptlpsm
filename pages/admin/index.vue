@@ -831,6 +831,7 @@ onMounted(async () => {
 }
 
 .stat-card {
+  min-width: 0;
   background: white;
   border-radius: 8px;
   padding: 1rem;
@@ -1284,8 +1285,9 @@ onMounted(async () => {
 }
 
 @media (max-width: 480px) {
+  /* 휴대폰은 한 줄에 카드 하나 — 두 줄이면 «6,138,…원» 같은 금액이 화면 밖으로 잘렸다 (2026-09-28) */
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .quick-actions-bar {

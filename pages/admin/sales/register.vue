@@ -19,9 +19,11 @@
         <AccordionSection title="고객 정보" :default-expanded="true">
           <div class="info-grid grid-2">
             <FormField label="수요기관" required :error="errors.dminsttCd">
-              <DemandOrganizationSelector
-                v-model="formData.dminsttCd"
-                @organization-selected="handleOrganizationSelected"
+              <!-- 입력하면 바로 검색해서 고른다 (팝업 없음 — 휴대폰·태블릿에서 영업 현장 입력) -->
+              <DemandOrgPicker
+                :selected-name="formData.dminsttCd ? formData.dminsttNm : ''"
+                @selected="handleOrganizationSelected"
+                @cleared="formData.dminsttCd = ''; formData.dminsttNm = ''"
               />
             </FormField>
 
