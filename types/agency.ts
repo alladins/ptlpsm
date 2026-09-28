@@ -384,6 +384,52 @@ export interface RebuildResult {
 // 설계사무소
 // ============================================
 
+/** 설계사무소관리 권역 트리 — 사용 중 권역별 수 (상위는 하위 합을 화면에서 더한다) */
+export interface DesignOfficeRegionTree {
+  regions: {
+    regionId: number
+    regionCode: string
+    regionName: string
+    parentRegionId: number | null
+    sortOrder: number | null
+    /** 이 권역에 직접 속한 시군구의 사무소 수 */
+    officeCount: number
+  }[]
+  /** 시군구는 있으나 어느 권역에도 없는 곳 (광역시·세종·제주 등) */
+  unassigned: number
+  /** 소재 시군구 미판정 */
+  noSigungu: number
+  total: number
+  /** 로그인한 대리점 직원의 담당 권역 (리드파워 직원은 빈 목록) */
+  myRegionIds: number[]
+}
+
+export interface DesignOfficeSearchParams {
+  keyword?: string
+  sidoCd?: string
+  /** true 면 소재 시군구 미판정만 */
+  noSigungu?: boolean
+  /** 권역 (그 권역 + 하위 권역) */
+  regionId?: number
+  /** true 면 권역 미배정만 */
+  unassigned?: boolean
+  /** 0-based */
+  page: number
+  size: number
+}
+
+/** 나라장터 업체정보 일괄 보강 결과 */
+export interface DesignOfficeEnrichResult {
+  /** 본 곳 (주소·시군구가 빈 곳, 최대 300) */
+  checked: number
+  /** 한 칸이라도 채운 곳 */
+  filled: number
+  /** 채운 주소로 소재 시군구까지 판정된 곳 */
+  sigunguResolved: number
+  /** 업체정보를 못 찾았거나 채울 것이 없던 곳 */
+  notFound: number
+}
+
 export interface DesignOffice {
   designOfficeId: number
   companyName: string
@@ -400,6 +446,15 @@ export interface DesignOffice {
   remarks: string | null
   createdAt: string | null
   updatedAt: string | null
+}
+
+/** 백엔드 comm PageResponse (현재 페이지 필드명 `page`, 0-based) */
+export interface DesignOfficePage {
+  content: DesignOffice[]
+  totalElements: number
+  totalPages: number
+  page: number
+  size: number
 }
 
 export interface DesignOfficeRequest {

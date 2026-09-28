@@ -74,10 +74,17 @@
           <tbody>
             <tr v-for="lead in group.leads" :key="lead.leadId">
               <td>
-                <LeadKindBadge :kind="lead.leadKind" />
+                <LeadKindBadge :kind="lead.projectKind || lead.leadKind" />
               </td>
               <td class="text-left">
                 {{ lead.title || '-' }}
+                <!-- 예전에 받은 낙찰에 오늘 계약이 붙은 사업 = 단계 변화 / 같은 날 낙찰·계약 = 한 줄로 합침 -->
+                <div v-if="lead.source === 'G2B_CONTRACT' && lead.awardLeadId" class="stage-note">
+                  계약 체결 <span class="text-muted">(낙찰 {{ lead.awardDate || '-' }})</span>
+                </div>
+                <div v-else-if="lead.contractCount" class="stage-note">
+                  낙찰 → 계약까지 <span class="text-muted">(계약 {{ lead.contractDate || '-' }})</span>
+                </div>
               </td>
               <td class="text-left">
                 {{ lead.dminsttNm || '-' }}
@@ -219,6 +226,13 @@ onMounted(load)
 
 .digest-table {
   font-size: 0.8125rem;
+}
+
+.stage-note {
+  margin-top: 0.125rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #166534;
 }
 
 .nowrap {

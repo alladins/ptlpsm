@@ -78,7 +78,28 @@
         </div>
 
         <div class="table-container">
-          <table class="data-table">
+          <!-- 휴대폰: 카드 (영업 현장에서 한 손으로 보기) -->
+          <ul v-if="salesData.length > 0" class="m-card-list m-narrow-only">
+            <li v-for="item in salesData" :key="`c-${item.id}`">
+              <button type="button" class="m-card" @click="editItem(item.id)">
+                <div class="m-card-head">
+                  <span class="m-card-title">{{ item.salesTitle || '-' }}</span>
+                  <span class="progress-badge" :style="{ background: getProgressColor(item.salesStatus) + '20', color: getProgressColor(item.salesStatus) }">
+                    {{ item.salesStatus }}
+                  </span>
+                </div>
+                <div class="m-card-meta">
+                  {{ item.dminsttNm || '-' }}<template v-if="item.customerNm">
+                    · {{ item.customerNm }}
+                  </template>
+                </div>
+                <div class="m-card-meta">
+                  {{ formatCurrency(item.contractAmount) }} · {{ formatDate(item.updatedAt) || formatDate(item.createdAt) }}
+                </div>
+              </button>
+            </li>
+          </ul>
+          <table class="data-table m-wide-only">
             <thead>
               <tr>
                 <th>No</th>

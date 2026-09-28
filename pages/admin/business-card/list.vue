@@ -28,13 +28,26 @@
       <!-- 검색 조건 -->
       <div class="search-section-compact">
         <div class="search-row-single">
-          <!-- 수요기관명 -->
+          <!-- 소속 구분 -->
           <div class="search-item">
-            <label>수요기관명:</label>
+            <label>구분:</label>
+            <select v-model="searchForm.orgType" class="status-select" @change="handleSearch">
+              <option value="">
+                전체
+              </option>
+              <option v-for="(label, code) in ORG_TYPE_LABELS" :key="code" :value="code">
+                {{ label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- 소속명 -->
+          <div class="search-item">
+            <label>소속명:</label>
             <input
               v-model="searchForm.dminsttNm"
               type="text"
-              placeholder="수요기관명"
+              placeholder="수요기관·업체명"
               class="keyword-input"
               @keyup.enter="handleSearch"
             >
@@ -58,7 +71,7 @@
             <input
               v-model="searchForm.keyword"
               type="text"
-              placeholder="기관명, 담당자, 연락처, 이메일 검색"
+              placeholder="소속명, 담당자, 연락처, 이메일 검색"
               class="keyword-input"
               @keyup.enter="handleSearch"
             >
@@ -88,11 +101,30 @@
         </div>
 
         <div class="table-container">
-          <table class="data-table">
+          <!-- 휴대폰: 카드 — 누르면 상세, 전화·메일은 바로 걸기/쓰기 -->
+          <ul v-if="cardData.length > 0" class="m-card-list m-narrow-only">
+            <li v-for="item in cardData" :key="`c-${item.cardId}`" class="m-card" @click="openDetailModal(item)">
+              <div class="m-card-head">
+                <span class="m-card-title">{{ item.contactNm }}</span>
+                <span class="org-badge" :class="`org-${item.orgType || 'DEMAND_ORG'}`">{{ orgLabel(item.orgType) }}</span>
+              </div>
+              <div class="m-card-meta">
+                {{ item.dminsttNm || '-' }}
+              </div>
+              <div v-if="item.memo" class="m-card-meta">
+                {{ item.memo }}
+              </div>
+              <div v-if="item.contactTel || item.contactEmail" class="m-card-actions" @click.stop>
+                <a v-if="item.contactTel" :href="`tel:${item.contactTel}`"><i class="fas fa-phone" /> {{ item.contactTel }}</a>
+                <a v-if="item.contactEmail" :href="`mailto:${item.contactEmail}`"><i class="fas fa-envelope" /> 메일</a>
+              </div>
+            </li>
+          </ul>
+          <table class="data-table m-wide-only">
             <thead>
               <tr>
                 <th>No</th>
-                <th>수요기관명</th>
+                <th>소속</th>
                 <th>담당자명</th>
                 <th>연락처</th>
                 <th>이메일</th>
@@ -110,7 +142,12 @@
                 @click="openDetailModal(item)"
               >
                 <td>{{ startIndex + index }}</td>
-                <td>{{ item.dminsttNm || '-' }}</td>
+                <td class="text-left">
+                  <span class="org-badge" :class="`org-${item.orgType || 'DEMAND_ORG'}`">
+                    {{ orgLabel(item.orgType) }}
+                  </span>
+                  {{ item.dminsttNm || '-' }}
+                </td>
                 <td>{{ item.contactNm }}</td>
                 <td>{{ item.contactTel || '-' }}</td>
                 <td>{{ item.contactEmail || '-' }}</td>
@@ -167,12 +204,21 @@
             <template v-if="viewMode === 'view'">
               <div class="detail-group">
                 <div class="detail-row">
-                  <span class="detail-label">수요기관</span>
-                  <span class="detail-value">{{ viewingCard?.dminsttNm || '-' }}</span>
+                  <span class="detail-label">소속</span>
+                  <span class="detail-value">
+                    <span class="org-badge" :class="`org-${viewingCard?.orgType || 'DEMAND_ORG'}`">
+                      {{ orgLabel(viewingCard?.orgType) }}
+                    </span>
+                    {{ viewingCard?.dminsttNm || '-' }}
+                  </span>
                 </div>
-                <div class="detail-row">
+                <div v-if="viewingCard?.orgType === 'SUPPLIER'" class="detail-row">
+                  <span class="detail-label">사업자번호</span>
+                  <span class="detail-value">{{ viewingCard?.orgBizno || '-' }}</span>
+                </div>
+                <div v-else-if="viewingCard?.dminsttCd" class="detail-row">
                   <span class="detail-label">기관코드</span>
-                  <span class="detail-value">{{ viewingCard?.dminsttCd || '-' }}</span>
+                  <span class="detail-value">{{ viewingCard?.dminsttCd }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">담당자명</span>
@@ -204,30 +250,35 @@
             <!-- 편집 폼 (edit/create 모드) -->
             <template v-else>
               <div class="form-group">
-                <label class="form-label required">수요기관</label>
-                <!-- 수요기관 입력 모드 토글 -->
+                <label class="form-label required">소속</label>
+                <!-- 소속 구분 — 수요기관(발주처) / 조달업체(설계사무소·건설사 등) / 기타(직접 입력) -->
                 <div class="org-input-toggle">
-                  <label class="radio-label">
-                    <input v-model="orgInputMode" type="radio" value="select">
-                    <span>선택</span>
-                  </label>
-                  <label class="radio-label">
-                    <input v-model="orgInputMode" type="radio" value="direct">
-                    <span>직접입력</span>
+                  <label v-for="(label, code) in ORG_TYPE_LABELS" :key="code" class="radio-label">
+                    <input v-model="formData.orgType" type="radio" :value="code" @change="onOrgTypeChange">
+                    <span>{{ label }}</span>
                   </label>
                 </div>
-                <!-- 선택 모드 -->
-                <DemandOrganizationSelector
-                  v-if="orgInputMode === 'select'"
-                  v-model="formData.dminsttCd"
-                  @organization-selected="handleOrgSelected"
+                <!-- 수요기관: 검색해서 선택 -->
+                <DemandOrgPicker
+                  v-if="formData.orgType === 'DEMAND_ORG'"
+                  :selected-name="formData.dminsttCd ? formData.dminsttNm : ''"
+                  @selected="handleOrgSelected"
+                  @cleared="formData.dminsttCd = ''; formData.dminsttNm = ''"
                 />
-                <!-- 직접입력 모드 -->
+                <!-- 조달업체: 회사 마스터·나라장터에서 검색해서 선택 -->
+                <SupplierSelector
+                  v-else-if="formData.orgType === 'SUPPLIER'"
+                  :selected-name="formData.companyId || formData.orgBizno ? formData.dminsttNm : ''"
+                  :selected-bizno="formData.orgBizno"
+                  @selected="handleSupplierSelected"
+                  @cleared="clearSupplier"
+                />
+                <!-- 기타: 직접 입력 -->
                 <input
                   v-else
                   v-model="formData.dminsttNm"
                   type="text"
-                  placeholder="회사명을 직접 입력하세요"
+                  placeholder="소속(회사·기관)명을 직접 입력하세요"
                   class="form-input"
                 >
               </div>
@@ -304,10 +355,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { businessCardService, type BusinessCardSearchRequest, type BusinessCardRequest, type BusinessCardResponse } from '~/services/business-card.service'
+import { useRoute, useRouter } from '#imports'
+import { businessCardService, ORG_TYPE_LABELS, type OrgType, type SupplierOption, type BusinessCardRequest, type BusinessCardResponse } from '~/services/business-card.service'
 import { formatDate, formatPhoneNumberInput } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
-import DemandOrganizationSelector from '~/components/DemandOrganizationSelector.vue'
+import DemandOrgPicker from '~/components/DemandOrgPicker.vue'
+import SupplierSelector from '~/components/SupplierSelector.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -315,7 +368,8 @@ definePageMeta({
 })
 
 // 검색 폼
-const searchForm = ref<BusinessCardSearchRequest>({
+const searchForm = ref<{ orgType: OrgType | '', dminsttNm: string, contactNm: string, keyword: string }>({
+  orgType: '',
   dminsttNm: '',
   contactNm: '',
   keyword: ''
@@ -338,6 +392,7 @@ const {
 } = useDataTable({
   fetchFunction: async (params) => {
     return await businessCardService.getBusinessCardList({
+      orgType: searchForm.value.orgType || undefined,
       dminsttNm: searchForm.value.dminsttNm || undefined,
       contactNm: searchForm.value.contactNm || undefined,
       keyword: searchForm.value.keyword || undefined,
@@ -352,7 +407,7 @@ const {
 const handleSearch = () => search()
 
 const handleReset = () => {
-  searchForm.value = { dminsttNm: '', contactNm: '', keyword: '' }
+  searchForm.value = { orgType: '', dminsttNm: '', contactNm: '', keyword: '' }
   reset()
 }
 
@@ -366,27 +421,34 @@ const viewMode = ref<ViewMode>('create')
 const editingCardId = ref<number | null>(null)
 const viewingCard = ref<BusinessCardResponse | null>(null)
 const saving = ref(false)
-const orgInputMode = ref<'select' | 'direct'>('select')
+
+/** 소속 구분 라벨 — 옛 명함(구분 없음)은 수요기관 */
+const orgLabel = (t?: string | null) => ORG_TYPE_LABELS[(t || 'DEMAND_ORG') as OrgType] || '수요기관'
 
 const modalTitle = computed(() => {
   switch (viewMode.value) {
     case 'view': return '명함 상세'
     case 'edit': return '명함 수정'
-    case 'create': return '명함 등록'
+    default: return '명함 등록'
   }
 })
 
-const formData = ref<BusinessCardRequest>({
+const emptyForm = (): BusinessCardRequest & { orgType: OrgType } => ({
+  orgType: 'DEMAND_ORG',
   dminsttCd: '',
   dminsttNm: '',
+  companyId: null,
+  orgBizno: null,
   contactNm: '',
   contactTel: '',
   contactEmail: '',
   memo: ''
 })
 
+const formData = ref(emptyForm())
+
 const resetFormData = () => {
-  formData.value = { dminsttCd: '', dminsttNm: '', contactNm: '', contactTel: '', contactEmail: '', memo: '' }
+  formData.value = emptyForm()
 }
 
 // 등록 모달
@@ -394,9 +456,46 @@ const openCreateModal = () => {
   viewMode.value = 'create'
   editingCardId.value = null
   viewingCard.value = null
-  orgInputMode.value = 'select'
   resetFormData()
   showFormModal.value = true
+}
+
+/** 소속 구분을 바꾸면 이전 구분의 값을 비운다 (수요기관 코드가 조달업체에 남는 일 방지) */
+const onOrgTypeChange = () => {
+  formData.value.dminsttCd = ''
+  formData.value.dminsttNm = ''
+  formData.value.companyId = null
+  formData.value.orgBizno = null
+}
+
+const handleSupplierSelected = (o: SupplierOption) => {
+  formData.value.companyId = o.companyId
+  formData.value.orgBizno = o.bizno
+  formData.value.dminsttNm = o.companyName
+}
+
+const clearSupplier = () => {
+  formData.value.companyId = null
+  formData.value.orgBizno = null
+  formData.value.dminsttNm = ''
+}
+
+/**
+ * 설계사무소 상세의 [명함 추가]에서 넘어온 경우 — 그 사무소를 소속으로 채운 등록 창을 연다
+ * (?newCard=1&companyId=…&name=…&bizno=…)
+ */
+const route = useRoute()
+const router = useRouter()
+
+const openCreateFromQuery = () => {
+  if (route.query.newCard !== '1') { return }
+  openCreateModal()
+  formData.value.orgType = 'SUPPLIER'
+  const cid = Number(route.query.companyId)
+  formData.value.companyId = Number.isInteger(cid) && cid > 0 ? cid : null
+  formData.value.dminsttNm = String(route.query.name || '')
+  formData.value.orgBizno = route.query.bizno ? String(route.query.bizno).replace(/[^0-9]/g, '') : null
+  router.replace({ query: {} })
 }
 
 // 상세 보기 모달 (행 클릭)
@@ -426,15 +525,17 @@ const switchToEditMode = () => {
 // 폼 데이터 채우기
 const populateFormData = (card: BusinessCardResponse) => {
   formData.value = {
+    // 옛 명함(구분 없음)은 기관코드 유무로
+    orgType: card.orgType || (card.dminsttCd ? 'DEMAND_ORG' : 'ETC'),
     dminsttCd: card.dminsttCd || '',
     dminsttNm: card.dminsttNm || '',
+    companyId: card.companyId ?? null,
+    orgBizno: card.orgBizno ?? null,
     contactNm: card.contactNm || '',
     contactTel: card.contactTel || '',
     contactEmail: card.contactEmail || '',
     memo: card.memo || ''
   }
-  // 기관코드 유무에 따라 입력 모드 결정
-  orgInputMode.value = card.dminsttCd ? 'select' : 'direct'
 }
 
 const closeFormModal = () => {
@@ -479,7 +580,11 @@ const handleSave = async () => {
     return
   }
   if (!formData.value.dminsttNm) {
-    alert('수요기관은 필수입니다.')
+    alert(formData.value.orgType === 'ETC' ? '소속(회사·기관)명을 입력하세요.' : `${ORG_TYPE_LABELS[formData.value.orgType]}을(를) 검색해서 선택하세요.`)
+    return
+  }
+  if (formData.value.orgType === 'SUPPLIER' && !formData.value.companyId && !formData.value.orgBizno) {
+    alert('조달업체는 검색해서 선택하세요. 업체명만 알면 «기타»로 넣을 수 있습니다.')
     return
   }
 
@@ -498,11 +603,8 @@ const handleSave = async () => {
     return
   }
 
-  // 직접입력 모드일 때 기관코드 비우기
+  // 구분별로 쓰지 않는 칸은 서버가 비운다 (BusinessCardService.normalizeOrg)
   const saveData = { ...formData.value }
-  if (orgInputMode.value === 'direct') {
-    saveData.dminsttCd = ''
-  }
 
   saving.value = true
   try {
@@ -537,6 +639,7 @@ const handleDelete = async (card: BusinessCardResponse) => {
 
 onMounted(() => {
   search()
+  openCreateFromQuery()
 })
 </script>
 
@@ -687,6 +790,32 @@ onMounted(() => {
 }
 
 /* 수요기관 입력 모드 토글 */
+/* 소속 구분 배지 */
+.org-badge {
+  display: inline-block;
+  margin-right: 0.25rem;
+  padding: 0 0.375rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.org-DEMAND_ORG {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.org-SUPPLIER {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.org-ETC {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .org-input-toggle {
   display: flex;
   gap: 16px;

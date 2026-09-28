@@ -282,5 +282,12 @@ const selectStep = (value: string) => {
     left: calc(50% + 0.75rem);
     width: calc(100% - 1.5rem);
   }
+
+  /* 보류·실패 — 손가락으로 누를 수 있는 높이 */
+  .special-btn {
+    min-height: 40px;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+  }
 }
 </style>
