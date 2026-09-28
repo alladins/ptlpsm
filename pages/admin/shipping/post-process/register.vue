@@ -180,8 +180,8 @@
 
         <button class="action-card" @click="openNewLoss">
           <i class="fas fa-exclamation-triangle" />
-          <span class="ac-title">손실 등록</span>
-          <span class="ac-desc">수량이 덜 왔거나 다른 스펙이 납품된 경우</span>
+          <span class="ac-title">납품 차이 등록</span>
+          <span class="ac-desc">수량이 덜 갔거나 다른 두께(규격)가 납품된 경우</span>
           <span v-if="losses.length > 0" class="ac-state">
             등록 {{ losses.length }}건 · 아래에서 선택
           </span>
@@ -207,8 +207,8 @@
       <!-- 이미 등록된 손실 — 골라서 고친다 -->
       <div v-if="picked && losses.length > 0" class="loss-existing">
         <div class="le-title">
-          <i class="fas fa-list-ul" /> 이 출하에 등록된 손실
-          <small>고칠 건을 누르세요</small>
+          <i class="fas fa-list-ul" /> 이 출하에 등록된 납품 차이
+          <small>고칠 건을 누르세요 · 매출원장 반영은 <NuxtLink to="/admin/funds/loss-management">손실관리</NuxtLink>에서 [차감]</small>
         </div>
         <button
           v-for="l in losses"
@@ -249,7 +249,7 @@
       :shipments="picked ? [picked] : []"
       :edit-target="lossEditTarget"
       @close="closeLoss"
-      @saved="onSaved(lossEditTarget ? '손실을 수정했습니다.' : '손실을 등록했습니다.')"
+      @saved="onSaved(lossEditTarget ? '납품 차이를 수정했습니다.' : '납품 차이를 등록했습니다.\n매출원장 반영은 손실관리 화면에서 [차감]을 눌러야 합니다.')"
     />
 
     <!-- 가공비 모달 -->
@@ -396,7 +396,7 @@ const openNewLoss = () => {
 
 const openEditLoss = (loss: LossAdjustmentResponse) => {
   if (loss.settlementStatus === 'DEDUCTED') {
-    alert('이미 차감반영된 손실은 수정할 수 없습니다.')
+    alert('이미 차감반영된 납품 차이는 수정할 수 없습니다.')
     return
   }
   lossEditTarget.value = loss
