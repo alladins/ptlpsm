@@ -597,8 +597,47 @@ const getMockItems = (params: any): PageResponse<Item> => {
   }
 }
 
+/** SKU 선택 목록 한 줄 (품목 정보를 함께 담아 정렬·표시에 쓴다) */
+export interface SkuOption {
+  skuId: string
+  skuName: string
+  itemId: string
+  itemNm: string
+  thickness?: number | null
+}
+
+/**
+ * 사용 중인 전체 SKU 선택 목록
+ *
+ * ⚠ getItems 는 실패하면 모의 데이터를 돌려준다. 선택 목록에 가짜 SKU 가 섞이면
+ *   그대로 저장될 수 있으므로 여기서는 실패를 그대로 던진다.
+ */
+export const getSkuOptions = async (): Promise<SkuOption[]> => {
+  const queryParams = new URLSearchParams({ page: '0', size: '1000', sortBy: 'itemNm', sortDirection: 'asc' })
+  const response = await fetch(`${ITEM_ENDPOINTS.list()}?${queryParams}`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+  if (!response.ok) {
+    throw new Error(`SKU 목록을 불러오지 못했습니다. (HTTP ${response.status})`)
+  }
+  const result: PageResponse<Item> = await response.json()
+  return (result.content || [])
+    .filter(item => item.useYn !== 'N')
+    .flatMap(item => (item.itemSkus || [])
+      .filter(sku => sku.useYn !== 'N')
+      .map(sku => ({
+        skuId: sku.skuId,
+        skuName: sku.skuNm,
+        itemId: item.itemId,
+        itemNm: item.itemNm,
+        thickness: sku.thickness ?? null
+      })))
+}
+
 export const itemService = {
   getItems,
+  getSkuOptions,
   searchItems,
   exportItems,
   getItemById,
