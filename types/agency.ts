@@ -404,6 +404,9 @@ export interface DesignOfficeRegionTree {
   myRegionIds: number[]
 }
 
+/** 설계사무소 영업상태 필터 — 기본은 '' (영업 중 + 아직 확인 전) */
+export type DesignOfficeBizFilter = '' | 'ALL' | 'NONE' | 'CLOSED' | '02' | '03' | '99'
+
 export interface DesignOfficeSearchParams {
   keyword?: string
   sidoCd?: string
@@ -413,10 +416,22 @@ export interface DesignOfficeSearchParams {
   regionId?: number
   /** true 면 권역 미배정만 */
   unassigned?: boolean
+  /** 영업상태 — 없음(기본: 영업 중+확인 전) / ALL / NONE / CLOSED(휴업·폐업·미등록) / 02 / 03 / 99 */
+  bizStatus?: DesignOfficeBizFilter
   /** 0-based */
   page: number
   size: number
 }
+
+export const DESIGN_OFFICE_BIZ_FILTERS: { value: DesignOfficeBizFilter, label: string }[] = [
+  { value: '', label: '영업 중 (기본)' },
+  { value: 'CLOSED', label: '휴업·폐업·미등록' },
+  { value: '03', label: '폐업' },
+  { value: '02', label: '휴업' },
+  { value: '99', label: '국세청 미등록' },
+  { value: 'NONE', label: '확인 전' },
+  { value: 'ALL', label: '전체' }
+]
 
 /** 나라장터 업체정보 일괄 보강 결과 */
 export interface DesignOfficeEnrichResult {
@@ -446,6 +461,13 @@ export interface DesignOffice {
   remarks: string | null
   createdAt: string | null
   updatedAt: string | null
+  /** 영업상태 (국세청) 01 계속 / 02 휴업 / 03 폐업 / 99 미등록 — 확인 전이면 null */
+  bizSttCd: '01' | '02' | '03' | '99' | null
+  bizSttNm: string | null
+  /** 폐업일 */
+  bizEndDt: string | null
+  /** 영업상태 확인 시각 (UTC) */
+  bizCheckedAt: string | null
 }
 
 /** 백엔드 comm PageResponse (현재 페이지 필드명 `page`, 0-based) */

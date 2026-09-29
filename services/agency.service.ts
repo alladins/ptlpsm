@@ -133,9 +133,9 @@ export const designOfficeService = {
     return apiClient.get<DesignOfficePage>(DESIGN_OFFICE_BASE, { ...params })
   },
 
-  /** 권역 트리 — 권역별 사무소 수·미배정·미판정·내 권역 */
-  getRegionTree (): Promise<DesignOfficeRegionTree> {
-    return apiClient.get<DesignOfficeRegionTree>(`${DESIGN_OFFICE_BASE}/region-tree`)
+  /** 권역 트리 — 권역별 사무소 수·미배정·미판정·내 권역 (bizStatus 는 목록과 같은 영업상태 조건) */
+  getRegionTree (bizStatus?: string): Promise<DesignOfficeRegionTree> {
+    return apiClient.get<DesignOfficeRegionTree>(`${DESIGN_OFFICE_BASE}/region-tree`, bizStatus ? { bizStatus } : undefined)
   },
 
   /** 주소·소재 시군구가 빈 곳을 나라장터 업체정보로 채운다 (리드파워 관리자만, 최대 300곳) */
