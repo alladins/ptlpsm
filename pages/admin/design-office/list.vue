@@ -2,7 +2,7 @@
   <div class="design-office-list">
     <PageHeader
       title="설계사무소관리"
-      description="설계사무소(건축사사무소)를 회사로 등록하고 소재 시군구·신고번호를 관리합니다."
+      description="설계사무소(건축사사무소)를 회사로 등록하고 소재 시군구·신고번호를 관리합니다. 기본으로 영업 중인 곳만 보이며, 휴업·폐업(국세청 확인)은 [영업상태]에서 골라 볼 수 있습니다."
       icon="order"
       icon-color="blue"
       :view-only="isViewOnly"
@@ -57,6 +57,15 @@
               </option>
               <option v-for="s in SIDO_LIST" :key="s.sidoCd" :value="s.sidoCd">
                 {{ s.sidoNm }}
+              </option>
+            </select>
+          </div>
+          <!-- 기본은 영업 중(+아직 확인 전)만 — 휴업·폐업은 지우지 않고 숨긴다 (국세청 사업자등록 상태조회) -->
+          <div class="search-item">
+            <label>영업상태:</label>
+            <select v-model="searchForm.bizStatus" class="status-select" @change="onBizStatusChange">
+              <option v-for="f in DESIGN_OFFICE_BIZ_FILTERS" :key="f.value" :value="f.value">
+                {{ f.label }}
               </option>
             </select>
           </div>
@@ -158,6 +167,7 @@
                     <span class="m-card-meta">{{ o.sigunguNm || '미판정' }}</span>
                   </div>
                   <div class="m-card-meta">
+                    <BizStatusBadge v-if="o.bizSttCd && o.bizSttCd !== '01'" :code="o.bizSttCd" :name="o.bizSttNm" :end-dt="o.bizEndDt" :checked-at="o.bizCheckedAt" />
                     {{ o.representative || '-' }} · {{ o.businessNumber || '-' }}
                   </div>
                   <div v-if="o.tel" class="m-card-actions" @click.stop>
@@ -170,6 +180,7 @@
                   <tr>
                     <th>No</th>
                     <th>회사명</th>
+                    <th>영업상태</th>
                     <th>대표자</th>
                     <th>사업자번호</th>
                     <th>소재 시군구</th>
@@ -188,6 +199,9 @@
                     <td>{{ startIndex + index }}</td>
                     <td class="text-left">
                       {{ o.companyName }}
+                    </td>
+                    <td class="nowrap">
+                      <BizStatusBadge :code="o.bizSttCd" :name="o.bizSttNm" :end-dt="o.bizEndDt" :checked-at="o.bizCheckedAt" />
                     </td>
                     <td>{{ o.representative || '-' }}</td>
                     <td>{{ o.businessNumber || '-' }}</td>
@@ -373,10 +387,18 @@ import Pagination from '~/components/ui/Pagination.vue'
 import { useAuthStore } from '~/stores/auth'
 import { designOfficeService, salesRegionService } from '~/services/agency.service'
 import { businessCardService, type BusinessCardResponse } from '~/services/business-card.service'
+import BizStatusBadge from '~/components/ui/BizStatusBadge.vue'
 import { formatDate, formatBusinessNumberInput, formatPhoneNumberInput } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
 import { usePermission } from '~/composables/usePermission'
-import { SIDO_LIST, type DesignOffice, type DesignOfficeRegionTree, type Sigungu } from '~/types/agency'
+import {
+  DESIGN_OFFICE_BIZ_FILTERS,
+  SIDO_LIST,
+  type DesignOffice,
+  type DesignOfficeBizFilter,
+  type DesignOfficeRegionTree,
+  type Sigungu
+} from '~/types/agency'
 
 definePageMeta({
   layout: 'admin',
@@ -393,7 +415,15 @@ const allSigungu = ref<Sigungu[]>([])
 const loading = ref(false)
 const saving = ref(false)
 
-const searchForm = ref({ keyword: '', sidoCd: '' })
+const searchForm = ref<{ keyword: string, sidoCd: string, bizStatus: DesignOfficeBizFilter }>(
+  { keyword: '', sidoCd: '', bizStatus: '' })
+
+// ===== 영업상태 (국세청) =====
+/** 영업상태를 바꾸면 권역 트리 숫자도 같은 조건으로 다시 */
+const onBizStatusChange = () => {
+  handleSearch()
+  loadTree()
+}
 
 // ===== 권역 트리 (왼쪽) =====
 type TreeSel = { kind: 'all' } | { kind: 'region', regionId: number } | { kind: 'unassigned' } | { kind: 'noSigungu' }
@@ -424,7 +454,7 @@ const selectNode = (s: TreeSel) => {
 
 const loadTree = async () => {
   try {
-    tree.value = await designOfficeService.getRegionTree()
+    tree.value = await designOfficeService.getRegionTree(searchForm.value.bizStatus || undefined)
     // 대리점 직원은 자기 담당 권역부터 (여러 개면 트리 순서상 첫 번째)
     const mine = tree.value.myRegionIds || []
     if (mine.length > 0 && selected.value.kind === 'all') {
@@ -455,6 +485,7 @@ const loadList = async () => {
       regionId: selected.value.kind === 'region' ? selected.value.regionId : undefined,
       unassigned: selected.value.kind === 'unassigned' || undefined,
       noSigungu: selected.value.kind === 'noSigungu' || undefined,
+      bizStatus: searchForm.value.bizStatus || undefined,
       page: currentPage.value,
       size: pageSize.value
     })
@@ -507,7 +538,7 @@ const loadSigungu = async () => {
 }
 
 const handleReset = () => {
-  searchForm.value = { keyword: '', sidoCd: '' }
+  searchForm.value = { keyword: '', sidoCd: '', bizStatus: '' }
   selected.value = { kind: 'all' }
   handleSearch()
   loadTree()
