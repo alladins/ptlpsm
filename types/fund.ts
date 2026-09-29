@@ -890,8 +890,13 @@ export interface OemCostRecalcPreview {
   deliveryDoneId: number | null
   hasDeliveryDone: boolean
   currentOemExpectedTotal: number
+  /** 재계산 시 값 = 제조원가(B급 보정 포함) − 손실 차감 (실행과 같은 계산) */
   newOemExpectedTotal: number
-  normalItemTotal?: number
+  /** 제조원가 (B급 보정 포함) */
+  manufacturingTotal?: number
+  /** 손실 차감 (제조사 부담분) */
+  lossDeduction?: number
+  /** 참고 — 제조원가에 이미 포함됨 */
   bgradeItemTotal?: number
   difference: number
 }
