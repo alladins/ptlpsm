@@ -3,6 +3,7 @@
   - 나라장터 조달업체 기본정보를 받아 두고(처음 전체 1회 + 매일 04:30 변경분) 검색한다
   - 이름에 «건축사사무소»가 들어간 업체는 설계사무소로 자동 등록·빈 칸 채우기
   - 명함 소속 «조달업체» 검색과 설계사무소 «업체정보 채우기»가 이 데이터를 쓴다
+  - 영업상태(계속·휴업·폐업)는 국세청 사업자등록 상태조회로 확인한다 (매주 일요일 02:00 + [영업상태 확인])
   - 좁은 화면(휴대폰)에서는 표 대신 카드 (영업관리 모바일 기준 — 메모리 sales-screens-mobile-first)
 -->
 <template>
@@ -31,6 +32,7 @@
         <li>나라장터는 업체명 검색을 지원하지 않아 전체를 받아 두고 이 화면에서 검색합니다 (약 80~90만 곳).</li>
         <li>한 번 실행에 최대 900회 호출(하루 한도 1,000회)이라 전체는 연도를 나눠 1~2일에 걸쳐 받습니다. 한도로 멈추면 실행 기록에 어디까지 받았는지 남습니다.</li>
         <li>받을 때마다 이름에 «건축사사무소»가 들어간 업체를 설계사무소로 등록하고, 기존 설계사무소의 빈 주소·전화·대표자를 채웁니다.</li>
+        <li><b>영업상태</b>(영업 중·휴업·폐업)는 나라장터에 없어 국세청 사업자등록 상태조회로 확인합니다. 매주 일요일 02:00에 확인 전·30일 지난 곳을 자동으로 확인하고, [영업상태 확인]으로 바로 돌릴 수도 있습니다. 휴업·폐업·국세청 미등록 건축사사무소는 설계사무소로 등록하지 않고, 설계사무소관리에서도 기본으로 숨깁니다.</li>
       </ol>
       <template #note>
         호출 한도는 수요기관 동기화와 같이 씁니다. 수요기관 동기화를 같은 날 크게 돌렸다면 전체 동기화는 다음 날 하세요.
@@ -55,6 +57,17 @@
         <span class="stat-label">마지막 받은 시각</span>
         <span>{{ status?.lastSyncedAt ? formatDateTime(status.lastSyncedAt) : '아직 없음' }}</span>
       </div>
+      <div v-if="bizSummary" class="stat" :title="bizSummaryTitle">
+        <span class="stat-label">영업상태 (국세청)</span>
+        <span class="biz-summary">
+          <template v-if="bizCheckedCount > 0">
+            <span class="sum-chip ok">영업 {{ formatNumber(bizSummary.supplier['01'] ?? 0) }}</span>
+            <span class="sum-chip closed">폐업 {{ formatNumber(bizSummary.supplier['03'] ?? 0) }}</span>
+            <span v-if="(bizSummary.supplier.NONE ?? 0) > 0" class="sum-chip none">확인 전 {{ formatNumber(bizSummary.supplier.NONE ?? 0) }}</span>
+          </template>
+          <span v-else class="text-muted">아직 확인 안 함</span>
+        </span>
+      </div>
       <div class="sync-actions">
         <span v-if="status?.running" class="running"><i class="fas fa-spinner fa-spin" /> 동기화 중</span>
         <button class="btn-action btn-primary" :disabled="busy || status?.running" @click="showFullModal = true">
@@ -70,6 +83,14 @@
           @click="applyDesignOffices"
         >
           <i class="fas fa-drafting-compass" /> 설계사무소 반영
+        </button>
+        <button
+          class="btn-action btn-secondary"
+          :disabled="busy || status?.running || !status?.bizStatusAvailable"
+          :title="status?.bizStatusAvailable ? '국세청에서 설계사무소 → 조달업체 순으로 영업 중·휴업·폐업을 확인합니다' : '국세청 상태조회 인증키가 설정되지 않았습니다'"
+          @click="checkBizStatus"
+        >
+          <i class="fas fa-store-slash" /> 영업상태 확인
         </button>
       </div>
     </div>
@@ -96,6 +117,17 @@
               </option>
               <option v-for="s in SIDO_PREFIXES" :key="s" :value="s">
                 {{ s }}
+              </option>
+            </select>
+          </div>
+          <div class="search-item">
+            <label>영업상태:</label>
+            <select v-model="searchForm.bizStatus" class="status-select" @change="handleSearch">
+              <option value="">
+                전체
+              </option>
+              <option v-for="(v, k) in BIZ_STATUS" :key="k" :value="k">
+                {{ v.label }}
               </option>
             </select>
           </div>
@@ -143,6 +175,7 @@
               <thead>
                 <tr>
                   <th>업체명</th>
+                  <th>영업상태</th>
                   <th>사업자번호</th>
                   <th>대표자</th>
                   <th>지역</th>
@@ -160,6 +193,9 @@
                       설계사무소
                     </NuxtLink>
                     <span v-else-if="s.isDesignOffice === 'Y'" class="tag design-pending" title="건축사사무소 — 다음 반영 때 설계사무소로 등록">건축사사무소</span>
+                  </td>
+                  <td class="nowrap">
+                    <BizStatusBadge :code="s.bizSttCd" :name="s.bizSttNm" :end-dt="s.bizEndDt" :checked-at="s.bizCheckedAt" />
                   </td>
                   <td class="nowrap">
                     {{ formatBizno(s.bizno) }}
@@ -191,6 +227,7 @@
                 </NuxtLink>
               </div>
               <div class="card-meta">
+                <BizStatusBadge :code="s.bizSttCd" :name="s.bizSttNm" :end-dt="s.bizEndDt" :checked-at="s.bizCheckedAt" />
                 {{ formatBizno(s.bizno) }} · {{ s.ceoNm || '-' }}
               </div>
               <div v-if="s.adrs" class="card-meta">
@@ -309,13 +346,17 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import GuideNotice from '~/components/ui/GuideNotice.vue'
 import Pagination from '~/components/ui/Pagination.vue'
 import {
+  BIZ_STATUS,
   g2bSupplierService,
   SUPPLIER_RUN_STATUS,
   SUPPLIER_SYNC_MODE_LABELS,
+  type BizStatusFilter,
+  type BizStatusSummary,
   type G2bSupplier,
   type SupplierStatus,
   type SupplierSyncRun
 } from '~/services/g2b-supplier.service'
+import BizStatusBadge from '~/components/ui/BizStatusBadge.vue'
 import { formatDateTime, formatNumber } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
 
@@ -336,7 +377,8 @@ const YEAR_PRESETS = [
   { label: `2021~${thisYear}`, bgn: 2021, end: thisYear }
 ]
 
-const searchForm = ref({ keyword: '', sido: '', designOnly: false })
+const searchForm = ref<{ keyword: string, sido: string, designOnly: boolean, bizStatus: BizStatusFilter | '' }>(
+  { keyword: '', sido: '', designOnly: false, bizStatus: '' })
 const items = ref<G2bSupplier[]>([])
 const loading = ref(false)
 const currentPage = ref(0)
@@ -351,6 +393,27 @@ const formatBizno = (b?: string | null) => {
   return d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}` : (b || '-')
 }
 
+// ===== 영업상태 (국세청) =====
+const bizSummary = ref<BizStatusSummary | null>(null)
+const bizCheckedCount = computed(() => {
+  const s = bizSummary.value?.supplier
+  return s ? (s['01'] ?? 0) + (s['02'] ?? 0) + (s['03'] ?? 0) + (s['99'] ?? 0) : 0
+})
+const bizSummaryTitle = computed(() => {
+  const b = bizSummary.value
+  if (!b) { return '' }
+  const line = (o: BizStatusSummary['supplier']) => (Object.keys(BIZ_STATUS) as (keyof typeof BIZ_STATUS)[])
+    .map(k => `${BIZ_STATUS[k].label} ${formatNumber(o[k] ?? 0)}`).join(' · ')
+  return `조달업체: ${line(b.supplier)}\n설계사무소: ${line(b.designOffice)}`
+})
+const loadBizSummary = async () => {
+  try {
+    bizSummary.value = await g2bSupplierService.getBizStatusSummary()
+  } catch (e) {
+    console.error('영업상태 집계 로드 실패:', e)
+  }
+}
+
 const loadList = async () => {
   loading.value = true
   try {
@@ -358,6 +421,7 @@ const loadList = async () => {
       keyword: searchForm.value.keyword.trim() || undefined,
       sido: searchForm.value.sido || undefined,
       designOnly: searchForm.value.designOnly || undefined,
+      bizStatus: searchForm.value.bizStatus || undefined,
       page: currentPage.value,
       size: pageSize.value
     })
@@ -378,7 +442,7 @@ const handleSearch = () => {
 }
 
 const handleReset = () => {
-  searchForm.value = { keyword: '', sido: '', designOnly: false }
+  searchForm.value = { keyword: '', sido: '', designOnly: false, bizStatus: '' }
   handleSearch()
 }
 
@@ -419,6 +483,7 @@ const startPolling = () => {
     if (wasRunning && !status.value?.running) {
       stopPolling()
       loadList()
+      loadBizSummary()
     }
   }, 10000)
 }
@@ -463,6 +528,13 @@ const applyDesignOffices = () => {
   run(() => g2bSupplierService.applyDesignOffices(), '설계사무소 반영을 시작했습니다.')
 }
 
+const checkBizStatus = () => {
+  if (!confirm('국세청에서 영업상태(영업 중·휴업·폐업)를 확인합니다.\n' +
+    '설계사무소 → 조달업체 순으로, 아직 확인하지 않았거나 30일이 지난 곳만 확인합니다.\n' +
+    '처음에는 조달업체 전체라 1시간 안팎 걸립니다. 진행할까요?')) { return }
+  run(() => g2bSupplierService.checkBizStatus(false), '영업상태 확인을 시작했습니다. 아래 실행 기록에서 진행을 볼 수 있습니다.')
+}
+
 onMounted(async () => {
   await loadStatus()
   if (status.value?.running) {
@@ -470,6 +542,7 @@ onMounted(async () => {
     startPolling()
   }
   loadList()
+  loadBizSummary()
 })
 </script>
 
@@ -552,6 +625,37 @@ onMounted(async () => {
 
 .small {
   font-size: 0.75rem;
+}
+
+/* 영업상태 집계 (상단) — 목록의 배지는 BizStatusBadge 컴포넌트 */
+.biz-summary {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.sum-chip {
+  padding: 0 0.375rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sum-chip.ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.sum-chip.closed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.sum-chip.none {
+  background: #f8fafc;
+  color: #94a3b8;
+  border: 1px dashed #cbd5e1;
 }
 
 .nowrap {
