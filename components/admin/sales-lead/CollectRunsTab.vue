@@ -1,6 +1,6 @@
 <!--
   공모·낙찰 수집 — ③ 수집 기록
-  - 위: 수집 상태(자동 수집·인증키·기본 기간·호출 상한) + «지금 수집»
+  - 위: 수집 상태(자동 수집·인증키·기본 기간·호출 상한) + «지금 수집» + «과거 수집»(시작일~종료일, 최대 92일)
   - 가운데: 실행 기록
   - 아래: 원천 응답 붙여넣기 적재 (시스템관리자)
   - 수집이 진행 중이면 5초마다 기록·상태를 다시 읽는다 (끝나거나 탭을 떠나면 멈춤)
@@ -60,6 +60,44 @@
           <i :class="starting ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-download-alt'" /> 지금 수집
         </GuardedButton>
       </div>
+
+      <!-- 과거 수집 — 시작일~종료일 (낙찰·계약만, 입찰공고 보강 없음) -->
+      <div v-if="canCollect" class="collect-action backfill-action">
+        <span class="item-label">과거 수집</span>
+        <SearchDateRange
+          v-model:start-date="backfillFrom"
+          v-model:end-date="backfillTo"
+          :show-presets="false"
+          placeholder="시작일 ~ 종료일"
+          class="backfill-range"
+        />
+        <GuardedButton
+          type="button"
+          class="btn-action btn-secondary"
+          :blocked="backfillBlocked"
+          :reason="backfillBlockedReason"
+          :disabled="!status || starting"
+          @click="startBackfill"
+        >
+          <i :class="starting ? 'fas fa-spinner fa-spin' : 'fas fa-history'" /> 과거 수집 실행
+        </GuardedButton>
+      </div>
+      <GuideNotice v-if="canCollect" icon="fa-history" tone="info" open-label="과거 수집 자세히" class="backfill-guide">
+        <template #summary>
+          과거 수집은 한 번에 <b>최대 {{ maxBackfillDays }}일</b> — 1년치는 분기씩 며칠에 나눠 실행하세요
+        </template>
+        <ul class="guide-list">
+          <li>나라장터 API 는 <b>서비스별 하루 1,000회</b> 한도를 개발·운영이 함께 씁니다. 한 분기(92일)는 약 350~550회라 하루 1분기(많아야 2분기)씩 나눠 실행하세요.</li>
+          <li>과거 수집은 <b>낙찰(용역·공사)·계약만</b> 받고 <b>입찰공고 보강은 하지 않습니다</b>. 그래서 종류(설계·공사) 분류가 사업명·기관 기준으로만 됩니다. 이후 매일 수집이 남는 한도로 조금씩 보강하고 다시 분류합니다.</li>
+          <li>새로 받은 리드의 <b>첫 수집일은 낙찰일·계약일</b>로 기록됩니다 — 아침 요약에 몰리지 않고 목록에서 과거 날짜로 보입니다. 이미 받은 리드의 첫 수집일은 바뀌지 않습니다.</li>
+          <li>담당 대리점은 과거 날짜가 아니라 <b>받은 날(오늘)의 담당 구역</b>으로 판정합니다.</li>
+          <li>1회 호출 상한에 걸리면 기록에 «건너뜀»과 <b>다시 시작할 날짜</b>가 남습니다. 그 날짜를 시작일로 다시 실행하세요.</li>
+        </ul>
+        <template #note>
+          시작일은 {{ status?.backfillMinDate || '3년 전' }} 이후, 종료일은 오늘까지만 지정할 수 있습니다.
+        </template>
+      </GuideNotice>
+
       <p v-if="status?.blockedReason" class="blocked-reason">
         <i class="fas fa-ban" /> {{ status.blockedReason }}
       </p>
@@ -155,6 +193,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import GuardedButton from '~/components/ui/GuardedButton.vue'
+import GuideNotice from '~/components/ui/GuideNotice.vue'
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import CollectImportPanel from '~/components/admin/sales-lead/CollectImportPanel.vue'
 import { salesLeadService } from '~/services/sales-lead.service'
 import { formatDateTime, formatNumber } from '~/utils/format'
@@ -192,6 +232,60 @@ const collectBlockedReason = computed(() => {
   if (props.status.running) { return '수집이 진행 중입니다. 끝난 뒤 다시 실행하세요.' }
   return ''
 })
+
+// ===== 과거 수집 =====
+/** 시작일·종료일 (yyyy-MM-dd, KST) — 비워 두고 사용자가 고른다 */
+const backfillFrom = ref('')
+const backfillTo = ref('')
+const maxBackfillDays = computed(() => props.status?.backfillMaxDays || 92)
+
+/** yyyy-MM-dd 두 날짜 사이 일수 (양 끝 포함) — 시간대 영향 없게 UTC 로 계산 */
+const daysInclusive = (from: string, to: string): number => {
+  const [fy, fm, fd] = from.split('-').map(Number)
+  const [ty, tm, td] = to.split('-').map(Number)
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000) + 1
+}
+
+/** 기간 문제 — 없으면 '' (서버도 같은 규칙으로 다시 검사한다) */
+const backfillRangeProblem = computed(() => {
+  if (!backfillFrom.value || !backfillTo.value) {
+    return '과거 수집할 시작일~종료일을 먼저 고르세요.'
+  }
+  const days = daysInclusive(backfillFrom.value, backfillTo.value)
+  if (days < 1) { return '시작일이 종료일보다 늦습니다. 기간을 다시 고르세요.' }
+  if (days > maxBackfillDays.value) {
+    return `한 번에 최대 ${maxBackfillDays.value}일까지입니다 (지금 ${days}일). 분기씩 나눠 고르세요.`
+  }
+  const min = props.status?.backfillMinDate
+  if (min && backfillFrom.value < min) {
+    return `시작일은 ${min} 이후로 고르세요 (최대 3년 전까지).`
+  }
+  return ''
+})
+
+const backfillBlocked = computed(() => collectBlocked.value || !!backfillRangeProblem.value)
+const backfillBlockedReason = computed(() => collectBlockedReason.value || backfillRangeProblem.value)
+
+const startBackfill = async () => {
+  const from = backfillFrom.value
+  const to = backfillTo.value
+  const days = daysInclusive(from, to)
+  if (!confirm(`${from} ~ ${to} (${days}일) 낙찰·계약을 과거 수집합니다.\n입찰공고 보강은 하지 않습니다. 진행할까요?`)) {
+    return
+  }
+  starting.value = true
+  try {
+    const next = await salesLeadService.startBackfill(from, to)
+    emit('status-change', next)
+    await loadRuns(true)
+    startPolling()
+  } catch (e) {
+    alert(toApiError(e).message)
+    loadStatus().catch(() => {})
+  } finally {
+    starting.value = false
+  }
+}
 
 // ===== 조회 =====
 const loadRuns = async (silent = false) => {
@@ -325,6 +419,44 @@ onBeforeUnmount(stopPolling)
 
 .form-input.window-input {
   width: 80px;
+}
+
+.collect-action {
+  flex-wrap: wrap;
+}
+
+.backfill-guide {
+  margin-top: 0.75rem;
+}
+
+.guide-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+/* 모바일 — 세로로 쌓고 터치 대상 44px */
+@media (max-width: 640px) {
+  .collect-action {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .collect-action :deep(button),
+  .collect-action .form-input.window-input {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .backfill-range,
+  .backfill-range :deep(.sdr-picker) {
+    width: 100%;
+  }
+
+  .backfill-range :deep(input) {
+    min-height: 44px;
+  }
 }
 
 .blocked-reason {

@@ -79,6 +79,15 @@ export const salesLeadService = {
   },
 
   /**
+   * 과거 수집 — 시작일~종료일(KST, yyyy-MM-dd)의 낙찰·계약만 받는다 (입찰공고 보강 없음)
+   * 기간 제약(최대 92일·오늘까지·3년 전까지)을 어기면 400 + 이유
+   */
+  startBackfill (fromDate: string, toDate: string): Promise<SalesCollectStatus> {
+    const query = new URLSearchParams({ fromDate, toDate }).toString()
+    return apiClient.post<SalesCollectStatus>(`${BASE}/collect?${query}`)
+  },
+
+  /**
    * 원천 응답 붙여넣기 적재 (시스템관리자만)
    *
    * 백엔드가 본문을 @RequestBody String 으로 받으므로 붙여넣은 문자열을 **그대로** 보내야 한다.
