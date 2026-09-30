@@ -432,7 +432,7 @@ const router = useRouter()
 const route = useRoute()
 
 // 권한
-const { canWrite, canEdit, canDelete, isFullAccess } = usePermission()
+const { canWrite, canEdit, canDelete, currentRole } = usePermission()
 const { showCreateButton, showEditButton, showDeleteButton } = usePermissionButtons()
 
 // 자금 통계 데이터
@@ -795,7 +795,8 @@ const getDisplayIndex = (groupIndex: number): number => {
 
 // ========== 영업 담당자 지정 (2026-09-30) ==========
 // 서버(SecurityConfig·서비스)와 같은 선: 시스템관리자·리드파워 담당자만
-const canAssignSales = computed(() => isFullAccess.value)
+// isFullAccess 는 SYSTEM_ADMIN 만 참이라(리드파워는 메뉴권한 따름) 역할로 직접 판정한다
+const canAssignSales = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(currentRole.value ?? ''))
 
 /** 체크한 계약 묶음 — 묶음의 기준(부모) 행 orderId. 서버가 변경·추가계약까지 넓혀 적용한다 */
 const selectedBaseIds = ref<Set<number>>(new Set())

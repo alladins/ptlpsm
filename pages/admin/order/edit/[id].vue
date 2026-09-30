@@ -591,7 +591,7 @@ const BASELINE_MISSING_REASON =
 const orderId = computed(() => Number(route.params.id))
 
 // 권한
-const { canEdit, isFullAccess } = usePermission()
+const { canEdit, isFullAccess, currentRole } = usePermission()
 
 // 자금 관련 상태 포맷터 (useFundStatusFormatters composable 사용)
 const { getPaymentStatusClass, getPaymentStatusLabel, getSignatureStatusClass, getSignatureStatusLabel, isSignatureCompleted } = useFundStatusFormatters()
@@ -752,7 +752,8 @@ const handleBuilderChange = () => {
 
 // ── 영업 담당자 지정 (전용 API — 발주 [저장]과 분리) ──
 // 서버(SecurityConfig·서비스)와 같은 선: 시스템관리자·리드파워 담당자만
-const canAssignSales = computed(() => isFullAccess.value)
+// isFullAccess 는 SYSTEM_ADMIN 만 참이라(리드파워는 메뉴권한 따름) 역할로 직접 판정한다
+const canAssignSales = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(currentRole.value ?? ''))
 const salesSaving = ref(false)
 const salesSaveMessage = ref('')
 const salesSaveMessageTone = ref<'ok' | 'error'>('ok')
