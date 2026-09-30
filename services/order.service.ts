@@ -572,13 +572,27 @@ export const orderService = {
    * 영업 담당자 지정·해제 — 발주 전체수정(PUT)과 분리된 전용 API
    * - 각 발주의 계약 묶음(기준계약 + 변경·추가계약) 전체가 같은 담당자로 바뀐다
    * - salesId = null 이면 지정 해제
+   * - 담당자가 바뀌는 발주에 커미션 정산 내역이 있으면 서버는 아무것도 바꾸지 않고 409 + needsConfirm 을 돌려준다.
+   *   이때는 throw 하지 않고 needsConfirm=true 응답을 그대로 돌려준다 → 화면이 경고 모달을 띄우고,
+   *   사용자가 [계속]을 누르면 confirmSettled=true 로 다시 부른다.
    */
   async updateSalesManager(request: OrderSalesManagerUpdateRequest): Promise<OrderSalesManagerUpdateResponse> {
     const response = await fetch(ORDER_ENDPOINTS.salesManager(), {
       method: 'PATCH',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ orderIds: request.orderIds, salesId: request.salesId ?? null })
+      body: JSON.stringify({
+        orderIds: request.orderIds,
+        salesId: request.salesId ?? null,
+        confirmSettled: request.confirmSettled === true
+      })
     })
+    if (response.status === 409) {
+      const warning = await response.json().catch(() => null)
+      if (warning?.needsConfirm) {
+        return warning as OrderSalesManagerUpdateResponse
+      }
+      throw new Error(warning?.message || httpErrorMessage(response.status, '영업 담당자 지정'))
+    }
     if (!response.ok) {
       const errorData = await response.json().catch(() => null)
       throw new Error(errorData?.message || httpErrorMessage(response.status, '영업 담당자 지정'))

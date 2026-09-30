@@ -168,7 +168,7 @@
               <li>같은 묶음의 납품완료 건 담당자(커미션 담당자 판정에 쓰임)도 함께 바뀝니다.</li>
               <li>한 건씩 수요기관 담당 대리점 «추천»을 보려면 발주 수정 화면에서 지정하세요.</li>
             </ul>
-            <template #note>이미 만들어진 커미션 정산 내역은 바뀌지 않습니다.</template>
+            <template #note>이미 만들어진 커미션 정산 내역은 바뀌지 않습니다. 정산 내역이 있는 발주는 저장 전에 한 번 더 확인을 묻습니다.</template>
           </GuideNotice>
           <SalesManagerPicker
             start-open
@@ -398,6 +398,15 @@
         />
       </div>
     </div>
+
+    <!-- 영업 담당자 일괄 지정 — 커미션 정산 내역 경고 (확인하면 그대로 진행) -->
+    <SalesManagerSettledWarningModal
+      :warning="settledWarning"
+      :target-label="settledTargetLabel"
+      :busy="salesSaving"
+      @confirm="confirmSettledBulkAssign"
+      @cancel="cancelSettledBulkAssign"
+    />
   </div>
 </template>
 
@@ -407,7 +416,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { orderService } from '~/services/order.service'
 import { getCommissionPeriods } from '~/services/commission.service'
-import type { OrderDetailResponse, ContractType, SalesManagerCandidate } from '~/types/order'
+import type { OrderDetailResponse, ContractType, SalesManagerCandidate, OrderSalesManagerUpdateResponse } from '~/types/order'
 import { CONTRACT_TYPE_LABELS, ORDER_STATUS_LABELS } from '~/types/order'
 // 리팩토링: 공통 모듈 import
 import { formatNumber, getSearchStartDate, getSearchEndDate } from '~/utils/format'
@@ -416,6 +425,7 @@ import { usePermission, usePermissionButtons } from '~/composables/usePermission
 import GuardedButton from '~/components/ui/GuardedButton.vue'
 import GuideNotice from '~/components/ui/GuideNotice.vue'
 import SalesManagerPicker from '~/components/admin/order/SalesManagerPicker.vue'
+import SalesManagerSettledWarningModal from '~/components/admin/order/SalesManagerSettledWarningModal.vue'
 
 // createdAt은 ISO timestamp이므로 날짜만 추출
 const formatDate = (dateStr?: string): string => {
@@ -872,23 +882,63 @@ const closeBulkAssign = () => {
   bulkAssignOpen.value = false
 }
 
+// «이름 (대리점명)» — null 이면 지정 해제
+const candidateLabel = (candidate: SalesManagerCandidate | null): string | null => candidate
+  ? `${candidate.userName}${candidate.agencyMember && candidate.companyName ? ` (${candidate.companyName})` : ''}`
+  : null
+
 const bulkAssign = async (candidate: SalesManagerCandidate | null) => {
   if (salesSaving.value || selectedBaseIds.value.size === 0) { return }
   const count = selectedBaseIds.value.size
-  const who = candidate
-    ? `${candidate.userName}${candidate.agencyMember && candidate.companyName ? ` (${candidate.companyName})` : ''}`
-    : null
+  const who = candidateLabel(candidate)
   const question = who
     ? `선택한 계약 묶음 ${count}건의 영업 담당자를 «${who}»(으)로 지정할까요?\n변경·추가계약도 함께 바뀝니다.`
     : `선택한 계약 묶음 ${count}건의 영업 담당자 지정을 해제할까요?\n영업 화면에서 보이지 않게 됩니다.`
   if (!confirm(question)) { return }
+  await saveBulkAssign(candidate, false)
+}
+
+// 커미션 정산 경고 — 서버가 needsConfirm 을 돌려주면 모달로 확인받고 confirmSettled=true 로 다시 저장
+const settledWarning = ref<OrderSalesManagerUpdateResponse | null>(null)
+const settledPendingCandidate = ref<SalesManagerCandidate | null>(null)
+const settledTargetLabel = computed(() => candidateLabel(settledPendingCandidate.value))
+
+const confirmSettledBulkAssign = async () => {
+  await saveBulkAssign(settledPendingCandidate.value, true)
+}
+
+const cancelSettledBulkAssign = () => {
+  settledWarning.value = null
+  settledPendingCandidate.value = null
+  showSalesMessage('영업 담당자 지정을 취소했습니다 — 바뀐 것은 없습니다.', 'ok')
+}
+
+const saveBulkAssign = async (candidate: SalesManagerCandidate | null, confirmSettled: boolean) => {
+  if (salesSaving.value) { return }
+  if (selectedBaseIds.value.size === 0) {
+    // 경고를 보는 사이 목록이 새로 고쳐져 선택이 비었으면 모달만 닫는다
+    settledWarning.value = null
+    settledPendingCandidate.value = null
+    return
+  }
+  const count = selectedBaseIds.value.size
+  const who = candidateLabel(candidate)
 
   salesSaving.value = true
   try {
     const res = await orderService.updateSalesManager({
       orderIds: Array.from(selectedBaseIds.value),
-      salesId: candidate?.userId ?? null
+      salesId: candidate?.userId ?? null,
+      confirmSettled
     })
+    if (res.needsConfirm) {
+      // 아무것도 바뀌지 않았다 — 경고 모달을 띄우고 사용자 확인을 기다린다
+      settledPendingCandidate.value = candidate
+      settledWarning.value = res
+      return
+    }
+    settledWarning.value = null
+    settledPendingCandidate.value = null
     showSalesMessage(
       `${who ? `«${who}»(으)로 지정` : '지정 해제'}했습니다 — 계약 묶음 ${count}건, 발주 ${res.orderIds.length}건 (실제 변경 ${res.changedCount}건)`,
       'ok'
@@ -897,6 +947,8 @@ const bulkAssign = async (candidate: SalesManagerCandidate | null) => {
     selectedBaseIds.value = new Set()
     refresh()
   } catch (error: any) {
+    settledWarning.value = null
+    settledPendingCandidate.value = null
     console.error('영업 담당자 일괄 지정 실패:', error)
     showSalesMessage(error?.message || '영업 담당자 지정에 실패했습니다.', 'error')
   } finally {
