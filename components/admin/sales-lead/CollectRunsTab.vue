@@ -9,78 +9,81 @@
   <div class="collect-tab">
     <!-- 수집 상태 -->
     <div class="status-panel">
-      <div class="status-items">
-        <div class="status-item">
-          <span class="item-label">자동 수집(06:00)</span>
-          <span v-if="!status" class="text-muted">-</span>
-          <span v-else class="status-badge" :class="status.scheduleEnabled ? 'success' : 'warning'">
-            {{ status.scheduleEnabled ? '켜짐' : '꺼짐' }}
-          </span>
+      <!-- 상태 표시 · 지금 수집 · 과거 수집을 한 줄에 (넓은 화면) — 좁으면 줄바꿈되어 아래로 -->
+      <div class="status-row">
+        <div class="status-items">
+          <div class="status-item">
+            <span class="item-label">자동 수집(06:00)</span>
+            <span v-if="!status" class="text-muted">-</span>
+            <span v-else class="status-badge" :class="status.scheduleEnabled ? 'success' : 'warning'">
+              {{ status.scheduleEnabled ? '켜짐' : '꺼짐' }}
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="item-label">인증키</span>
+            <span v-if="!status" class="text-muted">-</span>
+            <span v-else class="status-badge" :class="status.keyConfigured ? 'success' : 'danger'">
+              {{ status.keyConfigured ? '설정됨' : '미설정' }}
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="item-label">기본 수집 기간</span>
+            <strong>{{ status ? `${status.windowDays}일` : '-' }}</strong>
+          </div>
+          <div class="status-item">
+            <span class="item-label">1회 호출 상한</span>
+            <strong>{{ status ? `${formatNumber(status.maxCallsPerRun)}회` : '-' }}</strong>
+          </div>
+          <div v-if="status?.running" class="status-item">
+            <span class="status-badge primary">
+              <i class="fas fa-spinner fa-spin" />&nbsp;수집 중
+            </span>
+          </div>
         </div>
-        <div class="status-item">
-          <span class="item-label">인증키</span>
-          <span v-if="!status" class="text-muted">-</span>
-          <span v-else class="status-badge" :class="status.keyConfigured ? 'success' : 'danger'">
-            {{ status.keyConfigured ? '설정됨' : '미설정' }}
-          </span>
-        </div>
-        <div class="status-item">
-          <span class="item-label">기본 수집 기간</span>
-          <strong>{{ status ? `${status.windowDays}일` : '-' }}</strong>
-        </div>
-        <div class="status-item">
-          <span class="item-label">1회 호출 상한</span>
-          <strong>{{ status ? `${formatNumber(status.maxCallsPerRun)}회` : '-' }}</strong>
-        </div>
-        <div v-if="status?.running" class="status-item">
-          <span class="status-badge primary">
-            <i class="fas fa-spinner fa-spin" />&nbsp;수집 중
-          </span>
-        </div>
-      </div>
 
-      <div v-if="canCollect" class="collect-action">
-        <label class="item-label" for="collect-window-days">기간(일)</label>
-        <input
-          id="collect-window-days"
-          v-model.number="windowDays"
-          type="number"
-          min="1"
-          max="90"
-          class="form-input window-input"
-        >
-        <GuardedButton
-          type="button"
-          class="btn-action btn-primary"
-          :blocked="collectBlocked"
-          :reason="collectBlockedReason"
-          :disabled="!status || starting"
-          @click="startCollect"
-        >
-          <i :class="starting ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-download-alt'" /> 지금 수집
-        </GuardedButton>
-      </div>
+        <div v-if="canCollect" class="collect-action">
+          <label class="item-label" for="collect-window-days">기간(일)</label>
+          <input
+            id="collect-window-days"
+            v-model.number="windowDays"
+            type="number"
+            min="1"
+            max="90"
+            class="form-input window-input"
+          >
+          <GuardedButton
+            type="button"
+            class="btn-action btn-primary"
+            :blocked="collectBlocked"
+            :reason="collectBlockedReason"
+            :disabled="!status || starting"
+            @click="startCollect"
+          >
+            <i :class="starting ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-download-alt'" /> 지금 수집
+          </GuardedButton>
+        </div>
 
-      <!-- 과거 수집 — 시작일~종료일 (낙찰·계약만, 입찰공고 보강 없음) -->
-      <div v-if="canCollect" class="collect-action backfill-action">
-        <span class="item-label">과거 수집</span>
-        <SearchDateRange
-          v-model:start-date="backfillFrom"
-          v-model:end-date="backfillTo"
-          :show-presets="false"
-          placeholder="시작일 ~ 종료일"
-          class="backfill-range"
-        />
-        <GuardedButton
-          type="button"
-          class="btn-action btn-secondary"
-          :blocked="backfillBlocked"
-          :reason="backfillBlockedReason"
-          :disabled="!status || starting"
-          @click="startBackfill"
-        >
-          <i :class="starting ? 'fas fa-spinner fa-spin' : 'fas fa-history'" /> 과거 수집 실행
-        </GuardedButton>
+        <!-- 과거 수집 — 시작일~종료일 (낙찰·계약만, 입찰공고 보강 없음) -->
+        <div v-if="canCollect" class="collect-action backfill-action">
+          <span class="item-label">과거 수집</span>
+          <SearchDateRange
+            v-model:start-date="backfillFrom"
+            v-model:end-date="backfillTo"
+            :show-presets="false"
+            placeholder="시작일 ~ 종료일"
+            class="backfill-range"
+          />
+          <GuardedButton
+            type="button"
+            class="btn-action btn-secondary"
+            :blocked="backfillBlocked"
+            :reason="backfillBlockedReason"
+            :disabled="!status || starting"
+            @click="startBackfill"
+          >
+            <i :class="starting ? 'fas fa-spinner fa-spin' : 'fas fa-history'" /> 과거 수집 실행
+          </GuardedButton>
+        </div>
       </div>
       <GuideNotice v-if="canCollect" icon="fa-history" tone="info" open-label="과거 수집 자세히" class="backfill-guide">
         <template #summary>
@@ -425,6 +428,20 @@ onBeforeUnmount(stopPolling)
   flex-wrap: wrap;
 }
 
+/* 상태 표시 · 지금 수집 · 과거 수집 한 줄 배치 (2026-09-30 사용자 요청) */
+.status-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}
+
+.status-row .collect-action {
+  margin-top: 0;
+  padding-left: 1.5rem;
+  border-left: 1px solid #e2e8f0;
+}
+
 .backfill-guide {
   margin-top: 0.75rem;
 }
@@ -438,9 +455,17 @@ onBeforeUnmount(stopPolling)
 
 /* 모바일 — 세로로 쌓고 터치 대상 44px */
 @media (max-width: 640px) {
-  .collect-action {
+  .status-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .collect-action,
+  .status-row .collect-action {
+    flex-direction: column;
+    align-items: stretch;
+    padding-left: 0;
+    border-left: none;
   }
 
   .collect-action :deep(button),
