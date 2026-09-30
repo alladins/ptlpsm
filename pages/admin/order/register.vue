@@ -394,7 +394,7 @@ const uploadStatus = ref<{
 
 // 계약 정보
 const contractForm = ref({
-  salesId: 0,
+  salesId: null as number | null, // 영업 담당자 — 등록 때는 미지정(NULL). 지정은 목록·수정 화면의 전용 기능
   contractNo: '',
   contractDate: '',
   preNotificationNo: '',

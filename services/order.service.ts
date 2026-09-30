@@ -1,5 +1,12 @@
 import { apiEnvironment, getAuthHeaders } from '~/services/api'
-import type { OrderDetailResponse, LowRemainingOrder, LowRemainingSearchRequest } from '~/types/order'
+import type {
+  OrderDetailResponse,
+  LowRemainingOrder,
+  LowRemainingSearchRequest,
+  SalesManagerCandidatesResponse,
+  OrderSalesManagerUpdateRequest,
+  OrderSalesManagerUpdateResponse
+} from '~/types/order'
 import type { MobileOrderRequest } from '~/types/mobile-order'
 import { ORDER_ENDPOINTS } from './api/endpoints/order.endpoints'
 import { getApiBaseUrl } from './api/config'
@@ -32,6 +39,7 @@ export interface OrderSearchRequest {
   keyword?: string  // 검색어 (프로젝트명, 담당자명 등)
   status?: string  // 주문 상태 (PENDING/IN_PROGRESS/PENDING_SIGNATURE/COMPLETED)
   salesId?: number
+  salesUnassigned?: boolean  // 영업 담당자 미지정만
   page?: number
   size?: number
   sort?: string
@@ -73,6 +81,7 @@ export const orderService = {
       if (params.keyword) queryParams.append('keyword', params.keyword)
       if (params.status) queryParams.append('status', params.status)
       if (params.salesId) queryParams.append('salesId', params.salesId.toString())
+      if (params.salesUnassigned) queryParams.append('salesUnassigned', 'true')
       if (params.shippableOnly) queryParams.append('shippableOnly', 'true')
       // 최종 계약만 (변경계약에 대체된 원계약 제외) — 납품요구 목록 화면용. 한 계약 = 한 건
       if (params.latestOnly) queryParams.append('latestOnly', 'true')
@@ -140,6 +149,7 @@ export const orderService = {
     if (params.keyword) queryParams.append('keyword', params.keyword)
     if (params.status) queryParams.append('status', params.status)
     if (params.salesId) queryParams.append('salesId', params.salesId.toString())
+    if (params.salesUnassigned) queryParams.append('salesUnassigned', 'true')
     if (params.sort) queryParams.append('sort', params.sort)
 
     const url = `${ORDER_ENDPOINTS.exportExcel()}?${queryParams.toString()}`
@@ -168,6 +178,7 @@ export const orderService = {
       if (params.keyword) queryParams.append('keyword', params.keyword)
       if (params.status) queryParams.append('status', params.status)
       if (params.salesId) queryParams.append('salesId', params.salesId.toString())
+      if (params.salesUnassigned) queryParams.append('salesUnassigned', 'true')
 
       const url = `${ORDER_ENDPOINTS.summary()}?${queryParams.toString()}`
       const response = await fetch(url, {
@@ -536,5 +547,43 @@ export const orderService = {
     }
     const result = await response.json()
     return result?.count ?? result?.data?.count ?? 0
+  },
+
+  /**
+   * 영업 담당자 후보 조회 (SALES_MANAGER 활성 사용자, 대리점 직원 포함)
+   * - orderId 를 주면 수요기관 담당 대리점 판정 → 해당 대리점 직원이 recommended=true 로 맨 위
+   * - 시스템관리자·리드파워 담당자 전용 (그 외 403)
+   */
+  async getSalesManagerCandidates(orderId?: number | null): Promise<SalesManagerCandidatesResponse> {
+    const queryParams = new URLSearchParams()
+    if (orderId) queryParams.append('orderId', orderId.toString())
+    const qs = queryParams.toString()
+    const url = `${ORDER_ENDPOINTS.salesManagerCandidates()}${qs ? `?${qs}` : ''}`
+    const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || httpErrorMessage(response.status, '영업 담당자 후보 조회'))
+    }
+    const result = await response.json()
+    return (result?.candidates ? result : result?.data) as SalesManagerCandidatesResponse
+  },
+
+  /**
+   * 영업 담당자 지정·해제 — 발주 전체수정(PUT)과 분리된 전용 API
+   * - 각 발주의 계약 묶음(기준계약 + 변경·추가계약) 전체가 같은 담당자로 바뀐다
+   * - salesId = null 이면 지정 해제
+   */
+  async updateSalesManager(request: OrderSalesManagerUpdateRequest): Promise<OrderSalesManagerUpdateResponse> {
+    const response = await fetch(ORDER_ENDPOINTS.salesManager(), {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ orderIds: request.orderIds, salesId: request.salesId ?? null })
+    })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || httpErrorMessage(response.status, '영업 담당자 지정'))
+    }
+    const result = await response.json()
+    return (result?.orderIds ? result : result?.data) as OrderSalesManagerUpdateResponse
   }
 }
