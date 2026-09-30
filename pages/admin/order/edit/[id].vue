@@ -197,6 +197,39 @@
           </div>
         </AccordionSection>
 
+        <!-- 영업 담당자 (수요기관 정보 바로 아래, 늘 펼쳐 보임) — 발주 [저장]과 별개로 고르는 즉시 반영 -->
+        <div class="info-group sales-manager-group">
+          <div class="info-group-header">
+            <i class="fas fa-user-tie" />
+            <span>영업 담당자</span>
+          </div>
+          <GuideNotice v-if="canAssignSales" tone="info" icon="fa-link" open-label="자세히 보기">
+            <template #summary>
+              고르는 즉시 저장되며, 변경·추가계약까지 <b>계약 묶음 전체</b>가 같은 담당자로 바뀝니다
+            </template>
+            <ul class="sm-guide-list">
+              <li>영업 담당자·대리점 직원은 <b>자기가 담당한 납품요구만</b> 봅니다. 미지정이면 영업 화면에 나오지 않습니다.</li>
+              <li>기준계약(-00)과 변경·추가계약(-01 …)은 늘 같은 담당자입니다. 어느 쪽에서 바꿔도 묶음 전체가 바뀝니다.</li>
+              <li>같은 묶음의 납품완료 건 담당자(커미션 담당자 판정에 쓰임)도 함께 바뀝니다.</li>
+              <li>아래 [저장] 버튼은 담당자를 건드리지 않습니다.</li>
+            </ul>
+            <template #note>이미 만들어진 커미션 정산 내역은 바뀌지 않습니다.</template>
+          </GuideNotice>
+          <SalesManagerPicker
+            :order-id="orderId"
+            :current-sales-id="orderData?.salesId ?? null"
+            :current-name="orderData?.salesName ?? null"
+            :current-agency-name="orderData?.salesAgencyName ?? null"
+            :readonly="!canAssignSales"
+            :busy="salesSaving"
+            @select="assignSalesManager"
+          />
+          <p v-if="salesSaveMessage" class="sm-save-msg" :class="salesSaveMessageTone" role="status">
+            <i class="fas" :class="salesSaveMessageTone === 'ok' ? 'fa-check-circle' : 'fa-exclamation-circle'" />
+            {{ salesSaveMessage }}
+          </p>
+        </div>
+
         <!-- 납품 목록 -->
         <FormSection title="납품 목록" style="margin-top: 1.5rem">
           <div class="table-wrapper">
@@ -528,7 +561,7 @@ import { companyService } from '~/services/company.service'
 import { baselineService } from '~/services/baseline.service'
 import { fundService } from '~/services/fund.service'
 import { formatNumber, formatCurrency } from '~/utils/format'
-import type { OrderDetailResponse } from '~/types/order'
+import type { OrderDetailResponse, SalesManagerCandidate } from '~/types/order'
 import type { CompanyInfoResponse } from '~/types/company'
 import type { BaselineType, BaselineStatus, SignatureStatus } from '~/types/baseline'
 import { SIGNATURE_STATUS_LABELS, SIGNATURE_STATUS_CLASSES } from '~/types/baseline'
@@ -540,6 +573,8 @@ import CollectionConfirmModal from '~/components/fund/CollectionConfirmModal.vue
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { usePermission } from '~/composables/usePermission'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
+import GuideNotice from '~/components/ui/GuideNotice.vue'
+import SalesManagerPicker from '~/components/admin/order/SalesManagerPicker.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -715,6 +750,50 @@ const handleBuilderChange = () => {
   formData.value.builderCompany = selected?.companyName || ''
 }
 
+// ── 영업 담당자 지정 (전용 API — 발주 [저장]과 분리) ──
+// 서버(SecurityConfig·서비스)와 같은 선: 시스템관리자·리드파워 담당자만
+const canAssignSales = computed(() => isFullAccess.value)
+const salesSaving = ref(false)
+const salesSaveMessage = ref('')
+const salesSaveMessageTone = ref<'ok' | 'error'>('ok')
+let salesMsgTimer: ReturnType<typeof setTimeout> | null = null
+
+const showSalesMessage = (text: string, tone: 'ok' | 'error') => {
+  salesSaveMessage.value = text
+  salesSaveMessageTone.value = tone
+  if (salesMsgTimer) { clearTimeout(salesMsgTimer) }
+  // 성공 안내는 잠깐 보이고 사라진다(토스트처럼). 오류는 남겨 둔다
+  if (tone === 'ok') {
+    salesMsgTimer = setTimeout(() => { salesSaveMessage.value = '' }, 4000)
+  }
+}
+
+const assignSalesManager = async (candidate: SalesManagerCandidate | null) => {
+  if (!orderData.value || salesSaving.value) { return }
+  const nextId = candidate?.userId ?? null
+  if (nextId === (orderData.value.salesId ?? null)) { return }
+  if (!candidate && !confirm('영업 담당자 지정을 해제할까요?\n계약 묶음 전체가 «미지정»이 되어 영업 화면에서 보이지 않게 됩니다.')) {
+    return
+  }
+  salesSaving.value = true
+  try {
+    const res = await orderService.updateSalesManager({ orderIds: [orderData.value.orderId], salesId: nextId })
+    orderData.value.salesId = res.salesId
+    orderData.value.salesName = res.salesName
+    orderData.value.salesAgencyName = res.salesAgencyName
+    const who = res.salesName
+      ? `${res.salesName}${res.salesAgencyName ? ` (${res.salesAgencyName})` : ''}`
+      : '미지정'
+    const scope = res.orderIds.length > 1 ? ` — 계약 묶음 ${res.orderIds.length}건 (${res.deliveryRequestNos.join(', ')})` : ''
+    showSalesMessage(`영업 담당자를 «${who}»(으)로 저장했습니다${scope}`, 'ok')
+  } catch (error: any) {
+    console.error('영업 담당자 지정 실패:', error)
+    showSalesMessage(error?.message || '영업 담당자 지정에 실패했습니다.', 'error')
+  } finally {
+    salesSaving.value = false
+  }
+}
+
 // 저장
 const handleSave = async () => {
   if (submitting.value) { return }
@@ -725,8 +804,8 @@ const handleSave = async () => {
   try {
     submitting.value = true
 
+    // ⚠ salesId(영업 담당자)는 보내지 않는다 — 전용 API(assignSalesManager)로만 바꾼다. 서버도 무시한다
     const updateData = {
-      salesId: orderData.value!.salesId,
       contractId: orderData.value!.contractId,
       contractDate: orderData.value!.contractDate,
       preNotificationNo: orderData.value!.preNotificationNo || '',
@@ -1186,5 +1265,33 @@ onMounted(async () => {
 .status-completed {
   background: #d1fae5;
   color: #059669;
+}
+
+/* 영업 담당자 (2026-09-30) — 전역 <style> 이라 이 화면 전용 이름을 쓴다 */
+.order-edit .sales-manager-group {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.order-edit .sm-guide-list {
+  margin: 0;
+  padding-left: 1.125rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.order-edit .sm-save-msg {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.order-edit .sm-save-msg.ok {
+  color: #047857;
+}
+
+.order-edit .sm-save-msg.error {
+  color: #b91c1c;
 }
 </style>

@@ -162,5 +162,23 @@ export const ORDER_ENDPOINTS = {
   lowRemainingCount: () => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/orders/low-remaining/count`
+  },
+
+  /**
+   * 영업 담당자 후보 (SALES_MANAGER 활성 사용자) — 시스템관리자·리드파워 담당자 전용
+   * @returns GET /admin/orders/sales-manager-candidates?orderId=
+   */
+  salesManagerCandidates: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/orders/sales-manager-candidates`
+  },
+
+  /**
+   * 영업 담당자 지정·해제 (계약 묶음 단위) — 발주 전체수정과 분리된 전용 API
+   * @returns PATCH /admin/orders/sales-manager  body { orderIds, salesId|null }
+   */
+  salesManager: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/orders/sales-manager`
   }
 } as const
