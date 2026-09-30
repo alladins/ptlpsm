@@ -213,7 +213,7 @@
               <li>같은 묶음의 납품완료 건 담당자(커미션 담당자 판정에 쓰임)도 함께 바뀝니다.</li>
               <li>아래 [저장] 버튼은 담당자를 건드리지 않습니다.</li>
             </ul>
-            <template #note>이미 만들어진 커미션 정산 내역은 바뀌지 않습니다.</template>
+            <template #note>이미 만들어진 커미션 정산 내역은 바뀌지 않습니다. 정산 내역이 있는 발주는 저장 전에 한 번 더 확인을 묻습니다.</template>
           </GuideNotice>
           <SalesManagerPicker
             :order-id="orderId"
@@ -228,6 +228,14 @@
             <i class="fas" :class="salesSaveMessageTone === 'ok' ? 'fa-check-circle' : 'fa-exclamation-circle'" />
             {{ salesSaveMessage }}
           </p>
+          <!-- 커미션 정산 내역 경고 (확인하면 그대로 진행) -->
+          <SalesManagerSettledWarningModal
+            :warning="settledWarning"
+            :target-label="settledTargetLabel"
+            :busy="salesSaving"
+            @confirm="confirmSettledSalesManager"
+            @cancel="cancelSettledSalesManager"
+          />
         </div>
 
         <!-- 납품 목록 -->
@@ -561,7 +569,7 @@ import { companyService } from '~/services/company.service'
 import { baselineService } from '~/services/baseline.service'
 import { fundService } from '~/services/fund.service'
 import { formatNumber, formatCurrency } from '~/utils/format'
-import type { OrderDetailResponse, SalesManagerCandidate } from '~/types/order'
+import type { OrderDetailResponse, SalesManagerCandidate, OrderSalesManagerUpdateResponse } from '~/types/order'
 import type { CompanyInfoResponse } from '~/types/company'
 import type { BaselineType, BaselineStatus, SignatureStatus } from '~/types/baseline'
 import { SIGNATURE_STATUS_LABELS, SIGNATURE_STATUS_CLASSES } from '~/types/baseline'
@@ -575,6 +583,7 @@ import { usePermission } from '~/composables/usePermission'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
 import GuideNotice from '~/components/ui/GuideNotice.vue'
 import SalesManagerPicker from '~/components/admin/order/SalesManagerPicker.vue'
+import SalesManagerSettledWarningModal from '~/components/admin/order/SalesManagerSettledWarningModal.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -776,9 +785,44 @@ const assignSalesManager = async (candidate: SalesManagerCandidate | null) => {
   if (!candidate && !confirm('영업 담당자 지정을 해제할까요?\n계약 묶음 전체가 «미지정»이 되어 영업 화면에서 보이지 않게 됩니다.')) {
     return
   }
+  await saveSalesManager(candidate, false)
+}
+
+// 커미션 정산 경고 — 서버가 needsConfirm 을 돌려주면 모달로 확인받고 confirmSettled=true 로 다시 저장
+const settledWarning = ref<OrderSalesManagerUpdateResponse | null>(null)
+const settledPendingCandidate = ref<SalesManagerCandidate | null>(null)
+const settledTargetLabel = computed(() => {
+  const c = settledPendingCandidate.value
+  return c ? `${c.userName}${c.agencyMember && c.companyName ? ` (${c.companyName})` : ''}` : null
+})
+
+const confirmSettledSalesManager = async () => {
+  await saveSalesManager(settledPendingCandidate.value, true)
+}
+
+const cancelSettledSalesManager = () => {
+  settledWarning.value = null
+  settledPendingCandidate.value = null
+  showSalesMessage('영업 담당자 변경을 취소했습니다 — 바뀐 것은 없습니다.', 'ok')
+}
+
+const saveSalesManager = async (candidate: SalesManagerCandidate | null, confirmSettled: boolean) => {
+  if (!orderData.value || salesSaving.value) { return }
   salesSaving.value = true
   try {
-    const res = await orderService.updateSalesManager({ orderIds: [orderData.value.orderId], salesId: nextId })
+    const res = await orderService.updateSalesManager({
+      orderIds: [orderData.value.orderId],
+      salesId: candidate?.userId ?? null,
+      confirmSettled
+    })
+    if (res.needsConfirm) {
+      // 아무것도 바뀌지 않았다 — 경고 모달을 띄우고 사용자 확인을 기다린다
+      settledPendingCandidate.value = candidate
+      settledWarning.value = res
+      return
+    }
+    settledWarning.value = null
+    settledPendingCandidate.value = null
     orderData.value.salesId = res.salesId
     orderData.value.salesName = res.salesName
     orderData.value.salesAgencyName = res.salesAgencyName
@@ -788,6 +832,8 @@ const assignSalesManager = async (candidate: SalesManagerCandidate | null) => {
     const scope = res.orderIds.length > 1 ? ` — 계약 묶음 ${res.orderIds.length}건 (${res.deliveryRequestNos.join(', ')})` : ''
     showSalesMessage(`영업 담당자를 «${who}»(으)로 저장했습니다${scope}`, 'ok')
   } catch (error: any) {
+    settledWarning.value = null
+    settledPendingCandidate.value = null
     console.error('영업 담당자 지정 실패:', error)
     showSalesMessage(error?.message || '영업 담당자 지정에 실패했습니다.', 'error')
   } finally {

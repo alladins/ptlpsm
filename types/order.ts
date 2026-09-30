@@ -264,6 +264,8 @@ export interface SalesManagerCandidatesResponse {
 export interface OrderSalesManagerUpdateRequest {
   orderIds: number[]
   salesId: number | null
+  /** 커미션 정산 내역 경고를 확인하고 진행 (기본 false — 정산 있으면 서버가 409 needsConfirm) */
+  confirmSettled?: boolean
 }
 
 export interface OrderSalesManagerUpdateResponse {
@@ -275,4 +277,15 @@ export interface OrderSalesManagerUpdateResponse {
   salesId: number | null
   salesName: string | null
   salesAgencyName: string | null
+  /** true 면 커미션 정산 내역이 있어 아무것도 바뀌지 않았다 — 확인 후 confirmSettled=true 로 다시 요청 */
+  needsConfirm?: boolean
+  message?: string | null
+  /** 담당자가 바뀌는 발주 중 정산 내역이 있는 납품요구번호 */
+  settledDeliveryRequestNos?: string[]
+  settledOrderCount?: number
+  /** 유효 정산 건수 (취소·삭제 제외) */
+  settlementCount?: number
+  /** 그중 지급 완료(PAID) / 미지급 건수 */
+  paidSettlementCount?: number
+  unpaidSettlementCount?: number
 }
