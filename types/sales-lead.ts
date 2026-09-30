@@ -82,7 +82,8 @@ export function collectJobLabel (job?: string | null): string {
 /** 실행 방식 */
 export const COLLECT_TRIGGER_LABELS: Record<string, string> = {
   SCHEDULE: '자동',
-  MANUAL: '수동'
+  MANUAL: '수동',
+  BACKFILL: '수동·과거'
 }
 
 /** 실행 상태 */
@@ -259,6 +260,10 @@ export interface SalesCollectStatus {
   running: boolean
   windowDays: number
   maxCallsPerRun: number
+  /** 과거 수집 한 번 최대 일수 */
+  backfillMaxDays: number
+  /** 과거 수집 시작일 하한 (yyyy-MM-dd, KST) */
+  backfillMinDate: string
   /** 지금 수집할 수 없는 이유 (null 이면 가능) */
   blockedReason: string | null
 }
@@ -266,7 +271,8 @@ export interface SalesCollectStatus {
 export interface SalesCollectRun {
   runId: number
   job: string
-  triggerType: 'SCHEDULE' | 'MANUAL' | string
+  /** SCHEDULE 자동 / MANUAL 수동(최근 N일) / BACKFILL 수동·과거(시작일~종료일) */
+  triggerType: 'SCHEDULE' | 'MANUAL' | 'BACKFILL' | string
   windowFrom: string | null
   windowTo: string | null
   status: CollectRunStatus
