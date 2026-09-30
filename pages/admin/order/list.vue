@@ -104,6 +104,19 @@
               </option>
             </select>
           </div>
+
+          <!-- 영업 담당자 (미지정만 보기 — 담당자 지정 작업용) -->
+          <div class="search-item">
+            <label>영업 담당자:</label>
+            <select v-model="searchForm.salesUnassigned" class="text-input" @change="handleSearch">
+              <option :value="false">
+                전체
+              </option>
+              <option :value="true">
+                미지정만
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -115,6 +128,17 @@
             <span>총 {{ totalElements }}개 중 {{ startIndex }}-{{ endIndex }}개 표시</span>
           </div>
           <div class="table-actions">
+            <!-- 영업 담당자 일괄 지정 — 권한·선택이 없으면 눌렀을 때 이유를 알려 준다 (GuardedButton) -->
+            <GuardedButton
+              class="btn-action sm-bulk-btn"
+              :blocked="!canAssignSales || selectedBaseIds.size === 0"
+              :reason="bulkAssignBlockedReason"
+              :disabled="salesSaving"
+              @click="openBulkAssign"
+            >
+              <i class="fas fa-user-tie" />
+              영업 담당자 지정<span v-if="selectedBaseIds.size > 0"> ({{ selectedBaseIds.size }})</span>
+            </GuardedButton>
             <select v-model="pageSize" class="page-size-select" @change="handlePageSizeChange">
               <option :value="10">
                 10개씩
@@ -129,6 +153,41 @@
           </div>
         </div>
 
+        <!-- 영업 담당자 일괄 지정 패널 (팝업 없이 목록 위에서 바로 고른다) -->
+        <div v-if="bulkAssignOpen" class="sm-bulk-panel">
+          <div class="sm-bulk-head">
+            <strong>선택한 계약 묶음 {{ selectedBaseIds.size }}건의 영업 담당자</strong>
+            <span class="sm-bulk-nos">{{ selectedDeliveryNosLabel }}</span>
+          </div>
+          <GuideNotice tone="info" icon="fa-link" open-label="자세히 보기">
+            <template #summary>
+              고르는 즉시 저장되며, 각 묶음의 <b>변경·추가계약까지</b> 같은 담당자로 바뀝니다
+            </template>
+            <ul class="sm-guide-list">
+              <li>체크는 묶음(기준계약 행) 단위입니다. 펼친 변경·추가계약 행도 함께 바뀝니다.</li>
+              <li>같은 묶음의 납품완료 건 담당자(커미션 담당자 판정에 쓰임)도 함께 바뀝니다.</li>
+              <li>한 건씩 수요기관 담당 대리점 «추천»을 보려면 발주 수정 화면에서 지정하세요.</li>
+            </ul>
+            <template #note>이미 만들어진 커미션 정산 내역은 바뀌지 않습니다.</template>
+          </GuideNotice>
+          <SalesManagerPicker
+            start-open
+            :allow-clear="false"
+            :busy="salesSaving"
+            @select="bulkAssign"
+            @cancel="closeBulkAssign"
+          />
+          <div class="sm-bulk-foot">
+            <button type="button" class="sm-bulk-clear" :disabled="salesSaving" @click="bulkAssign(null)">
+              선택 묶음 지정 해제
+            </button>
+          </div>
+        </div>
+        <p v-if="salesSaveMessage" class="sm-save-msg" :class="salesSaveMessageTone" role="status">
+          <i class="fas" :class="salesSaveMessageTone === 'ok' ? 'fa-check-circle' : 'fa-exclamation-circle'" />
+          {{ salesSaveMessage }}
+        </p>
+
         <!-- 로딩 상태 -->
         <div v-if="loading" class="loading-message">
           <i class="fas fa-spinner fa-spin" />
@@ -140,6 +199,16 @@
           <table class="data-table tree-table">
             <thead>
               <tr>
+                <th v-if="canAssignSales" class="col-check">
+                  <input
+                    type="checkbox"
+                    class="row-check"
+                    :checked="allGroupsSelected"
+                    :indeterminate.prop="someGroupsSelected && !allGroupsSelected"
+                    aria-label="이 페이지 계약 묶음 전체 선택"
+                    @change="toggleAllGroups"
+                  >
+                </th>
                 <th style="width: 40px;">
                   No
                 </th>
@@ -164,6 +233,9 @@
                 <th style="width: 80px;">
                   건설사
                 </th>
+                <th style="width: 90px;">
+                  영업 담당자
+                </th>
                 <th style="width: 100px;">
                   총계약금액
                 </th>
@@ -177,8 +249,19 @@
                 <!-- 기준 계약 행 -->
                 <tr
                   class="table-row tree-parent-row"
-                  :class="{ 'has-children': group.children.length > 0 }"
+                  :class="{ 'has-children': group.children.length > 0, 'row-selected': selectedBaseIds.has(group.baseOrder.orderId) }"
                 >
+                  <!-- 체크 = 계약 묶음 단위 (서버가 변경·추가계약까지 넓혀 적용) -->
+                  <td v-if="canAssignSales" class="col-check" @click.stop="toggleGroup(group)">
+                    <input
+                      type="checkbox"
+                      class="row-check"
+                      :checked="selectedBaseIds.has(group.baseOrder.orderId)"
+                      :aria-label="`${group.baseOrder.deliveryRequestNo} 선택`"
+                      @click.stop
+                      @change="toggleGroup(group)"
+                    >
+                  </td>
                   <td @click="editItem(group.baseOrder.orderId)">
                     {{ getDisplayIndex(groupIndex) }}
                   </td>
@@ -200,7 +283,7 @@
                       </span>
                     </div>
                   </td>
-                  <td @click="editItem(group.baseOrder.orderId)">
+                  <td class="cell-nowrap" @click="editItem(group.baseOrder.orderId)">
                     {{ group.baseOrder.deliveryRequestDate }}
                   </td>
                   <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">
@@ -223,10 +306,14 @@
                   <td class="text-left cell-ellipsis" @click="editItem(group.baseOrder.orderId)">
                     {{ group.baseOrder.builderCompanyName || '-' }}
                   </td>
+                  <td class="cell-ellipsis sales-cell" :title="salesLabel(group.baseOrder)" @click="editItem(group.baseOrder.orderId)">
+                    <span v-if="group.baseOrder.salesId">{{ salesLabel(group.baseOrder) }}</span>
+                    <span v-else class="sales-unassigned">미지정</span>
+                  </td>
                   <td class="text-right" @click="editItem(group.baseOrder.orderId)">
                     {{ formatNumber(group.baseOrder.itemTotalAmount) }}
                   </td>
-                  <td @click="editItem(group.baseOrder.orderId)">
+                  <td class="cell-nowrap" @click="editItem(group.baseOrder.orderId)">
                     {{ formatDate(group.baseOrder.createdAt) }}
                   </td>
                 </tr>
@@ -238,6 +325,8 @@
                     :key="child.orderId"
                     class="table-row tree-child-row"
                   >
+                    <!-- 자식 행은 따로 체크하지 않는다 — 부모(묶음) 체크를 따라 함께 바뀐다 -->
+                    <td v-if="canAssignSales" class="col-check" @click="editItem(child.orderId)" />
                     <td class="child-index" @click="editItem(child.orderId)">
                       {{ getDisplayIndex(groupIndex) }}-{{ childIndex + 1 }}
                     </td>
@@ -253,7 +342,7 @@
                         <span class="delivery-request-no child">{{ child.deliveryRequestNo }}</span>
                       </div>
                     </td>
-                    <td @click="editItem(child.orderId)">
+                    <td class="cell-nowrap" @click="editItem(child.orderId)">
                       {{ child.deliveryRequestDate }}
                     </td>
                     <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">
@@ -276,10 +365,14 @@
                     <td class="text-left cell-ellipsis" @click="editItem(child.orderId)">
                       {{ child.builderCompanyName || '-' }}
                     </td>
+                    <td class="cell-ellipsis sales-cell" :title="salesLabel(child)" @click="editItem(child.orderId)">
+                      <span v-if="child.salesId">{{ salesLabel(child) }}</span>
+                      <span v-else class="sales-unassigned">미지정</span>
+                    </td>
                     <td class="text-right" @click="editItem(child.orderId)">
                       {{ formatNumber(child.itemTotalAmount) }}
                     </td>
-                    <td @click="editItem(child.orderId)">
+                    <td class="cell-nowrap" @click="editItem(child.orderId)">
                       {{ formatDate(child.createdAt) }}
                     </td>
                   </tr>
@@ -314,12 +407,15 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { orderService } from '~/services/order.service'
 import { getCommissionPeriods } from '~/services/commission.service'
-import type { OrderDetailResponse, ContractType } from '~/types/order'
+import type { OrderDetailResponse, ContractType, SalesManagerCandidate } from '~/types/order'
 import { CONTRACT_TYPE_LABELS, ORDER_STATUS_LABELS } from '~/types/order'
 // 리팩토링: 공통 모듈 import
 import { formatNumber, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import { useDataTable } from '~/composables/useDataTable'
 import { usePermission, usePermissionButtons } from '~/composables/usePermission'
+import GuardedButton from '~/components/ui/GuardedButton.vue'
+import GuideNotice from '~/components/ui/GuideNotice.vue'
+import SalesManagerPicker from '~/components/admin/order/SalesManagerPicker.vue'
 
 // createdAt은 ISO timestamp이므로 날짜만 추출
 const formatDate = (dateStr?: string): string => {
@@ -336,7 +432,7 @@ const router = useRouter()
 const route = useRoute()
 
 // 권한
-const { canWrite, canEdit, canDelete } = usePermission()
+const { canWrite, canEdit, canDelete, currentRole } = usePermission()
 const { showCreateButton, showEditButton, showDeleteButton } = usePermissionButtons()
 
 // 자금 통계 데이터
@@ -366,6 +462,7 @@ const searchForm = ref({
   client: '',
   keyword: '',
   status: '',
+  salesUnassigned: false, // 영업 담당자 미지정만
   sort: 'createdAt,desc'
 })
 
@@ -417,7 +514,7 @@ const {
       client: searchForm.value.client,
       keyword: searchForm.value.keyword,
       status: searchForm.value.status,
-      salesId: 0,
+      salesUnassigned: searchForm.value.salesUnassigned,
       page: params.page || 0,
       size: params.size || 10,
       sort: params.sort || 'createdAt,desc',
@@ -463,7 +560,8 @@ const loadOrderSummary = async () => {
       endDate: searchForm.value.endDate,
       client: searchForm.value.client,
       keyword: searchForm.value.keyword,
-      status: searchForm.value.status
+      status: searchForm.value.status,
+      salesUnassigned: searchForm.value.salesUnassigned
     })
   } catch (error) {
     console.error('납품요구 금액 합계 조회 실패:', error)
@@ -490,6 +588,7 @@ const handleExportExcel = async () => {
       client: searchForm.value.client,
       keyword: searchForm.value.keyword,
       status: searchForm.value.status,
+      salesUnassigned: searchForm.value.salesUnassigned,
       sort: searchForm.value.sort
     })
     const url = window.URL.createObjectURL(blob)
@@ -516,6 +615,7 @@ const handleReset = async () => {
     client: '',
     keyword: '',
     status: '',
+    salesUnassigned: false,
     sort: 'createdAt,desc'
   }
   await applyDefaultDateRangeFromActivePeriod()
@@ -691,6 +791,117 @@ const toggleExpand = (baseDeliveryRequestNo: string) => {
  */
 const getDisplayIndex = (groupIndex: number): number => {
   return startIndex.value + groupIndex
+}
+
+// ========== 영업 담당자 지정 (2026-09-30) ==========
+// 서버(SecurityConfig·서비스)와 같은 선: 시스템관리자·리드파워 담당자만
+// isFullAccess 는 SYSTEM_ADMIN 만 참이라(리드파워는 메뉴권한 따름) 역할로 직접 판정한다
+const canAssignSales = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(currentRole.value ?? ''))
+
+/** 체크한 계약 묶음 — 묶음의 기준(부모) 행 orderId. 서버가 변경·추가계약까지 넓혀 적용한다 */
+const selectedBaseIds = ref<Set<number>>(new Set())
+const bulkAssignOpen = ref(false)
+const salesSaving = ref(false)
+const salesSaveMessage = ref('')
+const salesSaveMessageTone = ref<'ok' | 'error'>('ok')
+let salesMsgTimer: ReturnType<typeof setTimeout> | null = null
+
+const salesLabel = (o: OrderDetailResponse): string => {
+  if (!o.salesId) { return '미지정' }
+  const name = o.salesName || `사용자 #${o.salesId}`
+  return o.salesAgencyName ? `${name} (${o.salesAgencyName})` : name
+}
+
+const bulkAssignBlockedReason = computed(() => {
+  if (!canAssignSales.value) {
+    return '영업 담당자 지정은 시스템관리자·리드파워 담당자만 할 수 있습니다.\n담당자 변경이 필요하면 리드파워 담당자에게 요청하세요.'
+  }
+  if (selectedBaseIds.value.size === 0) {
+    return '담당자를 지정할 납품요구를 먼저 체크하세요.\n(왼쪽 체크박스 — 변경·추가계약은 묶음으로 함께 바뀝니다)'
+  }
+  return ''
+})
+
+const allGroupsSelected = computed(() =>
+  groupedOrderData.value.length > 0 &&
+  groupedOrderData.value.every(g => selectedBaseIds.value.has(g.baseOrder.orderId)))
+const someGroupsSelected = computed(() =>
+  groupedOrderData.value.some(g => selectedBaseIds.value.has(g.baseOrder.orderId)))
+
+const toggleGroup = (group: OrderGroup) => {
+  const next = new Set(selectedBaseIds.value)
+  const id = group.baseOrder.orderId
+  if (next.has(id)) { next.delete(id) } else { next.add(id) }
+  selectedBaseIds.value = next
+}
+
+const toggleAllGroups = () => {
+  selectedBaseIds.value = allGroupsSelected.value
+    ? new Set()
+    : new Set(groupedOrderData.value.map(g => g.baseOrder.orderId))
+}
+
+const selectedDeliveryNosLabel = computed(() => {
+  const nos = groupedOrderData.value
+    .filter(g => selectedBaseIds.value.has(g.baseOrder.orderId))
+    .map(g => g.baseDeliveryRequestNo)
+  return nos.length > 3 ? `${nos.slice(0, 3).join(', ')} 외 ${nos.length - 3}건` : nos.join(', ')
+})
+
+// 페이지·검색이 바뀌면 보이지 않는 선택이 남지 않게 비운다
+watch(orderData, () => {
+  selectedBaseIds.value = new Set()
+  bulkAssignOpen.value = false
+})
+
+const showSalesMessage = (text: string, tone: 'ok' | 'error') => {
+  salesSaveMessage.value = text
+  salesSaveMessageTone.value = tone
+  if (salesMsgTimer) { clearTimeout(salesMsgTimer) }
+  if (tone === 'ok') {
+    salesMsgTimer = setTimeout(() => { salesSaveMessage.value = '' }, 5000)
+  }
+}
+
+const openBulkAssign = () => {
+  bulkAssignOpen.value = true
+  salesSaveMessage.value = ''
+}
+
+const closeBulkAssign = () => {
+  bulkAssignOpen.value = false
+}
+
+const bulkAssign = async (candidate: SalesManagerCandidate | null) => {
+  if (salesSaving.value || selectedBaseIds.value.size === 0) { return }
+  const count = selectedBaseIds.value.size
+  const who = candidate
+    ? `${candidate.userName}${candidate.agencyMember && candidate.companyName ? ` (${candidate.companyName})` : ''}`
+    : null
+  const question = who
+    ? `선택한 계약 묶음 ${count}건의 영업 담당자를 «${who}»(으)로 지정할까요?\n변경·추가계약도 함께 바뀝니다.`
+    : `선택한 계약 묶음 ${count}건의 영업 담당자 지정을 해제할까요?\n영업 화면에서 보이지 않게 됩니다.`
+  if (!confirm(question)) { return }
+
+  salesSaving.value = true
+  try {
+    const res = await orderService.updateSalesManager({
+      orderIds: Array.from(selectedBaseIds.value),
+      salesId: candidate?.userId ?? null
+    })
+    showSalesMessage(
+      `${who ? `«${who}»(으)로 지정` : '지정 해제'}했습니다 — 계약 묶음 ${count}건, 발주 ${res.orderIds.length}건 (실제 변경 ${res.changedCount}건)`,
+      'ok'
+    )
+    bulkAssignOpen.value = false
+    selectedBaseIds.value = new Set()
+    refresh()
+  } catch (error: any) {
+    console.error('영업 담당자 일괄 지정 실패:', error)
+    showSalesMessage(error?.message || '영업 담당자 지정에 실패했습니다.', 'error')
+  } finally {
+    salesSaving.value = false
+  }
 }
 
 // ========== 계약유형 헬퍼 함수 ==========
@@ -889,14 +1100,112 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-/* 납품요구일자 셀 스타일 (3번째 컬럼) */
-.data-table td:nth-child(3) {
+/* 날짜 셀 (납품요구일자·등록일자) — 체크 열이 권한에 따라 생기므로 nth-child 대신 클래스로 */
+.data-table td.cell-nowrap {
   white-space: nowrap;
 }
 
-/* 등록일자 셀 스타일 (10번째 컬럼) */
-.data-table td:nth-child(10) {
-  white-space: nowrap;
+/* ========== 영업 담당자 (2026-09-30) ========== */
+.col-check {
+  width: 44px;
+  text-align: center;
+  cursor: default;
+}
+
+.row-check {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.tree-parent-row.row-selected {
+  background: #eef2ff;
+}
+
+.sales-cell {
+  max-width: 110px;
+}
+
+.sales-unassigned {
+  color: #b45309;
+  font-size: 0.8125rem;
+}
+
+.sm-bulk-btn {
+  min-height: 36px;
+}
+
+.sm-bulk-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0 1rem 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  background: #f8faff;
+}
+
+.sm-bulk-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.sm-bulk-nos {
+  font-size: 0.8125rem;
+  color: #475569;
+  word-break: break-all;
+}
+
+.sm-bulk-foot {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.sm-bulk-clear {
+  min-height: 44px;
+  padding: 0 0.875rem;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.sm-bulk-clear:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sm-guide-list {
+  margin: 0;
+  padding-left: 1.125rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.sm-save-msg {
+  margin: 0 1rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.sm-save-msg.ok {
+  color: #047857;
+}
+
+.sm-save-msg.error {
+  color: #b91c1c;
+  white-space: pre-line;
+}
+
+@media (max-width: 768px) {
+  .sm-bulk-panel {
+    margin: 0 0.5rem 0.75rem;
+    padding: 0.75rem;
+  }
 }
 
 .tree-toggle-wrapper {

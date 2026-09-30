@@ -56,7 +56,12 @@ export interface ContractTypeCheckResult {
 
 export interface OrderResponse {
   orderId: number
-  salesId: number
+  /** 영업 담당자 user_id (null = 미지정). 변경은 orderService.updateSalesManager 전용 */
+  salesId: number | null
+  /** 영업 담당자 이름 (조회 전용) */
+  salesName?: string | null
+  /** 영업 담당자가 대리점 직원이면 대리점명 (조회 전용) */
+  salesAgencyName?: string | null
   contractId: string
   contractDate: string
   client: string
@@ -151,7 +156,8 @@ export interface OrderDetailItem {
 }
 
 export interface OrderCreateRequest {
-  salesId: number
+  /** 등록 때는 null(미지정) — 담당자는 목록·수정 화면의 전용 기능으로 지정 */
+  salesId: number | null
   contractId: string
   contractDate: string
   preNotificationNo: string
@@ -229,4 +235,44 @@ export interface LowRemainingSearchRequest {
   status?: string
   page?: number
   size?: number
+}
+// ── 영업 담당자 지정 (2026-09-30) ──
+
+/** 영업 담당자 후보 — SALES_MANAGER 활성 사용자 (대리점 직원 포함) */
+export interface SalesManagerCandidate {
+  userId: number
+  loginId: string
+  userName: string
+  companyId: number | null
+  companyName: string | null
+  /** 대리점 직원 여부 (소속 회사가 대리점) */
+  agencyMember: boolean
+  /** 수요기관 담당 대리점 판정 결과 해당 대리점 직원 */
+  recommended?: boolean | null
+}
+
+export interface SalesManagerCandidatesResponse {
+  candidates: SalesManagerCandidate[]
+  resolveStatus?: string | null
+  resolveStatusLabel?: string | null
+  recommendedAgencyId?: number | null
+  recommendedAgencyName?: string | null
+  resolveNote?: string | null
+}
+
+/** PATCH /admin/orders/sales-manager — salesId null = 지정 해제 */
+export interface OrderSalesManagerUpdateRequest {
+  orderIds: number[]
+  salesId: number | null
+}
+
+export interface OrderSalesManagerUpdateResponse {
+  /** 실제로 담당자가 바뀐 발주 수 */
+  changedCount: number
+  /** 계약 묶음으로 확장된 전체 대상 */
+  orderIds: number[]
+  deliveryRequestNos: string[]
+  salesId: number | null
+  salesName: string | null
+  salesAgencyName: string | null
 }
