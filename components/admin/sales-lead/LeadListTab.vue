@@ -43,6 +43,23 @@
             </option>
           </select>
         </div>
+        <div class="search-item">
+          <label>영업 진행:</label>
+          <select v-model="searchForm.progressStatus" class="status-select" @change="search">
+            <option value="">
+              전체
+            </option>
+            <option v-for="code in LEAD_PROGRESS_ORDER" :key="code" :value="code">
+              {{ LEAD_PROGRESS_LABELS[code] }}
+            </option>
+          </select>
+        </div>
+        <div class="search-item">
+          <label class="stale-check">
+            <input v-model="searchForm.staleOnly" type="checkbox" @change="onStaleOnlyChange">
+            방치만
+          </label>
+        </div>
         <!-- 대리점 목록은 리드파워 전용 API 라 관리자에게만 (대리점 소속은 서버가 자기 대리점 것만 준다) -->
         <div v-if="showAgencyFilter" class="search-item">
           <label>담당 대리점:</label>
@@ -109,6 +126,9 @@
                 <LeadKindBadge :kind="item.projectKind || item.leadKind" />
               </div>
               <div class="m-card-meta">
+                <LeadProgressBadge :status="item.progressStatus" :stale="item.stale" />
+              </div>
+              <div class="m-card-meta">
                 <span class="stage-badge" :class="`stage-${leadStage(item)}`">{{ LEAD_STAGE_LABELS[leadStage(item)] }}</span>
                 {{ item.dminsttNm || '-' }}
               </div>
@@ -126,6 +146,7 @@
             <tr>
               <th>첫 수집일</th>
               <th>종류</th>
+              <th>영업 진행</th>
               <th>단계</th>
               <th>사업명</th>
               <th>수요기관</th>
@@ -143,6 +164,9 @@
               </td>
               <td>
                 <LeadKindBadge :kind="item.projectKind || item.leadKind" />
+              </td>
+              <td>
+                <LeadProgressBadge :status="item.progressStatus" :stale="item.stale" />
               </td>
               <td class="nowrap">
                 <span class="stage-badge" :class="`stage-${leadStage(item)}`">
@@ -231,7 +255,9 @@
       v-if="detailTarget"
       :lead-id="detailTarget.leadId"
       :summary="detailTarget"
+      :can-edit-progress="canEditProgress"
       @close="detailTarget = null"
+      @progress-changed="loadPage"
     />
   </div>
 </template>
@@ -242,6 +268,7 @@ import Pagination from '~/components/ui/Pagination.vue'
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import LeadKindBadge from '~/components/admin/sales-lead/LeadKindBadge.vue'
 import LeadDetailModal from '~/components/admin/sales-lead/LeadDetailModal.vue'
+import LeadProgressBadge from '~/components/admin/sales-lead/LeadProgressBadge.vue'
 import { salesLeadService } from '~/services/sales-lead.service'
 import { agencyService } from '~/services/agency.service'
 import { formatNumber } from '~/utils/format'
@@ -256,6 +283,8 @@ import {
 import {
   LEAD_BIZ_TYPE_LABELS,
   LEAD_KIND_FILTER_OPTIONS,
+  LEAD_PROGRESS_LABELS,
+  LEAD_PROGRESS_ORDER,
   LEAD_STAGE_FILTER_OPTIONS,
   LEAD_STAGE_LABELS,
   addDays,
@@ -264,7 +293,13 @@ import {
   type SalesLead
 } from '~/types/sales-lead'
 
-const props = withDefaults(defineProps<{ showAgencyFilter?: boolean }>(), { showAgencyFilter: true })
+interface Props {
+  showAgencyFilter?: boolean
+  /** 상세 모달에서 영업 진행 상태를 바꿀 수 있는지 (관리자 둘 + 영업) */
+  canEditProgress?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), { showAgencyFilter: true, canEditProgress: false })
 
 // 기본 기간: 오늘 포함 최근 7일 (KST)
 const today = todayKst()
@@ -275,7 +310,9 @@ const searchForm = ref({
   source: '',
   resolveStatus: '',
   agencyId: null as number | null,
-  keyword: ''
+  keyword: '',
+  progressStatus: '',
+  staleOnly: false
 })
 
 const agencies = ref<Agency[]>([])
@@ -299,6 +336,9 @@ const loadPage = async () => {
       resolveStatus: f.resolveStatus || undefined,
       agencyId: f.agencyId,
       keyword: f.keyword.trim() || undefined,
+      progressStatus: f.progressStatus || undefined,
+      // false 는 보내지 않는다 (서버 기본값 = 전체)
+      staleOnly: f.staleOnly || undefined,
       page: currentPage.value,
       size: pageSize.value
     })
@@ -317,6 +357,18 @@ const loadPage = async () => {
 const search = () => {
   currentPage.value = 0
   loadPage()
+}
+
+/**
+ * «방치만» — 방치는 받은 지 7일 이상이라 기본 기간(최근 7일)에는 걸리지 않는다.
+ * 켜면 첫 수집일 기간을 비워 전체 기간에서 찾는다 (필요하면 다시 기간을 넣을 수 있다)
+ */
+const onStaleOnlyChange = () => {
+  if (searchForm.value.staleOnly) {
+    searchForm.value.fromDate = ''
+    searchForm.value.toDate = ''
+  }
+  search()
 }
 
 const changePage = (page: number) => {
@@ -382,6 +434,21 @@ onMounted(() => {
 
 .org-cell {
   max-width: 200px;
+}
+
+/* «방치만» 체크 — 터치 대상 44px */
+.search-item label.stale-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.stale-check input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
 }
 
 .stage-badge {

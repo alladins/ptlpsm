@@ -49,6 +49,10 @@
           <div class="head-meta">
             <span v-if="group.agencyId !== null">받는 사람 <strong>{{ group.recipientCount }}</strong>명</span>
             <span>설계 <strong>{{ group.designCount }}</strong> · 공사 <strong>{{ group.constructionCount }}</strong></span>
+            <!-- 방치 = 미확인으로 7일 넘은 리드 (10월 2일 이후 받은 것부터) -->
+            <span v-if="(group.staleCount || 0) > 0" class="stale-count">
+              <i class="fas fa-hourglass-end" /> 방치 <strong>{{ formatNumber(group.staleCount || 0) }}</strong>건
+            </span>
           </div>
         </div>
 
@@ -209,9 +213,19 @@ onMounted(load)
 
 .head-meta {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
   font-size: 0.8125rem;
   color: #475569;
+}
+
+.stale-count {
+  padding: 0 0.375rem;
+  border-radius: 4px;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+  font-weight: 600;
 }
 
 .card-warn {
