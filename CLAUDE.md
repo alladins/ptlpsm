@@ -265,6 +265,7 @@ const loadData = async () => {
 |------|----------|------|------|
 | 2026-01-02 | 초기 구성 (분석→합성→생성→검증 파이프라인) | 전체 | - |
 | 2026-06-15 | 규약 정비(동기화): 스킬 폴더화+frontmatter(name/description), 전 에이전트 opus 통일, 오케스트레이터 스킬 신설, 구형 스킬 경로 참조 수정, CLAUDE.md 포인터 등록 | skills/*, agents/*, CLAUDE.md | 현재 하네스 규약 준수 |
+| 2026-10-01 | **독자 노출 금지 규칙** 신설 — «코드 근거»·소스 파일명·코드/DB 이름·내부 경로·«(확인 필요)» 본문 금지, 미확인 사항은 open-questions.md 로. 검증에 Audience Leak(ERROR, 배포 차단) 추가 | skills/manual-generator §9.1, skills/validation-rules §4.4, agents/quality-validator·document-generator, skills/user-manual-updater | 고객이 보는 매뉴얼 6~7장에 개발용 메모 19+줄·관리자 SQL 경로가 노출돼 있던 것을 발견 |
 | 2026-06-15 | 사용자 매뉴얼 전 9개 장 상세 보강(코드 근거 단계별 조작·필드/오류 사전·예시·스크린샷 자리표시), 상세 작성 표준을 manual-generator 스킬에 명문화 | docs/출하관리시스템_사용자매뉴얼.md, skills/manual-generator | "매뉴얼을 더 상세하게" 요청 반영 |
 
 ---

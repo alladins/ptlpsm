@@ -33,6 +33,10 @@ when_to_use: |
 
 ## 출력 문서
 
+> ⚠ **사용자 매뉴얼 독자 노출 금지 (2026-10-01)** — 매뉴얼은 고객이 화면에서 그대로 읽는다.
+> 코드 근거·소스 파일명·코드 이름·DB 이름·내부 경로·«(확인 필요)» 를 본문에 쓰지 않는다.
+> 기준: `manual-generator` 스킬 §9.1 / 검사: `validation-rules` §4.4. 확인 못한 것은 `.claude/shared/data/manual-enhance/open-questions.md` 로.
+
 ### 1. 사용자 매뉴얼 (docs/generated/USER_MANUAL.md)
 
 ```markdown
