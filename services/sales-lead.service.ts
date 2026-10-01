@@ -11,6 +11,8 @@ import type {
   LeadBizType,
   LeadDigestGroup,
   LeadKeywordGroup,
+  LeadProgressLog,
+  LeadProgressUpdateRequest,
   SalesCollectRun,
   SalesCollectStatus,
   SalesLead,
@@ -29,6 +31,20 @@ export const salesLeadService = {
   /** 상세 (원천 응답 rawJson 포함) */
   get (leadId: number): Promise<SalesLead> {
     return apiClient.get<SalesLead>(`${BASE}/${leadId}`)
+  },
+
+  /**
+   * 영업 진행 상태 변경 — 갱신된 리드(상세와 같은 형태)를 돌려준다
+   * 이어진 계약 행을 보내도 서버가 대표 행(낙찰 행)에 저장한다.
+   * 막히면 400 + 이유 («다른 사람이 먼저 바꿨습니다…», «포기 사유를 적어 주세요» 등)
+   */
+  updateProgress (leadId: number, req: LeadProgressUpdateRequest): Promise<SalesLead> {
+    return apiClient.put<SalesLead>(`${BASE}/${leadId}/progress`, req)
+  },
+
+  /** 영업 진행 변경 이력 (최신순) */
+  getProgressLog (leadId: number): Promise<LeadProgressLog[]> {
+    return apiClient.get<LeadProgressLog[]>(`${BASE}/${leadId}/progress-log`)
   },
 
   /** 아침 요약 미리보기 — date 생략 시 오늘(KST) */

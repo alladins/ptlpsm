@@ -34,7 +34,7 @@
 
       <!-- 탭은 v-if 로 바꿔 끼운다 — 수집 기록 탭을 떠나면 폴링 타이머도 같이 정리된다 -->
       <div v-if="activeTab === 'leads'" class="tab-content">
-        <LeadListTab :show-agency-filter="isLpAdmin" />
+        <LeadListTab :show-agency-filter="isLpAdmin" :can-edit-progress="canEditProgress" />
       </div>
       <div v-else-if="activeTab === 'digest'" class="tab-content">
         <LeadDigestTab />
@@ -84,6 +84,8 @@ const authStore = useAuthStore()
 const isSystemAdmin = computed(() => authStore.user?.role === 'SYSTEM_ADMIN')
 // 수집 실행·기록·상태와 대리점 필터는 리드파워 관리자 전용 — 서버도 /collect/**·/agencies 를 막는다 (2026-09-27 영업 역할 통합)
 const isLpAdmin = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(authStore.user?.role ?? ''))
+// 영업 진행 상태 변경은 관리자 둘 + 영업(대리점 직원은 서버가 자기 대리점 리드만 허용) — SecurityConfig PUT .../progress 와 같은 기준
+const canEditProgress = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER', 'SALES_MANAGER'].includes(authStore.user?.role ?? ''))
 
 const activeTab = ref<'leads' | 'digest' | 'keywords' | 'runs'>('leads')
 
