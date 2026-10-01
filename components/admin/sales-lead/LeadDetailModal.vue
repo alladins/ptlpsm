@@ -598,7 +598,8 @@ const saveProgress = async () => {
       progressAt: updated.progressAt,
       progressBy: updated.progressBy,
       progressByName: updated.progressByName,
-      stale: updated.stale
+      // 방치는 대표 행에만 붙는다 — 계약 행을 보고 있으면 조회 때처럼 false 유지 (리뷰 지적 2026-10-01)
+      stale: lead.value?.awardLeadId ? false : updated.stale
     }
     resetProgressForm()
     emit('progressChanged', updated)

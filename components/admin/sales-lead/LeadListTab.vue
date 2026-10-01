@@ -361,12 +361,18 @@ const search = () => {
 
 /**
  * «방치만» — 방치는 받은 지 7일 이상이라 기본 기간(최근 7일)에는 걸리지 않는다.
- * 켜면 첫 수집일 기간을 비워 전체 기간에서 찾는다 (필요하면 다시 기간을 넣을 수 있다)
+ * 켜면 첫 수집일 기간을 비워 전체 기간에서 찾고, 끄면 켜기 전 기간으로 되돌린다
  */
+let periodBeforeStale: { fromDate: string, toDate: string } | null = null
 const onStaleOnlyChange = () => {
   if (searchForm.value.staleOnly) {
+    periodBeforeStale = { fromDate: searchForm.value.fromDate, toDate: searchForm.value.toDate }
     searchForm.value.fromDate = ''
     searchForm.value.toDate = ''
+  } else if (periodBeforeStale) {
+    searchForm.value.fromDate = periodBeforeStale.fromDate
+    searchForm.value.toDate = periodBeforeStale.toDate
+    periodBeforeStale = null
   }
   search()
 }
