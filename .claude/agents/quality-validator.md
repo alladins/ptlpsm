@@ -98,6 +98,12 @@ readability_rules:
   - diagrams_readable: true              # 다이어그램 가독성
 ```
 
+### 5. 사용자 노출 금지 검사 (Audience Leak) — 2026-10-01, ERROR(배포 차단)
+
+사용자 매뉴얼은 고객이 화면에서 그대로 읽는다. `validation-rules` 스킬 §4.4 패턴으로
+`docs/출하관리시스템_사용자매뉴얼.md` 전체를 검사하고, 걸린 줄은 **위치 + 사용자 표현 대안**과 함께 ERROR 로 보고한다.
+(«코드 근거:» 줄, 소스 파일명, camelCase/snake_case 코드 이름, `docs/sql`·서버 경로, «확인 필요»·«지식베이스»·«레거시»)
+
 ---
 
 ## 검증 프로세스
