@@ -58,7 +58,8 @@ export const LEAD_BIZ_TYPE_LABELS: Record<LeadBizType, string> = {
 export const LEAD_ENRICHED_LABELS: Record<string, string> = {
   Y: '보강됨',
   E: '보강 실패',
-  N: '미보강'
+  N: '미보강',
+  S: '보강 대상 아님 (공고명상 건축 아님)'
 }
 
 /** 수집 작업 */
@@ -118,6 +119,92 @@ export function addDays (date: string, days: number): string {
 }
 
 // ============================================
+// 영업 진행 상태 (영업관리 개선 ② — 설계 docs/DESIGN_영업리드_진행상태_20261001.md)
+// ============================================
+
+/**
+ * 영업 진행 상태 — 순서 강제 없음 (어느 상태로든 바꿀 수 있다)
+ * 기존 «단계»(낙찰·계약 흐름, LeadStage)와 다른 개념이라 화면 이름은 «영업 진행»
+ */
+export const LEAD_PROGRESS = {
+  NEW: 'NEW',
+  REVIEW: 'REVIEW',
+  CONTACT: 'CONTACT',
+  SPEC_IN: 'SPEC_IN',
+  PROPOSAL: 'PROPOSAL',
+  WON: 'WON',
+  HOLD: 'HOLD',
+  DROPPED: 'DROPPED'
+} as const
+
+export type LeadProgressStatus = typeof LEAD_PROGRESS[keyof typeof LEAD_PROGRESS]
+
+export const LEAD_PROGRESS_LABELS: Record<LeadProgressStatus, string> = {
+  [LEAD_PROGRESS.NEW]: '미확인',
+  [LEAD_PROGRESS.REVIEW]: '검토 중',
+  [LEAD_PROGRESS.CONTACT]: '접촉·방문',
+  [LEAD_PROGRESS.SPEC_IN]: '설계 반영',
+  [LEAD_PROGRESS.PROPOSAL]: '견적·제안',
+  [LEAD_PROGRESS.WON]: '수주',
+  [LEAD_PROGRESS.HOLD]: '보류',
+  [LEAD_PROGRESS.DROPPED]: '포기'
+}
+
+/** 화면 표시 순서 (상태 버튼 줄·검색 select) */
+export const LEAD_PROGRESS_ORDER: LeadProgressStatus[] = [
+  LEAD_PROGRESS.NEW,
+  LEAD_PROGRESS.REVIEW,
+  LEAD_PROGRESS.CONTACT,
+  LEAD_PROGRESS.SPEC_IN,
+  LEAD_PROGRESS.PROPOSAL,
+  LEAD_PROGRESS.WON,
+  LEAD_PROGRESS.HOLD,
+  LEAD_PROGRESS.DROPPED
+]
+
+/** 라벨 — 비어 있으면 미확인(서버 기본값 NEW), 모르는 값은 그대로 */
+export function leadProgressLabel (status?: string | null): string {
+  if (!status) { return LEAD_PROGRESS_LABELS.NEW }
+  return LEAD_PROGRESS_LABELS[status as LeadProgressStatus] || status
+}
+
+/**
+ * 이 사업에서 보여 줄 상태 버튼
+ * - 설계 반영(SPEC_IN)은 설계 사업만, 견적·제안(PROPOSAL)은 공사 사업만 (서버는 막지 않음 — 종류 판별이 틀릴 수 있으므로)
+ * - 종류가 안 맞아도 지금 그 상태이면 버튼을 남긴다 (현재 값이 버튼 줄에서 사라지지 않게)
+ */
+export function leadProgressOptions (kind?: LeadKind | null, current?: string | null): LeadProgressStatus[] {
+  return LEAD_PROGRESS_ORDER.filter((s) => {
+    if (s === current) { return true }
+    if (s === LEAD_PROGRESS.SPEC_IN) { return kind === 'DESIGN' }
+    if (s === LEAD_PROGRESS.PROPOSAL) { return kind === 'CONSTRUCTION' }
+    return true
+  })
+}
+
+/** 진행 상태 변경 요청 — fromStatus 는 화면이 본 현재 값 (다르면 서버가 «다른 사람이 먼저 바꿨습니다» 로 거부) */
+export interface LeadProgressUpdateRequest {
+  fromStatus: LeadProgressStatus
+  toStatus: LeadProgressStatus
+  note: string | null
+}
+
+/** 진행 상태 변경 이력 한 행 (추가만 — 수정·삭제 없음) */
+export interface LeadProgressLog {
+  logId: number
+  leadId: number
+  fromStatus: LeadProgressStatus
+  toStatus: LeadProgressStatus
+  note: string | null
+  /** 변경 당시 담당 대리점 (스냅샷) */
+  agencyId: number | null
+  createdBy: string
+  createdByName: string | null
+  /** UTC — formatDateTime 으로 표시 */
+  createdAt: string
+}
+
+// ============================================
 // 영업 리드
 // ============================================
 
@@ -145,7 +232,7 @@ export interface SalesLead {
   clsfcNm: string | null
   srvceDivNm: string | null
   mainCnsttyNm: string | null
-  enriched: 'Y' | 'E' | 'N' | null
+  enriched: 'Y' | 'E' | 'N' | 'S' | null
   leadKind: LeadKind | null
   kindReason: string | null
   designOfficeId: number | null
@@ -181,6 +268,17 @@ export interface SalesLead {
   awardDate?: string | null
   /** 상세: 같은 사업의 다른 낙찰·계약 행 */
   linkedLeads?: SalesLead[] | null
+  /** 영업 진행 상태 (사업 단위 — 대표 행 값) */
+  progressStatus?: LeadProgressStatus | null
+  /** 마지막 진행 메모 */
+  progressNote?: string | null
+  /** 마지막 진행 변경 시각 (UTC) */
+  progressAt?: string | null
+  /** 마지막 진행 변경자 login_id / 이름 */
+  progressBy?: string | null
+  progressByName?: string | null
+  /** 방치 — 설계·공사 + 미확인 + 받은 지 7일 이상 (2026-10-02 이후 받은 리드부터) */
+  stale?: boolean | null
 }
 
 /**
@@ -222,6 +320,10 @@ export interface SalesLeadSearchParams {
   resolveStatus?: string
   agencyId?: number | null
   keyword?: string
+  /** 영업 진행 상태 — 비우면 전체 */
+  progressStatus?: string
+  /** 방치만 */
+  staleOnly?: boolean
   page: number
   size: number
 }
@@ -244,6 +346,8 @@ export interface LeadDigestGroup {
   recipientCount: number
   designCount: number
   constructionCount: number
+  /** 이 묶음(대리점)의 방치 리드 수 */
+  staleCount?: number | null
   leads: SalesLead[]
 }
 

@@ -25,6 +25,112 @@
           </div>
 
           <template v-else-if="lead">
+            <!-- 영업 진행 — 사업 단위(대표 행)로 저장된다. 이어진 계약 행에서 바꿔도 서버가 낙찰 행에 남긴다 -->
+            <section class="detail-section progress-section">
+              <h4>영업 진행</h4>
+              <GuideNotice icon="fa-flag" tone="info" class="progress-guide">
+                <template #summary>
+                  이 사업의 영업이 어디까지 갔는지 남깁니다. 변경 이력은 지워지지 않습니다.
+                </template>
+                <ul>
+                  <li>포기는 사유 필수</li>
+                  <li>미확인으로 7일 넘으면 방치로 표시 (10월 2일 이후 받은 리드부터)</li>
+                </ul>
+              </GuideNotice>
+
+              <div class="progress-current">
+                <LeadProgressBadge :status="lead.progressStatus" :stale="lead.stale" />
+                <span v-if="lead.progressAt" class="text-muted small">
+                  {{ lead.progressByName || lead.progressBy || '-' }} · {{ formatDateTime(lead.progressAt) }}
+                </span>
+                <span v-else class="text-muted small">아직 바꾼 적이 없습니다</span>
+              </div>
+              <p v-if="lead.progressNote" class="progress-last-note">
+                {{ lead.progressNote }}
+              </p>
+
+              <template v-if="canEditProgress">
+                <div class="progress-options" role="group" aria-label="바꿀 영업 진행 상태">
+                  <button
+                    v-for="s in progressOptions"
+                    :key="s"
+                    type="button"
+                    class="progress-option"
+                    :class="{ selected: s === selectedStatus, current: s === currentProgress }"
+                    :aria-pressed="s === selectedStatus"
+                    :disabled="saving"
+                    @click="selectedStatus = s"
+                  >
+                    {{ LEAD_PROGRESS_LABELS[s] }}
+                  </button>
+                </div>
+                <textarea
+                  v-model="noteInput"
+                  class="form-textarea progress-note-input"
+                  rows="2"
+                  maxlength="500"
+                  :placeholder="notePlaceholder"
+                  :disabled="saving"
+                />
+                <div class="progress-actions">
+                  <GuardedButton
+                    type="button"
+                    class="btn-action btn-primary progress-save"
+                    :blocked="!!saveBlockedReason"
+                    :reason="saveBlockedReason"
+                    :disabled="saving"
+                    @click="saveProgress"
+                  >
+                    <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-check'" /> 저장
+                  </GuardedButton>
+                  <span class="text-muted small">{{ noteInput.length }}/500</span>
+                </div>
+                <div v-if="progressError" class="progress-error">
+                  <span><i class="fas fa-exclamation-circle" /> {{ progressError }}</span>
+                  <button type="button" class="btn-action btn-secondary progress-reload" :disabled="loading" @click="load">
+                    <i class="fas fa-sync-alt" /> 새로고침
+                  </button>
+                </div>
+              </template>
+
+              <button
+                type="button"
+                class="history-toggle"
+                :aria-expanded="historyOpen"
+                @click="toggleHistory"
+              >
+                <i class="fas" :class="historyOpen ? 'fa-chevron-up' : 'fa-chevron-down'" />
+                변경 이력
+              </button>
+              <div v-if="historyOpen" class="history-box">
+                <p v-if="historyLoading" class="text-muted small">
+                  <i class="fas fa-spinner fa-spin" /> 불러오는 중...
+                </p>
+                <p v-else-if="historyError" class="progress-error-text">
+                  {{ historyError }}
+                </p>
+                <p v-else-if="history.length === 0" class="text-muted small">
+                  아직 바뀐 적이 없습니다.
+                </p>
+                <ul v-else class="history-list">
+                  <li v-for="h in history" :key="h.logId" class="history-item">
+                    <div class="history-head">
+                      <strong>{{ h.createdByName || h.createdBy }}</strong>
+                      <span class="text-muted small">{{ formatDateTime(h.createdAt) }}</span>
+                    </div>
+                    <div class="history-change">
+                      <LeadProgressBadge :status="h.fromStatus" />
+                      <i class="fas fa-arrow-right text-muted" />
+                      <LeadProgressBadge :status="h.toStatus" />
+                    </div>
+                    <p v-if="h.note" class="history-note">
+                      {{ h.note }}
+                    </p>
+                  </li>
+                </ul>
+              </div>
+            </section>
+
             <div class="head-badges">
               <LeadKindBadge :kind="lead.leadKind" />
               <span class="status-badge info">{{ codeLabel(LEAD_SOURCE_LABELS, lead.source) }}</span>
@@ -303,6 +409,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import LeadKindBadge from '~/components/admin/sales-lead/LeadKindBadge.vue'
+import LeadProgressBadge from '~/components/admin/sales-lead/LeadProgressBadge.vue'
+import GuardedButton from '~/components/ui/GuardedButton.vue'
+import GuideNotice from '~/components/ui/GuideNotice.vue'
 import { salesLeadService } from '~/services/sales-lead.service'
 import { formatDateTime, formatNumber } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
@@ -310,19 +419,35 @@ import { RESOLVE_STATUS_LABELS, codeLabel, resolveStatusBadge } from '~/types/ag
 import {
   LEAD_BIZ_TYPE_LABELS,
   LEAD_ENRICHED_LABELS,
+  LEAD_PROGRESS,
+  LEAD_PROGRESS_LABELS,
   LEAD_SOURCE_LABELS,
   formatBizno,
+  leadProgressOptions,
   leadStage,
+  type LeadProgressLog,
+  type LeadProgressStatus,
   type SalesLead
 } from '~/types/sales-lead'
 
-const props = defineProps<{
+interface Props {
   leadId: number
   /** 목록 행 — 상세를 받기 전 제목 표시용 */
   summary?: SalesLead | null
-}>()
+  /** 영업 진행 상태를 바꿀 수 있는지 (관리자 둘 + 영업). 아니면 보기·이력만 */
+  canEditProgress?: boolean
+}
 
-const emit = defineEmits<{ close: [] }>()
+const props = withDefaults(defineProps<Props>(), {
+  summary: null,
+  canEditProgress: false
+})
+
+const emit = defineEmits<{
+  close: []
+  /** 영업 진행이 바뀜 — 목록을 다시 불러오게 한다 */
+  progressChanged: [lead: SalesLead]
+}>()
 
 const lead = ref<SalesLead | null>(null)
 const loading = ref(false)
@@ -411,11 +536,114 @@ const openLinked = (leadId: number) => {
   load()
 }
 
+// ===== 영업 진행 =====
+/** 화면이 본 현재 값 — PUT 의 fromStatus (서버 값이 다르면 «다른 사람이 먼저 바꿨습니다») */
+const currentProgress = computed<LeadProgressStatus>(() => lead.value?.progressStatus || LEAD_PROGRESS.NEW)
+/** 고른 상태 / 새 메모 (메모는 매번 빈 칸에서 시작 — 바뀔 때마다 그때의 메모가 이력에 남는다) */
+const selectedStatus = ref<LeadProgressStatus>(LEAD_PROGRESS.NEW)
+const noteInput = ref('')
+const saving = ref(false)
+const progressError = ref('')
+
+/** 사업 종류 — 낙찰이 기타여도 이어진 계약이 설계·공사면 그 종류 */
+const progressOptions = computed(() => {
+  const l = lead.value
+  return leadProgressOptions(l ? (l.projectKind || l.leadKind) : null, currentProgress.value)
+})
+
+const notePlaceholder = computed(() => {
+  if (selectedStatus.value === LEAD_PROGRESS.DROPPED) { return '포기 사유 (필수) — 예: 타사 제품으로 설계 확정' }
+  if (selectedStatus.value === LEAD_PROGRESS.HOLD) { return '보류 사유 (권장) — 예: 사업 내년으로 연기' }
+  return '메모 (선택) — 예: 설계사무소 담당자와 통화, 다음 주 방문'
+})
+
+/** [저장]이 막힌 이유 — 빈 문자열이면 저장 가능 */
+const saveBlockedReason = computed(() => {
+  const note = noteInput.value.trim()
+  const lastNote = (lead.value?.progressNote || '').trim()
+  if (selectedStatus.value === currentProgress.value && (note === '' || note === lastNote)) {
+    return '바꾼 내용이 없습니다. 상태 버튼을 고르거나 메모를 적어 주세요.'
+  }
+  if (selectedStatus.value === LEAD_PROGRESS.DROPPED && note === '') {
+    return '포기 사유를 적어 주세요. 메모 칸에 왜 영업하지 않는지 적으면 저장할 수 있습니다.'
+  }
+  return ''
+})
+
+const resetProgressForm = () => {
+  selectedStatus.value = currentProgress.value
+  noteInput.value = ''
+  progressError.value = ''
+}
+
+/** 진행 상태를 저장하는 행 — 이어진 계약 행이면 낙찰(대표) 행 */
+const progressLeadId = computed(() => lead.value ? (lead.value.awardLeadId || lead.value.leadId) : 0)
+
+const saveProgress = async () => {
+  if (!lead.value || saving.value) { return }
+  saving.value = true
+  progressError.value = ''
+  try {
+    const note = noteInput.value.trim()
+    const updated = await salesLeadService.updateProgress(progressLeadId.value, {
+      fromStatus: currentProgress.value,
+      toStatus: selectedStatus.value,
+      note: note || null
+    })
+    // 보고 있는 행은 그대로 두고 진행 필드만 갱신 (계약 행을 보다 저장해도 낙찰 행으로 바뀌지 않게)
+    lead.value = {
+      ...lead.value,
+      progressStatus: updated.progressStatus,
+      progressNote: updated.progressNote,
+      progressAt: updated.progressAt,
+      progressBy: updated.progressBy,
+      progressByName: updated.progressByName,
+      // 방치는 대표 행에만 붙는다 — 계약 행을 보고 있으면 조회 때처럼 false 유지 (리뷰 지적 2026-10-01)
+      stale: lead.value?.awardLeadId ? false : updated.stale
+    }
+    resetProgressForm()
+    emit('progressChanged', updated)
+    if (historyOpen.value) { loadHistory() }
+  } catch (e) {
+    // 서버 메시지 그대로 («다른 사람이 먼저 바꿨습니다. 새로고침 후 다시 해 주세요» 등)
+    progressError.value = toApiError(e).message
+  } finally {
+    saving.value = false
+  }
+}
+
+// ===== 변경 이력 (펼칠 때 불러온다) =====
+const historyOpen = ref(false)
+const historyLoading = ref(false)
+const historyError = ref('')
+const history = ref<LeadProgressLog[]>([])
+
+const loadHistory = async () => {
+  if (!progressLeadId.value) { return }
+  historyLoading.value = true
+  historyError.value = ''
+  try {
+    history.value = await salesLeadService.getProgressLog(progressLeadId.value) || []
+  } catch (e) {
+    historyError.value = toApiError(e).message
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+const toggleHistory = () => {
+  historyOpen.value = !historyOpen.value
+  if (historyOpen.value) { loadHistory() }
+}
+
 const load = async () => {
   loading.value = true
   errorMessage.value = ''
   try {
     lead.value = await salesLeadService.get(currentId.value)
+    resetProgressForm()
+    // 다른 행으로 바뀌었거나 새로 불러왔으면 이력도 다시
+    if (historyOpen.value) { loadHistory() }
   } catch (e) {
     errorMessage.value = toApiError(e).message
   } finally {
@@ -429,6 +657,162 @@ onMounted(load)
 <style scoped>
 .lead-modal {
   max-width: 820px;
+}
+
+/* ===== 영업 진행 ===== */
+.progress-guide {
+  margin-bottom: 0.625rem;
+}
+
+.progress-current {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.progress-last-note,
+.history-note {
+  margin: 0.375rem 0 0;
+  padding: 0.375rem 0.625rem;
+  background: #f8fafc;
+  border-left: 3px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  color: #334155;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 상태 버튼 줄 — 터치 44px, 좁은 화면에서 줄바꿈 */
+.progress-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.progress-option {
+  min-height: 44px;
+  padding: 0 0.875rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 9999px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.progress-option.current {
+  border-style: dashed;
+}
+
+.progress-option.selected {
+  background: #2563eb;
+  border-color: #2563eb;
+  border-style: solid;
+  color: #fff;
+}
+
+.progress-option:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.progress-note-input {
+  width: 100%;
+  resize: vertical;
+}
+
+.progress-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.btn-action.progress-save,
+.btn-action.progress-reload {
+  min-height: 44px;
+  min-width: 96px;
+}
+
+.progress-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #991b1b;
+  font-size: 0.8125rem;
+}
+
+.progress-error-text {
+  margin: 0;
+  color: #991b1b;
+  font-size: 0.8125rem;
+}
+
+.history-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  margin-top: 0.5rem;
+  padding: 0 0.25rem;
+  border: none;
+  background: none;
+  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.history-box {
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.history-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  color: #0f172a;
+}
+
+.history-change {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
 }
 
 .head-badges {
