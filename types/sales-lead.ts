@@ -58,7 +58,8 @@ export const LEAD_BIZ_TYPE_LABELS: Record<LeadBizType, string> = {
 export const LEAD_ENRICHED_LABELS: Record<string, string> = {
   Y: '보강됨',
   E: '보강 실패',
-  N: '미보강'
+  N: '미보강',
+  S: '보강 대상 아님 (공고명상 건축 아님)'
 }
 
 /** 수집 작업 */
@@ -145,7 +146,7 @@ export interface SalesLead {
   clsfcNm: string | null
   srvceDivNm: string | null
   mainCnsttyNm: string | null
-  enriched: 'Y' | 'E' | 'N' | null
+  enriched: 'Y' | 'E' | 'N' | 'S' | null
   leadKind: LeadKind | null
   kindReason: string | null
   designOfficeId: number | null
