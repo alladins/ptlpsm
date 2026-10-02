@@ -44,3 +44,28 @@ export function httpErrorMessage (status: number, what?: string): string {
 export function httpError (status: number, what?: string): Error {
   return new Error(httpErrorMessage(status, what))
 }
+
+/**
+ * 실패 응답 본문에서 백엔드 안내 문구(message)를 꺼낸다.
+ *
+ * PDF·ZIP·엑셀처럼 성공 시 Blob 을 주는 API 도 실패하면 JSON `{ message }` 를 준다
+ * (예: 계약 품목 귀속 미지정 400 — «무엇을 하면 되는지»가 담긴 안내).
+ * statusText 나 고정 문구만 보여주면 그 안내가 사라지므로, 본문을 text 로 읽어 JSON 파싱을 시도한다.
+ * 본문이 없거나 JSON 이 아니면 상태코드 기본 문구로 대신한다.
+ *
+ * @param response 실패한 fetch 응답 (response.ok === false)
+ * @param what     무슨 작업이었는지 (예: '일괄 다운로드')
+ */
+export async function readErrorMessage (response: Response, what?: string): Promise<string> {
+  try {
+    const text = await response.text()
+    if (text) {
+      const data = JSON.parse(text)
+      const message = data?.message ?? data?.data?.message
+      if (typeof message === 'string' && message.trim()) { return message }
+    }
+  } catch {
+    // 본문이 JSON 이 아님 — 기본 문구 사용
+  }
+  return httpErrorMessage(response.status, what)
+}

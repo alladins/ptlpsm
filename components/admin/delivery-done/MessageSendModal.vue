@@ -28,6 +28,16 @@
           </div>
         </div>
 
+        <!-- 계약 품목 귀속 미지정 → 서명 요청(서류 발행) 불가 -->
+        <ContractAllocGuardNotice
+          v-if="allocBlocked"
+          :count="allocCount"
+          :items="allocItems"
+          action="서명 요청"
+          :to="contractAllocDeliveryDoneLink(deliveryDone.deliveryDoneId)"
+          @navigate="$emit('close')"
+        />
+
         <!-- 담당자 선택 리스트박스 -->
         <div class="form-section">
           <div class="recipient-grid" :class="{ 'single-column': documentType === 'COMPLETION' }">
@@ -134,14 +144,16 @@
         <button class="btn-cancel" :disabled="sending" @click="$emit('close')">
           취소
         </button>
-        <button
+        <GuardedButton
           class="btn-send"
-          :disabled="!canSend || sending"
+          :disabled="!canSend || sending || allocLoading"
+          :blocked="allocBlocked"
+          :reason="contractAllocBlockedReason(allocCount, '서명 요청')"
           @click="handleSend"
         >
           <i class="fas" :class="sending ? 'fa-spinner fa-spin' : 'fa-paper-plane'" />
           {{ sending ? '발송 중...' : sendButtonText }}
-        </button>
+        </GuardedButton>
       </div>
     </div>
   </div>
@@ -155,6 +167,12 @@ import { getMessageTemplateByCode } from '~/services/message-template.service'
 import type { DeliveryDoneListItem, SignatureRecipient } from '~/types/delivery-done'
 import type { UserByRole } from '~/types/user'
 import type { MessageTemplate } from '~/types/message-template'
+import ContractAllocGuardNotice from '~/components/contract-alloc/ContractAllocGuardNotice.vue'
+import {
+  useContractAllocStatus,
+  contractAllocBlockedReason,
+  contractAllocDeliveryDoneLink
+} from '~/composables/useContractAllocStatus'
 
 const props = defineProps<{
   deliveryDone: DeliveryDoneListItem
@@ -170,6 +188,15 @@ const selectedSiteSupervisorId = ref<number | ''>('')
 const selectedInspectorId = ref<number | ''>('')
 const sending = ref(false)
 const loading = ref(false)
+
+// 계약 품목 귀속 가드 — 미지정이 있으면 서명 요청 불가 (조회 실패 시 막지 않음, 백엔드 400 이 최종 차단)
+const {
+  blocked: allocBlocked,
+  loading: allocLoading,
+  unallocatedCount: allocCount,
+  unallocatedItems: allocItems,
+  loadByOrder: loadAllocStatus
+} = useContractAllocStatus()
 
 // 템플릿 관련
 const templateLoading = ref(false)
@@ -261,6 +288,7 @@ const sendButtonText = computed(() => {
 
 // 모달 오픈 시 사용자 목록 + 메시지 템플릿 로드
 onMounted(async () => {
+  loadAllocStatus(props.deliveryDone.orderId)
   loading.value = true
   templateLoading.value = true
   try {
@@ -315,7 +343,7 @@ function onInspectorChange () {
 }
 
 async function handleSend () {
-  if (!canSend.value) { return }
+  if (!canSend.value || allocBlocked.value) { return }
 
   sending.value = true
 
@@ -357,7 +385,8 @@ async function handleSend () {
     emit('sent')
   } catch (error) {
     console.error('Failed to send signature URL:', error)
-    alert('메시지 발송 중 오류가 발생했습니다.')
+    // 백엔드 400 안내(귀속 미지정 등)를 그대로 보여준다
+    alert(error instanceof Error && error.message ? error.message : '메시지 발송 중 오류가 발생했습니다.')
   } finally {
     sending.value = false
   }

@@ -287,6 +287,8 @@
         <!-- 잔금 탭 -->
         <FundBalanceTab
           v-if="activeTab === 'balance'"
+          :order-id="fundDetail?.orderId"
+          :delivery-done-id="fundDetail?.deliveryDoneId"
           :remaining-balance="getRemainingBalance()"
           :is-delivery-completed="fundDetail?.isDeliveryCompleted || fundDetail?.deliveryDoneStatus === 'COMPLETED'"
           :can-complete-final-delivery="canCompleteFinalDelivery"
@@ -356,6 +358,7 @@
       :show="showPdfModal"
       :pdf-url="currentPdfUrl"
       :file-name="currentPdfFileName"
+      :contract-alloc-link="contractAllocDeliveryDoneLink(fundDetail?.deliveryDoneId)"
       @close="closePdfModal"
     />
 
@@ -429,6 +432,7 @@ import { shipmentService, type ShipmentListItem } from '~/services/shipment.serv
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
 import { useFundCalculations } from '~/utils/fund-calculations'
 import { useFundModals } from '~/composables/useFundModals'
+import { contractAllocDeliveryDoneLink } from '~/composables/useContractAllocStatus'
 import { useDeliveryButtons } from '~/composables/useDeliveryButtons'
 
 definePageMeta({

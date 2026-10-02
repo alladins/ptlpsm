@@ -241,6 +241,11 @@ class DeliveryService {
       })
 
       if (!response.ok) {
+        // 400 은 백엔드 안내(예: 계약 품목 귀속 미지정 → 출발 문자 차단)를 그대로 보여준다
+        const errorData = await response.json().catch(() => null)
+        if (response.status === 400 && errorData?.message) {
+          throw new Error(errorData.message)
+        }
         throw httpError(response.status, '납품 생성')
       }
 

@@ -18,7 +18,7 @@ import type {
   SubmitToNaraResponse
 } from '~/types/delivery-done'
 import type { StatusCode } from '~/types/common'
-import { httpError, httpErrorMessage } from '~/utils/apiError'
+import { httpError, httpErrorMessage, readErrorMessage } from '~/utils/apiError'
 
 /**
  * 납품완료보고서 붙임 서류 종류 (백엔드 DeliveryDoneDocType 과 1:1)
@@ -239,7 +239,9 @@ export async function sendSignatureUrl (
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to send signature URL: ${response.statusText}`)
+      // 백엔드 안내(예: 계약 품목 귀속 미지정 400)를 그대로 화면에 보여준다
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || httpErrorMessage(response.status, '서명 URL 발송'))
     }
 
     return await response.json()
@@ -362,17 +364,9 @@ export async function downloadBaselineInvoiceExcel (orderId: number): Promise<vo
   })
 
   if (!response.ok) {
-    // 에러 응답에서 메시지 추출
-    try {
-      const errorData = await response.json()
-      throw new Error(errorData.message || httpErrorMessage(response.status, '엑셀 다운로드'))
-    } catch (parseError) {
-      // JSON 파싱 실패 시 기본 메시지
-      if (parseError instanceof Error && parseError.message !== httpErrorMessage(response.status, '엑셀 다운로드')) {
-        throw parseError
-      }
-      throw httpError(response.status, '엑셀 다운로드')
-    }
+    // 에러 응답 본문의 안내(예: 계약 품목 귀속 미지정 400)를 그대로 보여준다.
+    // (기존 코드는 본문이 JSON 이 아니면 «Unexpected token…» 파싱 오류 문구가 그대로 노출됐다)
+    throw new Error(await readErrorMessage(response, '엑셀 다운로드'))
   }
 
   // Blob으로 다운로드 처리
@@ -405,7 +399,8 @@ export async function downloadAllPdfs (
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to download all PDFs: ${response.statusText}`)
+      // 백엔드 안내(예: 계약 품목 귀속 미지정 400)를 그대로 보여준다
+      throw new Error(await readErrorMessage(response, '일괄 다운로드'))
     }
 
     // ZIP 파일 다운로드
@@ -438,8 +433,7 @@ export async function downloadMergedPdf (
   })
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || httpErrorMessage(response.status, '합지 다운로드'))
+    throw new Error(await readErrorMessage(response, '합지 다운로드'))
   }
 
   const blob = await response.blob()

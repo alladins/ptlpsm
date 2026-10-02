@@ -20,14 +20,17 @@
           <i class="fas fa-file-pdf" />
           PDF 다운로드
         </button>
-        <button
+        <!-- 수동 완료 = 서류(PDF 3종) 발행 → 계약 품목 귀속 미지정이면 막힘 -->
+        <GuardedButton
           v-if="canCompleteManually"
           class="btn-action btn-warning"
+          :blocked="allocBlocked"
+          :reason="allocBlockedReason('수동 완료(서류 발행)')"
           @click="showManualCompleteModal = true"
         >
           <i class="fas fa-check-circle" />
           수동 완료
-        </button>
+        </GuardedButton>
         <button
           v-if="canResetItem"
           class="btn-action btn-delete"
@@ -36,15 +39,17 @@
           <i class="fas fa-undo" />
           초기화
         </button>
-        <button
+        <!-- PDF 재발행 = 서류 재발행 → 계약 품목 귀속 미지정이면 막힘 -->
+        <GuardedButton
           v-if="canRegeneratePdfs"
           class="btn-action btn-info"
-          title="서명 보존하고 PDF 3종만 새 데이터로 재생성"
+          :blocked="allocBlocked"
+          :reason="allocBlockedReason('PDF 재발행')"
           @click="showRegenerateModal = true"
         >
           <i class="fas fa-redo" />
           PDF 재발행
-        </button>
+        </GuardedButton>
         <button
           v-if="canRecalculate"
           class="btn-action btn-info"
@@ -70,6 +75,15 @@
     <ErrorSection v-else-if="!data" message="납품완료 정보를 찾을 수 없습니다." />
 
     <div v-else class="content-section">
+      <!-- 계약 품목 귀속 미지정 → 서류 발행·재발행·서명 요청이 막혀 있음을 맨 위에서 알림 -->
+      <ContractAllocGuardNotice
+        v-if="allocBlocked"
+        :count="allocCount"
+        :items="allocItems"
+        action="서류 발행·재발행·서명 요청"
+        :to="`${route.path}#contract-alloc`"
+      />
+
       <!-- 기본 정보 (접기/펼치기, 기본 열림) -->
       <AccordionSection title="기본 정보" :summary="baseInfoSummary" :default-expanded="true">
         <div class="base-info-grid">
@@ -332,6 +346,18 @@
           </table>
         </div>
       </FormSection>
+
+      <!--
+        계약 품목 귀속 지정 (B급·합지 출하 → 계약 품목·수량)
+        ★ id="contract-alloc" — 다른 화면(자금·납품완료 목록 모달 등)의 [지정하러 가기] 링크가 이 위치로 온다
+      -->
+      <div id="contract-alloc" class="contract-alloc-anchor">
+        <ContractAllocPanel
+          :order-id="data.orderId"
+          :readonly="isDemoMode || !canAdminAction"
+          @changed="handleContractAllocChanged"
+        />
+      </div>
 
       <!-- 수량 변경 이력 (변경계약/추가계약 반영) -->
       <FormSection
@@ -670,6 +696,9 @@ import ManualCompleteModal from '~/components/admin/delivery-done/ManualComplete
 import ResetConfirmModal from '~/components/admin/delivery-done/ResetConfirmModal.vue'
 import RegeneratePdfConfirmModal from '~/components/admin/delivery-done/RegeneratePdfConfirmModal.vue'
 import ScanUploadModal from '~/components/admin/delivery-done/ScanUploadModal.vue'
+import ContractAllocPanel from '~/components/contract-alloc/ContractAllocPanel.vue'
+import ContractAllocGuardNotice from '~/components/contract-alloc/ContractAllocGuardNotice.vue'
+import { useContractAllocStatus, contractAllocBlockedReason } from '~/composables/useContractAllocStatus'
 
 definePageMeta({
   layout: 'admin',
@@ -935,6 +964,24 @@ function handleAdminActionDone () {
   fetchDetail()
 }
 
+// ===== 계약 품목 귀속 가드 (1-b단계) =====
+// 미지정이 있으면 서류 발행(수동 완료)·재발행 버튼을 막고 이유 + 지정 위치를 안내한다.
+// 조회 실패 시에는 막지 않는다(백엔드 400 이 최종 차단, 메시지는 각 모달이 그대로 표시).
+const {
+  blocked: allocBlocked,
+  unallocatedCount: allocCount,
+  unallocatedItems: allocItems,
+  loadByOrder: loadAllocStatus
+} = useContractAllocStatus()
+
+const allocBlockedReason = (action: string) =>
+  contractAllocBlockedReason(allocCount.value, action, '이 화면 아래 «계약 품목 귀속»')
+
+/** 귀속 저장·해제 후 — 가드 상태와 상세(납품수량·완료율 재계산 반영)를 다시 읽는다 */
+function handleContractAllocChanged () {
+  fetchDetail(true) // 안에서 가드 상태도 다시 읽는다
+}
+
 // 날짜 포맷
 function formatDate (value: string | null | undefined): string {
   if (!value) { return '-' }
@@ -955,7 +1002,8 @@ function getRateClass (rate: number): string {
 }
 
 // 상세 데이터 로드
-async function fetchDetail () {
+// silent=true: 로딩 화면으로 바꾸지 않고 데이터만 갈아 끼운다 (귀속 패널 등 하위 컴포넌트가 다시 마운트되지 않게)
+async function fetchDetail (silent = false) {
   const id = Number(route.params.id)
   if (!id || isNaN(id)) {
     loading.value = false
@@ -963,8 +1011,10 @@ async function fetchDetail () {
   }
 
   try {
-    loading.value = true
+    if (!silent) { loading.value = true }
     data.value = await getDeliveryDoneDetail(id)
+    // 계약 품목 귀속 가드 상태 (비차단)
+    loadAllocStatus(data.value?.orderId)
     // 상태 코드 로드
     await loadStatusCodes('DELIVERY_DONE')
     // 수량 변경 이력 로드 (실패해도 본문은 표시)
@@ -1178,6 +1228,12 @@ onUnmounted(() => {
 @import '@/assets/css/admin-buttons.css';
 @import '@/assets/css/admin-tables.css';
 @import '@/assets/css/admin-detail.css';
+
+/* 계약 품목 귀속 패널 위치 (링크 #contract-alloc 로 들어올 때 상단 헤더에 가리지 않게) */
+.contract-alloc-anchor {
+  margin: 0 0 1.5rem;
+  scroll-margin-top: 80px;
+}
 
 /* 기본 정보(아코디언) 내부 2열 그리드 — FormSection.form-grid 대체 */
 .base-info-grid {

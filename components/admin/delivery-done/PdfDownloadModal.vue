@@ -28,6 +28,16 @@
           </div>
         </div>
 
+        <!-- 계약 품목 귀속 미지정 → 공문·납품내역서·일괄/합지 다운로드가 막혀 있음 -->
+        <ContractAllocGuardNotice
+          v-if="allocBlocked"
+          :count="allocCount"
+          :items="allocItems"
+          action="서류 다운로드"
+          :to="allocLink"
+          @navigate="$emit('close')"
+        />
+
         <!-- 공문 수신자명 (입력 후 '저장' 버튼으로 발주에 저장) -->
         <div class="recipient-section">
           <label class="recipient-label">공문 수신자명</label>
@@ -223,6 +233,7 @@
       :pdf-url="previewPdfUrl"
       :delivery-id="deliveryDone.deliveryDoneId"
       :file-name="previewFileName"
+      :contract-alloc-link="allocLink"
       @close="closePdfPreview"
     />
   </div>
@@ -244,6 +255,8 @@ import { baselineService } from '~/services/baseline.service'
 import { orderService } from '~/services/order.service'
 import type { DeliveryDoneListItem } from '~/types/delivery-done'
 import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
+import ContractAllocGuardNotice from '~/components/contract-alloc/ContractAllocGuardNotice.vue'
+import { useContractAllocStatus, contractAllocDeliveryDoneLink } from '~/composables/useContractAllocStatus'
 
 type PdfType = 'cover' | 'confirmation' | 'completion' | 'photo-sheet' | 'delivery-statement'
 
@@ -262,6 +275,18 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
 }>()
+
+// ===== 계약 품목 귀속 가드 =====
+// 공문·납품내역서·기성청구내역서·일괄/합지 다운로드는 귀속 미지정이면 백엔드가 400 으로 막는다.
+// 미리 조회해 안내 + 바로가기를 보여준다 (조회 실패·권한 없음이면 안내 생략, 400 메시지는 각 동작이 그대로 표시).
+const {
+  blocked: allocBlocked,
+  unallocatedCount: allocCount,
+  unallocatedItems: allocItems,
+  loadByOrder: loadAllocStatus
+} = useContractAllocStatus()
+const allocLink = computed(() => contractAllocDeliveryDoneLink(props.deliveryDone.deliveryDoneId))
+onMounted(() => { loadAllocStatus(props.deliveryDone.orderId) })
 
 // PDF 미리보기 모달 상태
 const showPdfPreview = ref(false)
@@ -398,7 +423,8 @@ async function downloadAll () {
     )
   } catch (error) {
     console.error('Failed to download all PDFs:', error)
-    alert('일괄 다운로드 중 오류가 발생했습니다.')
+    // 백엔드 안내(예: 계약 품목 귀속 미지정 400)를 그대로 보여준다
+    alert(error instanceof Error && error.message ? error.message : '일괄 다운로드 중 오류가 발생했습니다.')
   }
 }
 
