@@ -86,8 +86,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRoute, useRouter } from '#imports'
 import { renderMarkdown, type TocItem } from '~/utils/markdown'
-import { scopeManualToMenus, collectMenuUrls } from '~/utils/manual-scope'
+import { scopeManualToMenus, collectMenuUrls, collectMenuEntries, type MenuEntry } from '~/utils/manual-scope'
+import { screenLinkLabel, findManualSection } from '~/utils/manual-links'
 import { usePermissionStore } from '~/stores/permission'
 
 definePageMeta({
@@ -231,8 +233,23 @@ const goTo = (id: string) => {
   history.replaceState(null, '', `#${id}`)
 }
 
+const route = useRoute()
+const router = useRouter()
+
 // 본문 안의 [링크](#앵커) 클릭도 부드럽게 이동시킨다
 const onContentClick = (e: MouseEvent) => {
+  // 절 제목 아래 [… 화면으로] — 같은 탭에서 그 화면으로 간다.
+  // Ctrl/Shift/⌘ 클릭은 브라우저에 맡긴다(href 가 실제 주소라 새 탭으로 열린다).
+  const screenLink = (e.target as HTMLElement).closest('a.md-screen-link') as HTMLAnchorElement | null
+  if (screenLink) {
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) { return }
+    const path = screenLink.dataset.screen
+    if (!path) { return }
+    e.preventDefault()
+    router.push(path)
+    return
+  }
+
   const a = (e.target as HTMLElement).closest('a.md-anchor') as HTMLAnchorElement | null
   if (!a) { return }
   const id = decodeURIComponent(a.getAttribute('href') || '').slice(1)
@@ -254,20 +271,29 @@ onMounted(async () => {
     // 내가 들어갈 수 있는 메뉴를 먼저 확보한다.
     // 실패해도 매뉴얼은 띄운다 — 권한을 못 읽었다고 문서가 통째로 사라지면 안 된다.
     let myMenuUrls: string[] = []
+    // 절 제목 아래 «화면 바로가기» 버튼의 권한·문구 판정용 (권한 없는 메뉴도 포함)
+    let menuEntries: MenuEntry[] = []
     try {
       const menus = permissionStore.userMenus?.length
         ? permissionStore.userMenus
         : await permissionStore.fetchUserMenus()
       myMenuUrls = collectMenuUrls(menus)
+      menuEntries = collectMenuEntries(menus)
     } catch (e) {
       console.warn('[매뉴얼] 메뉴 권한을 읽지 못해 전체를 표시합니다:', e)
     }
 
-    const scoped = scopeManualToMenus(raw, myMenuUrls, permissionStore.isFullAccess)
+    const fullAccess = permissionStore.isFullAccess
+    const scoped = scopeManualToMenus(raw, myMenuUrls, fullAccess)
     hiddenChapters.value = scoped.hiddenCount
 
     rawMarkdown.value = scoped.markdown
-    const parsed = renderMarkdown(scoped.markdown)
+    const parsed = renderMarkdown(scoped.markdown, {
+      screenLink: (path) => {
+        const label = screenLinkLabel(path, menuEntries, fullAccess)
+        return label ? { label, href: router.resolve(path).href } : null
+      }
+    })
     html.value = parsed.html
     toc.value = parsed.toc
   } catch (e) {
@@ -280,9 +306,19 @@ onMounted(async () => {
 
   await nextTick()
 
-  // 주소창에 앵커가 있으면 그 위치로
+  // 주소창에 앵커가 있으면 그 위치로.
+  // 앵커가 없고 ?from=<화면 주소> 로 왔으면(관리자 화면 상단 [매뉴얼] 버튼) 그 화면을 설명하는 절로.
+  // ⚠ 권한으로 걸러진 장이면 그 절이 없다 → 아무 데도 가지 않고 첫 화면에 머문다.
   const hash = decodeURIComponent(location.hash || '').slice(1)
-  if (hash) { goTo(hash) }
+  const from = typeof route.query.from === 'string' ? route.query.from : ''
+  if (hash) {
+    goTo(hash)
+  } else if (from) {
+    const id = findManualSection(toc.value, from)
+    // from 은 주소창에서 지운다 — 남겨 두면 새로고침·공유 때 계속 그 절로 끌려간다
+    history.replaceState(history.state, '', location.pathname)
+    if (id) { goTo(id) }
+  }
 
   observer = new IntersectionObserver((entries) => {
     const hit = entries.filter(e => e.isIntersecting)
@@ -665,6 +701,37 @@ onUnmounted(() => {
 
 .md-root a:hover { text-decoration: underline; }
 
+/* 절 제목 아래 [… 화면으로] — 매뉴얼 → 화면 바로가기 */
+.md-root .md-screen-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -4px 0 10px;
+}
+
+.md-root .md-screen-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  text-decoration: none;
+}
+
+.md-root .md-screen-link i { font-size: 10px; }
+
+.md-root .md-screen-link:hover {
+  border-color: #2563eb;
+  background: #dbeafe;
+  text-decoration: none;
+}
+
 .md-root strong { color: #111827; }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -681,7 +748,8 @@ onUnmounted(() => {
   :deep(.impersonation-banner),
   .manual-header,
   .manual-toc,
-  .btn-top {
+  .btn-top,
+  .md-root .md-screen-row {
     display: none !important;
   }
 
