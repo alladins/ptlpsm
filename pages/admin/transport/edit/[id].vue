@@ -35,6 +35,26 @@
     <LoadingSection v-if="loading" message="데이터를 불러오는 중..." />
 
     <div v-else class="content-section">
+      <!--
+        계약 품목 귀속 미지정 안내 — 운송 단계는 막지 않는다 (사용자 결정 2026-10-02 «출하 나가는 건은 정상적으로 나가야»)
+        인수증·현장 서명 화면에서는 이 품목이 빠지므로, 청구·서류 단계 전에 지정하도록 알리기만 한다
+      -->
+      <div v-if="allocUnassigned" class="alloc-soft-notice" role="status">
+        <i class="fas fa-exclamation-triangle" />
+        <span>
+          계약에 없는 품목({{ allocItemsText }})이 아직 계약 품목에 귀속되지 않았습니다.
+          운송은 그대로 진행되며, 인수증·현장 서명 화면에는 이 품목이 표시되지 않습니다.
+          기성청구·납품완료 서류 전에 지정해 주세요.
+        </span>
+        <NuxtLink
+          v-if="allocLink"
+          :to="allocLink"
+          class="alloc-soft-link"
+        >
+          <i class="fas fa-arrow-right" /> 계약 품목 귀속 지정하러 가기
+        </NuxtLink>
+      </div>
+
       <!-- 운송장 정보 입력 폼 -->
       <FormSection title="운송장 정보">
         <!-- 2열 레이아웃 컨테이너 -->
@@ -622,6 +642,10 @@ import { formatPhoneNumberInput, formatPhoneNumber, formatNumber, formatCurrency
 import { syncDatesOnDeliveryDateChange, adjustExpectedArrivalOnDispatchChange } from '~/utils/transport-date'
 import { validatePhoneNumber } from '~/utils/validate'
 import { compressImageIfNeeded } from '~/utils/image-compress'
+import {
+  useContractAllocStatus,
+  contractAllocShipmentLink
+} from '~/composables/useContractAllocStatus'
 
 definePageMeta({
   layout: 'admin',
@@ -637,6 +661,23 @@ const { canEdit: hasEditPermission, canDelete: hasDeletePermission } = usePermis
 
 // 상태 관리 (DB 기반)
 const { getStatusLabel } = useCommonStatus()
+
+// ===== 계약 품목 귀속 안내 (출하 기준, 막지 않음) =====
+// 사용자 결정(2026-10-02): 출하·운송 흐름은 귀속 미지정이어도 막지 않는다 — «출하 나가는 건은 정상적으로 나가야».
+// 인수증·현장 서명·출발 문자는 계약 품목명·계약 기준 수량으로 나가므로 미지정 품목은 거기서 빠진다.
+// → 경고 한 줄 + 출하 수정의 «계약 품목 귀속» 바로가기만 보여준다. (청구·서류 단계 가드는 그대로)
+const {
+  blocked: allocUnassigned,
+  unallocatedItems: allocItems,
+  loadByShipment: loadAllocStatus
+} = useContractAllocStatus()
+
+/** 미지정 품목 요약 (예: «HYDRO-22-100T-B 206, HYDRO-22-130T 450») */
+const allocItemsText = computed(() => allocItems.value
+  .map(it => `${it.shipSkuName || it.shipSkuId} ${formatNumber(it.shipmentQuantity)}`)
+  .join(', '))
+
+const allocLink = computed(() => contractAllocShipmentLink(Number(formData.value.shipmentId) || null))
 
 // 메시지 발송 결과 모달
 const showMessageResultModal = ref(false)
@@ -890,6 +931,8 @@ onMounted(async () => {
     // 출하 상세 정보 조회 (사업명, 납품요구번호, 수요기관 정보 획득 + 현장소장 ID)
     let shipmentDetail: any = null
     if (transportDetail.shipmentId) {
+      // 계약 품목 귀속 안내 상태 (막지 않음)
+      loadAllocStatus(transportDetail.shipmentId)
       try {
         shipmentDetail = await shipmentService.getShipmentDetail(transportDetail.shipmentId)
         // 품목 리스트 매핑
@@ -1108,7 +1151,9 @@ const printTransport = async () => {
     })
 
     if (!generateResponse.ok) {
-      throw new Error(`PDF 생성 실패: ${generateResponse.status}`)
+      // 백엔드 안내(예: 계약 품목 귀속 미지정 400)를 그대로 보여준다
+      const errorData = await generateResponse.json().catch(() => null)
+      throw new Error(errorData?.message || `인수증 데이터를 불러오는데 실패했습니다. (PDF 생성 실패: ${generateResponse.status})`)
     }
 
     console.log('PDF 생성 완료, 미리보기 모달 열기')
@@ -1119,7 +1164,7 @@ const printTransport = async () => {
     showTransportPdfModal.value = true
   } catch (error) {
     console.error('인수증 데이터 로드 실패:', error)
-    alert('인수증 데이터를 불러오는데 실패했습니다.')
+    alert(error instanceof Error && error.message ? error.message : '인수증 데이터를 불러오는데 실패했습니다.')
   }
 }
 
@@ -1383,6 +1428,37 @@ const confirmSendSignatureRequest = async () => {
 </script>
 
 <style scoped>
+/* 계약 품목 귀속 미지정 안내 — 경고 톤, 운송은 막지 않음 */
+.alloc-soft-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.alloc-soft-notice > span { flex: 1; min-width: 240px; }
+.alloc-soft-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  background: #fff;
+  color: #92400e;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 /*
  * Common styles managed by:
  * - admin-edit-register.css: content-section base, form actions

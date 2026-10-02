@@ -174,7 +174,8 @@ export function useFundModals(options: UseFundModalsOptions) {
       viewConfirmationPdf(baselineId)
     } catch (error) {
       console.error('기성청구 PDF 재생성 실패:', error)
-      alert('PDF 재생성에 실패했습니다.')
+      // 백엔드 안내(예: 계약 품목 귀속 미지정 400)를 그대로 보여준다
+      alert(error instanceof Error && error.message ? error.message : 'PDF 재생성에 실패했습니다.')
     }
   }
 
@@ -231,7 +232,8 @@ export function useFundModals(options: UseFundModalsOptions) {
       await refreshData()
     } catch (error) {
       console.error('잔금 등록 실패:', error)
-      alert('잔금 등록 중 오류가 발생했습니다.')
+      // 백엔드 400 안내(예: 계약 품목 귀속 미지정)를 그대로 보여준다
+      alert(error instanceof Error && error.message ? error.message : '잔금 등록 중 오류가 발생했습니다.')
     }
   }
 

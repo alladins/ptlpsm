@@ -115,6 +115,41 @@
             </div>
           </div>
 
+          <!--
+            계약 품목 귀속 미지정 (미리보기 응답 unallocatedItems)
+            → 그 수량은 계약 기준 집계에서 빠지므로 기성 청구를 막고 지정 위치로 안내
+          -->
+          <ContractAllocGuardNotice
+            v-if="hasAvailableShipments && allocBlocked && !previewError"
+            :count="unallocatedItems.length"
+            :items="unallocatedItems"
+            action="기성 청구"
+            :to="allocLink"
+            @navigate="closeModal"
+          />
+
+          <!--
+            이번 청구에서 제외되는 수량 (미리보기 excludedItems)
+            → 변경계약 계열의 다른 발주 품목으로 귀속된 수량 등. 차수 생성은 막지 않고 조용한 누락만 막는다(경고 표시)
+          -->
+          <div
+            v-if="hasAvailableShipments && !previewError && excludedItems.length > 0"
+            class="excluded-box"
+            role="status"
+          >
+            <div class="excluded-title">
+              <i class="fas fa-exclamation-triangle" />
+              이번 청구에서 제외되는 수량 {{ excludedItems.length }}건
+            </div>
+            <ul class="excluded-list">
+              <li v-for="(ex, idx) in excludedItems" :key="`${ex.skuId}-${idx}`">
+                <b>{{ ex.skuName || ex.skuId || '-' }}</b> {{ fmtQty(ex.quantity) }}
+                <span v-if="ex.reason" class="excluded-reason">— {{ ex.reason }}</span>
+              </li>
+            </ul>
+            <small class="excluded-note">이 수량은 이번 기성 청구 금액에 들어가지 않습니다. 청구는 그대로 진행할 수 있습니다.</small>
+          </div>
+
           <!-- 자동 계산 결과 -->
           <div v-if="hasAvailableShipments" class="calculation-result">
             <!-- 청구 금액 계산 섹션 -->
@@ -130,25 +165,33 @@
                 <label>선택 출하 합계</label>
                 <span class="amount">{{ formatCurrency(selectedTotalAmount) }}</span>
               </div>
-              <div v-if="reconcileDiff > 0" class="result-row deduction">
-                <label>(-) 원수량 정합 (전량 출하분)</label>
-                <span class="amount negative">- {{ formatCurrency(reconcileDiff) }}</span>
-              </div>
-              <div v-else-if="reconcileDiff < 0" class="result-row">
-                <label>(+) 원수량 정합</label>
-                <span class="amount">+ {{ formatCurrency(-reconcileDiff) }}</span>
-              </div>
+              <template v-if="!previewError">
+                <div v-if="reconcileDiff > 0" class="result-row deduction">
+                  <label>(-) 원수량 정합 (전량 출하분)</label>
+                  <span class="amount negative">- {{ formatCurrency(reconcileDiff) }}</span>
+                </div>
+                <div v-else-if="reconcileDiff < 0" class="result-row">
+                  <label>(+) 원수량 정합</label>
+                  <span class="amount">+ {{ formatCurrency(-reconcileDiff) }}</span>
+                </div>
+              </template>
               <div class="result-row highlight">
                 <label>
                   청구 금액
                   <i v-if="previewLoading" class="fas fa-spinner fa-spin preview-spinner" />
                 </label>
-                <span class="amount primary">{{ formatCurrency(claimAmount) }}</span>
+                <!-- 계산 실패 시 금액을 추정해 보여주지 않는다 (출하 금액 합은 계약 기준 청구액과 다를 수 있음) -->
+                <span v-if="previewError" class="amount">-</span>
+                <span v-else class="amount primary">{{ formatCurrency(claimAmount) }}</span>
+              </div>
+              <div v-if="previewError" class="validation-error">
+                <i class="fas fa-exclamation-circle" />
+                <span>{{ previewError }}</span>
               </div>
             </div>
 
             <!-- 품목별 금회 청구 (원수량 정합 미리보기) -->
-            <div v-if="reconciled.items.length > 0" class="result-section item-preview-section">
+            <div v-if="!previewError && reconciled.items.length > 0" class="result-section item-preview-section">
               <div class="result-section-header">
                 품목별 금회 청구 (원수량 정합)
               </div>
@@ -178,7 +221,7 @@
             </div>
 
             <!-- 다량납품할인 (자동 적용) 미리보기 -->
-            <div v-if="bulkPreSum > 0" class="result-section bulk-discount-section">
+            <div v-if="!previewError && bulkPreSum > 0" class="result-section bulk-discount-section">
               <div class="result-section-header">
                 <i class="fas fa-tags" /> 다량납품할인 (자동)
               </div>
@@ -210,7 +253,7 @@
             </div>
 
             <!-- 선급금 차감 계산 섹션 -->
-            <div v-if="hasAdvancePayment" class="result-section deduction-section">
+            <div v-if="!previewError && hasAdvancePayment" class="result-section deduction-section">
               <div class="result-section-header">
                 선급금 차감 계산
               </div>
@@ -236,7 +279,7 @@
             </div>
 
             <!-- OEM 지급 예정 섹션 -->
-            <div class="result-section oem-section">
+            <div v-if="!previewError" class="result-section oem-section">
               <div class="result-row">
                 <label>OEM 지급 예정 금액</label>
                 <span class="amount oem">{{ formatCurrency(oemPaymentAmount) }}</span>
@@ -268,15 +311,18 @@
           <i class="fas fa-times" />
           취소
         </button>
-        <button
+        <!-- 청구 금액 계산 실패 시 막힘(클릭하면 이유 안내). 계산 중에는 잠시 비활성 -->
+        <GuardedButton
           class="btn-primary"
-          :disabled="!isValid || isSubmitting || !hasAvailableShipments"
+          :disabled="!isValid || isSubmitting || !hasAvailableShipments || previewLoading"
+          :blocked="!!previewError || allocBlocked"
+          :reason="previewError ? previewErrorReason : allocReason"
           @click="submitClaim"
         >
           <i v-if="isSubmitting" class="fas fa-spinner fa-spin" />
           <i v-else class="fas fa-paper-plane" />
           기성 청구
-        </button>
+        </GuardedButton>
       </div>
     </div>
   </div>
@@ -291,6 +337,9 @@ import { useBaselineStore } from '~/stores/baseline'
 import { useFundStore } from '~/stores/fund'
 import type { BaselineListItem, AvailableShipment } from '~/types/baseline'
 import type { ProgressClaimData } from '~/types/fund'
+import type { UnallocatedShipmentItem, BaselineExcludedItem } from '~/types/contract-alloc'
+import ContractAllocGuardNotice from '~/components/contract-alloc/ContractAllocGuardNotice.vue'
+import { contractAllocBlockedReason, contractAllocDeliveryDoneLink } from '~/composables/useContractAllocStatus'
 
 // Props
 interface Props {
@@ -330,7 +379,25 @@ const reconciled = ref<{ totalAmount: number; totalCost: number; items: any[] }>
   totalCost: 0,
   items: []
 })
+// 계약 품목 귀속 미지정 출하 품목 (미리보기 응답) — 있으면 기성 청구를 막고 지정 위치로 안내
+const unallocatedItems = ref<UnallocatedShipmentItem[]>([])
+// 이번 청구에서 빠지는 계약 기준 수량 (변경계약 계열 다른 발주 품목 귀속 등) — 막지 않고 경고만
+const excludedItems = ref<BaselineExcludedItem[]>([])
+const allocBlocked = computed(() => unallocatedItems.value.length > 0)
+const allocReason = computed(() => contractAllocBlockedReason(
+  unallocatedItems.value.length,
+  '기성 청구',
+  '화면의 [지정하러 가기] 로 이동해 «계약 품목 귀속»'
+))
+// 지정하러 갈 곳: 납품완료 상세가 있으면 그곳(발주 전체), 없으면 출하별 출하 수정
+const allocLink = computed(() => contractAllocDeliveryDoneLink(fundStore.detail?.deliveryDoneId))
 const previewLoading = ref(false)
+// 미리보기 요청 순번 — 출하 선택을 빠르게 바꿀 때 늦게 도착한 이전 응답이 최신 결과를 덮어쓰지 않게 한다.
+// loading 플래그도 최신 요청이 끝났을 때만 내린다.
+let previewSeq = 0
+// 미리보기(청구 금액 계산) 실패 문구 — 있으면 청구 금액을 표시하지 않고 기성 청구를 막는다
+const previewError = ref<string | null>(null)
+const previewErrorReason = '청구 금액을 계산하지 못해 기성 청구를 진행할 수 없습니다. 출하 선택을 바꾸거나 창을 닫았다가 다시 열어 주세요. 계속되면 관리자에게 문의하세요.'
 let previewTimer: ReturnType<typeof setTimeout> | null = null
 
 // 수량 표기 (소수점 2자리 보존 — 원수량 정합값 2,755.90 등)
@@ -524,25 +591,42 @@ const closeModal = () => {
 
 // 원수량 정합 미리보기 로드 (선택 출하 → 저장될 실제 청구 스냅샷)
 const loadPreview = async () => {
+  const mySeq = ++previewSeq
+  previewError.value = null
   if (selectedShipmentIds.value.length === 0) {
     reconciled.value = { totalAmount: 0, totalCost: 0, items: [] }
+    unallocatedItems.value = []
+    excludedItems.value = []
+    previewLoading.value = false
     return
   }
   previewLoading.value = true
   try {
-    reconciled.value = await baselineService.previewBaseline(props.orderId, selectedShipmentIds.value)
-  } catch (e) {
-    // 미리보기 실패 시 출하금액 단순합으로 임시 표시(저장은 백엔드가 정합 처리)
-    console.error('기성청구 미리보기 실패 — 출하금액 합으로 임시 표시', e)
-    reconciled.value = { totalAmount: selectedTotalAmount.value, totalCost: 0, items: [] }
+    const result = await baselineService.previewBaseline(props.orderId, [...selectedShipmentIds.value])
+    if (mySeq !== previewSeq) { return } // 더 최신 요청이 있음 — 이 응답은 버린다
+    reconciled.value = { totalAmount: result.totalAmount, totalCost: result.totalCost, items: result.items }
+    unallocatedItems.value = result.unallocatedItems
+    excludedItems.value = result.excludedItems
+  } catch (e: any) {
+    if (mySeq !== previewSeq) { return }
+    // 실패 시 출하 금액 단순합으로 대신 보여주지 않는다 — 출하 금액(실물 SKU 기준)은 계약 기준 청구액과 다를 수 있다.
+    console.error('기성청구 미리보기 실패', e)
+    reconciled.value = { totalAmount: 0, totalCost: 0, items: [] }
+    unallocatedItems.value = []
+    excludedItems.value = []
+    previewError.value = `청구 금액을 계산하지 못했습니다${e?.message ? ` (${e.message})` : ''}. 기성 청구를 진행할 수 없습니다.`
   } finally {
-    previewLoading.value = false
+    if (mySeq === previewSeq) { previewLoading.value = false }
   }
 }
 
 // 출하 선택 변경 시 미리보기 갱신 (디바운스)
 watch(selectedShipmentIds, () => {
   if (previewTimer) { clearTimeout(previewTimer) }
+  // 디바운스 대기 중에도 화면 결과는 «이전 선택» 기준이다 → 진행 중인 이전 요청은 무효화하고,
+  // 계산 중으로 표시해 그 사이 기성 청구 버튼이 눌리지 않게 한다.
+  previewSeq++
+  previewLoading.value = true
   previewTimer = setTimeout(loadPreview, 250)
 }, { deep: true })
 
@@ -553,7 +637,10 @@ const loadData = async () => {
   selectedShipmentIds.value = []
   remarks.value = ''
   validationError.value = null
+  previewError.value = null
   reconciled.value = { totalAmount: 0, totalCost: 0, items: [] }
+  unallocatedItems.value = []
+  excludedItems.value = []
 
   // 청구 가능 출하 목록 로드
   await baselineStore.loadProgressPaymentDataV2(props.orderId)
@@ -567,12 +654,12 @@ const loadData = async () => {
     selectedShipmentIds.value = availableShipments.value.map(s => s.shipmentId)
   }
 
-  // 초기 선택에 대한 정합 미리보기 즉시 로드 (watch 디바운스와 별개로 바로 표시)
-  await loadPreview()
+  // 초기 선택에 대한 정합 미리보기는 위 선택 변경 watch(디바운스)가 불러온다.
+  // (여기서 직접 부르면 곧바로 watch 가 순번을 올려 그 응답을 버리므로 요청만 한 번 낭비된다)
 }
 
 const submitClaim = async () => {
-  if (!isValid.value || isSubmitting.value) { return }
+  if (!isValid.value || isSubmitting.value || previewError.value || previewLoading.value || allocBlocked.value) { return }
 
   // 서명 없이 즉시 발행: 차수 생성 + 서명란 공란 납품확인서 PDF 발행
   isSubmitting.value = true
@@ -622,6 +709,22 @@ watch(() => props.isOpen, (isOpen) => {
 @import '@/assets/css/admin-common.css';
 @import '@/assets/css/admin-forms.css';
 @import '@/assets/css/admin-buttons.css';
+
+/* 이번 청구에서 제외되는 수량 — 경고 톤 (막지 않음) */
+.excluded-box {
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.excluded-title { display: flex; align-items: center; gap: 0.4rem; font-weight: 700; }
+.excluded-list { margin: 0.35rem 0; padding-left: 1.2rem; }
+.excluded-reason { color: #a16207; }
+.excluded-note { display: block; opacity: 0.85; }
 
 .modal-overlay {
   position: fixed;

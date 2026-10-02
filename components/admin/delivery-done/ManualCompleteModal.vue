@@ -27,6 +27,16 @@
           </div>
         </div>
 
+        <!-- 계약 품목 귀속 미지정 → 서류 발행 불가 -->
+        <ContractAllocGuardNotice
+          v-if="allocBlocked"
+          :count="allocCount"
+          :items="allocItems"
+          action="수동 완료(서류 발행)"
+          :to="contractAllocDeliveryDoneLink(deliveryDone.deliveryDoneId)"
+          @navigate="$emit('close')"
+        />
+
         <div class="warning-box">
           <i class="fas fa-exclamation-triangle" />
           <div>
@@ -64,19 +74,31 @@
         <button class="btn-cancel" :disabled="processing" @click="$emit('close')">
           취소
         </button>
-        <button class="btn-primary" :disabled="processing" @click="handleConfirm">
+        <GuardedButton
+          class="btn-primary"
+          :disabled="processing || allocLoading"
+          :blocked="allocBlocked"
+          :reason="contractAllocBlockedReason(allocCount, '수동 완료(서류 발행)')"
+          @click="handleConfirm"
+        >
           <i class="fas" :class="processing ? 'fa-spinner fa-spin' : 'fa-check'" />
           {{ processing ? '처리 중...' : '수동 완료 처리' }}
-        </button>
+        </GuardedButton>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { completeManually, type PdfBasis } from '~/services/delivery-done.service'
 import type { DeliveryDoneListItem } from '~/types/delivery-done'
+import ContractAllocGuardNotice from '~/components/contract-alloc/ContractAllocGuardNotice.vue'
+import {
+  useContractAllocStatus,
+  contractAllocBlockedReason,
+  contractAllocDeliveryDoneLink
+} from '~/composables/useContractAllocStatus'
 
 const props = defineProps<{
   deliveryDone: DeliveryDoneListItem
@@ -90,7 +112,19 @@ const emit = defineEmits<{
 const processing = ref(false)
 const basis = ref<PdfBasis>('CONTRACT')
 
+// 계약 품목 귀속 가드 — 미지정이 있으면 서류 발행 불가 (조회 실패 시 막지 않음, 백엔드 400 이 최종 차단)
+const {
+  blocked: allocBlocked,
+  loading: allocLoading,
+  unallocatedCount: allocCount,
+  unallocatedItems: allocItems,
+  loadByOrder: loadAllocStatus
+} = useContractAllocStatus()
+
+onMounted(() => { loadAllocStatus(props.deliveryDone.orderId) })
+
 async function handleConfirm () {
+  if (allocBlocked.value) { return }
   processing.value = true
   try {
     await completeManually(props.deliveryDone.deliveryDoneId, basis.value)

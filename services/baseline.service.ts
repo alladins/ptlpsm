@@ -27,6 +27,7 @@ import type {
   BaselineCreateAndSendRequest,
   BaselineCreateAndSendResponse
 } from '~/types/baseline'
+import type { UnallocatedShipmentItem, BaselineExcludedItem } from '~/types/contract-alloc'
 
 /**
  * 기성청구 붙임 서류 종류 (백엔드 BaselineDocType 과 1:1)
@@ -334,6 +335,10 @@ export const baselineService = {
     totalAmount: number
     totalCost: number
     items: any[]
+    /** 계약 품목 귀속 미지정 출하 품목 (있으면 기성 청구 불가 — 백엔드가 차수 생성 시 400) */
+    unallocatedItems: UnallocatedShipmentItem[]
+    /** 이번 청구에서 빠지는 계약 기준 수량 (변경계약 계열 다른 발주 품목 귀속 등) — 경고만, 차수 생성은 가능 */
+    excludedItems: BaselineExcludedItem[]
   }> {
     try {
       const url = BASELINE_ENDPOINTS.preview()
@@ -353,7 +358,9 @@ export const baselineService = {
       return {
         totalAmount: Number(data.totalAmount ?? 0),
         totalCost: Number(data.totalCost ?? 0),
-        items: Array.isArray(data.items) ? data.items : []
+        items: Array.isArray(data.items) ? data.items : [],
+        unallocatedItems: Array.isArray(data.unallocatedItems) ? data.unallocatedItems : [],
+        excludedItems: Array.isArray(data.excludedItems) ? data.excludedItems : []
       }
     } catch (error) {
       console.error('기성청구 미리보기 실패:', error)
