@@ -154,8 +154,11 @@ class DispatchRequestService {
         }
       })
 
-      if (response.status === 404) {
-        // 출고요청 없음
+      // «출고요청 없음» 응답 3가지를 모두 null 로 처리한다
+      //  - 404       : 기존 응답 (하위호환)
+      //  - 204       : 본문 없음
+      //  - 200 + null: 백엔드 변경(2026-10-02) — 없음을 오류로 내지 않는다
+      if (response.status === 404 || response.status === 204) {
         return null
       }
 
@@ -168,7 +171,16 @@ class DispatchRequestService {
         throw httpError(response.status, '출고요청 조회')
       }
 
-      return await response.json()
+      // 200 인데 본문이 비었거나 null 이면 «없음»
+      const text = await response.text()
+      if (!text || !text.trim()) { return null }
+      const body = JSON.parse(text)
+      if (body == null) { return null }
+      // { success, data } 로 감싼 응답이면 data 를 꺼낸다 (data 가 null 이면 없음)
+      if (typeof body === 'object' && 'success' in body && 'data' in body) {
+        return (body.data ?? null) as DispatchRequest | null
+      }
+      return body as DispatchRequest
     } catch (error) {
       console.error('[dispatch-request.service] getDispatchRequestByShipmentId 에러:', error)
       throw error

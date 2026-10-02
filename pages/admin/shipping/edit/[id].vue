@@ -802,7 +802,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
 import type { ShipmentDetailWithOrder, ShipmentItemWithOrder, SiblingDeliveryInfo } from '~/services/shipment.service'
-import { formatNumber, formatCurrency, formatQuantity, formatDateTime, utcToKstDateString, utcToKstDateTimeLocal } from '~/utils/format'
+import { formatNumber, formatCurrency, formatQuantity, formatDateTime, utcToKstDateString, utcToKstDateTimeLocal, parseUtcDate } from '~/utils/format'
 import { useEditForm } from '~/composables/admin/useEditForm'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { useShippingFormData } from '~/composables/admin/useShippingFormData'
@@ -826,6 +826,7 @@ import { inventoryLotService } from '~/services/inventory-lot.service'
 import type { LotAllocation } from '~/types/inventory-lot'
 import ContractAllocPanel from '~/components/contract-alloc/ContractAllocPanel.vue'
 import type { ContractAllocStatus } from '~/types/contract-alloc'
+import { extractShipmentSaveWarnings, notifySaveWithWarnings, OEM_COST_ROUTE } from '~/utils/shipment-save-warnings'
 
 definePageMeta({
   layout: 'admin',
@@ -851,6 +852,8 @@ interface OrderItem extends ShipmentItemWithOrder {
 
 // 원본 데이터 저장
 const shipmentData = ref<ShipmentDetailWithOrder | null>(null)
+// 마지막 저장 응답의 경고(B급 원가 미등록 등) — updateFunction 이 채우고 onUpdateSuccess 가 보여준다
+let lastSaveWarnings: string[] = []
 const items = ref<OrderItem[]>([])
 
 // 원계약↔실출하 금액 정합 비교 (저장된 delivery_done 기준)
@@ -944,16 +947,75 @@ const allocBadgeText = (item: OrderItem): string => {
   return target ? `계약 품목 귀속됨: ${target}` : '계약 품목 귀속됨'
 }
 
-// 폼 미저장 변경 감지 — 불러온 직후 상태를 기억해 두고 비교한다
+// ===== 폼 미저장 변경 감지 =====
+// 귀속 변경 후 refreshData 로 다시 읽을 때 «사라지는 입력»이 있는지만 본다.
 // (useEditForm 의 isDirty 는 편집 모드에서 초기값이 {} 라 항상 true 여서 쓸 수 없다)
+//
+// ★ 오탐 원인(2026-10-02 개발 서버 출하 156 재현) — 이전 방식은 formData 전체를 «불러온 직후» 한 번 JSON 으로 떠 두고 비교했다.
+//   그런데 불러온 뒤에 사용자가 아닌 코드가 폼을 바꾼다:
+//   ① 형제 출하 배송지 프리필(prefillSiblingDeliveryInfo) — 출고요청 조회(네트워크)를 기다린 뒤 실행되어 스냅샷보다 늦다
+//   ② 현장담당자 → 건설사 자동 설정 watch(builderCompanyId/Name)
+//   그래서 아무것도 안 건드려도 «미저장 입력이 있다»고 떴다.
+// → 고친 방식
+//   - refreshData 가 실제로 덮어쓰는 칸 + 품목 수량만 비교한다(건설사 등 덮어쓰지 않는 칸은 사라지지 않으므로 제외)
+//   - 값은 정규화해 비교한다(null/'' 같게, 숫자/문자열 같게)
+//   - 코드가 바꾼 칸(프리필)은 그 칸의 기준값도 같이 옮겨, 사용자 변경으로 치지 않는다
 // ⚠ formData 는 reactive — .value 를 붙이지 않는다
-const formSnapshot = ref('')
-const takeFormSnapshot = () => JSON.stringify({
-  form: formData,
-  qty: items.value.map(i => [i.skuId, i.shippingQuantity])
-})
-// (불러오기 완료 시점의 스냅샷 watch 는 useEditForm 선언 뒤에 둔다 — loading 이 그 아래에서 선언됨)
-const hasUnsavedChanges = () => !!formSnapshot.value && takeFormSnapshot() !== formSnapshot.value
+// refreshData 가 덮어쓰는 칸 전수 (2026-10-02 refreshData 본문과 대조):
+//   status · zipcode · deliveryAddress · addressDetail · expectedArrivalAt · receiverName · receiverPhone
+//   · oemCompanyId · siteManagerId + items(사용자가 고칠 수 있는 건 shippingQuantity 뿐)
+// ⚠ refreshData 에 덮어쓰는 칸을 추가하면 여기에도 반드시 추가할 것 (빠지면 확인창 없이 입력이 사라진다)
+const RELOAD_OVERWRITTEN_FIELDS = [
+  'status', 'zipcode', 'deliveryAddress', 'addressDetail', 'expectedArrivalAt',
+  'receiverName', 'receiverPhone', 'oemCompanyId', 'siteManagerId'
+] as const
+const normValue = (v: unknown): string => (v == null ? '' : String(v).trim())
+
+/**
+ * 일시 정규화 — 서버값(UTC 문자열, 초·밀리초·Z 유무 제각각)과 화면값(Date 또는 'YYYY-MM-DDTHH:mm')을
+ * 같은 순간이면 같은 문자열이 되게 «UTC 분 단위» 로 맞춘다. 해석 못 하면 문자열 그대로 비교.
+ */
+const normDateTime = (v: unknown): string => {
+  if (v == null || v === '') { return '' }
+  const d = v instanceof Date ? v : (typeof v === 'string' ? parseUtcDate(v.trim()) : null)
+  if (d && !isNaN(d.getTime())) { return d.toISOString().substring(0, 16) }
+  return normValue(v)
+}
+
+/** 비교 대상 현재 값 (칸 이름 → 정규화 값, 품목은 qty:SKU) */
+const currentEditState = (): Record<string, string> => {
+  const state: Record<string, string> = {}
+  for (const key of RELOAD_OVERWRITTEN_FIELDS) {
+    state[key] = key === 'expectedArrivalAt' ? normDateTime(formData[key]) : normValue(formData[key])
+  }
+  for (const item of items.value) { state[`qty:${item.skuId}`] = String(Number(item.shippingQuantity) || 0) }
+  return state
+}
+
+const editBaseline = ref<Record<string, string> | null>(null)
+
+/** 기준값 갱신 — keys 를 주면 그 칸만(코드가 바꾼 칸), 없으면 전체 */
+const markEditBaseline = (keys?: readonly string[]) => {
+  const cur = currentEditState()
+  if (!keys || !editBaseline.value) {
+    editBaseline.value = cur
+    return
+  }
+  for (const k of keys) { editBaseline.value[k] = cur[k] }
+}
+
+/** 사용자가 바꾼 칸이 있는가 */
+const hasUnsavedChanges = (): boolean => {
+  const base = editBaseline.value
+  if (!base) { return false }
+  const cur = currentEditState()
+  const keys = new Set([...Object.keys(base), ...Object.keys(cur)])
+  for (const k of keys) {
+    if ((base[k] ?? '') !== (cur[k] ?? '')) { return true }
+  }
+  return false
+}
+// (불러오기 완료 시점의 기준값 watch 는 useEditForm 선언 뒤에 둔다 — loading 이 그 아래에서 선언됨)
 
 // 귀속이 바뀌면 출하 품목(서버 정규화로 행·수량이 바뀔 수 있음)을 다시 읽어야 폼 저장이 맞게 된다
 const showAllocReloadConfirm = ref(false)
@@ -962,10 +1024,8 @@ const allocReloadPending = ref(false) // 사용자가 [나중에]를 골라 아�
 const reloadAfterAlloc = async () => {
   showAllocReloadConfirm.value = false
   allocReloadPending.value = false
-  await refreshData()
+  await refreshData() // 끝에서 기준값도 다시 잡는다
   if (shipmentData.value?.orderId) { loadReconciliation(shipmentData.value.orderId) }
-  await nextTick()
-  formSnapshot.value = takeFormSnapshot()
 }
 
 // 귀속 저장·해제 후 — 입력 중인 변경이 있으면 덮어쓰기 전에 확인
@@ -1127,7 +1187,9 @@ const {
       updateData.items = itemsToSend
     }
 
-    await shipmentService.updateShipment(id, updateData)
+    const saveResponse = await shipmentService.updateShipment(id, updateData)
+    // 저장 응답의 경고(B급 원가 미등록 등) — 성공 알림 때 함께 보여준다
+    lastSaveWarnings = extractShipmentSaveWarnings(saveResponse)
     return shipmentService.getShipmentDetail(id)
   },
   successRoute: '/admin/shipping/list',
@@ -1176,8 +1238,10 @@ const {
     }
   },
   onUpdateSuccess: () => {
-    alert('출하 정보가 수정되었습니다.')
-    router.push('/admin/shipping/list')
+    // 경고가 있으면 [확인] = 제조사 원가로 이동, [취소] = 목록 (경고 없으면 기존처럼 알림 후 목록)
+    const goOemCost = notifySaveWithWarnings('출하 정보가 수정되었습니다.', lastSaveWarnings)
+    lastSaveWarnings = []
+    router.push(goOemCost ? OEM_COST_ROUTE : '/admin/shipping/list')
   },
   onUpdateError: (error) => {
     console.error('출하 정보 수정 실패:', error)
@@ -1193,7 +1257,7 @@ const {
 
 // 출하 상세를 불러온 직후의 폼 상태를 기억 (계약 품목 귀속 변경 후 다시 읽기 전 미저장 변경 확인용)
 watch(loading, (isLoading) => {
-  if (!isLoading) { nextTick(() => { formSnapshot.value = takeFormSnapshot() }) }
+  if (!isLoading) { nextTick(() => { markEditBaseline() }) }
 })
 
 // useFormValidation 사용
@@ -1403,8 +1467,7 @@ const refreshData = async () => {
     // 출하 상세 새로고침
     const data = await shipmentService.getShipmentDetail(shipmentId.value)
 
-    // 출고요청 데이터 새로고침
-    loadDispatchRequest()
+    // 출고요청은 아래 shipmentData 변경 watch 가 한 번만 다시 읽는다 (여기서 따로 부르면 중복 호출)
     shipmentData.value = data
 
     // 품목 데이터 다시 매핑
@@ -1431,6 +1494,9 @@ const refreshData = async () => {
     // OEM 제조사 및 현장담당자 정보 업데이트
     formData.oemCompanyId = data.oemCompanyId || null
     formData.siteManagerId = data.siteManagerId || null
+
+    // 서버 값으로 다시 채웠으니 미저장 변경 기준값도 새로 잡는다
+    markEditBaseline()
   } catch (error) {
     console.error('데이터 새로고침 실패:', error)
   }
@@ -1586,18 +1652,26 @@ const canShowDispatchRequestButton = computed(() => {
 })
 
 // 출고요청 데이터 로드
-const loadDispatchRequest = async () => {
-  if (!shipmentId.value) { return }
+// 진행 중인 조회가 있으면 그 결과를 같이 기다린다 (같은 조회가 겹쳐 여러 번 나가지 않게)
+let dispatchRequestInFlight: Promise<void> | null = null
+const loadDispatchRequest = (): Promise<void> => {
+  if (!shipmentId.value) { return Promise.resolve() }
+  if (dispatchRequestInFlight) { return dispatchRequestInFlight }
 
   loadingDispatchRequest.value = true
-  try {
-    dispatchRequest.value = await dispatchRequestService.getDispatchRequestByShipmentId(shipmentId.value)
-  } catch (error) {
-    console.error('출고요청 조회 실패:', error)
-    dispatchRequest.value = null
-  } finally {
-    loadingDispatchRequest.value = false
-  }
+  dispatchRequestInFlight = (async () => {
+    try {
+      // 출고요청이 없으면 null (404·204·200+null 모두 서비스가 null 로 바꿔 준다)
+      dispatchRequest.value = await dispatchRequestService.getDispatchRequestByShipmentId(shipmentId.value)
+    } catch (error) {
+      console.error('출고요청 조회 실패:', error)
+      dispatchRequest.value = null
+    } finally {
+      loadingDispatchRequest.value = false
+      dispatchRequestInFlight = null
+    }
+  })()
+  return dispatchRequestInFlight
 }
 
 /**
@@ -1617,27 +1691,37 @@ const prefillSiblingDeliveryInfo = async () => {
     if (!siblingInfo) { return }
 
     // 배송지 정보 프리필 (현재 값이 비어있는 필드만)
+    // 코드가 채운 칸은 미저장 변경 기준값도 같이 옮긴다 — 사용자 입력으로 치지 않는다 (귀속 후 재조회 확인창 오탐 방지)
+    const prefilled: string[] = []
     if (!formData.zipcode && siblingInfo.zipcode) {
       formData.zipcode = siblingInfo.zipcode
+      prefilled.push('zipcode')
     }
     if (!formData.deliveryAddress && siblingInfo.deliveryAddress) {
       formData.deliveryAddress = siblingInfo.deliveryAddress
+      prefilled.push('deliveryAddress')
     }
     if (!formData.addressDetail && siblingInfo.addressDetail) {
       formData.addressDetail = siblingInfo.addressDetail
+      prefilled.push('addressDetail')
     }
     if (!formData.siteManagerId && siblingInfo.siteManagerId) {
       formData.siteManagerId = siblingInfo.siteManagerId
+      prefilled.push('siteManagerId')
     }
     if (!formData.receiverName && siblingInfo.receiverName) {
       formData.receiverName = siblingInfo.receiverName
+      prefilled.push('receiverName')
     }
     if (!formData.receiverPhone && siblingInfo.receiverPhone) {
       formData.receiverPhone = siblingInfo.receiverPhone
+      prefilled.push('receiverPhone')
     }
     if (!formData.oemCompanyId && siblingInfo.oemCompanyId) {
       formData.oemCompanyId = siblingInfo.oemCompanyId
+      prefilled.push('oemCompanyId')
     }
+    if (prefilled.length > 0) { markEditBaseline(prefilled) }
 
     console.log('[출하 수정] 형제 출하 배송지 정보 프리필 완료:', siblingInfo)
   } catch (error) {
@@ -1668,9 +1752,7 @@ watch(() => shipmentData.value, async (newData) => {
 // 출고요청 생성 완료 핸들러
 const handleDispatchRequestCreated = async () => {
   showDispatchRequestModal.value = false
-  // 출고요청 데이터 새로고침
-  await loadDispatchRequest()
-  // 출하 정보 새로고침 (dispatchStatus 반영)
+  // 출하 정보 새로고침 (dispatchStatus 반영) — 출고요청은 shipmentData 변경 watch 가 다시 읽는다
   await refreshData()
   alert('출고요청이 생성되었습니다.')
 }

@@ -2,6 +2,16 @@ import { getAuthHeaders } from './api'
 import { SHIPMENT_ENDPOINTS } from './api/endpoints/shipment.endpoints'
 import { httpError, httpErrorMessage } from '~/utils/apiError'
 
+/** 성공 응답 본문을 JSON 으로 읽는다. 본문이 없거나 JSON 이 아니면 null (저장 API 는 본문이 없을 수도 있다) */
+async function readJsonBody (response: Response): Promise<unknown> {
+  try {
+    const text = await response.text()
+    return text ? JSON.parse(text) : null
+  } catch {
+    return null
+  }
+}
+
 export interface ShipmentOrderStatus {
   deliveryRequestNo: string
   orderId: number
@@ -461,7 +471,10 @@ class ShipmentService {
   }
 
   // 출하 등록
-  async createShipment(shipment: any): Promise<void> {
+  /**
+   * @returns 저장 응답 본문 (없거나 JSON 이 아니면 null) — 경고 목록(B급 원가 미등록 등)을 꺼내는 데 쓴다
+   */
+  async createShipment(shipment: any): Promise<unknown> {
     const response = await fetch(SHIPMENT_ENDPOINTS.create(), {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -470,6 +483,7 @@ class ShipmentService {
     if (!response.ok) {
       throw httpError(response.status, '출하 등록')
     }
+    return readJsonBody(response)
   }
 
   // 출하 수정
@@ -505,7 +519,10 @@ class ShipmentService {
     }
   }
 
-  async updateShipment(shipmentId: number, shipment: any): Promise<void> {
+  /**
+   * @returns 저장 응답 본문 (없거나 JSON 이 아니면 null) — 경고 목록(B급 원가 미등록 등)을 꺼내는 데 쓴다
+   */
+  async updateShipment(shipmentId: number, shipment: any): Promise<unknown> {
     const response = await fetch(SHIPMENT_ENDPOINTS.update(shipmentId), {
       method: 'PUT',
       headers: getAuthHeaders(),
@@ -523,6 +540,7 @@ class ShipmentService {
         throw e
       }
     }
+    return readJsonBody(response)
   }
 
   // 출하 삭제
