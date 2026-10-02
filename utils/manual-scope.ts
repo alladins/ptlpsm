@@ -117,6 +117,39 @@ export function collectMenuUrls (menus: any[] | null | undefined): string[] {
   return out
 }
 
+/** 메뉴 한 칸 — 매뉴얼 «화면 바로가기» 판정용 */
+export interface MenuEntry {
+  url: string
+  name: string
+  /** 읽기 권한 */
+  readable: boolean
+}
+
+/**
+ * 메뉴 트리를 평탄하게 펼친다 (권한 없는 메뉴도 포함, readable 로 구분).
+ *
+ * collectMenuUrls 는 «들어갈 수 있는 주소» 만 남기지만, 바로가기 버튼은
+ * «메뉴에 있는데 권한이 없는 화면» 과 «메뉴에 없는 화면(등록 화면 등)» 을 구분해야 해서
+ * 권한 없는 메뉴도 함께 돌려준다.
+ */
+export function collectMenuEntries (menus: any[] | null | undefined): MenuEntry[] {
+  const out: MenuEntry[] = []
+  const walk = (list: any[] | null | undefined) => {
+    if (!Array.isArray(list)) { return }
+    for (const m of list) {
+      if (m?.menuUrl) {
+        out.push({ url: normalize(m.menuUrl), name: String(m.menuName || ''), readable: canRead(m) })
+      }
+      walk(m?.children)
+    }
+  }
+  walk(menus)
+  return out
+}
+
+/** 다른 모듈(manual-links)과 같은 규칙으로 주소를 맞춘다 */
+export { normalize as normalizeMenuUrl }
+
 /**
  * 읽기 권한 판정
  * auth.readAuth 가 표준이고, 평탄한 readAuth 로 오는 응답도 있어 함께 본다.
