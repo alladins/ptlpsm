@@ -648,6 +648,7 @@ import type { Item, ItemSku } from '~/services/item.service'
 import { shipmentService } from '~/services/shipment.service'
 import { formatNumber, formatCurrency, formatQuantity, getLocalDateString } from '~/utils/format'
 import { useRegisterForm } from '~/composables/admin/useRegisterForm'
+import { extractShipmentSaveWarnings, notifySaveWithWarnings, OEM_COST_ROUTE } from '~/utils/shipment-save-warnings'
 import { useFormValidation } from '~/composables/admin/useFormValidation'
 import { usePermission } from '~/composables/usePermission'
 import { useShippingFormData } from '~/composables/admin/useShippingFormData'
@@ -1344,7 +1345,8 @@ const {
 
     return await shipmentService.createShipment(shipmentData)
   },
-  successRoute: '/admin/shipping/list',
+  // successRoute 를 두지 않는다 — 저장 경고(B급 원가 미등록 등)가 있으면 제조사 원가로 보낼 수 있어야 해서
+  //   이동은 onCreateSuccess 가 직접 한다
   defaultValues: {
     orderId: null as number | null, // 품목 추가 버튼 표시 조건
     deliveryRequestNo: '',
@@ -1369,8 +1371,10 @@ const {
     shippingCostType: 'OEM_BEARS', // 운송비 부담 주체
     carrierCompanyId: null as number | null // 운송사
   },
-  onCreateSuccess: () => {
-    alert('출하 정보가 저장되었습니다.')
+  onCreateSuccess: (result: unknown) => {
+    // 저장 응답의 경고(B급 원가 미등록 등)가 있으면 [확인] = 제조사 원가로 이동, [취소] = 목록
+    const goOemCost = notifySaveWithWarnings('출하 정보가 저장되었습니다.', extractShipmentSaveWarnings(result))
+    router.push(goOemCost ? OEM_COST_ROUTE : '/admin/shipping/list')
   },
   onCreateError: (error: any) => {
     console.error('출하 정보 저장 실패:', error)
