@@ -24,7 +24,17 @@
           <!-- 에러 -->
           <div v-else-if="error" class="error-state">
             <i class="fas fa-exclamation-triangle" />
-            <span>PDF 로드에 실패했습니다</span>
+            <!-- 백엔드 안내(예: 계약 품목 귀속 미지정 400)가 있으면 그대로 보여준다 -->
+            <span class="error-message">{{ errorMessage || 'PDF 로드에 실패했습니다' }}</span>
+            <NuxtLink
+              v-if="errorStatus === 400 && contractAllocLink"
+              :to="contractAllocLink"
+              class="btn-alloc-link"
+              @click="$emit('close')"
+            >
+              <i class="fas fa-arrow-right" />
+              계약 품목 귀속 지정하러 가기
+            </NuxtLink>
             <button class="btn-retry" @click="loadPdf">
               <i class="fas fa-redo" />
               다시 시도
@@ -60,9 +70,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { readErrorMessage } from '~/utils/apiError'
 
 interface Props {
   pdfUrl: string
+  /**
+   * 400(가드 차단)일 때 보여줄 «계약 품목 귀속 지정하러 가기» 링크.
+   * 외부 서류(공문·납품내역서·기성청구내역서 등)는 귀속 미지정이면 백엔드가 400 으로 막는다.
+   */
+  contractAllocLink?: string | null
   /** 창 제목 (없으면 기존 «납품 인수증 PDF») */
   title?: string
   deliveryId?: number
@@ -80,6 +96,9 @@ const emit = defineEmits<Emits>()
 const pdfBlobUrl = ref<string | null>(null)
 const loading = ref(true)
 const error = ref(false)
+// 실패 안내 문구·상태코드 (백엔드 응답 본문 message 우선)
+const errorMessage = ref<string | null>(null)
+const errorStatus = ref<number | null>(null)
 
 /**
  * JWT 인증이 필요한 PDF 로드
@@ -96,11 +115,16 @@ const loadPdf = async () => {
   try {
     loading.value = true
     error.value = false
+    errorMessage.value = null
+    errorStatus.value = null
 
     // fetch는 plugins/api-interceptor.ts에서 자동으로 Authorization 헤더 추가
     const response = await fetch(props.pdfUrl)
 
     if (!response.ok) {
+      // PDF(Blob) API 도 실패하면 JSON { message } 를 준다 → 본문을 읽어 그대로 보여준다
+      errorStatus.value = response.status
+      errorMessage.value = await readErrorMessage(response, 'PDF 불러오기')
       throw new Error(`PDF fetch failed: ${response.status} ${response.statusText}`)
     }
 
@@ -294,6 +318,33 @@ onUnmounted(() => {
   font-size: 1rem;
   font-weight: 500;
   color: #991b1b;
+}
+
+/* 백엔드 안내 문구는 여러 줄일 수 있다 */
+.error-state .error-message {
+  max-width: 560px;
+  text-align: center;
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
+/* 계약 품목 귀속 지정 바로가기 (터치 44px) */
+.btn-alloc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid #f59e0b;
+  border-radius: 0.375rem;
+  background: #fff;
+  color: #92400e;
+  font-weight: 600;
+  text-decoration: none;
+}
+.error-state .btn-alloc-link i {
+  font-size: 0.9rem;
+  color: inherit;
 }
 
 .btn-retry {

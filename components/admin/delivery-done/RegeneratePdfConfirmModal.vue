@@ -27,6 +27,16 @@
           </div>
         </div>
 
+        <!-- 계약 품목 귀속 미지정 → 서류 재발행 불가 -->
+        <ContractAllocGuardNotice
+          v-if="allocBlocked"
+          :count="allocCount"
+          :items="allocItems"
+          action="PDF 재발행"
+          :to="contractAllocDeliveryDoneLink(deliveryDone.deliveryDoneId)"
+          @navigate="$emit('close')"
+        />
+
         <div class="notice-box">
           <p class="notice-title">
             <i class="fas fa-info-circle" />
@@ -72,23 +82,31 @@
         <button class="btn-cancel" :disabled="processing" @click="$emit('close')">
           취소
         </button>
-        <button
+        <GuardedButton
           class="btn-primary"
-          :disabled="!canConfirm || processing"
+          :disabled="!canConfirm || processing || allocLoading"
+          :blocked="allocBlocked"
+          :reason="contractAllocBlockedReason(allocCount, 'PDF 재발행')"
           @click="handleConfirm"
         >
           <i class="fas" :class="processing ? 'fa-spinner fa-spin' : 'fa-redo'" />
           {{ processing ? '재발행 중...' : 'PDF 재발행' }}
-        </button>
+        </GuardedButton>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { regenerateDeliveryDonePdfs, type PdfBasis } from '~/services/delivery-done.service'
 import type { DeliveryDoneListItem } from '~/types/delivery-done'
+import ContractAllocGuardNotice from '~/components/contract-alloc/ContractAllocGuardNotice.vue'
+import {
+  useContractAllocStatus,
+  contractAllocBlockedReason,
+  contractAllocDeliveryDoneLink
+} from '~/composables/useContractAllocStatus'
 
 const props = defineProps<{
   deliveryDone: DeliveryDoneListItem
@@ -105,8 +123,19 @@ const basis = ref<PdfBasis>('CONTRACT')
 
 const canConfirm = computed(() => confirmText.value.trim() === 'PDF 재발행')
 
+// 계약 품목 귀속 가드 — 미지정이 있으면 재발행 불가 (조회 실패 시 막지 않음, 백엔드 400 이 최종 차단)
+const {
+  blocked: allocBlocked,
+  loading: allocLoading,
+  unallocatedCount: allocCount,
+  unallocatedItems: allocItems,
+  loadByOrder: loadAllocStatus
+} = useContractAllocStatus()
+
+onMounted(() => { loadAllocStatus(props.deliveryDone.orderId) })
+
 async function handleConfirm () {
-  if (!canConfirm.value) { return }
+  if (!canConfirm.value || allocBlocked.value) { return }
   processing.value = true
   try {
     await regenerateDeliveryDonePdfs(props.deliveryDone.deliveryDoneId, basis.value)

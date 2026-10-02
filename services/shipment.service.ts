@@ -238,6 +238,11 @@ export interface ShipmentItemWithOrder {
   shipmentId?: number
   remarks?: string                     // 비고
   isNewItem?: boolean                  // 신규 추가 품목 여부
+  /**
+   * 계약 품목 귀속 지정 여부 (출하 수정 목록 전용, 2026-10-02)
+   * 계약 외 SKU 행(B급·합지)에만 true/false, 계약 품목 행은 null
+   */
+  contractAllocated?: boolean | null
 }
 
 // 형제 출하 배송지 정보 (출고요청 프리필용)

@@ -461,7 +461,19 @@
                       <td>{{ item.itemId }}</td>
                       <td>{{ item.itemName || '-' }}</td>
                       <td>{{ item.skuId }}</td>
-                      <td>{{ item.skuName }}</td>
+                      <td>
+                        {{ item.skuName }}
+                        <!-- 계약 외 SKU 행(B급·합지): 귀속 여부 배지 — 수량 편집은 그대로 가능 -->
+                        <a
+                          v-if="item.contractAllocated === true || item.contractAllocated === false"
+                          href="#contract-alloc"
+                          class="alloc-badge"
+                          :class="item.contractAllocated ? 'ok' : 'bad'"
+                          :title="item.contractAllocated ? '아래 «계약 품목 귀속»에서 변경할 수 있습니다' : '아래 «계약 품목 귀속»에서 지정하세요'"
+                        >
+                          {{ allocBadgeText(item) }}
+                        </a>
+                      </td>
                       <td>{{ item.unit }}</td>
                       <td class="text-right">
                         {{ formatQuantity(item.orderQuantity) }}
@@ -571,6 +583,54 @@
             </div>
           </div>
         </FormSection>
+
+        <!--
+          계약 품목 귀속 지정 (이 출하의 B급·합지 품목 → 계약 품목·수량)
+          ★ id="contract-alloc" — 운송·자금 화면의 [지정하러 가기] 링크가 이 위치로 온다
+        -->
+        <div v-if="shipmentId" id="contract-alloc" class="contract-alloc-anchor">
+          <ContractAllocPanel
+            :shipment-id="Number(shipmentId)"
+            :readonly="!hasEditPermission"
+            @changed="handleContractAllocChanged"
+            @loaded="onAllocLoaded"
+          />
+          <!-- 귀속은 바뀌었는데 폼 품목을 아직 다시 읽지 않음 → 이대로 저장하면 수량이 어긋날 수 있다 -->
+          <div v-if="allocReloadPending" class="alloc-reload-pending">
+            <i class="fas fa-exclamation-triangle" />
+            <span>계약 품목 귀속이 바뀌어 출하 품목을 다시 불러와야 합니다. 입력 중인 내용을 정리한 뒤 다시 불러오세요.</span>
+            <button type="button" class="btn-alloc-reload" @click="showAllocReloadConfirm = true">
+              <i class="fas fa-sync-alt" /> 출하 품목 다시 불러오기
+            </button>
+          </div>
+        </div>
+
+        <!-- 귀속 변경 후 다시 불러오기 확인 (미저장 변경이 있을 때) -->
+        <Teleport to="body">
+          <div v-if="showAllocReloadConfirm" class="alloc-confirm-overlay" @click.self="postponeAllocReload">
+            <div class="alloc-confirm" role="dialog" aria-modal="true" aria-labelledby="alloc-confirm-title">
+              <div class="alloc-confirm-header">
+                <h3 id="alloc-confirm-title">
+                  <i class="fas fa-sync-alt" /> 출하 품목 다시 불러오기
+                </h3>
+              </div>
+              <div class="alloc-confirm-body">
+                <p>계약 품목 귀속이 바뀌어 이 출하의 품목·수량을 서버에서 다시 불러와야 합니다.</p>
+                <p class="alloc-confirm-warn">
+                  저장하지 않은 입력(수량·배송지 등)이 있습니다. 지금 다시 불러오면 그 입력은 사라집니다.
+                </p>
+              </div>
+              <div class="alloc-confirm-footer">
+                <button type="button" class="btn-alloc-later" @click="postponeAllocReload">
+                  나중에
+                </button>
+                <button type="button" class="btn-alloc-reload" @click="reloadAfterAlloc">
+                  <i class="fas fa-sync-alt" /> 다시 불러오기
+                </button>
+              </div>
+            </div>
+          </div>
+        </Teleport>
 
         <!-- 원계약 ↔ 실출하 금액 정합 (저장된 납품완료 기준) -->
         <FormSection v-if="reconciliation" style="margin-top: 1rem">
@@ -738,7 +798,7 @@
  *   * remainingQuantity: 잔여 수량
  *   * maxEditableQuantity: 최대 수정 가능 수량
  */
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from '#imports'
 import { shipmentService } from '~/services/shipment.service'
 import type { ShipmentDetailWithOrder, ShipmentItemWithOrder, SiblingDeliveryInfo } from '~/services/shipment.service'
@@ -764,6 +824,8 @@ import type { AmountReconciliation, AmountReconciliationItem } from '~/types/del
 import LotBreakdown from '~/components/admin/inventory/LotBreakdown.vue'
 import { inventoryLotService } from '~/services/inventory-lot.service'
 import type { LotAllocation } from '~/types/inventory-lot'
+import ContractAllocPanel from '~/components/contract-alloc/ContractAllocPanel.vue'
+import type { ContractAllocStatus } from '~/types/contract-alloc'
 
 definePageMeta({
   layout: 'admin',
@@ -856,6 +918,68 @@ const loadReconciliation = async (orderId: number) => {
     console.error('금액 정합 비교 조회 실패:', reconError)
     reconciliation.value = null
   }
+}
+
+// ===== 계약 품목 귀속 (패널 연동) =====
+
+// 패널 조회 결과 → 품목 표 배지용 «출하 SKU → 귀속 대상» (예: 100T, 60T + 70T)
+const allocTargetBySku = ref<Record<string, string>>({})
+const onAllocLoaded = (s: ContractAllocStatus | null) => {
+  const map: Record<string, string> = {}
+  for (const row of s?.items || []) {
+    if (!row.allocated) { continue }
+    const parts = (row.allocations || []).map((a) => {
+      const ci = (s?.contractItems || []).find(c => c.orderItemId === a.orderItemId)
+      return ci?.thickness != null ? `${formatNumber(ci.thickness)}T` : (a.contractSkuName || a.contractSkuId || '')
+    }).filter(Boolean)
+    map[row.shipSkuId] = parts.join(' + ')
+  }
+  allocTargetBySku.value = map
+}
+
+/** 품목 표 배지 문구 (계약 외 SKU 행만) */
+const allocBadgeText = (item: OrderItem): string => {
+  if (item.contractAllocated !== true) { return '귀속 미지정 — 아래 계약 품목 귀속에서 지정' }
+  const target = allocTargetBySku.value[item.skuId]
+  return target ? `계약 품목 귀속됨: ${target}` : '계약 품목 귀속됨'
+}
+
+// 폼 미저장 변경 감지 — 불러온 직후 상태를 기억해 두고 비교한다
+// (useEditForm 의 isDirty 는 편집 모드에서 초기값이 {} 라 항상 true 여서 쓸 수 없다)
+// ⚠ formData 는 reactive — .value 를 붙이지 않는다
+const formSnapshot = ref('')
+const takeFormSnapshot = () => JSON.stringify({
+  form: formData,
+  qty: items.value.map(i => [i.skuId, i.shippingQuantity])
+})
+// (불러오기 완료 시점의 스냅샷 watch 는 useEditForm 선언 뒤에 둔다 — loading 이 그 아래에서 선언됨)
+const hasUnsavedChanges = () => !!formSnapshot.value && takeFormSnapshot() !== formSnapshot.value
+
+// 귀속이 바뀌면 출하 품목(서버 정규화로 행·수량이 바뀔 수 있음)을 다시 읽어야 폼 저장이 맞게 된다
+const showAllocReloadConfirm = ref(false)
+const allocReloadPending = ref(false) // 사용자가 [나중에]를 골라 아직 다시 읽지 않음
+
+const reloadAfterAlloc = async () => {
+  showAllocReloadConfirm.value = false
+  allocReloadPending.value = false
+  await refreshData()
+  if (shipmentData.value?.orderId) { loadReconciliation(shipmentData.value.orderId) }
+  await nextTick()
+  formSnapshot.value = takeFormSnapshot()
+}
+
+// 귀속 저장·해제 후 — 입력 중인 변경이 있으면 덮어쓰기 전에 확인
+const handleContractAllocChanged = () => {
+  if (hasUnsavedChanges()) {
+    showAllocReloadConfirm.value = true
+    return
+  }
+  reloadAfterAlloc()
+}
+
+const postponeAllocReload = () => {
+  showAllocReloadConfirm.value = false
+  allocReloadPending.value = true
 }
 
 // 수량 입력 시 원래 값 저장 (validation 실패 시 복원용)
@@ -1065,6 +1189,11 @@ const {
     alert(errorMessage)
     router.push('/admin/shipping/list')
   }
+})
+
+// 출하 상세를 불러온 직후의 폼 상태를 기억 (계약 품목 귀속 변경 후 다시 읽기 전 미저장 변경 확인용)
+watch(loading, (isLoading) => {
+  if (!isLoading) { nextTick(() => { formSnapshot.value = takeFormSnapshot() }) }
 })
 
 // useFormValidation 사용
@@ -1578,6 +1707,12 @@ const handleDelete = async () => {
 @import '@/assets/css/admin-buttons.css';
 @import '@/assets/css/admin-forms.css';
 
+/* 계약 품목 귀속 패널 위치 (링크 #contract-alloc 로 들어올 때 상단 헤더에 가리지 않게) */
+.contract-alloc-anchor {
+  margin-top: 1rem;
+  scroll-margin-top: 80px;
+}
+
 /*
  * Common styles managed by:
  * - admin-common.css: text-center, text-right, empty-message, loading-container, error-container, modal-overlay
@@ -1861,6 +1996,88 @@ const handleDelete = async () => {
 }
 
 /* 신규 뱃지 */
+/* 귀속 변경 후 다시 불러오기 — 대기 안내 + 확인 모달 (기존 확인 모달 패턴) */
+.alloc-reload-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.86rem;
+}
+.btn-alloc-reload,
+.btn-alloc-later {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-alloc-reload { background: #2563eb; color: #fff; border: 1px solid #2563eb; }
+.btn-alloc-later { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+.alloc-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.5);
+}
+.alloc-confirm {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+.alloc-confirm-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #bfdbfe;
+  background: #eff6ff;
+}
+.alloc-confirm-header h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.alloc-confirm-body { padding: 16px 20px; font-size: 0.9rem; line-height: 1.6; color: #374151; }
+.alloc-confirm-body p { margin: 0 0 0.5rem; }
+.alloc-confirm-warn { color: #92400e; }
+.alloc-confirm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 12px 20px 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* 계약 외 SKU 행의 계약 품목 귀속 배지 */
+.alloc-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.125rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.alloc-badge.ok { background: #dcfce7; color: #166534; }
+.alloc-badge.bad { background: #fee2e2; color: #b91c1c; }
+
 .badge-new {
   display: inline-block;
   padding: 0.125rem 0.375rem;

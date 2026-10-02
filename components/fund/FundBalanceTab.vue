@@ -3,26 +3,38 @@
     <div class="tab-header">
       <h4>잔금 정보</h4>
       <div class="tab-actions">
-        <!-- 납품완료 처리하기 버튼 (PENDING_SIGNATURE 상태 & 납품완료 전) -->
-        <button
+        <!-- 납품완료 처리하기 버튼 (PENDING_SIGNATURE 상태 & 납품완료 전) — 완료계 서류 발행 → 귀속 미지정이면 막힘 -->
+        <GuardedButton
           v-if="!isDeliveryCompleted && canCompleteFinalDelivery"
           class="btn-primary"
+          :blocked="allocBlocked"
+          :reason="allocReason('납품완료 처리(서류 발행)')"
           @click="emit('openFinalDeliveryModal')"
         >
           <i class="fas fa-check-circle" />
           납품완료 처리하기
-        </button>
-        <!-- 잔금등록 버튼 (납품완료 상태 && 잔금 요청 없음 && 미입금) -->
-        <button
+        </GuardedButton>
+        <!-- 잔금등록 버튼 (납품완료 상태 && 잔금 요청 없음 && 미입금) — 잔금 청구 → 귀속 미지정이면 막힘 -->
+        <GuardedButton
           v-if="isDeliveryCompleted && !hasBalanceRequest && !balancePaidDate"
           class="btn-primary"
+          :blocked="allocBlocked"
+          :reason="allocReason('잔금등록')"
           @click="emit('openBalanceRegisterModal')"
         >
           <i class="fas fa-coins" />
           잔금등록
-        </button>
+        </GuardedButton>
       </div>
     </div>
+    <!-- 계약 품목 귀속 미지정 → 잔금·납품완료 처리가 막혀 있음 (잔금 입금 전까지만 안내) -->
+    <ContractAllocGuardNotice
+      v-if="allocBlocked && !balancePaidDate"
+      :count="allocCount"
+      :items="allocItems"
+      action="잔금등록·납품완료 처리"
+      :to="contractAllocDeliveryDoneLink(deliveryDoneId)"
+    />
     <div class="balance-info">
       <div class="info-row">
         <label>잔금 예정액</label>
@@ -90,9 +102,20 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import { formatCurrency, formatDate } from '~/utils/format'
+import ContractAllocGuardNotice from '~/components/contract-alloc/ContractAllocGuardNotice.vue'
+import {
+  useContractAllocStatus,
+  contractAllocBlockedReason,
+  contractAllocDeliveryDoneLink
+} from '~/composables/useContractAllocStatus'
 
 interface Props {
+  /** 발주 ID — 계약 품목 귀속 가드 조회용 */
+  orderId?: number | null
+  /** 납품완료 ID — [지정하러 가기] 링크(납품완료 상세 #contract-alloc)용 */
+  deliveryDoneId?: number | null
   /** 잔금 예정액 */
   remainingBalance: number
   /** 납품완료 여부 */
@@ -117,7 +140,22 @@ interface Props {
   balanceNetAmount?: number | null
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+// ===== 계약 품목 귀속 가드 =====
+// 잔금 청구·완료계 발행은 계약 기준 집계로 나간다. 미지정이 있으면 막고 지정 위치로 안내한다.
+// 조회 실패 시에는 막지 않는다(백엔드 400 이 최종 차단).
+const {
+  blocked: allocBlocked,
+  unallocatedCount: allocCount,
+  unallocatedItems: allocItems,
+  loadByOrder: loadAllocStatus
+} = useContractAllocStatus()
+
+const allocReason = (action: string) =>
+  contractAllocBlockedReason(allocCount.value, action, '아래 [지정하러 가기] 로 이동해 «계약 품목 귀속»')
+
+watch(() => props.orderId, (id) => { loadAllocStatus(id) }, { immediate: true })
 
 const emit = defineEmits<{
   /** 납품완료 처리 모달 열기 */
