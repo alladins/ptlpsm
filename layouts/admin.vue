@@ -29,6 +29,18 @@
 
         <div class="header-right">
           <div class="header-actions">
+            <!-- 지금 화면을 설명하는 매뉴얼 절을 새 탭으로 (절 찾기는 매뉴얼 화면이 한다) -->
+            <a
+              v-if="manualHref"
+              :href="manualHref"
+              target="_blank"
+              rel="noopener"
+              class="manual-btn"
+              title="이 화면의 사용자 매뉴얼 (새 탭)"
+            >
+              <i class="fas fa-question-circle" />
+              <span class="manual-btn-text">매뉴얼</span>
+            </a>
             <button class="action-btn" @click="toggleNotifications">
               <img src="/images/common/ico_bell.png" alt="알림" class="bell-icon">
               <span v-if="notificationCount > 0" class="notification-badge">
@@ -145,6 +157,19 @@ const currentPageTitle = computed(() => {
 
   // 대시보드는 모바일에서만 표시
   return ''
+})
+
+/**
+ * 화면 → 매뉴얼 [매뉴얼] 버튼 주소
+ *
+ * 경로만 넘기고(?from=), 어느 절인지는 매뉴얼 화면이 문서를 읽은 뒤 스스로 찾는다.
+ * 그래야 매뉴얼 원문(약 190KB)을 모든 관리자 화면 번들에 싣지 않는다.
+ * 매뉴얼 화면 자신에서는 감춘다.
+ */
+const manualHref = computed(() => {
+  const path = route.path
+  if (!path.startsWith('/admin')) { return '' }
+  return router.resolve({ path: '/manual', query: { from: path } }).href
 })
 
 // 알림 데이터
@@ -471,6 +496,38 @@ onUnmounted(() => {
 .action-btn:hover {
   background-color: var(--sidebar-hover);
   color: white;
+}
+
+/* 화면 → 매뉴얼 버튼 */
+.manual-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--sidebar-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.manual-btn i {
+  font-size: 16px;
+}
+
+.manual-btn:hover {
+  background-color: var(--sidebar-hover);
+  color: white;
+}
+
+/* 좁은 화면에서는 아이콘만 */
+@media (max-width: 768px) {
+  .manual-btn-text {
+    display: none;
+  }
 }
 
 .menu-icon {
