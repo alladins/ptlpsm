@@ -72,7 +72,7 @@
             <th v-if="hasAdvancePayment" class="col-amount">
               선급금차감
             </th>
-            <th v-if="hasAdvancePayment" class="col-amount">
+            <th v-if="showActualAmount" class="col-amount">
               실수금액
             </th>
             <th>수금일</th>
@@ -83,7 +83,7 @@
         </thead>
         <tbody>
           <tr v-if="filteredProgressPayments.length === 0">
-            <td :colspan="hasAdvancePayment ? 9 : 7" class="no-data">
+            <td :colspan="7 + (hasAdvancePayment ? 1 : 0) + (showActualAmount ? 1 : 0)" class="no-data">
               기성금 이력이 없습니다.
             </td>
           </tr>
@@ -96,7 +96,7 @@
             <td v-if="hasAdvancePayment" class="text-right deduction-amount">
               {{ payment.advanceDeductionAmount ? '-' + formatCurrency(payment.advanceDeductionAmount) : '-' }}
             </td>
-            <td v-if="hasAdvancePayment" class="text-right actual-amount">
+            <td v-if="showActualAmount" class="text-right actual-amount" :title="actualAmountTitle(payment)">
               {{ formatCurrency(payment.netPaymentAmount || payment.requestAmount) }}
             </td>
             <td>{{ payment.paymentDate || payment.paidDate || '-' }}</td>
@@ -334,9 +334,9 @@ const props = withDefaults(defineProps<Props>(), {
  * 차수가 있어야 납품확인서·청구내역서를 뽑을 수 있다.
  */
 const BASELINE_MISSING_REASON =
-  '이 기성 청구건에는 아직 기성 차수가 만들어지지 않아 서류를 만들 수 없습니다.\n'
-  + '[기성 청구하기] 로 차수를 먼저 등록하세요.\n'
-  + '(예전에 자금 화면에서 직접 만든 청구건이면 차수가 없을 수 있습니다)'
+  '이 기성 청구건에는 아직 기성 차수가 만들어지지 않아 서류를 만들 수 없습니다.\n' +
+  '[기성 청구하기] 로 차수를 먼저 등록하세요.\n' +
+  '(예전에 자금 화면에서 직접 만든 청구건이면 차수가 없을 수 있습니다)'
 
 // 공문 수신자명 즉석 입력값 (미입력 시 백엔드가 저장값/자동값 사용)
 const recipientName = ref('')
@@ -380,6 +380,22 @@ const ensureDocsSelected = (): boolean => {
 const filteredProgressPayments = computed(() =>
   props.progressPayments.filter(p => p.paymentType !== 'BALANCE')
 )
+
+/**
+ * «실수금액» 열 표시 — 선급금 차감이 있거나, 수금 확인 때 입력한 입금액이 청구액과 다른 차수가 하나라도 있으면.
+ * 수요기관이 청구액에서 10원·100원 미만을 절사해 지급하는 일이 있어(충남힐링센터 2차 96,003,810 → 96,003,800)
+ * 실수금액(= 입금액)을 청구액 옆에 같이 보여 준다. 누계·잔금은 실수금액 기준.
+ */
+const showActualAmount = computed(() =>
+  props.hasAdvancePayment ||
+  filteredProgressPayments.value.some(p =>
+    p.status === 'PAID' && p.netPaymentAmount != null && Number(p.netPaymentAmount) !== Number(p.requestAmount)))
+
+const actualAmountTitle = (p: ProgressPaymentRequest) => {
+  if (p.netPaymentAmount == null || Number(p.netPaymentAmount) === Number(p.requestAmount)) { return '' }
+  const diff = Number(p.requestAmount) - Number(p.netPaymentAmount)
+  return `청구액과 ${formatCurrency(Math.abs(diff))} 차이 (수요기관 절사 등) — 입금액 기준`
+}
 
 const emit = defineEmits<{
   /** 기성금 청구 모달 열기 */
