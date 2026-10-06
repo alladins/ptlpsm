@@ -313,6 +313,7 @@ export interface LeadKeywordGroup {
 }
 
 export interface SalesLeadSearchParams {
+  /** 낙찰·계약일 기간 (낙찰일 또는 이어진 계약의 계약일) */
   fromDate?: string
   toDate?: string
   leadKind?: string
@@ -324,8 +325,32 @@ export interface SalesLeadSearchParams {
   progressStatus?: string
   /** 방치만 */
   staleOnly?: boolean
+  /** 권역 트리 — 셋 중 하나만 (수요기관 소재 시군구로 판정한 권역) */
+  regionId?: number
+  unassigned?: boolean
+  unresolved?: boolean
   page: number
   size: number
+}
+
+/** 권역 트리 — 현재 검색 조건의 권역별 리드 수 (트리에서 고른 권역은 세지 않음) */
+export interface SalesLeadRegionTree {
+  regions: {
+    regionId: number
+    regionCode: string
+    regionName: string
+    parentRegionId: number | null
+    sortOrder: number | null
+    /** 이 권역으로 직접 판정된 리드 수 */
+    leadCount: number
+  }[]
+  /** 권역 미배정 — 시군구는 판정됐으나 어느 권역에도 없음 (광역시·세종·제주 등) */
+  unassigned: number
+  /** 미판정 — 수요기관을 못 찾았거나 소재 시군구를 못 정함 */
+  unresolved: number
+  total: number
+  /** 로그인한 대리점 직원의 담당 권역 */
+  myRegionIds: number[]
 }
 
 /** 백엔드 comm PageResponse (현재 페이지 필드명이 `page`, 0-based) */

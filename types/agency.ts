@@ -384,6 +384,29 @@ export interface RebuildResult {
 // 설계사무소
 // ============================================
 
+/** 권역 트리 패널(RegionTreePanel)의 선택 — 전체 / 권역 하나 / 권역 미배정 / 미판정 */
+export type RegionTreeSelection =
+  | { kind: 'all' }
+  | { kind: 'region', regionId: number }
+  | { kind: 'unassigned' }
+  | { kind: 'unresolved' }
+
+/** 권역 트리 패널이 그리는 값 — 설계사무소관리(사무소 수)·공모·낙찰 수집(리드 수)이 각자 이 모양으로 바꿔 넘긴다 */
+export interface RegionTreeData {
+  regions: {
+    regionId: number
+    regionName: string
+    parentRegionId: number | null
+    /** 이 권역에 직접 속한 수 (상위 권역은 하위 합을 패널이 더한다) */
+    count: number
+  }[]
+  unassigned: number
+  unresolved: number
+  total: number
+  /** 로그인한 대리점 직원의 담당 권역 (리드파워 직원은 빈 목록) */
+  myRegionIds: number[]
+}
+
 /** 설계사무소관리 권역 트리 — 사용 중 권역별 수 (상위는 하위 합을 화면에서 더한다) */
 export interface DesignOfficeRegionTree {
   regions: {

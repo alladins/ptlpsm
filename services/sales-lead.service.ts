@@ -17,6 +17,7 @@ import type {
   SalesCollectStatus,
   SalesLead,
   SalesLeadPage,
+  SalesLeadRegionTree,
   SalesLeadSearchParams
 } from '~/types/sales-lead'
 
@@ -26,6 +27,11 @@ export const salesLeadService = {
   /** 목록 — leadKind 를 비우면 설계+공사, 'ALL' 이면 전체 */
   search (params: SalesLeadSearchParams): Promise<SalesLeadPage> {
     return apiClient.get<SalesLeadPage>(BASE, { ...params })
+  },
+
+  /** 권역 트리 — 목록과 같은 검색 조건(권역 선택·페이지 제외)의 권역별 수 */
+  getRegionTree (params: Omit<SalesLeadSearchParams, 'page' | 'size' | 'regionId' | 'unassigned' | 'unresolved'>): Promise<SalesLeadRegionTree> {
+    return apiClient.get<SalesLeadRegionTree>(`${BASE}/region-tree`, { ...params })
   },
 
   /** 상세 (원천 응답 rawJson 포함) */

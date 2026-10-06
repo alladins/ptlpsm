@@ -74,57 +74,13 @@
 
       <div class="office-layout">
         <!-- 좌: 권역 트리 — 권역을 고르면 그 권역(+하위) 시군구의 사무소만. 대리점 직원은 «내 권역»이 먼저 골라진다 -->
-        <aside class="tree-panel">
-          <div class="tree-head">
-            <i class="fas fa-sitemap" /> 권역
-          </div>
-          <button type="button" class="tree-node" :class="{ active: isSelected({ kind: 'all' }) }" @click="selectNode({ kind: 'all' })">
-            <span>전체</span><span class="cnt">{{ tree?.total ?? '-' }}</span>
-          </button>
-          <template v-for="top in treeNodes" :key="top.regionId">
-            <button
-              type="button"
-              class="tree-node"
-              :class="{ active: isSelected({ kind: 'region', regionId: top.regionId }), mine: myRegionSet.has(top.regionId) }"
-              @click="selectNode({ kind: 'region', regionId: top.regionId })"
-            >
-              <span><i class="fas" :class="top.children.length ? 'fa-folder' : 'fa-map-marker-alt'" /> {{ top.regionName }}
-                <span v-if="myRegionSet.has(top.regionId)" class="mine-badge">내 권역</span></span>
-              <span class="cnt">{{ top.total }}</span>
-            </button>
-            <button
-              v-for="c in top.children"
-              :key="c.regionId"
-              type="button"
-              class="tree-node child"
-              :class="{ active: isSelected({ kind: 'region', regionId: c.regionId }), mine: myRegionSet.has(c.regionId) }"
-              @click="selectNode({ kind: 'region', regionId: c.regionId })"
-            >
-              <span><i class="fas fa-map-marker-alt" /> {{ c.regionName }}
-                <span v-if="myRegionSet.has(c.regionId)" class="mine-badge">내 권역</span></span>
-              <span class="cnt">{{ c.officeCount }}</span>
-            </button>
-          </template>
-          <div class="tree-sep" />
-          <button
-            type="button"
-            class="tree-node"
-            :class="{ active: isSelected({ kind: 'unassigned' }) }"
-            title="시군구는 있으나 어느 권역에도 속하지 않은 곳 (광역시·세종·제주 등)"
-            @click="selectNode({ kind: 'unassigned' })"
-          >
-            <span><i class="fas fa-question-circle" /> 권역 미배정</span><span class="cnt">{{ tree?.unassigned ?? '-' }}</span>
-          </button>
-          <button
-            type="button"
-            class="tree-node"
-            :class="{ active: isSelected({ kind: 'noSigungu' }) }"
-            title="주소가 없어 소재 시군구를 못 정한 곳 — «나라장터 업체정보로 채우기»로 채울 수 있습니다"
-            @click="selectNode({ kind: 'noSigungu' })"
-          >
-            <span><i class="fas fa-exclamation-circle" /> 시군구 미판정</span><span class="cnt">{{ tree?.noSigungu ?? '-' }}</span>
-          </button>
-        </aside>
+        <RegionTreePanel
+          :model-value="selected"
+          :tree="treeData"
+          unresolved-label="시군구 미판정"
+          unresolved-title="주소가 없어 소재 시군구를 못 정한 곳 — «나라장터 업체정보로 채우기»로 채울 수 있습니다"
+          @update:model-value="selectNode"
+        />
 
         <div class="list-col">
           <div class="table-section">
@@ -388,6 +344,7 @@ import { useAuthStore } from '~/stores/auth'
 import { designOfficeService, salesRegionService } from '~/services/agency.service'
 import { businessCardService, type BusinessCardResponse } from '~/services/business-card.service'
 import BizStatusBadge from '~/components/ui/BizStatusBadge.vue'
+import RegionTreePanel from '~/components/admin/sales/RegionTreePanel.vue'
 import { formatDate, formatBusinessNumberInput, formatPhoneNumberInput } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
 import { usePermission } from '~/composables/usePermission'
@@ -397,6 +354,8 @@ import {
   type DesignOffice,
   type DesignOfficeBizFilter,
   type DesignOfficeRegionTree,
+  type RegionTreeData,
+  type RegionTreeSelection,
   type Sigungu
 } from '~/types/agency'
 
@@ -425,29 +384,22 @@ const onBizStatusChange = () => {
   loadTree()
 }
 
-// ===== 권역 트리 (왼쪽) =====
-type TreeSel = { kind: 'all' } | { kind: 'region', regionId: number } | { kind: 'unassigned' } | { kind: 'noSigungu' }
-
+// ===== 권역 트리 (왼쪽) — 공통 패널(RegionTreePanel). «미판정» = 소재 시군구 미판정 =====
 const tree = ref<DesignOfficeRegionTree | null>(null)
-const selected = ref<TreeSel>({ kind: 'all' })
-const myRegionSet = computed(() => new Set(tree.value?.myRegionIds || []))
+const selected = ref<RegionTreeSelection>({ kind: 'all' })
 
-/** 최상위 권역 + 하위 권역 (상위 합계 = 자기 + 하위) */
-const treeNodes = computed(() => {
-  const rows = tree.value?.regions || []
-  return rows
-    .filter(r => r.parentRegionId === null)
-    .map((top) => {
-      const children = rows.filter(r => r.parentRegionId === top.regionId)
-      return { ...top, children, total: top.officeCount + children.reduce((s, c) => s + c.officeCount, 0) }
-    })
-})
+/** 패널이 그리는 모양으로 (officeCount → count) */
+const treeData = computed<RegionTreeData | null>(() => tree.value
+  ? {
+      regions: tree.value.regions.map(r => ({ regionId: r.regionId, regionName: r.regionName, parentRegionId: r.parentRegionId, count: r.officeCount })),
+      unassigned: tree.value.unassigned,
+      unresolved: tree.value.noSigungu,
+      total: tree.value.total,
+      myRegionIds: tree.value.myRegionIds || []
+    }
+  : null)
 
-const isSelected = (s: TreeSel) =>
-  s.kind === selected.value.kind &&
-  (s.kind !== 'region' || (selected.value.kind === 'region' && selected.value.regionId === s.regionId))
-
-const selectNode = (s: TreeSel) => {
+const selectNode = (s: RegionTreeSelection) => {
   selected.value = s
   handleSearch()
 }
@@ -484,7 +436,7 @@ const loadList = async () => {
       sidoCd: searchForm.value.sidoCd || undefined,
       regionId: selected.value.kind === 'region' ? selected.value.regionId : undefined,
       unassigned: selected.value.kind === 'unassigned' || undefined,
-      noSigungu: selected.value.kind === 'noSigungu' || undefined,
+      noSigungu: selected.value.kind === 'unresolved' || undefined,
       bizStatus: searchForm.value.bizStatus || undefined,
       page: currentPage.value,
       size: pageSize.value
@@ -798,82 +750,7 @@ onMounted(async () => {
   }
 }
 
-.tree-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  padding: 0.5rem;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  position: sticky;
-  top: 1rem;
-}
-
-.tree-head {
-  padding: 0.375rem 0.5rem 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.tree-node {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.4375rem 0.625rem;
-  border: none;
-  border-left: 3px solid transparent;
-  border-radius: 6px;
-  background: none;
-  font-size: 0.8125rem;
-  color: #334155;
-  text-align: left;
-  cursor: pointer;
-}
-
-.tree-node.child {
-  padding-left: 1.5rem;
-}
-
-.tree-node:hover {
-  background: #f8fafc;
-}
-
-.tree-node.active {
-  background: #eff6ff;
-  border-left-color: #2563eb;
-  color: #1d4ed8;
-  font-weight: 600;
-}
-
-.tree-node .fas {
-  margin-right: 0.25rem;
-  color: #94a3b8;
-}
-
-.tree-node .cnt {
-  font-size: 0.75rem;
-  color: #64748b;
-}
-
-.mine-badge {
-  margin-left: 0.25rem;
-  padding: 0 0.375rem;
-  border-radius: 9999px;
-  background: #dcfce7;
-  color: #166534;
-  font-size: 0.6875rem;
-  font-weight: 600;
-}
-
-.tree-sep {
-  height: 1px;
-  margin: 0.375rem 0;
-  background: #e2e8f0;
-}
+/* 트리 패널 자체 스타일은 RegionTreePanel 컴포넌트에 */
 
 /* 담당자(명함) */
 .cards-section {
