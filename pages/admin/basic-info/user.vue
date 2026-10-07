@@ -494,6 +494,7 @@
 import { userService } from '~/services/user.service'
 import { codeService } from '~/services/code.service'
 import { companyService } from '~/services/company.service'
+import { useAuthStore } from '~/stores/auth'
 import type { CompanyInfoResponse } from '~/types/company'
 import { formatDate, formatPhoneNumberInput, normalizeEmail, formatPostalCodeInput, getSearchStartDate, getSearchEndDate } from '~/utils/format'
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
@@ -976,7 +977,13 @@ const submitPasswordChange = async () => {
 const loadUserRoles = async () => {
   try {
     const response = await codeService.getCodeDetails('USER_ROLE')
-    userRoles.value = response
+    // 시스템관리자 역할은 시스템관리자만 부여할 수 있다(서버도 같은 규칙으로 막는다 — 시큐어코딩 S4).
+    // 리드파워담당자에게는 선택지 자체를 보이지 않아, 눌러도 안 되는 항목을 남기지 않는다.
+    const authStore = useAuthStore()
+    const isSystemAdmin = (authStore.role || '').toUpperCase() === 'SYSTEM_ADMIN'
+    userRoles.value = isSystemAdmin
+      ? response
+      : response.filter(role => role.code !== 'SYSTEM_ADMIN')
   } catch (error) {
     console.error('권한 목록 조회 실패:', error)
   }
