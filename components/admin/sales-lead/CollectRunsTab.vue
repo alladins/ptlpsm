@@ -106,6 +106,26 @@
       </p>
     </div>
 
+    <!-- 후처리가 끊겨 남은 리드 — 서버 재시작 등으로 «서버 재시작 등으로 중단됨» 이 난 뒤 (2026-10-13) -->
+    <div v-if="unprocessedCount > 0" class="unprocessed-bar">
+      <span>
+        <i class="fas fa-exclamation-triangle" />
+        후처리(판별·설계사무소·담당)가 안 된 리드 <strong>{{ formatNumber(unprocessedCount) }}</strong>건
+        <span class="text-muted">— 서버 재시작 등으로 끊긴 것입니다. 남은 것만 다시 처리합니다(분당 약 800건).</span>
+      </span>
+      <GuardedButton
+        v-if="canCollect"
+        type="button"
+        class="btn-action btn-primary"
+        :blocked="!!status?.running"
+        reason="수집 또는 다시 분류가 진행 중입니다. 끝난 뒤 누르세요."
+        :disabled="reprocessing"
+        @click="startReprocess"
+      >
+        <i :class="reprocessing ? 'fas fa-spinner fa-spin' : 'fas fa-redo'" /> 미처리만 다시 처리
+      </GuardedButton>
+    </div>
+
     <!-- 실행 기록 -->
     <div class="table-section">
       <div class="table-header">
@@ -300,7 +320,36 @@ const loadRuns = async (silent = false) => {
   }
 }
 
+// ===== 후처리 안 된 리드 =====
+const unprocessedCount = ref(0)
+const reprocessing = ref(false)
+
+const loadUnprocessed = async () => {
+  try {
+    unprocessedCount.value = await salesLeadService.getUnprocessedCount() || 0
+  } catch (e) {
+    // 안내 줄일 뿐이라 실패해도 화면은 그대로 — 콘솔에만
+    console.error('미처리 리드 수 조회 실패:', e)
+  }
+}
+
+const startReprocess = async () => {
+  if (!confirm(`후처리가 안 된 리드 ${formatNumber(unprocessedCount.value)}건만 다시 처리합니다.\n도는 동안 서버를 재시작하면 또 끊깁니다. 진행할까요?`)) { return }
+  reprocessing.value = true
+  try {
+    const next = await salesLeadService.reprocessUnprocessed()
+    emit('status-change', next)
+    await loadRuns(true)
+    startPolling()
+  } catch (e) {
+    alert(toApiError(e).message)
+  } finally {
+    reprocessing.value = false
+  }
+}
+
 const loadStatus = async (): Promise<SalesCollectStatus> => {
+  loadUnprocessed()
   const next = await salesLeadService.getStatus()
   if (windowDays.value === null) { windowDays.value = next.windowDays }
   emit('status-change', next)
@@ -384,6 +433,21 @@ onBeforeUnmount(stopPolling)
 </script>
 
 <style scoped>
+.unprocessed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.625rem 0.875rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #f5d48a;
+  border-radius: 6px;
+  background: #fffaf0;
+  font-size: 0.875rem;
+}
+.unprocessed-bar .fa-exclamation-triangle { color: #d97706; margin-right: 0.25rem; }
+
 .status-panel {
   padding: 0.875rem 1rem;
   margin-bottom: 1rem;

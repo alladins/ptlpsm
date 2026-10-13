@@ -84,6 +84,16 @@ export const salesLeadService = {
     return apiClient.post<SalesCollectStatus>(`${BASE}/reclassify?days=${days}`)
   },
 
+  /** 후처리(판별·설계사무소·담당)가 끊겨 남은 리드 수 */
+  getUnprocessedCount (): Promise<number> {
+    return apiClient.get<number>(`${BASE}/unprocessed-count`)
+  },
+
+  /** 미처리만 다시 처리 (백그라운드) */
+  reprocessUnprocessed (): Promise<SalesCollectStatus> {
+    return apiClient.post<SalesCollectStatus>(`${BASE}/reprocess-unprocessed`)
+  },
+
   /** 수집 상태 (키 설정·진행 중·막힌 이유) */
   getStatus (): Promise<SalesCollectStatus> {
     return apiClient.get<SalesCollectStatus>(`${BASE}/collect/status`)

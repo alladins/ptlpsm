@@ -70,6 +70,7 @@ export const COLLECT_JOB_LABELS: Record<string, string> = {
   CONTRACT_SERVC: '계약(수의)',
   POST_PROCESS: '후처리(판별·설계사무소·담당)',
   RECLASSIFY: '다시 분류 (키워드 변경 후)',
+  REPROCESS_PENDING: '미처리만 다시 처리',
   ALL: '전체'
 }
 
