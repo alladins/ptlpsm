@@ -2,7 +2,7 @@
   <div class="low-remaining-page">
     <PageHeader
       title="사업종료 직전인 납품요구현황"
-      description="남은수량이 적은 순으로 납품요구를 나열합니다. 임계값을 입력하면 그 이하만 조회됩니다. (완료 제외)"
+      description="남은수량이 적은 순으로 납품요구를 나열합니다. 임계값을 입력하면 그 이하만 조회됩니다. 납품완료 건과 남은수량 0 건은 제외되며, 상태에서 «완료»를 고르면 완료 건만 볼 수 있습니다."
       icon="chart"
       icon-color="orange"
     >
