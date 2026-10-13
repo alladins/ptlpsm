@@ -25,6 +25,10 @@
     <div v-if="canEdit" class="reclassify-bar">
       <label>최근</label>
       <select v-model.number="reclassifyDays" class="status-select">
+        <!-- 오늘: 오늘 받은 리드(과거 수집분 포함)만 — 재시작으로 끊긴 후처리를 다시 돌릴 때 (2026-10-13) -->
+        <option :value="1">
+          오늘
+        </option>
         <option :value="7">
           7일
         </option>
