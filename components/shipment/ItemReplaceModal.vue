@@ -26,7 +26,7 @@
 
           <!-- A 차감수량 -->
           <div class="section">
-            <label class="section-label">차감수량 (출처에서 빼는 수량)</label>
+            <label class="section-label">차감수량 (출처 계약 품목으로 인정할 수량)</label>
             <div class="quantity-input-group">
               <input
                 v-model.number="deductQuantity"
@@ -40,6 +40,10 @@
               <span class="unit">{{ source.unit || 'm2' }}</span>
             </div>
             <span v-if="deductWarning" class="error-hint">{{ deductWarning }}</span>
+            <!-- 신규 SKU 대체는 저장 때 출처 계약 품목 × 이 수량으로 계약 품목 귀속이 바로 만들어진다 -->
+            <span v-else-if="destinationMode === 'new'" class="hint">
+              기성청구·납품확인서 등 외부 서류에는 대체 품목 대신 <b>{{ source.skuName }}</b> 이 수량으로 나갑니다.
+            </span>
           </div>
 
           <!-- 목적지(B) 선택 -->

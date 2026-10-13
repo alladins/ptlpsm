@@ -288,6 +288,58 @@
                 품목 추가
               </button>
             </div>
+            <!-- 계약 품목 그대로가 아닐 때 고르는 방법 안내 (2026-10-13 사용자 요청 «매번 헷갈림») -->
+            <GuideNotice
+              v-if="formData.orderId"
+              class="item-mode-guide"
+              tone="info"
+              icon="fa-circle-question"
+              open-label="대체·합지·추가 차이 보기"
+            >
+              <template #summary>
+                계약 품목과 다른 판을 보낼 때 — 다른 두께로 <b>대신</b> 보내면 줄 오른쪽 <b><i class="fas fa-exchange-alt" /> 품목 대체</b>,
+                판을 <b>겹쳐</b> 보내면 <b>[품목 추가] → 합지수량</b>. 기성청구·납품확인서에는 항상 <b>계약 품목</b>으로 나갑니다
+              </template>
+              <table class="item-mode-table">
+                <thead>
+                  <tr>
+                    <th>이럴 때</th>
+                    <th>누르는 곳</th>
+                    <th>입력</th>
+                    <th>서류에 나가는 것</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><b>품목 대체</b><br>계약 품목 대신 다른 품목을 보냄<br><small>예) 100T 대신 80T</small></td>
+                    <td>계약 품목 줄 오른쪽 <i class="fas fa-exchange-alt" /></td>
+                    <td><b>차감수량</b> = 서류에 나갈 계약 품목 수량<br><b>대체수량</b> = 실제로 보내는 수량 (단가가 달라 다를 수 있음)</td>
+                    <td>출처 계약 품목 × 차감수량 — 저장할 때 <b>자동 지정</b></td>
+                  </tr>
+                  <tr>
+                    <td><b>품목 합지</b><br>계약 두께 판을 겹친 것과 같은 두께의 판을 보냄<br><small>예) 60T + 70T 대신 130T</small></td>
+                    <td><b>[품목 추가]</b> → 판 고르기 → <b>합지수량</b></td>
+                    <td>합지수량 = 고른 계약 품목(최대 2개)에서 빠지는 수량</td>
+                    <td>겹친 계약 품목들 — 두께 합이 맞으면 <b>자동 지정</b>, 안 맞으면 미지정(→ 품목 대체로 하세요)</td>
+                  </tr>
+                  <tr>
+                    <td><b>B급 판</b><br>같은 두께의 B급(SKU 앞에 B)을 보냄</td>
+                    <td>계약 품목 줄 오른쪽 <i class="fas fa-exchange-alt" /> → 신규 SKU 에서 B급 고르기</td>
+                    <td>차감수량 = 대체수량 (같은 두께)</td>
+                    <td>원래 계약 품목 — 저장할 때 <b>자동 지정</b></td>
+                  </tr>
+                  <tr>
+                    <td><b>품목 추가</b><br>계약에 없던 것을 <b>새로 더</b> 보냄</td>
+                    <td><b>[품목 추가]</b> → 판 고르기 → <b>추가수량</b></td>
+                    <td>추가수량 = 계약 품목에서 빼지 않고 더 보내는 수량</td>
+                    <td>계약 품목을 채우지 않음 — 청구·서류 전에 <b>계약 품목 귀속</b>을 지정하거나 변경계약을 먼저 등록</td>
+                  </tr>
+                </tbody>
+              </table>
+              <template #note>
+                저장한 뒤 그 출하의 수량을 고치면 합지·대체 지정이 풀립니다. 출하 수정 화면 아래 «계약 품목 귀속»에서 다시 지정하세요.
+              </template>
+            </GuideNotice>
             <!-- 대체 누적 차액 미리보기 (저장 전 균형 확인용) -->
             <div
               v-if="replaceSummary.count > 0"
@@ -643,6 +695,7 @@ import OrderSelectPopup from '~/components/admin/common/OrderSelectPopup.vue'
 import ItemSkuSelector from '~/components/admin/ItemSkuSelector.vue'
 import ItemMergeSelectModal from '~/components/shipment/ItemMergeSelectModal.vue'
 import ItemReplaceModal from '~/components/shipment/ItemReplaceModal.vue'
+import GuideNotice from '~/components/ui/GuideNotice.vue'
 import type { OrderDetailResponse } from '~/types/order'
 import type { Item, ItemSku } from '~/services/item.service'
 import { shipmentService } from '~/services/shipment.service'
@@ -735,6 +788,7 @@ interface OrderItem {
   orderItemId: string
   mergeSourceSkuIds?: string[] // 합지/대체 출처 SKU ID 목록 (목적지 B에 설정)
   mergeSourceQuantity?: number // 대체 시 출처에서 차감할 수량 (대체수량과 다를 수 있음)
+  mergeType?: 'REPLACE' // 품목 대체 목적지 행 — 백엔드가 출처 계약 품목 × 차감수량으로 바로 귀속
 }
 
 // 신규 추가 품목 인터페이스
@@ -755,6 +809,7 @@ interface NewItem {
   additionalQuantity?: number // 추가수량
   mergeSourceSkuIds?: string[] // 병합/대체 출처 SKU ID 목록
   mergeSourceQuantity?: number // 대체 시 출처에서 차감할 수량 (대체수량과 다를 수 있음)
+  mergeType?: 'REPLACE' // 품목 대체 목적지 행 — 백엔드가 출처 계약 품목 × 차감수량으로 바로 귀속
 }
 
 // 합지/대체 그룹 추적
@@ -935,6 +990,7 @@ const removeOrderItem = (skuId: string) => {
             shippingQuantity: Math.max(0, (t.shippingQuantity || 0) - addQuantity),
             mergeSourceSkuIds: undefined,
             mergeSourceQuantity: undefined,
+            mergeType: undefined,
             remark: undefined
           }
         }
@@ -1173,6 +1229,7 @@ const handleReplaceConfirm = (result: ReplaceResult) => {
       // 단일 대체 = 단일 소스로 처리 (기존 합산하지 않음)
       mergeSourceSkuIds: [src.skuId],
       mergeSourceQuantity: result.deductQuantity,
+      mergeType: 'REPLACE',
       remark: `대체: ${src.skuName}에서 이전`
     }
   } else {
@@ -1196,6 +1253,7 @@ const handleReplaceConfirm = (result: ReplaceResult) => {
       isNew: true,
       mergeSourceSkuIds: [src.skuId],
       mergeSourceQuantity: result.deductQuantity,
+      mergeType: 'REPLACE',
       remark: `대체: ${src.skuName}에서 이전`
     })
   }
@@ -1291,7 +1349,8 @@ const {
         itemMemo: item.remark || null,
         // 품목 대체: 기존 품목을 목적지로 이전받을 때(B) 소스 SKU 목록·차감수량 전달
         mergeSourceSkuIds: item.mergeSourceSkuIds || null,
-        mergeSourceQuantity: item.mergeSourceQuantity ?? null
+        mergeSourceQuantity: item.mergeSourceQuantity ?? null,
+        mergeType: item.mergeType ?? null
       }))
 
     // 신규 품목 중 수량이 있는 것 (출하수량 또는 추가수량)
@@ -1312,7 +1371,8 @@ const {
         // 병합 출처 SKU ID 목록 (병합/대체된 품목인 경우에만)
         mergeSourceSkuIds: item.mergeSourceSkuIds || null,
         // 품목 대체: 소스 차감수량(대체수량과 다를 수 있음)
-        mergeSourceQuantity: item.mergeSourceQuantity ?? null
+        mergeSourceQuantity: item.mergeSourceQuantity ?? null,
+        mergeType: item.mergeType ?? null
       }))
 
     const allItems = [...existingItems, ...newShippingItems]
@@ -1813,6 +1873,14 @@ const handleSubmit = async () => {
   color: #9ca3af;
   cursor: not-allowed;
 }
+
+/* 대체·합지·추가 안내 */
+.item-mode-guide { margin: 0 0 12px; }
+.item-mode-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+.item-mode-table th, .item-mode-table td { border: 1px solid #dbe4f0; padding: 6px 8px; text-align: left; vertical-align: top; line-height: 1.5; }
+.item-mode-table th { background: #f1f5fb; font-weight: 600; white-space: nowrap; }
+.item-mode-table small { color: #6b7280; }
+@media (max-width: 768px) { .item-mode-table { font-size: 12px; } .item-mode-table th, .item-mode-table td { padding: 4px 6px; } }
 
 /* 품목 추가 버튼 */
 .btn-add-item {
