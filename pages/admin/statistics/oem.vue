@@ -262,7 +262,12 @@ async function loadData () {
   loading.value = true
   try {
     const data = await getOemStatistics(selectedYear.value)
-    statistics.value = data
+    // 제조원가·지급액이 모두 0원인 행(예: 자사 출고분만 있는 리드파워)은 표에서 제외 — 합계 금액은 0원이라 영향 없음
+    statistics.value = {
+      ...data,
+      oemSummary: (data.oemSummary || []).filter(item => item.totalManufacturingCost > 0 || item.totalPaidAmount > 0),
+      monthlyData: (data.monthlyData || []).filter(item => item.manufacturingCost > 0 || item.paidAmount > 0)
+    }
   } catch (error) {
     console.error('OEM 통계 조회 실패:', error)
   } finally {

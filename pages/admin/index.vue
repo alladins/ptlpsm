@@ -223,7 +223,7 @@
             <i class="fas fa-industry" />
             OEM 제조사별 월별 제조원가
           </h2>
-          <div v-if="oemChartData.length > 0" class="chart-content">
+          <div v-if="oemMatrix.series.length > 0" class="chart-content">
             <TopChartPanel :data="oemMatrix" initial-type="bar" :toolbar="['bar', 'stacked-bar', 'line']" :height="280" />
           </div>
           <div v-else class="chart-placeholder">
@@ -636,10 +636,13 @@ const oemMatrix = computed(() => {
   const oemNames = [...new Set(oemChartData.value.flatMap(m => m.data.map(d => d.oemName)))]
   return {
     categories: oemChartData.value.map(m => formatOemMonth(m.month)),
-    series: oemNames.map(name => ({
-      name,
-      values: oemChartData.value.map(m => m.data.find(d => d.oemName === name)?.manufacturingCost || 0)
-    }))
+    series: oemNames
+      .map(name => ({
+        name,
+        values: oemChartData.value.map(m => m.data.find(d => d.oemName === name)?.manufacturingCost || 0)
+      }))
+      // 기간 내 제조원가가 전부 0원인 제조사(예: 자사 출고분만 있는 리드파워)는 막대가 없으므로 범례에서도 제외
+      .filter(s => s.values.some(v => v > 0))
   }
 })
 
