@@ -21,8 +21,8 @@
         <option value="">
           전체 지역
         </option>
-        <option v-for="c in SIDO_ORDER" :key="c" :value="c">
-          {{ sidoName(c) }}
+        <option v-for="c in sidoOptions" :key="c" :value="c">
+          {{ c === '41' ? '경기(전체)' : sidoName(c) }}
         </option>
       </select>
       <select v-model="filter.corpBizno" class="form-select" @change="search(0)">
@@ -177,6 +177,9 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), { initialFilter: null })
 
 const PAGE_SIZE = 50
+
+/** 지역 선택 — 경기는 전체·북부·남부 셋 다 고를 수 있게 */
+const sidoOptions = SIDO_ORDER.flatMap(c => (c === '41N' ? ['41', c] : [c]))
 
 const filter = reactive<{ year: number | '', target: string, sidoCd: string, sigunguCd: string, dminsttNaroCd: string, scopeLabel: string, corpBizno: string, keyword: string }>({
   year: '',

@@ -102,6 +102,9 @@ export const SIDO_NAMES: Record<string, string> = {
   31: '울산',
   36: '세종',
   41: '경기',
+  /** 경기는 영업 권역대로 북부·남부로 나눠 본다 (지도·표) */
+  '41N': '경기북부',
+  '41S': '경기남부',
   43: '충북',
   44: '충남',
   46: '전남',
@@ -112,8 +115,8 @@ export const SIDO_NAMES: Record<string, string> = {
   52: '전북'
 }
 
-/** 시도 표시 순서 (행정 순) */
-export const SIDO_ORDER = ['11', '26', '27', '28', '29', '30', '31', '36', '41', '51', '43', '44', '52', '46', '47', '48', '50']
+/** 시도 표시 순서 (행정 순) — 경기는 북부·남부 */
+export const SIDO_ORDER = ['11', '26', '27', '28', '29', '30', '31', '36', '41N', '41S', '51', '43', '44', '52', '46', '47', '48', '50']
 
 export function sidoName (code?: string | null): string {
   if (!code) { return '미판정' }

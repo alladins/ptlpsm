@@ -119,10 +119,25 @@
       <div class="map-grid">
         <section class="panel">
           <h3 class="panel-title">
-            <i class="fas fa-map-marked-alt" /> 시도별 {{ corp ? corpLabel : '시장 규모' }}
-            <span class="panel-hint">지역을 누르면 시군구가 나옵니다</span>
+            <template v-if="selectedSido">
+              <i class="fas fa-map-marked-alt" /> {{ sidoName(selectedSido) }} 시군구별 {{ corp ? corpLabel : '시장 규모' }}
+              <button type="button" class="btn-link" @click="selectSido(null)">
+                <i class="fas fa-arrow-left" /> 전국 지도
+              </button>
+            </template>
+            <template v-else>
+              <i class="fas fa-map-marked-alt" /> 시도별 {{ corp ? corpLabel : '시장 규모' }}
+              <span class="panel-hint">지역을 누르면 시군구 지도로 들어갑니다</span>
+            </template>
           </h3>
-          <SidoMap :values="sidoValues" :selected="selectedSido" :label="corp ? corpLabel : '시장 전체'" :height="mapHeight" @select="selectSido" />
+          <RegionMap
+            :area="selectedSido"
+            :values="selectedSido ? sigunguValues : sidoValues"
+            :selected="selectedSido ? (selectedSigungu?.cd || null) : null"
+            :label="corp ? corpLabel : '시장 전체'"
+            :height="mapHeight"
+            @select="onMapSelect"
+          />
         </section>
 
         <section class="panel">
@@ -333,7 +348,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import GuideNotice from '~/components/ui/GuideNotice.vue'
 import TopChartPanel from '~/components/ui/TopChartPanel.vue'
-import SidoMap from '~/components/admin/procurement-status/SidoMap.vue'
+import RegionMap from '~/components/admin/procurement-status/RegionMap.vue'
 import { procurementStatusService } from '~/services/procurement-status.service'
 import { formatCurrency, formatNumber } from '~/utils/format'
 import { SIDO_ORDER, formatEok, sidoName } from '~/types/procurement-status'
@@ -384,6 +399,17 @@ const corpsRanked = computed(() =>
 const self = computed(() => corpsRanked.value.find(c => isSelf(c.corpBizno)) || null)
 
 const corpLabel = computed(() => corpsRanked.value.find(c => c.corpBizno === corp.value)?.corpNm || '업체')
+
+/** 시군구 지도 값: 시군구코드 → 금액 (업체를 고르면 그 업체만). 시도 단위 기관(시군구 없음)은 지도에 칸이 없다 */
+const sigunguValues = computed(() => {
+  const out: Record<string, number> = {}
+  for (const r of sigunguRows.value) {
+    if (!r.sigunguCd) { continue }
+    if (corp.value && r.corpBizno !== corp.value) { continue }
+    out[r.sigunguCd] = (out[r.sigunguCd] || 0) + Number(r.amount || 0)
+  }
+  return out
+})
 
 /** 지도 값: 시도 → 금액 (업체를 고르면 그 업체만) */
 const sidoValues = computed(() => {
@@ -596,12 +622,14 @@ async function loadDrill () {
   if (!sido || !year.value) { sigunguRows.value = []; orgRows.value = []; return }
   drillLoading.value = true
   try {
-    if (sgg) {
-      const rows = await procurementStatusService.getOrgs(year.value, sido, sgg.cd, target.value || null)
-      if (seq === drillSeq) { orgRows.value = rows }
-    } else {
-      const rows = await procurementStatusService.getSigungu(year.value, sido, target.value || null)
-      if (seq === drillSeq) { sigunguRows.value = rows }
+    // 시군구 행은 기관 단계에서도 지도 색에 쓰므로 늘 함께 받는다
+    const [sggRows, orgs] = await Promise.all([
+      procurementStatusService.getSigungu(year.value, sido, target.value || null),
+      sgg ? procurementStatusService.getOrgs(year.value, sido, sgg.cd, target.value || null) : Promise.resolve([])
+    ])
+    if (seq === drillSeq) {
+      sigunguRows.value = sggRows
+      orgRows.value = orgs
     }
   } catch (e) {
     console.error('지역 조회 실패:', e)
@@ -622,6 +650,17 @@ function selectSigungu (sgg: { cd: string, nm: string } | null) {
   selectedSigungu.value = sgg
   orgRows.value = []
   loadDrill()
+}
+
+/** 지도 누르기 — 전국 지도면 시도(권역)로, 시군구 지도면 그 시군구로. 이미 고른 칸을 다시 누르면 한 단계 위로 */
+function onMapSelect (code: string | null, name: string) {
+  if (!selectedSido.value) {
+    selectSido(code)
+  } else if (!code) {
+    selectSigungu(null)
+  } else {
+    selectSigungu({ cd: code, nm: name })
+  }
 }
 
 // 지도 높이 — 좁은 화면은 낮게
