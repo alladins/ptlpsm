@@ -91,6 +91,9 @@ const chartOption = computed(() => {
   }
   if (props.legend === 'none') {
     opt.legend = { show: false }
+  } else if (props.legend === 'top' && opt.legend) {
+    // 위쪽 범례는 한 줄 + 넘치면 화살표로 넘김 — 휴대폰에서 범례가 여러 줄로 늘어 축 눈금을 덮었다 (2026-10-14)
+    opt.legend = { ...opt.legend, type: 'scroll' }
   } else if (props.legend === 'right') {
     opt.legend = { ...opt.legend, orient: 'vertical', right: 0, top: 'middle', itemWidth: 12, itemHeight: 12 }
     const seriesArr = Array.isArray(opt.series) ? opt.series : [opt.series]
@@ -139,6 +142,7 @@ const CHART_TYPE_LABELS: Record<string, string> = {
 <style scoped>
 .top-chart-panel {
   width: 100%;
+  min-width: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -175,10 +179,15 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   font-weight: 600;
 }
 
+/* 부모 폭을 넘지 않게 — 처음 그린 캔버스 폭이 영역을 밀어 넓히면 ResizeObserver 가 줄어든 걸 못 봐서
+   휴대폰에서 차트가 카드 밖으로 잘렸다 (2026-10-14 조달 영업 현황) */
 .tcp-chart {
   position: relative;
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .tcp-watermark {

@@ -151,7 +151,7 @@
         <p>수집 기록이 없습니다.</p>
       </div>
       <div v-else class="table-container">
-        <table class="data-table">
+        <table class="data-table runs-table">
           <thead>
             <tr>
               <th>시작</th>
@@ -569,5 +569,18 @@ onBeforeUnmount(stopPolling)
   color: #475569;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* 좁은 폭: 칸이 눌려 한두 자씩 줄바꿈되던 것 → 줄바꿈 없이 표 안에서 가로 스크롤 (메시지 칸만 줄바꿈, 2026-10-14) */
+@media (max-width: 900px) {
+  .runs-table th,
+  .runs-table td {
+    white-space: nowrap;
+  }
+
+  .runs-table .message-cell {
+    min-width: 260px;
+    white-space: normal;
+  }
 }
 </style>

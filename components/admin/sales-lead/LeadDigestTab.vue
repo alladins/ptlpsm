@@ -65,7 +65,30 @@
           소속 영업직원이 없어 받을 사람이 없습니다.
         </div>
 
-        <table class="data-table digest-table">
+        <!-- 휴대폰: 카드 (표는 좁은 폭에서 글자가 한두 자씩 줄바꿈됐다 — 2026-10-14) -->
+        <ul class="m-card-list m-narrow-only">
+          <li v-for="lead in group.leads" :key="`c-${lead.leadId}`">
+            <div class="m-card">
+              <div class="m-card-head">
+                <span class="m-card-title">{{ lead.title || '-' }}</span>
+                <LeadKindBadge :kind="lead.projectKind || lead.leadKind" small />
+              </div>
+              <div v-if="lead.source === 'G2B_CONTRACT' && lead.awardLeadId" class="m-card-meta stage-note">
+                계약 체결 <span class="text-muted">(낙찰 {{ lead.awardDate || '-' }})</span>
+              </div>
+              <div v-else-if="lead.contractCount" class="m-card-meta stage-note">
+                낙찰 → 계약까지 <span class="text-muted">(계약 {{ lead.contractDate || '-' }})</span>
+              </div>
+              <div class="m-card-meta">
+                {{ lead.dminsttNm || '-' }}
+              </div>
+              <div class="m-card-meta">
+                {{ lead.winnerNm || '-' }} · {{ lead.amount === null || lead.amount === undefined ? '-' : formatNumber(lead.amount) + '원' }}
+              </div>
+            </div>
+          </li>
+        </ul>
+        <table class="data-table digest-table m-wide-only">
           <thead>
             <tr>
               <th>종류</th>

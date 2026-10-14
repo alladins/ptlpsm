@@ -193,52 +193,54 @@
             <h3 class="panel-title">
               <i class="fas fa-trophy" /> 업체 순위 ({{ year }})
             </h3>
-            <table class="data-table compact">
-              <thead>
-                <tr>
-                  <th class="center">
-                    순위
-                  </th>
-                  <th>업체</th>
-                  <th class="num">
-                    금액
-                  </th>
-                  <th class="num">
-                    점유율
-                  </th>
-                  <th class="num">
-                    건수
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="c in corpsRanked"
-                  :key="c.corpBizno || ''"
-                  :class="{ 'self-row': isSelf(c.corpBizno) }"
-                  class="clickable"
-                  @click="corp = corp === (c.corpBizno || '') ? '' : (c.corpBizno || '')"
-                >
-                  <td class="center">
-                    {{ c.rank }}
-                  </td>
-                  <td class="ellipsis">
-                    {{ c.corpNm }}
-                    <span v-if="isSelf(c.corpBizno)" class="self-tag">자사</span>
-                    <i v-if="corp === c.corpBizno" class="fas fa-map-marked-alt on-map" title="지도에 표시 중" />
-                  </td>
-                  <td class="num" :title="formatCurrency(c.amount)">
-                    {{ formatEok(c.amount, 2) }}
-                  </td>
-                  <td class="num">
-                    {{ pct(c.share) }}
-                  </td>
-                  <td class="num">
-                    {{ formatNumber(c.reqCount) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-scroll">
+              <table class="data-table compact">
+                <thead>
+                  <tr>
+                    <th class="center">
+                      순위
+                    </th>
+                    <th>업체</th>
+                    <th class="num">
+                      금액
+                    </th>
+                    <th class="num">
+                      점유율
+                    </th>
+                    <th class="num">
+                      건수
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="c in corpsRanked"
+                    :key="c.corpBizno || ''"
+                    :class="{ 'self-row': isSelf(c.corpBizno) }"
+                    class="clickable"
+                    @click="corp = corp === (c.corpBizno || '') ? '' : (c.corpBizno || '')"
+                  >
+                    <td class="center">
+                      {{ c.rank }}
+                    </td>
+                    <td class="ellipsis" :title="c.corpNm || ''">
+                      {{ shortCorp(c.corpNm) }}
+                      <span v-if="isSelf(c.corpBizno)" class="self-tag">자사</span>
+                      <i v-if="corp === c.corpBizno" class="fas fa-map-marked-alt on-map" title="지도에 표시 중" />
+                    </td>
+                    <td class="num" :title="formatCurrency(c.amount)">
+                      {{ formatEok(c.amount, 2) }}
+                    </td>
+                    <td class="num">
+                      {{ pct(c.share) }}
+                    </td>
+                    <td class="num">
+                      {{ formatNumber(c.reqCount) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <p class="table-hint">
               업체를 누르면 지도가 그 업체 금액으로 바뀝니다.
             </p>
@@ -789,6 +791,9 @@ onBeforeUnmount(() => window.removeEventListener('resize', fitMap))
 
 .trend-wrap {
   min-height: 300px;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .loading-message.small {

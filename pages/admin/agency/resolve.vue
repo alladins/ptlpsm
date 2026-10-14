@@ -116,7 +116,45 @@
             <p>조건에 맞는 수요기관이 없습니다.</p>
           </div>
           <div v-else class="table-container">
-            <table class="data-table">
+            <!-- 휴대폰: 카드 (9칸 표가 좁은 폭에서 눌렸다 — 2026-10-14) -->
+            <ul class="m-card-list m-narrow-only">
+              <li v-for="item in items" :key="`c-${item.dminsttCd}`">
+                <div class="m-card" :class="{ 'manual-row': item.source === 'MANUAL' }">
+                  <div class="m-card-head">
+                    <span class="m-card-title">{{ item.dminsttNm || '-' }}</span>
+                    <span v-if="!item.judged" class="status-badge muted">미판정</span>
+                    <span v-else-if="item.source === 'MANUAL'" class="status-badge warning">수동 보정</span>
+                    <span v-else class="status-badge primary">자동</span>
+                  </div>
+                  <div class="m-card-meta">
+                    <span v-if="item.sigunguNm">{{ item.sigunguNm }}</span>
+                    <span v-else class="status-badge danger">판정 실패</span>
+                    · {{ item.orgCategory ? codeLabel(ORG_CATEGORY_LABELS, item.orgCategory) : '-' }}
+                    · {{ codeLabel(AGENCY_CHANNEL_LABELS, item.channel) }}
+                  </div>
+                  <div class="m-card-meta">
+                    {{ codeLabel(RESOLVE_MODE_LABELS, item.resolveMode) }}<template v-if="item.resolveMode === 'FIXED_REGION' && item.fixedRegionName">
+                      ({{ item.fixedRegionName }})
+                    </template>
+                  </div>
+                  <div class="m-card-meta text-muted">
+                    {{ item.adrs || '-' }}
+                  </div>
+                  <div v-if="item.matchNote" class="m-card-meta text-muted">
+                    {{ item.matchNote }}
+                  </div>
+                  <div class="row-actions m-card-actions">
+                    <button type="button" class="btn-action btn-info btn-mini" @click="openResolve(item)">
+                      판정 보기
+                    </button>
+                    <button v-if="canEdit" type="button" class="btn-action btn-secondary btn-mini" @click="openManual(item)">
+                      수동 보정
+                    </button>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            <table class="data-table m-wide-only">
               <thead>
                 <tr>
                   <th>수요기관</th>

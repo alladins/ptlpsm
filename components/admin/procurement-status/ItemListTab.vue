@@ -233,6 +233,7 @@ onMounted(() => {
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
 }
 
@@ -246,9 +247,22 @@ onMounted(() => {
   font-size: 0.875rem;
 }
 
+/* 공통 CSS 가 선택 상자를 width:100% 로 잡아 한 줄에 하나씩 쌓였다 → 내용 폭으로 (2026-10-14) */
+.filter-bar .form-select {
+  width: auto;
+  flex: 0 0 auto;
+  min-width: 120px;
+}
+
 .form-input {
   flex: 1;
   min-width: 200px;
+  width: auto;
+}
+
+.filter-bar .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .result-head {

@@ -68,7 +68,37 @@
         <p>표시할 납품요구가 없습니다.</p>
       </div>
       <div v-else class="table-container">
-        <table class="data-table">
+        <!-- 휴대폰: 카드 (8칸 표가 좁은 폭에서 눌렸다 — 2026-10-14) -->
+        <ul class="m-card-list m-narrow-only">
+          <li v-for="row in filteredRows" :key="`c-${row.orderId}`">
+            <div class="m-card">
+              <div class="m-card-head">
+                <span class="m-card-title">{{ row.client || row.result.dminsttNm || '-' }}</span>
+                <span class="status-badge" :class="resolveStatusBadge(row.result.status)">
+                  {{ row.result.statusLabel || codeLabel(RESOLVE_STATUS_LABELS, row.result.status) }}
+                </span>
+              </div>
+              <div class="m-card-meta">
+                {{ row.deliveryRequestNo || '-' }} · {{ row.deliveryRequestDate || '-' }}
+                <span v-if="row.result.provinceLevel" class="province-flag">도 단위 기관</span>
+              </div>
+              <div class="m-card-meta">
+                대리점
+                <template v-if="row.result.agencyId">
+                  {{ row.result.agencyName }} <span class="text-muted">({{ row.result.agencyCode }})</span>
+                </template>
+                <span v-else class="text-muted">없음</span>
+              </div>
+              <div v-if="row.result.regionPath" class="m-card-meta text-muted">
+                {{ row.result.regionPath }}
+              </div>
+              <div v-if="row.result.note" class="m-card-meta text-muted">
+                {{ row.result.note }}
+              </div>
+            </div>
+          </li>
+        </ul>
+        <table class="data-table m-wide-only">
           <thead>
             <tr>
               <th>No</th>
