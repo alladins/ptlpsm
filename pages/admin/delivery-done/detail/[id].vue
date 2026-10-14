@@ -87,169 +87,169 @@
       <!-- 기본 정보 (접기/펼치기, 기본 열림) -->
       <AccordionSection title="기본 정보" :summary="baseInfoSummary" :default-expanded="true">
         <div class="base-info-grid">
-        <!-- 발주 정보 -->
-        <div class="info-group">
-          <div class="info-group-header">
-            <i class="fas fa-file-alt" />
-            <span>발주 정보</span>
+          <!-- 발주 정보 -->
+          <div class="info-group">
+            <div class="info-group-header">
+              <i class="fas fa-file-alt" />
+              <span>발주 정보</span>
+            </div>
+            <div class="info-grid grid-3">
+              <FormField label="납품요구번호">
+                <input type="text" :value="data.deliveryRequestNo" class="form-input-sm" style="width: 100%;" readonly>
+              </FormField>
+              <FormField label="계약번호">
+                <input type="text" :value="data.contractNo || '-'" class="form-input-sm" style="width: 100%;" readonly>
+              </FormField>
+              <FormField label="계약일자">
+                <input type="text" :value="formatDate(data.contractDate)" class="form-input-sm" style="width: 100%;" readonly>
+              </FormField>
+            </div>
+            <div class="info-grid grid-1" style="margin-top: 0.5rem;">
+              <FormField label="사업명">
+                <input type="text" :value="data.projectName" class="form-input-md" style="width: 100%;" readonly>
+              </FormField>
+            </div>
+            <div class="info-grid grid-2" style="margin-top: 0.5rem;">
+              <FormField label="수요기관">
+                <input type="text" :value="data.client" class="form-input-md" style="width: 100%;" readonly>
+              </FormField>
+              <FormField label="납품장소">
+                <input type="text" :value="data.deliveryLocation || '-'" class="form-input-md" style="width: 100%;" readonly>
+              </FormField>
+            </div>
           </div>
-          <div class="info-grid grid-3">
-            <FormField label="납품요구번호">
-              <input type="text" :value="data.deliveryRequestNo" class="form-input-sm" style="width: 100%;" readonly>
-            </FormField>
-            <FormField label="계약번호">
-              <input type="text" :value="data.contractNo || '-'" class="form-input-sm" style="width: 100%;" readonly>
-            </FormField>
-            <FormField label="계약일자">
-              <input type="text" :value="formatDate(data.contractDate)" class="form-input-sm" style="width: 100%;" readonly>
-            </FormField>
-          </div>
-          <div class="info-grid grid-1" style="margin-top: 0.5rem;">
-            <FormField label="사업명">
-              <input type="text" :value="data.projectName" class="form-input-md" style="width: 100%;" readonly>
-            </FormField>
-          </div>
-          <div class="info-grid grid-2" style="margin-top: 0.5rem;">
-            <FormField label="수요기관">
-              <input type="text" :value="data.client" class="form-input-md" style="width: 100%;" readonly>
-            </FormField>
-            <FormField label="납품장소">
-              <input type="text" :value="data.deliveryLocation || '-'" class="form-input-md" style="width: 100%;" readonly>
-            </FormField>
-          </div>
-        </div>
 
-        <!-- 시공사/계약 정보 (2행 좌측) -->
-        <div class="info-group" style="order: 3;">
-          <div class="info-group-header">
-            <i class="fas fa-building" />
-            <span>시공사/계약 정보</span>
+          <!-- 시공사/계약 정보 (2행 좌측) -->
+          <div class="info-group" style="order: 3;">
+            <div class="info-group-header">
+              <i class="fas fa-building" />
+              <span>시공사/계약 정보</span>
+            </div>
+            <div class="info-grid grid-4">
+              <FormField label="시공사">
+                <input type="text" :value="data.builderCompanyName || data.builder || '-'" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="대표자">
+                <input type="text" :value="data.builderCeoName || '-'" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="계약자">
+                <input type="text" :value="data.contractor || '-'" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="제조사(OEM)">
+                <input type="text" :value="data.oemCompanyName || '-'" class="form-input-sm" readonly>
+              </FormField>
+            </div>
           </div>
-          <div class="info-grid grid-4">
-            <FormField label="시공사">
-              <input type="text" :value="data.builderCompanyName || data.builder || '-'" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="대표자">
-              <input type="text" :value="data.builderCeoName || '-'" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="계약자">
-              <input type="text" :value="data.contractor || '-'" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="제조사(OEM)">
-              <input type="text" :value="data.oemCompanyName || '-'" class="form-input-sm" readonly>
-            </FormField>
-          </div>
-        </div>
 
-        <!-- 납품 현황 -->
-        <div class="info-group" style="order: 2;">
-          <div class="info-group-header">
-            <i class="fas fa-truck" />
-            <span>납품 현황</span>
-          </div>
-          <div class="info-grid grid-4">
-            <FormField label="총 발주수량">
-              <input type="text" :value="formatNumber(data.totalOrderedQuantity)" class="form-input-sm text-right" readonly>
-            </FormField>
-            <FormField label="총 납품수량">
-              <input type="text" :value="formatNumber(data.totalDeliveredQuantity)" class="form-input-sm text-right" readonly>
-            </FormField>
-            <FormField label="납품률">
-              <div class="rate-display">
-                <div class="delivery-rate-bar">
-                  <div
-                    class="delivery-rate-fill"
-                    :style="{ width: (data.deliveryCompletionRate || 0) + '%' }"
-                    :class="getRateClass(data.deliveryCompletionRate || 0)"
-                  />
+          <!-- 납품 현황 -->
+          <div class="info-group" style="order: 2;">
+            <div class="info-group-header">
+              <i class="fas fa-truck" />
+              <span>납품 현황</span>
+            </div>
+            <div class="info-grid grid-4">
+              <FormField label="총 발주수량">
+                <input type="text" :value="formatNumber(data.totalOrderedQuantity)" class="form-input-sm text-right" readonly>
+              </FormField>
+              <FormField label="총 납품수량">
+                <input type="text" :value="formatNumber(data.totalDeliveredQuantity)" class="form-input-sm text-right" readonly>
+              </FormField>
+              <FormField label="납품률">
+                <div class="rate-display">
+                  <div class="delivery-rate-bar">
+                    <div
+                      class="delivery-rate-fill"
+                      :style="{ width: (data.deliveryCompletionRate || 0) + '%' }"
+                      :class="getRateClass(data.deliveryCompletionRate || 0)"
+                    />
+                  </div>
+                  <span class="delivery-rate-text">{{ data.deliveryCompletionRate || 0 }}%</span>
                 </div>
-                <span class="delivery-rate-text">{{ data.deliveryCompletionRate || 0 }}%</span>
+              </FormField>
+              <FormField label="출하횟수">
+                <input type="text" :value="(data.totalDeliveryCount || 0) + '회'" class="form-input-sm" readonly>
+              </FormField>
+            </div>
+            <div class="info-grid grid-2">
+              <FormField label="납품 시작일">
+                <input type="text" :value="formatDateTime(data.deliveryStartDate)" class="form-input-sm" readonly>
+              </FormField>
+              <FormField label="납품 종료일">
+                <input type="text" :value="formatDateTime(data.deliveryEndDate)" class="form-input-sm" readonly>
+              </FormField>
+            </div>
+          </div>
+
+          <!-- 금액 정보 (2행 우측) -->
+          <div class="info-group amount-group" style="order: 4;">
+            <div class="info-group-header">
+              <i class="fas fa-won-sign" />
+              <span>금액 정보</span>
+            </div>
+            <!-- ★ 정책: 매출·집계는 품대계(item_total_amount) 단일 기준. 본 표시는 발주서/납품요구와의 시각 통일 (품목총액 + 수수료 = 총 계약금액). -->
+            <div class="amount-display">
+              <div class="amount-item">
+                <label>품목총액</label>
+                <span>{{ formatCurrency(data.itemTotalAmount || 0) }}</span>
               </div>
-            </FormField>
-            <FormField label="출하횟수">
-              <input type="text" :value="(data.totalDeliveryCount || 0) + '회'" class="form-input-sm" readonly>
-            </FormField>
+              <span class="amount-operator">+</span>
+              <div class="amount-item">
+                <label>수수료</label>
+                <span>{{ formatCurrency(data.commission || 0) }}</span>
+              </div>
+              <span class="amount-operator">=</span>
+              <div class="amount-item total">
+                <label>총 계약금액</label>
+                <span>{{ formatCurrency(data.totalAmount || 0) }}</span>
+              </div>
+            </div>
           </div>
-          <div class="info-grid grid-2">
-            <FormField label="납품 시작일">
-              <input type="text" :value="formatDateTime(data.deliveryStartDate)" class="form-input-sm" readonly>
-            </FormField>
-            <FormField label="납품 종료일">
-              <input type="text" :value="formatDateTime(data.deliveryEndDate)" class="form-input-sm" readonly>
-            </FormField>
-          </div>
-        </div>
 
-        <!-- 금액 정보 (2행 우측) -->
-        <div class="info-group amount-group" style="order: 4;">
-          <div class="info-group-header">
-            <i class="fas fa-won-sign" />
-            <span>금액 정보</span>
-          </div>
-          <!-- ★ 정책: 매출·집계는 품대계(item_total_amount) 단일 기준. 본 표시는 발주서/납품요구와의 시각 통일 (품목총액 + 수수료 = 총 계약금액). -->
-          <div class="amount-display">
-            <div class="amount-item">
-              <label>품목총액</label>
-              <span>{{ formatCurrency(data.itemTotalAmount || 0) }}</span>
+          <!-- 서명 상태 (금액 정보 하단, 전체 너비) -->
+          <div class="info-group" style="order: 5; grid-column: 1 / -1;">
+            <div class="info-group-header">
+              <i class="fas fa-signature" />
+              <span>서명 상태</span>
             </div>
-            <span class="amount-operator">+</span>
-            <div class="amount-item">
-              <label>수수료</label>
-              <span>{{ formatCurrency(data.commission || 0) }}</span>
-            </div>
-            <span class="amount-operator">=</span>
-            <div class="amount-item total">
-              <label>총 계약금액</label>
-              <span>{{ formatCurrency(data.totalAmount || 0) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 서명 상태 (금액 정보 하단, 전체 너비) -->
-        <div class="info-group" style="order: 5; grid-column: 1 / -1;">
-          <div class="info-group-header">
-            <i class="fas fa-signature" />
-            <span>서명 상태</span>
-          </div>
-          <div class="signature-status-row">
-            <div class="signature-item">
-              <span class="signature-label">Stage 1 - 현장소장</span>
-              <span class="signature-badge" :class="data.hasManagerSignature ? 'signed' : 'unsigned'">
-                <i :class="data.hasManagerSignature ? 'fas fa-check-circle' : 'fas fa-clock'" />
-                {{ data.hasManagerSignature ? '서명완료' : '미서명' }}
-              </span>
-              <span v-if="data.st1ManagerSignatureDate" class="signature-date">
-                {{ formatDateTime(data.st1ManagerSignatureDate) }}
-              </span>
-            </div>
-            <div class="signature-item">
-              <span class="signature-label">Stage 1 - 감리원</span>
-              <span class="signature-badge" :class="data.hasInspectorSignature ? 'signed' : 'unsigned'">
-                <i :class="data.hasInspectorSignature ? 'fas fa-check-circle' : 'fas fa-clock'" />
-                {{ data.hasInspectorSignature ? '서명완료' : '미서명' }}
-              </span>
-              <span v-if="data.st1InspectorSignatureDate" class="signature-date">
-                {{ formatDateTime(data.st1InspectorSignatureDate) }}
-              </span>
-            </div>
-            <div class="signature-item">
-              <span class="signature-label">Stage 2 - 감리원 (최종)</span>
-              <span class="signature-badge" :class="data.hasCompletionInspectorSignature ? 'signed' : 'unsigned'">
-                <i :class="data.hasCompletionInspectorSignature ? 'fas fa-check-circle' : 'fas fa-clock'" />
-                {{ data.hasCompletionInspectorSignature ? '서명완료' : '미서명' }}
-              </span>
-              <span v-if="data.st2InspectorSignatureDate" class="signature-date">
-                {{ formatDateTime(data.st2InspectorSignatureDate) }}
-              </span>
-            </div>
-            <div class="signature-item">
-              <span class="signature-label">상태</span>
-              <span class="status-badge" :class="getStatusBadgeClass(data.status)">
-                {{ getStatusLabelWithFallback(data.status) }}
-              </span>
+            <div class="signature-status-row">
+              <div class="signature-item">
+                <span class="signature-label">Stage 1 - 현장소장</span>
+                <span class="signature-badge" :class="data.hasManagerSignature ? 'signed' : 'unsigned'">
+                  <i :class="data.hasManagerSignature ? 'fas fa-check-circle' : 'fas fa-clock'" />
+                  {{ data.hasManagerSignature ? '서명완료' : '미서명' }}
+                </span>
+                <span v-if="data.st1ManagerSignatureDate" class="signature-date">
+                  {{ formatDateTime(data.st1ManagerSignatureDate) }}
+                </span>
+              </div>
+              <div class="signature-item">
+                <span class="signature-label">Stage 1 - 감리원</span>
+                <span class="signature-badge" :class="data.hasInspectorSignature ? 'signed' : 'unsigned'">
+                  <i :class="data.hasInspectorSignature ? 'fas fa-check-circle' : 'fas fa-clock'" />
+                  {{ data.hasInspectorSignature ? '서명완료' : '미서명' }}
+                </span>
+                <span v-if="data.st1InspectorSignatureDate" class="signature-date">
+                  {{ formatDateTime(data.st1InspectorSignatureDate) }}
+                </span>
+              </div>
+              <div class="signature-item">
+                <span class="signature-label">Stage 2 - 감리원 (최종)</span>
+                <span class="signature-badge" :class="data.hasCompletionInspectorSignature ? 'signed' : 'unsigned'">
+                  <i :class="data.hasCompletionInspectorSignature ? 'fas fa-check-circle' : 'fas fa-clock'" />
+                  {{ data.hasCompletionInspectorSignature ? '서명완료' : '미서명' }}
+                </span>
+                <span v-if="data.st2InspectorSignatureDate" class="signature-date">
+                  {{ formatDateTime(data.st2InspectorSignatureDate) }}
+                </span>
+              </div>
+              <div class="signature-item">
+                <span class="signature-label">상태</span>
+                <span class="status-badge" :class="getStatusBadgeClass(data.status)">
+                  {{ getStatusLabelWithFallback(data.status) }}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </AccordionSection>
 
@@ -369,12 +369,22 @@
           <table class="items-table">
             <thead>
               <tr>
-                <th style="width: 150px;">일시</th>
-                <th style="width: 90px;">유형</th>
+                <th style="width: 150px;">
+                  일시
+                </th>
+                <th style="width: 90px;">
+                  유형
+                </th>
                 <th>품목</th>
-                <th class="text-right" style="width: 90px;">변경 전</th>
-                <th class="text-right" style="width: 90px;">변경 후</th>
-                <th class="text-right" style="width: 90px;">증감</th>
+                <th class="text-right" style="width: 90px;">
+                  변경 전
+                </th>
+                <th class="text-right" style="width: 90px;">
+                  변경 후
+                </th>
+                <th class="text-right" style="width: 90px;">
+                  증감
+                </th>
                 <th>사유 (연관 납품요구)</th>
               </tr>
             </thead>
@@ -390,8 +400,12 @@
                   </span>
                 </td>
                 <td>{{ h.itemName || h.skuId }}</td>
-                <td class="text-right">{{ formatNumber(h.oldQuantity) }}</td>
-                <td class="text-right font-semibold">{{ formatNumber(h.newQuantity) }}</td>
+                <td class="text-right">
+                  {{ formatNumber(h.oldQuantity) }}
+                </td>
+                <td class="text-right font-semibold">
+                  {{ formatNumber(h.newQuantity) }}
+                </td>
                 <td class="text-right">
                   <span :class="h.deltaQuantity >= 0 ? 'text-additional' : 'text-minus'">
                     {{ h.deltaQuantity >= 0 ? '+' : '' }}{{ formatNumber(h.deltaQuantity) }}
@@ -427,32 +441,70 @@
           <table class="items-table">
             <thead>
               <tr>
-                <th rowspan="2">품목</th>
-                <th rowspan="2" class="text-right" style="width: 80px;">단가</th>
-                <th rowspan="2" class="text-right" style="width: 80px;">원가</th>
-                <th colspan="2" class="grp-orig">원거래내역 (원계약)</th>
-                <th colspan="5" class="grp-actual">실거래내역 (실출하)</th>
+                <th rowspan="2">
+                  품목
+                </th>
+                <th rowspan="2" class="text-right" style="width: 80px;">
+                  단가
+                </th>
+                <th rowspan="2" class="text-right" style="width: 80px;">
+                  원가
+                </th>
+                <th colspan="2" class="grp-orig">
+                  원거래내역 (원계약)
+                </th>
+                <th colspan="5" class="grp-actual">
+                  실거래내역 (실출하)
+                </th>
               </tr>
               <tr>
-                <th class="text-right grp-orig" style="width: 90px;">원계약 수량</th>
-                <th class="text-right grp-orig" style="width: 110px;">원계약 금액</th>
-                <th class="text-right grp-actual" style="width: 90px;">출고예정 수량</th>
-                <th class="text-right grp-actual" style="width: 90px;">실출하 수량</th>
-                <th class="text-right grp-actual" style="width: 110px;">실출하 금액</th>
-                <th class="text-right grp-actual" style="width: 110px;">차액</th>
-                <th class="grp-actual" style="width: 120px;">구분·관계</th>
+                <th class="text-right grp-orig" style="width: 90px;">
+                  원계약 수량
+                </th>
+                <th class="text-right grp-orig" style="width: 110px;">
+                  원계약 금액
+                </th>
+                <th class="text-right grp-actual" style="width: 90px;">
+                  출고예정 수량
+                </th>
+                <th class="text-right grp-actual" style="width: 90px;">
+                  실출하 수량
+                </th>
+                <th class="text-right grp-actual" style="width: 110px;">
+                  실출하 금액
+                </th>
+                <th class="text-right grp-actual" style="width: 110px;">
+                  차액
+                </th>
+                <th class="grp-actual" style="width: 120px;">
+                  구분·관계
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="it in reconciliation.items" :key="it.skuId">
                 <td>{{ it.skuName || it.itemName || it.skuId }}</td>
-                <td class="text-right">{{ it.unitPrice != null ? formatCurrency(it.unitPrice) : '-' }}</td>
-                <td class="text-right">{{ it.costPrice != null ? formatCurrency(it.costPrice) : '-' }}</td>
-                <td class="text-right">{{ it.originalQuantity != null ? formatNumber(it.originalQuantity) : '-' }}</td>
-                <td class="text-right">{{ it.originalAmount != null ? formatCurrency(it.originalAmount) : '-' }}</td>
-                <td class="text-right">{{ it.pendingQuantity != null && it.pendingQuantity > 0 ? formatNumber(it.pendingQuantity) : '-' }}</td>
-                <td class="text-right">{{ it.actualQuantity != null ? formatNumber(it.actualQuantity) : '-' }}</td>
-                <td class="text-right">{{ it.actualAmount != null ? formatCurrency(it.actualAmount) : '-' }}</td>
+                <td class="text-right">
+                  {{ it.unitPrice != null ? formatCurrency(it.unitPrice) : '-' }}
+                </td>
+                <td class="text-right">
+                  {{ it.costPrice != null ? formatCurrency(it.costPrice) : '-' }}
+                </td>
+                <td class="text-right">
+                  {{ it.originalQuantity != null ? formatNumber(it.originalQuantity) : '-' }}
+                </td>
+                <td class="text-right">
+                  {{ it.originalAmount != null ? formatCurrency(it.originalAmount) : '-' }}
+                </td>
+                <td class="text-right">
+                  {{ it.pendingQuantity != null && it.pendingQuantity > 0 ? formatNumber(it.pendingQuantity) : '-' }}
+                </td>
+                <td class="text-right">
+                  {{ it.actualQuantity != null ? formatNumber(it.actualQuantity) : '-' }}
+                </td>
+                <td class="text-right">
+                  {{ it.actualAmount != null ? formatCurrency(it.actualAmount) : '-' }}
+                </td>
                 <td class="text-right">
                   <span v-if="it.amountDifference == null" class="text-muted">-</span>
                   <span v-else :class="it.amountDifference === 0 ? '' : (it.amountDifference > 0 ? 'text-additional' : 'text-minus')">
@@ -523,8 +575,19 @@
           <div v-if="activeDocTab === 'photo-sheet'" class="photo-manage-panel">
             <div class="photo-manage-header">
               <span class="photo-manage-title"><i class="fas fa-images" /> 현장사진 관리</span>
-              <span class="photo-manage-hint">임시사진을 실제 현장사진으로 교체하거나 추가할 수 있습니다. 교체 시 사진대지가 자동 갱신됩니다.</span>
             </div>
+            <GuideNotice icon="fa-info-circle" tone="info" open-label="사진대지 사진 고르는 법" class="photo-guide">
+              <template #summary>
+                출하마다 <b>«대지»를 체크한 사진(최대 2장)</b>만 사진대지에 들어갑니다 · 특정 출하를 빼려면 <b>[이 출하 빼기]</b>
+              </template>
+              <ul class="photo-guide-list">
+                <li><b>사진 고르기</b> — 사진 아래 «대지»를 체크하고 출하별 <b>[대지선택 저장]</b>을 누르세요. 저장하면 사진대지가 바로 다시 만들어집니다.</li>
+                <li><b>출하 빼기</b> — 그 출하의 <b>[이 출하 빼기]</b>를 누르거나, «대지»를 모두 해제하고 [대지선택 저장]을 누르면 그 출하 사진은 사진대지에서 빠집니다. 다시 넣으려면 «대지»를 체크하고 저장하세요.</li>
+                <li><b>기성청구에도 같이 적용</b> — 여기서 고른 사진이 <b>납품관리 › 기성청구의 사진대지</b>에도 그대로 쓰입니다. 기성 서류는 다음에 내려받을 때 새로 만들어집니다.</li>
+                <li><b>모든 출하를 뺄 수는 없습니다</b> — 사진대지를 아예 넣지 않으려면 서류 내려받기에서 «사진대지» 체크를 해제하세요.</li>
+                <li><b>사진 교체·추가</b> — 임시사진은 [교체]로 실제 현장사진으로 바꿀 수 있습니다(교체 시 사진대지 자동 갱신). 추가한 사진은 «대지»를 체크해야 들어갑니다.</li>
+              </ul>
+            </GuideNotice>
 
             <div v-if="!canEditPhotos" class="photo-manage-msg locked">
               <i class="fas fa-lock" /> 조달청 제출이 완료된 건은 사진을 변경할 수 없습니다.
@@ -542,22 +605,36 @@
             <div v-else class="photo-groups">
               <div v-for="group in photoGroups" :key="group.deliveryId" class="photo-group">
                 <div class="photo-group-title">
-                  <span>출하 #{{ group.deliveryId }} <span class="photo-count">({{ group.photos.length }}/5, 대지 {{ (pendingSelection[group.deliveryId] || []).length }}/2)</span></span>
-                  <button
-                    v-if="canManagePhotos"
-                    class="photo-save-select-btn"
-                    :disabled="busySaveDeliveryId === group.deliveryId"
-                    @click="saveSelection(group.deliveryId)"
-                  >
-                    <i v-if="busySaveDeliveryId === group.deliveryId" class="fas fa-spinner fa-spin" />
-                    <template v-else><i class="fas fa-check" /> 대지선택 저장</template>
-                  </button>
+                  <span>
+                    출하 #{{ group.deliveryId }} <span class="photo-count">({{ group.photos.length }}/5, 대지 {{ (pendingSelection[group.deliveryId] || []).length }}/2)</span>
+                    <span v-if="isGroupExcluded(group.deliveryId)" class="photo-excluded-tag">사진대지에서 빠짐</span>
+                  </span>
+                  <span v-if="canManagePhotos" class="photo-group-actions">
+                    <button
+                      v-if="!isGroupExcluded(group.deliveryId)"
+                      class="photo-exclude-btn"
+                      :disabled="busySaveDeliveryId === group.deliveryId"
+                      @click="excludeGroup(group.deliveryId)"
+                    >
+                      <i class="fas fa-eye-slash" /> 이 출하 빼기
+                    </button>
+                    <button
+                      class="photo-save-select-btn"
+                      :disabled="busySaveDeliveryId === group.deliveryId"
+                      @click="saveSelection(group.deliveryId)"
+                    >
+                      <i v-if="busySaveDeliveryId === group.deliveryId" class="fas fa-spinner fa-spin" />
+                      <template v-else><i class="fas fa-check" /> 대지선택 저장</template>
+                    </button>
+                  </span>
                 </div>
                 <div class="photo-grid">
                   <div v-for="photo in group.photos" :key="photo.photoId" class="photo-cell">
                     <div class="photo-thumb-box">
                       <img v-if="photoBlobUrls[photo.photoId]" :src="photoBlobUrls[photo.photoId]" :alt="`사진 ${photo.seq}`" class="photo-thumb">
-                      <div v-else class="photo-thumb-empty"><i class="fas fa-image" /></div>
+                      <div v-else class="photo-thumb-empty">
+                        <i class="fas fa-image" />
+                      </div>
                     </div>
                     <div class="photo-cell-meta">
                       <span class="photo-seq">#{{ photo.seq }}</span>
@@ -687,6 +764,7 @@ import { getApiBaseUrl, getAuthHeaders } from '~/services/api'
 import { formatNumber, formatCurrency } from '~/utils/format'
 import { useCommonStatus } from '~/composables/useCommonStatus'
 import { useDemoMode } from '~/composables/useDemoMode'
+import GuideNotice from '~/components/ui/GuideNotice.vue'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import AccordionSection from '~/components/admin/forms/AccordionSection.vue'
@@ -1180,12 +1258,27 @@ function togglePhotoSelect (photo: DeliveryPhotoInfo) {
   pendingSelection.value = { ...pendingSelection.value, [photo.deliveryId]: arr }
 }
 
-/** 대지선택 저장 + 사진대지 PDF 재생성 */
+/** 저장된 상태 기준으로 이 출하가 사진대지에서 빠져 있는지 (서버 isSelectedForPdf 가 하나도 없음) */
+function isGroupExcluded (deliveryId: number): boolean {
+  return !photos.value.some(p => p.deliveryId === deliveryId && p.isSelectedForPdf)
+}
+
+/** [이 출하 빼기] — 대지 선택을 모두 해제하고 바로 저장 */
+function excludeGroup (deliveryId: number) {
+  pendingSelection.value = { ...pendingSelection.value, [deliveryId]: [] }
+  saveSelection(deliveryId)
+}
+
+/**
+ * 대지선택 저장 + 사진대지 PDF 재생성
+ * 0장 = 이 출하를 사진대지에서 빼기 (2026-10-14 — 기성청구 사진대지에도 같이 적용. 모든 출하를 빼면 서버가 막는다)
+ */
 async function saveSelection (deliveryId: number) {
   if (!data.value) { return }
   const photoIds = pendingSelection.value[deliveryId] || []
-  if (photoIds.length === 0) {
-    alert('출하당 최소 1장을 선택해야 합니다.')
+  if (photoIds.length === 0 &&
+      !confirm(`출하 #${deliveryId} 의 사진을 사진대지에서 뺍니다.\n기성청구 사진대지에서도 같이 빠집니다. 진행할까요?`)) {
+    initSelection()
     return
   }
   busySaveDeliveryId.value = deliveryId
@@ -1193,8 +1286,10 @@ async function saveSelection (deliveryId: number) {
     await updateDeliveryDonePhotoSelection(data.value.deliveryDoneId, deliveryId, photoIds)
     await loadPhotos()
     if (activeDocTab.value === 'photo-sheet') { await loadDocPreview('photo-sheet') }
-    alert('사진대지 선택이 저장되었습니다.')
+    alert(photoIds.length === 0 ? '이 출하를 사진대지에서 뺐습니다.' : '사진대지 선택이 저장되었습니다.')
   } catch (e: any) {
+    // 저장 실패(예: 모든 출하를 빼려 함) — 화면 선택을 저장된 상태로 되돌린다
+    initSelection()
     alert(e?.message || '사진대지 선택 저장에 실패했습니다.')
   } finally {
     busySaveDeliveryId.value = null
@@ -1265,9 +1360,42 @@ onUnmounted(() => {
   font-weight: 600;
   color: #1f2937;
 }
-.photo-manage-hint {
-  font-size: 0.8rem;
-  color: #6b7280;
+.photo-guide {
+  margin-bottom: 0.75rem;
+}
+.photo-guide-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  line-height: 1.7;
+}
+.photo-group-actions {
+  display: inline-flex;
+  gap: 0.375rem;
+}
+.photo-exclude-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.photo-exclude-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.photo-excluded-tag {
+  margin-left: 0.375rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 4px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 .photo-manage-msg {
   padding: 1rem;

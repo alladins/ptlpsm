@@ -66,14 +66,90 @@
         </GuardedButton>
       </div>
       <p class="hint">
-        한 달에 품명당 1회 호출 — 2023년부터 지금까지도 5분 안팎입니다. 결과는
-        <NuxtLink to="/admin/sales-lead">
-          공모·낙찰 수집 › 수집 기록
-        </NuxtLink>에 «조달 현황(쇼핑몰 납품요구)»으로 남습니다.
+        한 달에 품명당 1회 호출 — 2023년부터 지금까지도 5분 안팎입니다. 결과는 아래 «최근 수집 기록»에 남습니다.
       </p>
       <p v-if="message" class="msg">
         {{ message }}
       </p>
+    </section>
+
+    <!-- 최근 수집 기록 (조달 현황만) — 공모·낙찰 수집 › 수집 기록과 같은 기록에서 골라 보여준다 -->
+    <section class="panel">
+      <h3 class="panel-title">
+        <i class="fas fa-history" /> 최근 수집 기록
+        <button type="button" class="btn-refresh" :disabled="runsLoading" @click="loadRuns">
+          <i class="fas fa-sync-alt" :class="{ 'fa-spin': runsLoading }" /> 새로 고침
+        </button>
+      </h3>
+      <div class="table-scroll">
+        <table class="data-table compact">
+          <thead>
+            <tr>
+              <th>시작</th>
+              <th>방식</th>
+              <th>기간</th>
+              <th class="center">
+                상태
+              </th>
+              <th class="num">
+                호출
+              </th>
+              <th class="num">
+                받음
+              </th>
+              <th class="num">
+                신규
+              </th>
+              <th class="num">
+                갱신
+              </th>
+              <th>메시지</th>
+              <th>실행자</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="run in runs" :key="run.runId">
+              <td class="nowrap">
+                {{ formatDateTime(run.startedAt) }}
+              </td>
+              <td class="nowrap">
+                {{ COLLECT_TRIGGER_LABELS[run.triggerType] || run.triggerType }}
+              </td>
+              <td class="nowrap">
+                {{ run.windowFrom ? `${run.windowFrom} ~ ${run.windowTo}` : '-' }}
+              </td>
+              <td class="center">
+                <span class="status-badge" :class="COLLECT_RUN_STATUS_BADGE[run.status]">
+                  {{ COLLECT_RUN_STATUS_LABELS[run.status] || run.status }}
+                </span>
+              </td>
+              <td class="num">
+                {{ formatNumber(run.apiCalls) }}
+              </td>
+              <td class="num">
+                {{ formatNumber(run.fetched) }}
+              </td>
+              <td class="num">
+                {{ formatNumber(run.inserted) }}
+              </td>
+              <td class="num">
+                {{ formatNumber(run.updated) }}
+              </td>
+              <td class="msg-cell">
+                {{ run.message || '-' }}
+              </td>
+              <td class="nowrap">
+                {{ run.startedBy || '-' }}
+              </td>
+            </tr>
+            <tr v-if="!runsLoading && runs.length === 0">
+              <td colspan="10" class="empty">
+                아직 수집 기록이 없습니다.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   </div>
 </template>
@@ -86,10 +162,31 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import GuideNotice from '~/components/ui/GuideNotice.vue'
 import GuardedButton from '~/components/ui/GuardedButton.vue'
 import { procurementStatusService } from '~/services/procurement-status.service'
-import type { LeadKeywordGroup } from '~/types/sales-lead'
+import { salesLeadService } from '~/services/sales-lead.service'
+import { formatDateTime, formatNumber } from '~/utils/format'
+import { COLLECT_RUN_STATUS_BADGE, COLLECT_RUN_STATUS_LABELS, COLLECT_TRIGGER_LABELS } from '~/types/sales-lead'
+import type { LeadKeywordGroup, SalesCollectRun } from '~/types/sales-lead'
 import type { MallCollectStatus } from '~/types/procurement-status'
 
 const emit = defineEmits<{ changed: [] }>()
+
+/** 실행 기록은 공모·낙찰 수집과 같은 표 — 조달 현황(MALL_DLVR)만 골라 최근 것부터 */
+const MALL_JOB = 'MALL_DLVR'
+const RUNS_FETCH = 200
+const RUNS_SHOW = 20
+const runs = ref<SalesCollectRun[]>([])
+const runsLoading = ref(false)
+
+async function loadRuns () {
+  runsLoading.value = true
+  try {
+    runs.value = (await salesLeadService.getRuns(RUNS_FETCH)).filter(r => r.job === MALL_JOB).slice(0, RUNS_SHOW)
+  } catch (e) {
+    console.error('조달 현황 수집 기록 조회 실패:', e)
+  } finally {
+    runsLoading.value = false
+  }
+}
 
 const group = ref<LeadKeywordGroup | null>(null)
 const status = ref<MallCollectStatus | null>(null)
@@ -126,8 +223,9 @@ async function refreshStatus () {
     const wasRunning = status.value?.running
     status.value = await procurementStatusService.getStatus()
     if (wasRunning && !status.value.running) {
-      message.value = '수집이 끝났습니다. 결과는 수집 기록에서 확인하세요.'
+      message.value = '수집이 끝났습니다. 결과는 아래 «최근 수집 기록»에서 확인하세요.'
       emit('changed')
+      loadRuns()
     }
   } catch { /* 폴링 실패는 무시 */ }
 }
@@ -168,6 +266,7 @@ async function runBackfill () {
     status.value = await procurementStatusService.collect({ fromDate: fromDate.value, toDate: toDate.value })
     status.value = { ...status.value, running: true }
     message.value = `${fromDate.value} ~ ${toDate.value} 과거 수집을 시작했습니다.`
+    setTimeout(loadRuns, 1500)
   } catch (e) {
     message.value = (e as Error).message
   } finally {
@@ -177,6 +276,7 @@ async function runBackfill () {
 
 onMounted(() => {
   loadAll()
+  loadRuns()
   timer = setInterval(refreshStatus, 5000)
 })
 onBeforeUnmount(() => { if (timer) { clearInterval(timer) } })
@@ -184,6 +284,7 @@ onBeforeUnmount(() => { if (timer) { clearInterval(timer) } })
 
 <style scoped>
 @import '@/assets/css/admin-buttons.css';
+@import '@/assets/css/admin-tables.css';
 
 .ps-settings {
   display: flex;
@@ -327,5 +428,51 @@ onBeforeUnmount(() => { if (timer) { clearInterval(timer) } })
   margin: 0.5rem 0 0;
   font-size: 0.875rem;
   color: #1e40af;
+}
+
+.btn-refresh {
+  margin-left: auto;
+  min-height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table.compact th,
+.data-table.compact td {
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8125rem;
+}
+
+.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.center {
+  text-align: center;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.msg-cell {
+  min-width: 240px;
+  color: #475569;
+}
+
+.empty {
+  text-align: center;
+  color: #94a3b8;
 }
 </style>
