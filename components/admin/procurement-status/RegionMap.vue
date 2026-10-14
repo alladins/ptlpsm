@@ -65,18 +65,28 @@ const GEO_VERSION = '20261014'
 
 const mapName = (area: string | null) => (area ? `kr-sgg-${area}` : 'kr-area')
 
+interface GeoFeatures { features?: { properties?: { sgg?: string, nm?: string } }[] }
+
+function collectNames (geo?: GeoFeatures | null) {
+  for (const f of geo?.features || []) {
+    if (f.properties?.sgg) { sigunguNames.set(f.properties.sgg, f.properties.nm || f.properties.sgg) }
+  }
+}
+
 async function ensureGeo (area: string | null) {
   const name = mapName(area)
-  if (getMap(name)) { return }
+  const registered = getMap(name) as { geoJSON?: GeoFeatures, geoJson?: GeoFeatures } | null
+  if (registered) {
+    // 경계는 echarts 에 앱 전체로 남지만 이름표(sigunguNames)는 화면마다 새로 생긴다 —
+    // 메뉴를 나갔다 오면 비어서 지도에 코드(41800)가 찍혔다(10-14). 등록된 경계에서 다시 읽는다
+    if (area) { collectNames(registered.geoJSON || registered.geoJson) }
+    return
+  }
   const base = (useRuntimeConfig().app.baseURL || '/').replace(/\/$/, '')
   const res = await fetch(area ? `${base}/geo/sigungu/${encodeURIComponent(area)}.json?v=${GEO_VERSION}` : `${base}/geo/sido.json?v=${GEO_VERSION}`)
   if (!res.ok) { throw new Error(`geo ${res.status}`) }
   const geo = await res.json()
-  if (area) {
-    for (const f of geo.features || []) {
-      if (f.properties?.sgg) { sigunguNames.set(f.properties.sgg, f.properties.nm || f.properties.sgg) }
-    }
-  }
+  if (area) { collectNames(geo) }
   registerMap(name, geo)
 }
 
