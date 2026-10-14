@@ -137,39 +137,55 @@
             <div v-if="sigunguLoading" class="loading-message small">
               <i class="fas fa-spinner fa-spin" />
             </div>
-            <table v-else class="data-table compact">
-              <thead>
-                <tr>
-                  <th>시군구</th>
-                  <th class="num">
-                    합계
-                  </th>
-                  <th class="num">
-                    리드파워
-                  </th>
-                  <th>1위 업체</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="r in sigunguPivot" :key="r.key">
-                  <td>{{ r.name }}</td>
-                  <td class="num" :title="formatCurrency(r.total)">
-                    {{ formatEok(r.total, 2) }}
-                  </td>
-                  <td class="num" :class="{ 'self-cell': r.self > 0 }">
-                    {{ r.self > 0 ? formatEok(r.self, 2) : '-' }}
-                  </td>
-                  <td class="ellipsis">
-                    {{ r.topCorp }}
-                  </td>
-                </tr>
-                <tr v-if="sigunguPivot.length === 0">
-                  <td colspan="4" class="empty">
-                    데이터 없음
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <!-- 업체마다 열 (그 시도 금액순, 많으면 «기타») — 행마다 1위 금액은 굵게 -->
+            <div v-else class="table-scroll">
+              <table class="data-table compact">
+                <thead>
+                  <tr>
+                    <th>시군구</th>
+                    <th class="num">
+                      합계
+                    </th>
+                    <th
+                      v-for="c in sigunguCols"
+                      :key="c.key"
+                      class="num"
+                      :class="{ 'self-head': isSelf(c.key) }"
+                      :title="c.nm"
+                    >
+                      {{ c.key === OTHERS_KEY ? '기타' : shortCorp(c.nm) }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="r in sigunguPivot" :key="r.key">
+                    <td class="nowrap">
+                      {{ r.name }}
+                    </td>
+                    <td class="num" :title="formatCurrency(r.total)">
+                      {{ formatEok(r.total, 2) }}
+                    </td>
+                    <td
+                      v-for="c in sigunguCols"
+                      :key="c.key"
+                      class="num"
+                      :class="{
+                        'self-cell': isSelf(c.key) && (r.byCol[c.key] || 0) > 0,
+                        strong: c.key !== OTHERS_KEY && (r.byCol[c.key] || 0) > 0 && r.byCol[c.key] === r.topAmt
+                      }"
+                      :title="r.byCol[c.key] ? formatCurrency(r.byCol[c.key]) : ''"
+                    >
+                      {{ r.byCol[c.key] ? formatEok(r.byCol[c.key], 2) : '-' }}
+                    </td>
+                  </tr>
+                  <tr v-if="sigunguPivot.length === 0">
+                    <td :colspan="2 + sigunguCols.length" class="empty">
+                      데이터 없음
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <button type="button" class="btn-link more" @click="emit('open-items', { year, target, sidoCd: selectedSido })">
               <i class="fas fa-list" /> {{ sidoName(selectedSido) }} 납품요구 목록 보기
             </button>
@@ -390,20 +406,44 @@ const selfTopSido = computed(() => {
   return best ? { sidoCd: best.sidoCd, self: best.self, selfShare: best.total > 0 ? best.self / best.total : 0 } : null
 })
 
+/** 시군구 표 열 — 그 시도에 나온 업체 금액순. 넘치면 마지막 열을 «기타»로 (자사는 항상 따로) */
+const SIGUNGU_CORP_COLS = 5
+const OTHERS_KEY = '__others__'
+
+const sigunguCols = computed(() => {
+  const sum = new Map<string, { key: string, nm: string, amt: number }>()
+  for (const r of sigunguRows.value) {
+    const k = r.corpBizno || ''
+    const cur = sum.get(k) || { key: k, nm: r.corpNm || '-', amt: 0 }
+    cur.amt += Number(r.amount || 0)
+    sum.set(k, cur)
+  }
+  const ranked = [...sum.values()].sort((a, b) => b.amt - a.amt)
+  if (ranked.length <= SIGUNGU_CORP_COLS) { return ranked }
+  const shown = ranked.slice(0, SIGUNGU_CORP_COLS - 1)
+  const selfCol = ranked.find(c => isSelf(c.key))
+  if (selfCol && !shown.includes(selfCol)) { shown[shown.length - 1] = selfCol }
+  return [...shown, { key: OTHERS_KEY, nm: '기타', amt: 0 }]
+})
+
 const sigunguPivot = computed(() => {
-  const map = new Map<string, { key: string, name: string, total: number, self: number, corps: Record<string, { nm: string, amt: number }> }>()
+  const colKeys = new Set(sigunguCols.value.map(c => c.key))
+  const hasOthers = colKeys.has(OTHERS_KEY)
+  const map = new Map<string, { key: string, name: string, total: number, byCol: Record<string, number>, corpAmt: Record<string, number> }>()
   for (const r of sigunguRows.value) {
     const key = r.sigunguCd || '-'
-    if (!map.has(key)) { map.set(key, { key, name: r.sigunguNm || '(시도 단위 기관)', total: 0, self: 0, corps: {} }) }
+    if (!map.has(key)) { map.set(key, { key, name: r.sigunguNm || '(시도 단위 기관)', total: 0, byCol: {}, corpAmt: {} }) }
     const row = map.get(key)!
     const amt = Number(r.amount || 0)
-    row.total += amt
-    if (isSelf(r.corpBizno)) { row.self += amt }
     const ck = r.corpBizno || ''
-    row.corps[ck] = { nm: r.corpNm || '-', amt: (row.corps[ck]?.amt || 0) + amt }
+    row.total += amt
+    row.corpAmt[ck] = (row.corpAmt[ck] || 0) + amt
+    const col = colKeys.has(ck) ? ck : (hasOthers ? OTHERS_KEY : ck)
+    row.byCol[col] = (row.byCol[col] || 0) + amt
   }
   return [...map.values()]
-    .map(r => ({ ...r, topCorp: Object.values(r.corps).sort((a, b) => b.amt - a.amt)[0]?.nm || '-' }))
+    // 1위 = 업체 하나의 금액 기준 («기타» 묶음은 1위로 치지 않는다)
+    .map(r => ({ ...r, topAmt: Math.max(0, ...Object.values(r.corpAmt)) }))
     .sort((a, b) => b.total - a.total)
 })
 
@@ -638,6 +678,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', fitMap))
 
 .center {
   text-align: center;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 .strong {
