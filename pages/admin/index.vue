@@ -353,6 +353,7 @@ import { getCommissionPeriods } from '~/services/commission.service'
 import { orderService } from '~/services/order.service'
 import { useAuthStore } from '~/stores/auth'
 import type { ShipmentStatisticsResponse, OemChartData } from '~/types/statistics'
+import { isExcludedOem } from '~/utils/oem-filter'
 import type { LowRemainingOrder } from '~/types/order'
 
 // 레이아웃 설정
@@ -633,7 +634,9 @@ function formatPeriodLabel (period: string): string {
 
 // topgrid 차트 매트릭스 (OEM 제조사별 월별 제조원가 — 제조사 시리즈 × 월)
 const oemMatrix = computed(() => {
+  // 자사(리드파워)·에코암스는 이름으로도 뺀다 (원가 0원 조건과 별개 — utils/oem-filter)
   const oemNames = [...new Set(oemChartData.value.flatMap(m => m.data.map(d => d.oemName)))]
+    .filter(name => !isExcludedOem(name))
   return {
     categories: oemChartData.value.map(m => formatOemMonth(m.month)),
     series: oemNames

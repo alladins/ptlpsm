@@ -231,6 +231,7 @@
 import { ref, onMounted } from 'vue'
 import { getOemStatistics } from '~/services/statistics.service'
 import type { OemStatisticsResponse } from '~/types/statistics'
+import { isExcludedOem } from '~/utils/oem-filter'
 
 definePageMeta({
   layout: 'admin',
@@ -262,11 +263,27 @@ async function loadData () {
   loading.value = true
   try {
     const data = await getOemStatistics(selectedYear.value)
-    // 제조원가·지급액이 모두 0원인 행(예: 자사 출고분만 있는 리드파워)은 표에서 제외 — 합계 금액은 0원이라 영향 없음
+    // 빼는 행: ① 제조원가·지급액이 모두 0원 ② 자사(리드파워)·에코암스 — 이름으로도 (utils/oem-filter, 2026-10-14 사용자)
+    const oemSummary = (data.oemSummary || []).filter(item =>
+      !isExcludedOem(item.oemName) && (item.totalManufacturingCost > 0 || item.totalPaidAmount > 0))
+    const monthlyData = (data.monthlyData || []).filter(item =>
+      !isExcludedOem(item.oemName) && (item.manufacturingCost > 0 || item.paidAmount > 0))
+    // 요약 카드·합계 행도 남은 행 기준으로 다시 더한다 (빠진 회사에 원가가 잡혀도 표와 합계가 어긋나지 않게)
+    const totalManufacturingCost = oemSummary.reduce((s, i) => s + Number(i.totalManufacturingCost || 0), 0)
+    const totalPaidAmount = oemSummary.reduce((s, i) => s + Number(i.totalPaidAmount || 0), 0)
+    const totalUnpaidAmount = oemSummary.reduce((s, i) => s + Number(i.totalUnpaidAmount || 0), 0)
     statistics.value = {
       ...data,
-      oemSummary: (data.oemSummary || []).filter(item => item.totalManufacturingCost > 0 || item.totalPaidAmount > 0),
-      monthlyData: (data.monthlyData || []).filter(item => item.manufacturingCost > 0 || item.paidAmount > 0)
+      summary: {
+        ...data.summary,
+        totalManufacturingCost,
+        totalPaidAmount,
+        totalUnpaidAmount,
+        oemCount: oemSummary.length,
+        paymentRate: totalManufacturingCost > 0 ? (totalPaidAmount / totalManufacturingCost) * 100 : 0
+      },
+      oemSummary,
+      monthlyData
     }
   } catch (error) {
     console.error('OEM 통계 조회 실패:', error)
