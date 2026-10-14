@@ -39,6 +39,9 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{ select: [sidoCd: string | null] }>()
 
 const MAP_NAME = 'kr-sido'
+
+const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+const escapeHtml = (s: string) => String(s ?? '').replace(/[&<>"']/g, c => HTML_ESCAPES[c])
 let geoLoaded = false
 
 const el = ref<HTMLDivElement | null>(null)
@@ -65,8 +68,9 @@ function render () {
   chart.setOption({
     tooltip: {
       trigger: 'item',
+      // 툴팁은 HTML 로 그려진다 — 업체명(label)은 나라장터에서 온 값이라 반드시 이스케이프
       formatter: (p: { name: string, value: number }) =>
-        `<b>${sidoName(p.name)}</b><br/>${props.label}: ${isNaN(p.value) ? '0' : formatEok(p.value, 2)}`
+        `<b>${escapeHtml(sidoName(p.name))}</b><br/>${escapeHtml(props.label)}: ${escapeHtml(isNaN(p.value) ? '0' : formatEok(p.value, 2))}`
     },
     visualMap: {
       min: 0,
