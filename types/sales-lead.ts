@@ -71,6 +71,7 @@ export const COLLECT_JOB_LABELS: Record<string, string> = {
   POST_PROCESS: '후처리(판별·설계사무소·담당)',
   RECLASSIFY: '다시 분류 (키워드 변경 후)',
   REPROCESS_PENDING: '미처리만 다시 처리',
+  MALL_DLVR: '조달 현황(쇼핑몰 납품요구)',
   ALL: '전체'
 }
 
