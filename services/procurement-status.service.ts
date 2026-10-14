@@ -31,6 +31,13 @@ export const procurementStatusService = {
     return apiClient.get<MallStatRow[]>(`${BASE}/sigungu`, params)
   },
 
+  /** 한 시군구의 수요기관 × 업체 (sigunguCd NONE = 시군구 없는 기관) */
+  getOrgs (year: number, sidoCd: string, sigunguCd: string, target?: string | null): Promise<MallStatRow[]> {
+    const params: Record<string, string | number> = { year, sidoCd, sigunguCd }
+    if (target) { params.target = target }
+    return apiClient.get<MallStatRow[]>(`${BASE}/orgs`, params)
+  },
+
   searchItems (params: MallItemSearchParams): Promise<MallItemPage> {
     const q: Record<string, string | number> = {}
     Object.entries(params).forEach(([k, v]) => {

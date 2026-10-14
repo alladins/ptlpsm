@@ -9,6 +9,10 @@ export interface MallStatRow {
   sidoCd?: string | null
   sigunguCd?: string | null
   sigunguNm?: string | null
+  /** 수요기관 — 기관별에서만 */
+  dminsttNaroCd?: string | null
+  dminsttNm?: string | null
+  dminsttDivNm?: string | null
   corpBizno: string | null
   corpNm: string | null
   amount: number
@@ -60,7 +64,11 @@ export interface MallItemSearchParams {
   year?: number | ''
   target?: string
   sidoCd?: string
+  /** NONE = 시군구 없는(시도 단위) 기관 */
   sigunguCd?: string
+  dminsttNaroCd?: string
+  /** 현황 탭에서 넘어온 시군구·기관 범위 표시 (서버로 안 보냄) */
+  scopeLabel?: string
   corpBizno?: string
   keyword?: string
   page?: number

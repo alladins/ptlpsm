@@ -126,28 +126,39 @@
         </section>
 
         <section class="panel">
-          <!-- 시도를 고르면 그 시도의 시군구, 아니면 업체 순위 -->
+          <!-- 시도를 고르면 시군구 → 시군구를 고르면 기관 (전국 › 시도 › 시군구), 아니면 업체 순위 -->
           <template v-if="selectedSido">
             <h3 class="panel-title">
-              <i class="fas fa-map-pin" /> {{ sidoName(selectedSido) }} 시군구별
-              <button type="button" class="btn-link" @click="selectSido(null)">
-                <i class="fas fa-times" /> 전국으로
-              </button>
+              <nav class="crumbs" aria-label="지역 경로">
+                <button type="button" class="crumb" @click="selectSido(null)">
+                  전국
+                </button>
+                <i class="fas fa-chevron-right crumb-sep" />
+                <button v-if="selectedSigungu" type="button" class="crumb" @click="selectSigungu(null)">
+                  {{ sidoName(selectedSido) }}
+                </button>
+                <b v-else class="crumb-now">{{ sidoName(selectedSido) }}</b>
+                <template v-if="selectedSigungu">
+                  <i class="fas fa-chevron-right crumb-sep" />
+                  <b class="crumb-now">{{ selectedSigungu.nm }}</b>
+                </template>
+              </nav>
+              <span class="panel-hint">{{ selectedSigungu ? '기관을 누르면 납품요구 목록이 나옵니다' : '시군구를 누르면 기관별로 나옵니다' }}</span>
             </h3>
-            <div v-if="sigunguLoading" class="loading-message small">
+            <div v-if="drillLoading" class="loading-message small">
               <i class="fas fa-spinner fa-spin" />
             </div>
-            <!-- 업체마다 열 (그 시도 금액순, 많으면 «기타») — 행마다 1위 금액은 굵게 -->
+            <!-- 업체마다 열 (그 지역 금액순, 많으면 «기타») — 행 안 순위 뱃지 -->
             <div v-else class="table-scroll">
               <table class="data-table compact">
                 <thead>
                   <tr>
-                    <th>시군구</th>
+                    <th>{{ selectedSigungu ? '수요기관' : '시군구' }}</th>
                     <th class="num">
                       합계
                     </th>
                     <th
-                      v-for="c in sigunguCols"
+                      v-for="c in drillCols"
                       :key="c.key"
                       class="num"
                       :class="{ 'self-head': isSelf(c.key) }"
@@ -158,15 +169,16 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="r in sigunguPivot" :key="r.key">
-                    <td class="nowrap">
-                      {{ r.name }}
+                  <tr v-for="r in drillPivot" :key="r.key" class="clickable" @click="drillInto(r)">
+                    <td :class="selectedSigungu ? 'org-cell' : 'nowrap'" :title="r.full">
+                      <span class="drill-name">{{ r.name }}</span>
+                      <span v-if="r.sub" class="drill-sub">{{ r.sub }}</span>
                     </td>
                     <td class="num" :title="formatCurrency(r.total)">
                       {{ formatEok(r.total, 2) }}
                     </td>
                     <td
-                      v-for="c in sigunguCols"
+                      v-for="c in drillCols"
                       :key="c.key"
                       class="num"
                       :class="{ 'self-cell': isSelf(c.key) && (r.byCol[c.key] || 0) > 0 }"
@@ -176,16 +188,16 @@
                       {{ r.byCol[c.key] ? formatEok(r.byCol[c.key], 2) : '-' }}
                     </td>
                   </tr>
-                  <tr v-if="sigunguPivot.length === 0">
-                    <td :colspan="2 + sigunguCols.length" class="empty">
+                  <tr v-if="drillPivot.length === 0">
+                    <td :colspan="2 + drillCols.length" class="empty">
                       데이터 없음
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <button type="button" class="btn-link more" @click="emit('open-items', { year, target, sidoCd: selectedSido })">
-              <i class="fas fa-list" /> {{ sidoName(selectedSido) }} 납품요구 목록 보기
+            <button type="button" class="btn-link more" @click="openDrillItems(null)">
+              <i class="fas fa-list" /> {{ drillScopeLabel }} 납품요구 목록 보기
             </button>
           </template>
 
@@ -315,7 +327,7 @@
 
 <script setup lang="ts">
 /**
- * 조달 영업 현황 › 현황 탭 — 요약 · 시도 지도 · 업체 순위/시군구 · 연도별 추이 · 시도×업체
+ * 조달 영업 현황 › 현황 탭 — 요약 · 시도 지도 · 업체 순위 / 지역 드릴다운(전국 › 시도 › 시군구 › 기관) · 연도별 추이 · 시도×업체
  * 서버는 업체 단위 행만 주고, 점유율·순위·피벗은 여기서 계산한다.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -345,7 +357,10 @@ const target = ref('')
 const corp = ref('')
 const selectedSido = ref<string | null>(null)
 const sigunguRows = ref<MallStatRow[]>([])
-const sigunguLoading = ref(false)
+/** 시도 안에서 고른 시군구 (cd NONE = 시도 단위 기관) — 고르면 표가 기관별로 바뀐다 */
+const selectedSigungu = ref<{ cd: string, nm: string } | null>(null)
+const orgRows = ref<MallStatRow[]>([])
+const drillLoading = ref(false)
 
 const years = computed(() => dash.value?.years?.length ? dash.value.years : (year.value ? [year.value] : []))
 
@@ -423,33 +438,63 @@ function rankOf (corpAmt: Record<string, number>, key: string): number {
 
 const rankClass = (rank: number) => (rank === 1 ? 'r1' : rank === 2 ? 'r2' : 'rn')
 
-/** 시군구 표 열 — 그 시도에 나온 업체 금액순. 넘치면 마지막 열을 «기타»로 (자사는 항상 따로) */
-const SIGUNGU_CORP_COLS = 5
+/** 드릴다운 표 열 — 그 지역(시도·시군구)에 나온 업체 금액순. 넘치면 마지막 열을 «기타»로 (자사는 항상 따로) */
+const DRILL_CORP_COLS = 5
 const OTHERS_KEY = '__others__'
+/** 시군구가 없는(도청 등 시도 단위) 기관 묶음 — 서버도 같은 값으로 받는다 */
+const NO_SIGUNGU = 'NONE'
 
-const sigunguCols = computed(() => {
+/** 지금 표에 쓰는 행 — 시군구를 골랐으면 기관별, 아니면 시군구별 */
+const drillRows = computed(() => (selectedSigungu.value ? orgRows.value : sigunguRows.value))
+
+const drillCols = computed(() => {
   const sum = new Map<string, { key: string, nm: string, amt: number }>()
-  for (const r of sigunguRows.value) {
+  for (const r of drillRows.value) {
     const k = r.corpBizno || ''
     const cur = sum.get(k) || { key: k, nm: r.corpNm || '-', amt: 0 }
     cur.amt += Number(r.amount || 0)
     sum.set(k, cur)
   }
   const ranked = [...sum.values()].sort((a, b) => b.amt - a.amt)
-  if (ranked.length <= SIGUNGU_CORP_COLS) { return ranked }
-  const shown = ranked.slice(0, SIGUNGU_CORP_COLS - 1)
+  if (ranked.length <= DRILL_CORP_COLS) { return ranked }
+  const shown = ranked.slice(0, DRILL_CORP_COLS - 1)
   const selfCol = ranked.find(c => isSelf(c.key))
   if (selfCol && !shown.includes(selfCol)) { shown[shown.length - 1] = selfCol }
   return [...shown, { key: OTHERS_KEY, nm: '기타', amt: 0 }]
 })
 
-const sigunguPivot = computed(() => {
-  const colKeys = new Set(sigunguCols.value.map(c => c.key))
+/**
+ * 기관명 앞의 광역 이름 떼기 — «전남광주통합특별시 영암군 보건소» → «영암군 보건소».
+ * 이미 시군구까지 내려와 있어 앞부분은 중복이다. 시군구 이름이 안 들어 있으면 그대로(전체 이름은 툴팁)
+ */
+function shortOrg (name?: string | null): string {
+  const n = (name || '-').trim()
+  const sgg = selectedSigungu.value?.nm
+  if (!sgg || sgg.startsWith('(')) { return n }
+  const i = n.indexOf(sgg.split(' ')[0])
+  return i > 0 ? n.slice(i) : n
+}
+
+interface DrillRow { key: string, name: string, full: string, sub: string, total: number, byCol: Record<string, number>, corpAmt: Record<string, number> }
+
+const drillPivot = computed(() => {
+  const byOrg = !!selectedSigungu.value
+  const colKeys = new Set(drillCols.value.map(c => c.key))
   const hasOthers = colKeys.has(OTHERS_KEY)
-  const map = new Map<string, { key: string, name: string, total: number, byCol: Record<string, number>, corpAmt: Record<string, number> }>()
-  for (const r of sigunguRows.value) {
-    const key = r.sigunguCd || '-'
-    if (!map.has(key)) { map.set(key, { key, name: r.sigunguNm || '(시도 단위 기관)', total: 0, byCol: {}, corpAmt: {} }) }
+  const map = new Map<string, DrillRow>()
+  for (const r of drillRows.value) {
+    const key = byOrg ? (r.dminsttNaroCd || '-') : (r.sigunguCd || NO_SIGUNGU)
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        name: byOrg ? shortOrg(r.dminsttNm) : (r.sigunguNm || '(시도 단위 기관)'),
+        full: byOrg ? (r.dminsttNm || '-') : (r.sigunguNm || '(시도 단위 기관)'),
+        sub: byOrg ? (r.dminsttDivNm || '') : '',
+        total: 0,
+        byCol: {},
+        corpAmt: {}
+      })
+    }
     const row = map.get(key)!
     const amt = Number(r.amount || 0)
     const ck = r.corpBizno || ''
@@ -458,9 +503,37 @@ const sigunguPivot = computed(() => {
     const col = colKeys.has(ck) ? ck : (hasOthers ? OTHERS_KEY : ck)
     row.byCol[col] = (row.byCol[col] || 0) + amt
   }
-  return [...map.values()]
-    .sort((a, b) => b.total - a.total)
+  return [...map.values()].sort((a, b) => b.total - a.total)
 })
+
+/** «전남 장성군» 처럼 지금 범위 이름 */
+const drillScopeLabel = computed(() => {
+  if (!selectedSido.value) { return '' }
+  return selectedSigungu.value ? `${sidoName(selectedSido.value)} ${selectedSigungu.value.nm}` : sidoName(selectedSido.value)
+})
+
+/** 행 누르기 — 시군구면 그 기관들로 내려가고, 기관이면 납품요구 목록 */
+function drillInto (r: DrillRow) {
+  if (selectedSigungu.value) {
+    openDrillItems(r)
+  } else {
+    selectSigungu({ cd: r.key, nm: r.name })
+  }
+}
+
+function openDrillItems (org: DrillRow | null) {
+  if (!selectedSido.value) { return }
+  emit('open-items', {
+    year: year.value ?? '',
+    target: target.value,
+    sidoCd: selectedSido.value,
+    sigunguCd: selectedSigungu.value?.cd,
+    dminsttNaroCd: org?.key,
+    scopeLabel: selectedSigungu.value
+      ? (org ? `${drillScopeLabel.value} · ${org.name}` : drillScopeLabel.value)
+      : undefined
+  })
+}
 
 /** 연도별 추이 — 전 기간 금액 상위 업체 + 자사는 항상, 나머지 «기타» (억 원) */
 const trendMatrix = computed(() => {
@@ -504,7 +577,7 @@ async function load () {
     year.value = dash.value.year
     // 지도 기준 업체가 이번 연도에 없으면 시장 전체로
     if (corp.value && !dash.value.corps.some(c => c.corpBizno === corp.value)) { corp.value = '' }
-    if (selectedSido.value) { await loadSigungu() }
+    if (selectedSido.value) { await loadDrill() }
   } catch (e) {
     error.value = (e as Error).message || '조달 현황을 불러오지 못했습니다.'
   } finally {
@@ -512,22 +585,43 @@ async function load () {
   }
 }
 
-async function loadSigungu () {
-  if (!selectedSido.value || !year.value) { sigunguRows.value = []; return }
-  sigunguLoading.value = true
+/** 늦게 온 옛 응답이 새 선택을 덮지 않게 — 요청마다 번호 */
+let drillSeq = 0
+
+/** 시도를 골랐으면 시군구별, 시군구까지 골랐으면 기관별을 다시 받는다 */
+async function loadDrill () {
+  const seq = ++drillSeq
+  const sido = selectedSido.value
+  const sgg = selectedSigungu.value
+  if (!sido || !year.value) { sigunguRows.value = []; orgRows.value = []; return }
+  drillLoading.value = true
   try {
-    sigunguRows.value = await procurementStatusService.getSigungu(year.value, selectedSido.value, target.value || null)
+    if (sgg) {
+      const rows = await procurementStatusService.getOrgs(year.value, sido, sgg.cd, target.value || null)
+      if (seq === drillSeq) { orgRows.value = rows }
+    } else {
+      const rows = await procurementStatusService.getSigungu(year.value, sido, target.value || null)
+      if (seq === drillSeq) { sigunguRows.value = rows }
+    }
   } catch (e) {
-    console.error('시군구 조회 실패:', e)
-    sigunguRows.value = []
+    console.error('지역 조회 실패:', e)
+    if (seq === drillSeq) { sigunguRows.value = []; orgRows.value = [] }
   } finally {
-    sigunguLoading.value = false
+    if (seq === drillSeq) { drillLoading.value = false }
   }
 }
 
 function selectSido (code: string | null) {
   selectedSido.value = code
-  loadSigungu()
+  selectedSigungu.value = null
+  orgRows.value = []
+  loadDrill()
+}
+
+function selectSigungu (sgg: { cd: string, nm: string } | null) {
+  selectedSigungu.value = sgg
+  orgRows.value = []
+  loadDrill()
 }
 
 // 지도 높이 — 좁은 화면은 낮게
@@ -674,6 +768,57 @@ onBeforeUnmount(() => window.removeEventListener('resize', fitMap))
 
 .panel-title .btn-link {
   margin-left: auto;
+}
+
+/* 지역 경로 (전국 › 시도 › 시군구) — 앞 단계는 눌러서 되돌아간다 */
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.crumb {
+  min-height: 44px;
+  padding: 0 0.375rem;
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.crumb:hover {
+  text-decoration: underline;
+}
+
+.crumb-sep {
+  font-size: 0.6875rem;
+  color: #94a3b8;
+}
+
+.crumb-now {
+  padding: 0 0.375rem;
+}
+
+/* 기관명은 길다 — 말줄임(전체 이름은 툴팁), 기관 구분은 작게 아래 */
+.org-cell {
+  min-width: 140px;
+  max-width: 220px;
+}
+
+.drill-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drill-sub {
+  display: block;
+  font-size: 0.6875rem;
+  color: #94a3b8;
 }
 
 .btn-link.more {
@@ -833,6 +978,11 @@ onBeforeUnmount(() => window.removeEventListener('resize', fitMap))
 
   .ellipsis {
     max-width: 140px;
+  }
+
+  .org-cell {
+    min-width: 120px;
+    max-width: 150px;
   }
 }
 </style>

@@ -17,7 +17,7 @@
           {{ t }}
         </option>
       </select>
-      <select v-model="filter.sidoCd" class="form-select" @change="search(0)">
+      <select v-model="filter.sidoCd" class="form-select" @change="clearScope()">
         <option value="">
           전체 지역
         </option>
@@ -42,6 +42,14 @@
       >
       <button type="button" class="btn btn-primary" :disabled="loading" @click="search(0)">
         <i class="fas fa-search" /> 검색
+      </button>
+    </div>
+
+    <!-- 현황 탭에서 시군구·기관을 눌러 들어온 범위 (목록 위 선택 상자에는 없는 조건) -->
+    <div v-if="filter.scopeLabel" class="scope-chip">
+      <i class="fas fa-map-pin" /> {{ filter.scopeLabel }}
+      <button type="button" class="scope-clear" title="범위 풀기" @click="clearScope">
+        <i class="fas fa-times" /> 풀기
       </button>
     </div>
 
@@ -170,10 +178,13 @@ const props = withDefaults(defineProps<Props>(), { initialFilter: null })
 
 const PAGE_SIZE = 50
 
-const filter = reactive<{ year: number | '', target: string, sidoCd: string, corpBizno: string, keyword: string }>({
+const filter = reactive<{ year: number | '', target: string, sidoCd: string, sigunguCd: string, dminsttNaroCd: string, scopeLabel: string, corpBizno: string, keyword: string }>({
   year: '',
   target: '',
   sidoCd: '',
+  sigunguCd: '',
+  dminsttNaroCd: '',
+  scopeLabel: '',
   corpBizno: '',
   keyword: ''
 })
@@ -196,15 +207,29 @@ function applyInitial (f?: MallItemSearchParams | null) {
   filter.year = f.year ?? ''
   filter.target = f.target ?? ''
   filter.sidoCd = f.sidoCd ?? ''
+  filter.sigunguCd = f.sigunguCd ?? ''
+  filter.dminsttNaroCd = f.dminsttNaroCd ?? ''
+  filter.scopeLabel = f.scopeLabel ?? ''
   filter.corpBizno = f.corpBizno ?? ''
   filter.keyword = ''
+}
+
+/** 시군구·기관 범위만 풀고 시도는 그대로 */
+function clearScope () {
+  filter.sigunguCd = ''
+  filter.dminsttNaroCd = ''
+  filter.scopeLabel = ''
+  search(0)
 }
 
 async function search (p = 0) {
   loading.value = true
   error.value = ''
   try {
-    page.value = await procurementStatusService.searchItems({ ...filter, page: p, size: PAGE_SIZE })
+    // scopeLabel 은 표시용이라 서버로 안 보낸다
+    const params: MallItemSearchParams = { ...filter, page: p, size: PAGE_SIZE }
+    delete params.scopeLabel
+    page.value = await procurementStatusService.searchItems(params)
   } catch (e) {
     error.value = (e as Error).message || '목록을 불러오지 못했습니다.'
   } finally {
@@ -263,6 +288,36 @@ onMounted(() => {
 .filter-bar .btn {
   flex: 0 0 auto;
   white-space: nowrap;
+}
+
+.scope-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0.25rem 0.25rem 0.25rem 0.75rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 0.8125rem;
+}
+
+.scope-clear {
+  min-height: 36px;
+  padding: 0 0.625rem;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: #2563eb;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.scope-clear:hover {
+  background: #dbeafe;
 }
 
 .result-head {
