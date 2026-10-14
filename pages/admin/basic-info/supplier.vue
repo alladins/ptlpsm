@@ -250,6 +250,16 @@
       <!-- 실행 기록 -->
       <details class="runs-block" :open="runsOpen" @toggle="onRunsToggle">
         <summary>동기화 실행 기록</summary>
+        <RunLogFilter
+          v-model:job="runMode"
+          v-model:problem-only="runProblemOnly"
+          :total="runTotal"
+          :job-options="RUN_MODE_OPTIONS"
+          problem-label="실패·멈춤만"
+          :polling="pollingOn && runPageNo === 0"
+          :paused-note="pollingOn && runPageNo > 0 ? '1쪽에서만 자동 새로 고침' : ''"
+          class="run-filter"
+        />
         <div class="table-container">
           <table class="data-table runs-table">
             <thead>
@@ -268,7 +278,7 @@
             <tbody>
               <tr v-if="runs.length === 0">
                 <td colspan="9" class="text-muted">
-                  실행 기록이 없습니다.
+                  {{ runMode || runProblemOnly ? '조건에 맞는 실행 기록이 없습니다.' : '실행 기록이 없습니다.' }}
                 </td>
               </tr>
               <tr v-for="r in runs" :key="r.runId">
@@ -296,6 +306,12 @@
             </tbody>
           </table>
         </div>
+        <Pagination
+          v-if="runTotalPages > 1"
+          :current-page="runPageNo"
+          :total-pages="runTotalPages"
+          @change="goRunPage"
+        />
       </details>
     </div>
 
@@ -342,9 +358,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import GuideNotice from '~/components/ui/GuideNotice.vue'
 import Pagination from '~/components/ui/Pagination.vue'
+import RunLogFilter from '~/components/ui/RunLogFilter.vue'
 import {
   BIZ_STATUS,
   g2bSupplierService,
@@ -457,11 +474,43 @@ const runs = ref<SupplierSyncRun[]>([])
 const runsOpen = ref(false)
 const busy = ref(false)
 
+// 실행 기록 페이지·종류·문제만 (2026-10-14 — 최근 30건만 보이던 것, 공모·낙찰 수집 기록과 같은 방식)
+const RUN_PAGE_SIZE = 20
+const RUN_MODE_OPTIONS = [
+  { value: 'DAILY', label: '매일 변경분' },
+  { value: 'FULL', label: '전체(연도 구간)' },
+  { value: 'DESIGN_OFFICE', label: '설계사무소 반영' },
+  { value: 'BIZ_STATUS', label: '영업상태 확인' }
+]
+const runPageNo = ref(0)
+const runTotal = ref(0)
+const runTotalPages = ref(0)
+const runMode = ref('')
+const runProblemOnly = ref(false)
+
+/** @param silent 폴링 — 2쪽 이상을 보는 중이면 목록을 바꾸지 않는다 */
+const loadRuns = async (silent = false) => {
+  if (silent && runPageNo.value > 0) { return }
+  const res = await g2bSupplierService.getRunPage({
+    mode: runMode.value, problemOnly: runProblemOnly.value, page: runPageNo.value, size: RUN_PAGE_SIZE
+  })
+  runs.value = res.content || []
+  runTotal.value = res.totalElements || 0
+  runTotalPages.value = res.totalPages || 0
+}
+
+const goRunPage = (p: number) => {
+  runPageNo.value = p
+  loadRuns().catch(e => console.error('실행 기록 조회 실패:', e))
+}
+
+watch([runMode, runProblemOnly], () => goRunPage(0))
+
 const loadStatus = async () => {
   try {
     status.value = await g2bSupplierService.getStatus()
     if (runsOpen.value || status.value.running) {
-      runs.value = await g2bSupplierService.getRuns(30)
+      await loadRuns(true)
     }
   } catch (e) {
     console.error('조달업체 상태 로드 실패:', e)
@@ -475,8 +524,11 @@ const onRunsToggle = (e: Event) => {
 
 // 동기화 중에는 10초마다 상태·기록을 새로 받는다 (끝나면 목록도 새로)
 let poll: ReturnType<typeof setInterval> | null = null
+/** 화면 표시용 (poll 은 반응형이 아니다) */
+const pollingOn = ref(false)
 const startPolling = () => {
   if (poll) { return }
+  pollingOn.value = true
   poll = setInterval(async () => {
     const wasRunning = status.value?.running
     await loadStatus()
@@ -489,6 +541,7 @@ const startPolling = () => {
 }
 const stopPolling = () => {
   if (poll) { clearInterval(poll); poll = null }
+  pollingOn.value = false
 }
 onBeforeUnmount(stopPolling)
 
@@ -720,6 +773,10 @@ onMounted(async () => {
   color: #1d4ed8;
   font-size: 0.8125rem;
   text-decoration: none;
+}
+
+.run-filter {
+  margin: 0.5rem 0;
 }
 
 .runs-block {

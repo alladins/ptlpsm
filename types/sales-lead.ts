@@ -419,3 +419,12 @@ export interface SalesCollectRun {
 
 /** 붙여넣기 적재 종류 */
 export type ImportKind = 'AWARD' | 'CONTRACT'
+
+/** 서버 PageResponse 그대로 — 현재 페이지가 `page`(0부터). apiClient 의 PageResponse(`number`)와 다르다 */
+export interface ServerPage<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  page: number
+  size: number
+}

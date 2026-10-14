@@ -17,18 +17,6 @@
           <i class="fas fa-undo" />
           초기화
         </button>
-        <GuardedButton
-          v-if="canEdit"
-          class="btn-action btn-secondary"
-          :blocked="!canEnrich"
-          reason="나라장터 업체정보 채우기는 시스템관리자·리드파워 관리자만 실행할 수 있습니다."
-          :disabled="enriching"
-          title="주소나 소재 시군구가 빈 설계사무소를 나라장터 조달업체 정보로 채웁니다 (빈 칸만)"
-          @click="enrichFromG2b"
-        >
-          <i :class="enriching ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-download-alt'" />
-          나라장터 업체정보로 채우기
-        </GuardedButton>
         <button v-if="canWrite" class="btn-action btn-primary" @click="openCreateModal">
           <i class="fas fa-plus" />
           등록
@@ -78,7 +66,7 @@
           :model-value="selected"
           :tree="treeData"
           unresolved-label="시군구 미판정"
-          unresolved-title="주소가 없어 소재 시군구를 못 정한 곳 — «나라장터 업체정보로 채우기»로 채울 수 있습니다"
+          unresolved-title="주소가 없거나 주소로 시군구를 못 정한 곳 — 빈 주소는 기초정보 › 조달업체관리의 매일 동기화·[설계사무소 반영]이 채웁니다. 그래도 없으면 수정에서 직접 입력하세요"
           @update:model-value="selectNode"
         />
 
@@ -340,7 +328,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from '#imports'
 import GuardedButton from '~/components/ui/GuardedButton.vue'
 import Pagination from '~/components/ui/Pagination.vue'
-import { useAuthStore } from '~/stores/auth'
 import { designOfficeService, salesRegionService } from '~/services/agency.service'
 import { businessCardService, type BusinessCardResponse } from '~/services/business-card.service'
 import BizStatusBadge from '~/components/ui/BizStatusBadge.vue'
@@ -459,26 +446,6 @@ const handleSearch = () => {
 const changePage = (page: number) => {
   currentPage.value = page
   loadList()
-}
-
-// ===== 나라장터 업체정보로 채우기 (서버가 리드파워 관리자만 허용) =====
-const authStore = useAuthStore()
-const canEnrich = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(authStore.user?.role || ''))
-const enriching = ref(false)
-
-const enrichFromG2b = async () => {
-  if (!confirm('주소나 소재 시군구가 빈 설계사무소(최대 300곳)를 나라장터 조달업체 정보로 채웁니다.\n빈 칸만 채우고 입력된 값은 바꾸지 않습니다. 진행할까요?')) { return }
-  enriching.value = true
-  try {
-    const r = await designOfficeService.enrichFromG2b()
-    alert(`확인 ${r.checked}곳 · 채움 ${r.filled}곳 (시군구 판정 ${r.sigunguResolved}곳) · 못 채움 ${r.notFound}곳`)
-    loadList()
-    loadTree()
-  } catch (e) {
-    alert(toApiError(e).message)
-  } finally {
-    enriching.value = false
-  }
 }
 
 const loadSigungu = async () => {

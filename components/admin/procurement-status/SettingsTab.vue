@@ -76,11 +76,18 @@
     <!-- 최근 수집 기록 (조달 현황만) — 공모·낙찰 수집 › 수집 기록과 같은 기록에서 골라 보여준다 -->
     <section class="panel">
       <h3 class="panel-title">
-        <i class="fas fa-history" /> 최근 수집 기록
-        <button type="button" class="btn-refresh" :disabled="runsLoading" @click="loadRuns">
+        <i class="fas fa-history" /> 수집 기록
+        <button type="button" class="btn-refresh" :disabled="runsLoading" @click="loadRuns()">
           <i class="fas fa-sync-alt" :class="{ 'fa-spin': runsLoading }" /> 새로 고침
         </button>
       </h3>
+      <RunLogFilter
+        v-model:problem-only="runProblemOnly"
+        :total="runTotal"
+        :polling="!!status?.running && runPageNo === 0"
+        :paused-note="status?.running && runPageNo > 0 ? '1쪽에서만 자동 새로 고침' : ''"
+        class="run-filter"
+      />
       <div class="table-scroll">
         <table class="data-table compact">
           <thead>
@@ -144,12 +151,19 @@
             </tr>
             <tr v-if="!runsLoading && runs.length === 0">
               <td colspan="10" class="empty">
-                아직 수집 기록이 없습니다.
+                {{ runProblemOnly ? '실패·건너뜀 기록이 없습니다.' : '아직 수집 기록이 없습니다.' }}
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      <Pagination
+        v-if="runTotalPages > 1"
+        :current-page="runPageNo"
+        :total-pages="runTotalPages"
+        :disabled="runsLoading"
+        @change="goRunPage"
+      />
     </section>
   </div>
 </template>
@@ -158,9 +172,11 @@
 /**
  * 조달 영업 현황 › 설정 (리드파워 관리자) — 수집 품명(공통코드 MALL_TARGET_PRDCT)·과거 수집
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import GuideNotice from '~/components/ui/GuideNotice.vue'
 import GuardedButton from '~/components/ui/GuardedButton.vue'
+import Pagination from '~/components/ui/Pagination.vue'
+import RunLogFilter from '~/components/ui/RunLogFilter.vue'
 import { procurementStatusService } from '~/services/procurement-status.service'
 import { salesLeadService } from '~/services/sales-lead.service'
 import { formatDateTime, formatNumber } from '~/utils/format'
@@ -170,23 +186,39 @@ import type { MallCollectStatus } from '~/types/procurement-status'
 
 const emit = defineEmits<{ changed: [] }>()
 
-/** 실행 기록은 공모·낙찰 수집과 같은 표 — 조달 현황(MALL_DLVR)만 골라 최근 것부터 */
-const MALL_JOB = 'MALL_DLVR'
-const RUNS_FETCH = 200
-const RUNS_SHOW = 20
+/** 실행 기록은 공모·낙찰 수집과 같은 표 — 조달 현황(MALL)만, 페이지·문제만 보기는 다른 기록 화면과 같은 방식 */
+const RUN_PAGE_SIZE = 20
 const runs = ref<SalesCollectRun[]>([])
 const runsLoading = ref(false)
+const runPageNo = ref(0)
+const runTotal = ref(0)
+const runTotalPages = ref(0)
+const runProblemOnly = ref(false)
 
-async function loadRuns () {
+/** @param silent 수집 끝·시작 직후 새로 고침 — 2쪽 이상을 보는 중이면 그대로 둔다 */
+async function loadRuns (silent = false) {
+  if (silent && runPageNo.value > 0) { return }
   runsLoading.value = true
   try {
-    runs.value = (await salesLeadService.getRuns(RUNS_FETCH)).filter(r => r.job === MALL_JOB).slice(0, RUNS_SHOW)
+    const res = await salesLeadService.getRunPage({
+      jobGroup: 'MALL', problemOnly: runProblemOnly.value, page: runPageNo.value, size: RUN_PAGE_SIZE
+    })
+    runs.value = res.content || []
+    runTotal.value = res.totalElements || 0
+    runTotalPages.value = res.totalPages || 0
   } catch (e) {
     console.error('조달 현황 수집 기록 조회 실패:', e)
   } finally {
     runsLoading.value = false
   }
 }
+
+function goRunPage (p: number) {
+  runPageNo.value = p
+  loadRuns()
+}
+
+watch(runProblemOnly, () => goRunPage(0))
 
 const group = ref<LeadKeywordGroup | null>(null)
 const status = ref<MallCollectStatus | null>(null)
@@ -225,7 +257,7 @@ async function refreshStatus () {
     if (wasRunning && !status.value.running) {
       message.value = '수집이 끝났습니다. 결과는 아래 «최근 수집 기록»에서 확인하세요.'
       emit('changed')
-      loadRuns()
+      loadRuns(true)
     }
   } catch { /* 폴링 실패는 무시 */ }
 }
@@ -266,7 +298,7 @@ async function runBackfill () {
     status.value = await procurementStatusService.collect({ fromDate: fromDate.value, toDate: toDate.value })
     status.value = { ...status.value, running: true }
     message.value = `${fromDate.value} ~ ${toDate.value} 과거 수집을 시작했습니다.`
-    setTimeout(loadRuns, 1500)
+    setTimeout(() => loadRuns(true), 1500)
   } catch (e) {
     message.value = (e as Error).message
   } finally {
@@ -441,6 +473,10 @@ onBeforeUnmount(() => { if (timer) { clearInterval(timer) } })
   font-size: 0.8125rem;
   font-weight: 400;
   cursor: pointer;
+}
+
+.run-filter {
+  margin-bottom: 0.5rem;
 }
 
 .table-scroll {

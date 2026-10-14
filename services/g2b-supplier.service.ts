@@ -3,6 +3,7 @@
  * apiClient 사용 (인증 헤더·쿼리 문자열·에러 정규화 자동)
  */
 import { apiClient } from '~/services/api/client'
+import type { ServerPage } from '~/types/sales-lead'
 
 const BASE = '/admin/g2b-suppliers'
 
@@ -122,6 +123,12 @@ export const g2bSupplierService = {
   },
   getRuns (limit = 30): Promise<SupplierSyncRun[]> {
     return apiClient.get<SupplierSyncRun[]>(`${BASE}/runs`, { limit })
+  },
+  /** 실행 기록 페이지 — mode: FULL/DAILY/DESIGN_OFFICE/BIZ_STATUS (비우면 전체), page 0부터 */
+  getRunPage (params: { mode?: string, problemOnly?: boolean, page?: number, size?: number }): Promise<ServerPage<SupplierSyncRun>> {
+    const q: Record<string, string | number | boolean> = { page: params.page ?? 0, size: params.size ?? 20, problemOnly: !!params.problemOnly }
+    if (params.mode) { q.mode = params.mode }
+    return apiClient.get<ServerPage<SupplierSyncRun>>(`${BASE}/runs/page`, q)
   },
   syncFull (bgnYear: number, endYear: number): Promise<SupplierStatus> {
     return apiClient.post<SupplierStatus>(`${BASE}/sync/full?bgnYear=${bgnYear}&endYear=${endYear}`)

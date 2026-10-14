@@ -130,10 +130,14 @@
     <div class="table-section">
       <div class="table-header">
         <div class="table-info">
-          <span>최근 실행 <strong>{{ runs.length }}</strong>건</span>
-          <span v-if="polling" class="text-muted polling-note">
-            <i class="fas fa-sync-alt fa-spin" /> 5초마다 새로 고침
-          </span>
+          <RunLogFilter
+            v-model:job="runJobGroup"
+            v-model:problem-only="runProblemOnly"
+            :total="runTotal"
+            :job-options="RUN_JOB_GROUP_OPTIONS"
+            :polling="polling && runPageNo === 0"
+            :paused-note="polling && runPageNo > 0 ? '1쪽에서만 자동 새로 고침' : ''"
+          />
         </div>
         <div class="table-actions">
           <button type="button" class="btn-action btn-secondary" :disabled="loadingRuns" @click="refresh">
@@ -148,7 +152,7 @@
       </div>
       <div v-else-if="runs.length === 0" class="no-data-message">
         <i class="fas fa-inbox" />
-        <p>수집 기록이 없습니다.</p>
+        <p>{{ runJobGroup || runProblemOnly ? '조건에 맞는 수집 기록이 없습니다.' : '수집 기록이 없습니다.' }}</p>
       </div>
       <div v-else class="table-container">
         <table class="data-table runs-table">
@@ -207,6 +211,13 @@
           </tbody>
         </table>
       </div>
+      <Pagination
+        v-if="runTotalPages > 1"
+        :current-page="runPageNo"
+        :total-pages="runTotalPages"
+        :disabled="loadingRuns"
+        @change="goRunPage"
+      />
     </div>
 
     <CollectImportPanel v-if="canImport" @imported="onImported" />
@@ -214,8 +225,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import GuardedButton from '~/components/ui/GuardedButton.vue'
+import Pagination from '~/components/ui/Pagination.vue'
+import RunLogFilter from '~/components/ui/RunLogFilter.vue'
 import GuideNotice from '~/components/ui/GuideNotice.vue'
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import CollectImportPanel from '~/components/admin/sales-lead/CollectImportPanel.vue'
@@ -310,15 +323,46 @@ const startBackfill = async () => {
   }
 }
 
-// ===== 조회 =====
+// ===== 조회 (페이지·작업·문제만 — 2026-10-14, 최근 50건만 보이던 것) =====
+const RUN_PAGE_SIZE = 20
+const RUN_JOB_GROUP_OPTIONS = [
+  { value: 'AWARD', label: '낙찰' },
+  { value: 'CONTRACT', label: '계약' },
+  { value: 'NOTICE', label: '입찰공고 보강' },
+  { value: 'POST', label: '후처리·다시 분류' },
+  { value: 'MALL', label: '조달 현황' },
+  { value: 'IMPORT', label: '붙여넣기 적재' }
+]
+const runPageNo = ref(0)
+const runTotal = ref(0)
+const runTotalPages = ref(0)
+const runJobGroup = ref('')
+const runProblemOnly = ref(false)
+
+/**
+ * @param silent 폴링·작업 후 새로 고침 — 2쪽 이상을 보는 중이면 목록을 바꾸지 않는다 (보던 줄이 밀리지 않게)
+ */
 const loadRuns = async (silent = false) => {
+  if (silent && runPageNo.value > 0) { return }
   if (!silent) { loadingRuns.value = true }
   try {
-    runs.value = await salesLeadService.getRuns(50) || []
+    const res = await salesLeadService.getRunPage({
+      jobGroup: runJobGroup.value, problemOnly: runProblemOnly.value, page: runPageNo.value, size: RUN_PAGE_SIZE
+    })
+    runs.value = res.content || []
+    runTotal.value = res.totalElements || 0
+    runTotalPages.value = res.totalPages || 0
   } finally {
     loadingRuns.value = false
   }
 }
+
+const goRunPage = (p: number) => {
+  runPageNo.value = p
+  loadRuns().catch(e => console.error('수집 기록 조회 실패:', e))
+}
+
+watch([runJobGroup, runProblemOnly], () => goRunPage(0))
 
 // ===== 후처리 안 된 리드 =====
 const unprocessedCount = ref(0)

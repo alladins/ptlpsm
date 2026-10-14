@@ -15,6 +15,7 @@ import type {
   LeadProgressUpdateRequest,
   SalesCollectRun,
   SalesCollectStatus,
+  ServerPage,
   SalesLead,
   SalesLeadPage,
   SalesLeadRegionTree,
@@ -102,6 +103,13 @@ export const salesLeadService = {
   /** 최근 실행 기록 */
   getRuns (limit = 50): Promise<SalesCollectRun[]> {
     return apiClient.get<SalesCollectRun[]>(`${BASE}/collect/runs`, { limit })
+  },
+
+  /** 실행 기록 페이지 — jobGroup: AWARD/CONTRACT/NOTICE/POST/MALL/IMPORT (비우면 전체), page 0부터 */
+  getRunPage (params: { jobGroup?: string, problemOnly?: boolean, page?: number, size?: number }): Promise<ServerPage<SalesCollectRun>> {
+    const q: Record<string, string | number | boolean> = { page: params.page ?? 0, size: params.size ?? 20, problemOnly: !!params.problemOnly }
+    if (params.jobGroup) { q.jobGroup = params.jobGroup }
+    return apiClient.get<ServerPage<SalesCollectRun>>(`${BASE}/collect/runs/page`, q)
   },
 
   /** 지금 수집 — 백그라운드로 시작하고 상태를 돌려준다. 막혀 있으면 400 + 이유 */
