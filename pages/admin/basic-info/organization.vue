@@ -130,6 +130,75 @@
       />
     </div>
 
+    <!-- 동기화 실행 기록 (V3.43.0) — 조달업체관리·공모·낙찰 수집과 같은 방식 (페이지 · 실패·취소만) -->
+    <details class="content-section runs-block" :open="runsOpen" @toggle="onRunsToggle">
+      <summary>동기화 실행 기록</summary>
+      <RunLogFilter
+        v-model:problem-only="runProblemOnly"
+        :total="runTotal"
+        problem-label="실패·취소만"
+        :polling="syncing && runPageNo === 0"
+        class="run-filter"
+      />
+      <div class="table-container">
+        <table class="data-table runs-table">
+          <thead>
+            <tr>
+              <th>시작</th>
+              <th>방식</th>
+              <th>구간</th>
+              <th>상태</th>
+              <th>받음</th>
+              <th>신규</th>
+              <th>갱신</th>
+              <th>건너뜀</th>
+              <th>실패</th>
+              <th>메시지</th>
+              <th>실행자</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="runs.length === 0">
+              <td colspan="11" class="text-muted">
+                {{ runProblemOnly ? '실패·취소 기록이 없습니다.' : '실행 기록이 없습니다. (2026-10-14 부터 남깁니다)' }}
+              </td>
+            </tr>
+            <tr v-for="r in runs" :key="r.runId">
+              <td class="nowrap">
+                {{ formatDateTime(r.startedAt) }}
+              </td>
+              <td class="nowrap">
+                {{ r.triggerType === 'SCHEDULE' ? '자동(매주)' : '수동' }}
+              </td>
+              <td class="nowrap">
+                {{ r.rangeText || '-' }}
+              </td>
+              <td>
+                <span class="status-badge" :class="RUN_STATUS[r.status]?.badge">{{ RUN_STATUS[r.status]?.label || r.status }}</span>
+              </td>
+              <td>{{ r.fetched.toLocaleString('ko-KR') }}</td>
+              <td>{{ r.inserted.toLocaleString('ko-KR') }}</td>
+              <td>{{ r.updated.toLocaleString('ko-KR') }}</td>
+              <td>{{ r.skipped.toLocaleString('ko-KR') }}</td>
+              <td>{{ r.failed.toLocaleString('ko-KR') }}</td>
+              <td class="text-left msg-cell">
+                {{ r.message || '-' }}
+              </td>
+              <td class="nowrap">
+                {{ r.startedBy || '-' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <Pagination
+        v-if="runTotalPages > 1"
+        :current-page="runPageNo"
+        :total-pages="runTotalPages"
+        @change="goRunPage"
+      />
+    </details>
+
     <!-- 수요기관 등록/수정 통합 모달 -->
     <div v-if="showAddModal || showEditModal" class="modal-overlay">
       <div class="modal" @click.stop>
@@ -519,16 +588,71 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { demandOrganizationService, type DemandOrganization, type G2bSyncStatusResponse } from '~/services/demand-organization.service'
 import { codeService } from '~/services/code.service'
 import { useDataTable } from '~/composables/useDataTable'
 import { useAuthStore } from '~/stores/auth'
+import RunLogFilter from '~/components/ui/RunLogFilter.vue'
+import { apiClient } from '~/services/api/client'
+import { formatDateTime } from '~/utils/format'
+import type { ServerPage } from '~/types/sales-lead'
 
 definePageMeta({
   layout: 'admin',
   pageTitle: '수요기관관리'
 })
+
+// ===== 동기화 실행 기록 (V3.43.0, 2026-10-14) =====
+interface DemandOrgSyncRun {
+  runId: number
+  triggerType: string
+  rangeText: string | null
+  status: string
+  fetched: number
+  inserted: number
+  updated: number
+  skipped: number
+  failed: number
+  message: string | null
+  startedBy: string | null
+  startedAt: string | null
+}
+const RUN_STATUS: Record<string, { label: string, badge: string }> = {
+  RUNNING: { label: '진행 중', badge: 'primary' },
+  COMPLETED: { label: '완료', badge: 'success' },
+  FAILED: { label: '실패', badge: 'danger' },
+  CANCELLED: { label: '취소', badge: 'warning' }
+}
+const RUN_PAGE_SIZE = 20
+const runs = ref<DemandOrgSyncRun[]>([])
+const runsOpen = ref(false)
+const runPageNo = ref(0)
+const runTotal = ref(0)
+const runTotalPages = ref(0)
+const runProblemOnly = ref(false)
+
+/** @param silent 동기화 끝 새로 고침 — 2쪽 이상을 보는 중이면 그대로 둔다 */
+const loadRuns = async (silent = false) => {
+  if (silent && runPageNo.value > 0) { return }
+  const res = await apiClient.get<ServerPage<DemandOrgSyncRun>>('/basic/demand-organizations/sync/runs/page',
+    { problemOnly: runProblemOnly.value, page: runPageNo.value, size: RUN_PAGE_SIZE })
+  runs.value = res.content || []
+  runTotal.value = res.totalElements || 0
+  runTotalPages.value = res.totalPages || 0
+}
+
+const goRunPage = (p: number) => {
+  runPageNo.value = p
+  loadRuns().catch(e => console.error('동기화 실행 기록 조회 실패:', e))
+}
+
+const onRunsToggle = (e: Event) => {
+  runsOpen.value = (e.target as HTMLDetailsElement).open
+  if (runsOpen.value) { goRunPage(runPageNo.value) }
+}
+
+watch(runProblemOnly, () => goRunPage(0))
 
 useHead({
   title: '수요기관관리 - PTPLPSM',
@@ -840,6 +964,7 @@ const startPolling = () => {
         syncResult.value = status
         syncProgress.value = null
         refresh()
+        loadRuns(true).catch(() => {})
       }
     } catch (error) {
       console.error('진행상황 조회 실패:', error)
@@ -942,6 +1067,33 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 동기화 실행 기록 — 조달업체관리와 같은 모양 (V3.43.0) */
+.runs-block {
+  margin-top: 1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+}
+.runs-block summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+.run-filter {
+  margin: 0.5rem 0;
+}
+.runs-table {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+}
+.runs-table .nowrap {
+  white-space: nowrap;
+}
+.runs-table .msg-cell {
+  min-width: 220px;
+}
 /* 공통 CSS import */
 @import '@/assets/css/admin-common.css';
 @import '@/assets/css/admin-buttons.css';
