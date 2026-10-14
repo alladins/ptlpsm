@@ -169,12 +169,10 @@
                       v-for="c in sigunguCols"
                       :key="c.key"
                       class="num"
-                      :class="{
-                        'self-cell': isSelf(c.key) && (r.byCol[c.key] || 0) > 0,
-                        strong: c.key !== OTHERS_KEY && (r.byCol[c.key] || 0) > 0 && r.byCol[c.key] === r.topAmt
-                      }"
+                      :class="{ 'self-cell': isSelf(c.key) && (r.byCol[c.key] || 0) > 0 }"
                       :title="r.byCol[c.key] ? formatCurrency(r.byCol[c.key]) : ''"
                     >
+                      <span v-if="c.key !== OTHERS_KEY && isRowTop(r.corpAmt, c.key)" class="top-badge">1위</span>
                       {{ r.byCol[c.key] ? formatEok(r.byCol[c.key], 2) : '-' }}
                     </td>
                   </tr>
@@ -295,6 +293,7 @@
                   {{ formatEok(r.total, 2) }}
                 </td>
                 <td v-for="c in pivotCorps" :key="c.corpBizno || ''" class="num" :class="{ 'self-cell': isSelf(c.corpBizno) && (r.byCorp[c.corpBizno || ''] || 0) > 0 }">
+                  <span v-if="isRowTop(r.corpAmt, c.corpBizno || '')" class="top-badge">1위</span>
                   {{ r.byCorp[c.corpBizno || ''] ? formatEok(r.byCorp[c.corpBizno || ''], 2) : '-' }}
                 </td>
                 <td v-if="hasOthers" class="num">
@@ -385,19 +384,21 @@ const hasOthers = computed(() => corpsRanked.value.length > PIVOT_CORPS)
 
 const sidoPivot = computed(() => {
   const pivotSet = new Set(pivotCorps.value.map(c => c.corpBizno || ''))
-  const map = new Map<string, { sidoCd: string, total: number, self: number, others: number, byCorp: Record<string, number> }>()
+  const map = new Map<string, { sidoCd: string, total: number, self: number, others: number, byCorp: Record<string, number>, corpAmt: Record<string, number> }>()
   for (const r of dash.value?.sidoCorps || []) {
     const code = r.sidoCd || ''
-    if (!map.has(code)) { map.set(code, { sidoCd: code, total: 0, self: 0, others: 0, byCorp: {} }) }
+    if (!map.has(code)) { map.set(code, { sidoCd: code, total: 0, self: 0, others: 0, byCorp: {}, corpAmt: {} }) }
     const row = map.get(code)!
     const amt = Number(r.amount || 0)
     const key = r.corpBizno || ''
     row.total += amt
+    row.corpAmt[key] = (row.corpAmt[key] || 0) + amt
     if (isSelf(key)) { row.self += amt }
     if (pivotSet.has(key)) { row.byCorp[key] = (row.byCorp[key] || 0) + amt } else { row.others += amt }
   }
   const order = (c: string) => { const i = SIDO_ORDER.indexOf(c); return i < 0 ? 99 : i }
-  return [...map.values()].sort((a, b) => order(a.sidoCd) - order(b.sidoCd))
+  return [...map.values()]
+    .sort((a, b) => order(a.sidoCd) - order(b.sidoCd))
 })
 
 /** 리드파워 금액이 가장 큰 시도 */
@@ -405,6 +406,17 @@ const selfTopSido = computed(() => {
   const best = sidoPivot.value.filter(r => r.self > 0).sort((a, b) => b.self - a.self)[0]
   return best ? { sidoCd: best.sidoCd, self: best.self, selfShare: best.total > 0 ? best.self / best.total : 0 } : null
 })
+
+/**
+ * 행 안의 1위 업체인지 — 금액 있는 업체가 2곳 이상일 때만 (혼자면 순위 의미 없음).
+ * 2위 이하는 표시하지 않는다: 열이 왼쪽부터 금액순이라 표에서 읽힌다 (2026-10-14 사용자 결정)
+ * «기타»에 묶인 업체가 1위면 어느 열에도 뱃지가 붙지 않는다.
+ */
+function isRowTop (corpAmt: Record<string, number>, key: string): boolean {
+  const amts = Object.values(corpAmt).filter(v => v > 0)
+  const a = corpAmt[key] || 0
+  return amts.length >= 2 && a > 0 && a === Math.max(...amts)
+}
 
 /** 시군구 표 열 — 그 시도에 나온 업체 금액순. 넘치면 마지막 열을 «기타»로 (자사는 항상 따로) */
 const SIGUNGU_CORP_COLS = 5
@@ -442,8 +454,6 @@ const sigunguPivot = computed(() => {
     row.byCol[col] = (row.byCol[col] || 0) + amt
   }
   return [...map.values()]
-    // 1위 = 업체 하나의 금액 기준 («기타» 묶음은 1위로 치지 않는다)
-    .map(r => ({ ...r, topAmt: Math.max(0, ...Object.values(r.corpAmt)) }))
     .sort((a, b) => b.total - a.total)
 })
 
@@ -682,6 +692,19 @@ onBeforeUnmount(() => window.removeEventListener('resize', fitMap))
 
 .nowrap {
   white-space: nowrap;
+}
+
+/* 행 안 1위 업체 (업체가 하나뿐이면 없음) */
+.top-badge {
+  display: inline-block;
+  margin-right: 0.25rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  background: #1e40af;
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  vertical-align: 1px;
 }
 
 .strong {

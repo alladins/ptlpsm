@@ -263,6 +263,7 @@ onBeforeUnmount(() => { if (timer) { clearInterval(timer) } })
   display: flex;
   align-items: center;
   gap: 0.375rem;
+  white-space: nowrap;
   font-size: 0.875rem;
   color: #475569;
 }
