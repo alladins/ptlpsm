@@ -172,7 +172,7 @@
                       :class="{ 'self-cell': isSelf(c.key) && (r.byCol[c.key] || 0) > 0 }"
                       :title="r.byCol[c.key] ? formatCurrency(r.byCol[c.key]) : ''"
                     >
-                      <span v-if="c.key !== OTHERS_KEY && isRowTop(r.corpAmt, c.key)" class="top-badge">1위</span>
+                      <span v-if="c.key !== OTHERS_KEY && rankOf(r.corpAmt, c.key)" class="rank-badge" :class="rankClass(rankOf(r.corpAmt, c.key))">{{ rankOf(r.corpAmt, c.key) }}위</span>
                       {{ r.byCol[c.key] ? formatEok(r.byCol[c.key], 2) : '-' }}
                     </td>
                   </tr>
@@ -293,7 +293,7 @@
                   {{ formatEok(r.total, 2) }}
                 </td>
                 <td v-for="c in pivotCorps" :key="c.corpBizno || ''" class="num" :class="{ 'self-cell': isSelf(c.corpBizno) && (r.byCorp[c.corpBizno || ''] || 0) > 0 }">
-                  <span v-if="isRowTop(r.corpAmt, c.corpBizno || '')" class="top-badge">1위</span>
+                  <span v-if="rankOf(r.corpAmt, c.corpBizno || '')" class="rank-badge" :class="rankClass(rankOf(r.corpAmt, c.corpBizno || ''))">{{ rankOf(r.corpAmt, c.corpBizno || '') }}위</span>
                   {{ r.byCorp[c.corpBizno || ''] ? formatEok(r.byCorp[c.corpBizno || ''], 2) : '-' }}
                 </td>
                 <td v-if="hasOthers" class="num">
@@ -408,15 +408,18 @@ const selfTopSido = computed(() => {
 })
 
 /**
- * 행 안의 1위 업체인지 — 금액 있는 업체가 2곳 이상일 때만 (혼자면 순위 의미 없음).
- * 2위 이하는 표시하지 않는다: 열이 왼쪽부터 금액순이라 표에서 읽힌다 (2026-10-14 사용자 결정)
- * «기타»에 묶인 업체가 1위면 어느 열에도 뱃지가 붙지 않는다.
+ * 행 안 업체 순위 — 금액 있는 업체끼리 줄 세움. 0 이면 뱃지 없음:
+ * 업체가 하나뿐인 행, 꼴찌(공동 꼴찌 포함) — 꼴찌는 나머지 순위로 알 수 있다 (2026-10-14 사용자 결정).
+ * 열 순서는 그 해 전체 금액순이라 행마다 순위와 다르다 → 뱃지가 필요. «기타» 묶음 업체도 순위 계산에는 들어간다.
  */
-function isRowTop (corpAmt: Record<string, number>, key: string): boolean {
+function rankOf (corpAmt: Record<string, number>, key: string): number {
   const amts = Object.values(corpAmt).filter(v => v > 0)
   const a = corpAmt[key] || 0
-  return amts.length >= 2 && a > 0 && a === Math.max(...amts)
+  if (amts.length < 2 || a <= 0 || a <= Math.min(...amts)) { return 0 }
+  return 1 + amts.filter(v => v > a).length
 }
+
+const rankClass = (rank: number) => (rank === 1 ? 'r1' : rank === 2 ? 'r2' : 'rn')
 
 /** 시군구 표 열 — 그 시도에 나온 업체 금액순. 넘치면 마지막 열을 «기타»로 (자사는 항상 따로) */
 const SIGUNGU_CORP_COLS = 5
@@ -694,17 +697,28 @@ onBeforeUnmount(() => window.removeEventListener('resize', fitMap))
   white-space: nowrap;
 }
 
-/* 행 안 1위 업체 (업체가 하나뿐이면 없음) */
-.top-badge {
+/* 행 안 업체 순위 (업체 하나뿐·꼴찌는 없음) */
+.rank-badge {
   display: inline-block;
   margin-right: 0.25rem;
   padding: 0.05rem 0.35rem;
   border-radius: 4px;
-  background: #1e40af;
   color: #fff;
   font-size: 0.6875rem;
   font-weight: 600;
   vertical-align: 1px;
+}
+
+.rank-badge.r1 {
+  background: #1e40af;
+}
+
+.rank-badge.r2 {
+  background: #60a5fa;
+}
+
+.rank-badge.rn {
+  background: #94a3b8;
 }
 
 .strong {

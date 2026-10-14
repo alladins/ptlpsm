@@ -48,13 +48,13 @@
         <i class="fas fa-cloud-download-alt" /> 수집
         <span v-if="status?.running" class="running"><i class="fas fa-spinner fa-spin" /> 수집 중</span>
       </h3>
-      <div class="status-row">
+      <!-- 상태 · 기간 · 실행을 한 줄로 (좁으면 다음 줄로) -->
+      <div class="collect-row">
         <span class="chip" :class="status?.scheduleEnabled ? 'on' : 'off'">매일 06:30 {{ status?.scheduleEnabled ? '켜짐' : '꺼짐' }}</span>
         <span class="chip" :class="status?.keyConfigured ? 'on' : 'off'">인증키 {{ status?.keyConfigured ? '설정됨' : '없음' }}</span>
-      </div>
-      <div class="collect-row">
-        <label>시작일 <input v-model="fromDate" class="form-input date" type="date" :max="today"></label>
-        <label>종료일 <input v-model="toDate" class="form-input date" type="date" :max="today"></label>
+        <span class="divider" />
+        <label><span class="label-text">시작일</span><input v-model="fromDate" class="form-input date" type="date" :max="today"></label>
+        <label><span class="label-text">종료일</span><input v-model="toDate" class="form-input date" type="date" :max="today"></label>
         <GuardedButton
           class="btn btn-primary"
           :blocked="!!collectBlockedReason"
@@ -281,13 +281,21 @@ onBeforeUnmount(() => { if (timer) { clearInterval(timer) } })
   min-width: 200px;
 }
 
-.status-row {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+/* 라벨 글자가 flex 안에서 눌려 «시작/일»로 쪼개지지 않게 */
+.label-text {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  margin: 0 0.25rem;
+  background: #e2e8f0;
 }
 
 .chip {
+  white-space: nowrap;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   font-size: 0.75rem;
