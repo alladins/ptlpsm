@@ -122,7 +122,10 @@ async function render () {
       itemHeight: 90,
       text: [formatEok(max, area ? 1 : 0), '0'],
       calculable: false,
-      inRange: { color: ['#eff6ff', '#93c5fd', '#2563eb', '#1e3a8a'] },
+      // 지도에 마우스를 올리면 색 막대에 원 단위 숫자(42980700)가 뜨고 칸이 회색으로 바뀌어 끈다 — 금액은 툴팁으로
+      hoverLink: false,
+      // 가장 진한 색을 남색(#1e3a8a) 대신 중간 파랑으로 — 남색은 화면에서 거의 검정으로 보였다 (10-14 사용자)
+      inRange: { color: ['#f0f7ff', '#bfdbfe', '#60a5fa', '#2563eb'] },
       textStyle: { fontSize: 11, color: '#475569' }
     },
     series: [{
@@ -137,12 +140,15 @@ async function render () {
         show: true,
         fontSize: area ? 9 : 10,
         color: '#1e293b',
+        // 진한 칸에서도 이름이 읽히게 흰 테두리
+        textBorderColor: '#ffffff',
+        textBorderWidth: 2,
         formatter: (p: { name: string }) => nameOf(p.name)
       },
       itemStyle: { borderColor: '#94a3b8', borderWidth: 0.6, areaColor: '#f8fafc' },
       emphasis: {
         label: { show: true, fontWeight: 'bold' },
-        itemStyle: { areaColor: '#fde68a' }
+        itemStyle: { areaColor: '#fde68a', borderColor: '#f59e0b', borderWidth: 1.5 }
       },
       data: entries.map(([name, value]) => ({
         name,
