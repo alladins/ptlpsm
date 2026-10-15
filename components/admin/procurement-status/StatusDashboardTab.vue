@@ -663,9 +663,12 @@ function onMapSelect (code: string | null, name: string) {
   }
 }
 
-// 지도 높이 — 좁은 화면은 낮게
-const mapHeight = ref(460)
-const fitMap = () => { mapHeight.value = window.innerWidth <= 600 ? 340 : 460 }
+// 지도 높이 — 넓은 화면은 크게(나이 든 사용자가 작은 지도를 보기 어렵다 — 10-15 사용자 요청), 좁은 화면은 낮게
+const mapHeight = ref(640)
+const fitMap = () => {
+  const w = window.innerWidth
+  mapHeight.value = w <= 600 ? 380 : w <= 900 ? 480 : w <= 1400 ? 560 : 640
+}
 
 onMounted(() => {
   fitMap()

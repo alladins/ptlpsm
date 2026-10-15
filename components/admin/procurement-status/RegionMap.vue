@@ -42,7 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
   area: null,
   selected: null,
   label: '금액',
-  height: 460
+  height: 640
 })
 
 const emit = defineEmits<{ select: [code: string | null, name: string] }>()
@@ -119,14 +119,14 @@ async function render () {
       max,
       left: 8,
       bottom: 8,
-      itemHeight: 90,
+      itemHeight: 120,
       text: [formatEok(max, area ? 1 : 0), '0'],
       calculable: false,
       // 지도에 마우스를 올리면 색 막대에 원 단위 숫자(42980700)가 뜨고 칸이 회색으로 바뀌어 끈다 — 금액은 툴팁으로
       hoverLink: false,
       // 가장 진한 색을 남색(#1e3a8a) 대신 중간 파랑으로 — 남색은 화면에서 거의 검정으로 보였다 (10-14 사용자)
       inRange: { color: ['#f0f7ff', '#bfdbfe', '#60a5fa', '#2563eb'] },
-      textStyle: { fontSize: 11, color: '#475569' }
+      textStyle: { fontSize: 12, color: '#475569' }
     },
     series: [{
       type: 'map',
@@ -138,7 +138,8 @@ async function render () {
       layoutSize: '100%',
       label: {
         show: true,
-        fontSize: area ? 9 : 10,
+        // 지도를 키우면서 이름도 키움 (10-15) — 시군구는 칸이 작아 한 단계 작게
+        fontSize: area ? 11 : 13,
         color: '#1e293b',
         // 진한 칸에서도 이름이 읽히게 흰 테두리
         textBorderColor: '#ffffff',
