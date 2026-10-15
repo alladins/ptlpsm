@@ -2,7 +2,8 @@
  * 메시지 템플릿 타입 정의
  */
 
-export type MessageTemplateType = 'SMS' | 'LMS' | 'MMS'
+/** EMAIL 은 메일 본문(HTML) 템플릿 — 뿌리오로 보내지 않는다 (영업 리드 안내, V3.44.0) */
+export type MessageTemplateType = 'SMS' | 'LMS' | 'MMS' | 'EMAIL'
 
 export interface MessageTemplate {
   templateId: number

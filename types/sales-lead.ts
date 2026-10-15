@@ -244,6 +244,8 @@ export interface SalesLead {
   agencyId: number | null
   resolveNote: string | null
   resolvedAt: string | null
+  /** 담당자에게 문자·메일로 보낸 시각 — null 이면 미발송 (V3.44.0) */
+  notifiedAt?: string | null
   firstSeenDate: string | null
   /** 상세 조회에만 들어온다 (원천 응답 한 건의 JSON 문자열) */
   rawJson?: string | null
@@ -375,7 +377,92 @@ export interface LeadDigestGroup {
   constructionCount: number
   /** 이 묶음(대리점)의 방치 리드 수 */
   staleCount?: number | null
+  /** 문자 받을 사람 (수신 켬 + 휴대폰 있음) */
+  smsRecipientCount?: number
+  /** 메일 받을 사람 (수신 켬 + 메일 있음) */
+  emailRecipientCount?: number
+  /** 아직 안 보낸 리드 수 */
+  pendingCount?: number
+  /** 마지막 발송 시각 (UTC ISO) — 없으면 미발송 */
+  noticeSentAt?: string | null
+  noticeSmsSuccess?: number
+  noticeEmailSuccess?: number
+  noticeFailed?: number
+  noticeSkipped?: number
+  noticeFailMessage?: string | null
   leads: SalesLead[]
+}
+
+// ============================================
+// 담당자 문자·메일 발송 (V3.44.0)
+// ============================================
+
+export interface NoticeRecipient {
+  userId: number
+  loginId: string
+  userName: string
+  phone: string | null
+  email: string | null
+  leadNotifySms: 'Y' | 'N'
+  leadNotifyEmail: 'Y' | 'N'
+  companyId: number | null
+  companyName: string | null
+  role: string
+  position: string | null
+}
+
+/** 발송 설정 (한 줄) — Y/N 문자열 그대로 */
+export interface SalesLeadNoticeSetting {
+  autoSend: 'Y' | 'N'
+  /** HH:mm (KST) */
+  sendTime: string
+  smsEnabled: 'Y' | 'N'
+  emailEnabled: 'Y' | 'N'
+  mailFrom: string
+  mailFromName: string
+  /** 미배정 묶음 수신자 user_id CSV */
+  unassignedUserIds: string
+  linkBaseUrl: string | null
+  updatedBy?: string | null
+  updatedAt?: string | null
+  /** 조회 시 서버가 채움 */
+  unassignedUsers?: NoticeRecipient[]
+}
+
+export interface SalesLeadNotice {
+  noticeId: number
+  noticeDate: string
+  agencyId: number | null
+  channel: 'SMS' | 'EMAIL'
+  userId: number
+  userName: string | null
+  recipient: string
+  leadCount: number
+  status: 'SUCCESS' | 'FAILED' | 'SKIPPED'
+  messageId: number | null
+  errorMessage: string | null
+  triggerType: 'SCHEDULE' | 'MANUAL'
+  sentBy: string | null
+  createdAt: string
+}
+
+export interface SalesLeadNoticeResult {
+  noticeDate: string
+  triggerType: string
+  force: boolean
+  groups: number
+  sentGroups: number
+  skippedNoLeads: number
+  skippedNoRecipient: number
+  smsSuccess: number
+  smsFailed: number
+  smsSkipped: number
+  emailSuccess: number
+  emailFailed: number
+  emailSkipped: number
+  leadsMarked: number
+  message: string | null
+  notes: string[]
 }
 
 // ============================================

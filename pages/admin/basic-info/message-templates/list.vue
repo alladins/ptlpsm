@@ -57,6 +57,9 @@
             <option value="MMS">
               MMS
             </option>
+            <option value="EMAIL">
+              EMAIL
+            </option>
           </select>
         </div>
 

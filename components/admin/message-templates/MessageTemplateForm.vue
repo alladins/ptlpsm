@@ -47,6 +47,9 @@
               <option value="MMS">
                 MMS (멀티미디어)
               </option>
+              <option value="EMAIL">
+                EMAIL (메일 본문 HTML — 영업 리드 안내)
+              </option>
             </select>
           </div>
 
@@ -218,6 +221,9 @@ const maxLength = computed(() => {
     case 'LMS':
     case 'MMS':
       return 2000
+    case 'EMAIL':
+      // 메일 본문은 HTML 표가 들어가므로 넉넉히
+      return 20000
     default:
       return 2000
   }

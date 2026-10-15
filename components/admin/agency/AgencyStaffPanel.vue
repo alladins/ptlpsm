@@ -45,6 +45,8 @@
             <th>직책</th>
             <th>휴대폰</th>
             <th>이메일</th>
+            <!-- 영업 리드 안내 수신 여부 — 바꾸는 건 사용자관리에서 (V3.44.0) -->
+            <th title="공모·낙찰 안내 문자·메일 수신 여부 (사용자관리에서 변경)">알림 수신</th>
             <th>상태</th>
             <th>최근 로그인</th>
           </tr>
@@ -56,6 +58,11 @@
             <td>{{ s.position || '-' }}</td>
             <td>{{ s.phone || '-' }}</td>
             <td>{{ s.email || '-' }}</td>
+            <td class="nowrap">
+              <span :class="s.leadNotifySms === 'N' ? 'text-muted' : 'notify-on'">문자 {{ s.leadNotifySms === 'N' ? '×' : '○' }}</span>
+              ·
+              <span :class="s.leadNotifyEmail === 'N' ? 'text-muted' : 'notify-on'">메일 {{ s.leadNotifyEmail === 'N' ? '×' : '○' }}</span>
+            </td>
             <td>
               <span class="status-badge" :class="s.enabled ? 'success' : 'danger'">
                 {{ s.enabled ? '사용' : '비활성' }}

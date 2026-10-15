@@ -301,6 +301,24 @@
               </div>
             </div>
 
+            <!-- 영업 리드(공모·낙찰) 안내 수신 — 대리점 직원·영업담당자에게만 의미 있음 (V3.44.0, 2026-10-15) -->
+            <div v-if="showLeadNotify" class="form-row">
+              <div class="form-group lead-notify">
+                <label>영업 알림 수신 <span class="field-hint">공모·낙찰 안내를 받을 채널</span></label>
+                <div class="lead-notify-options">
+                  <label class="lead-notify-check">
+                    <input v-model="leadNotifySmsOn" type="checkbox"> 문자
+                  </label>
+                  <label class="lead-notify-check">
+                    <input v-model="leadNotifyEmailOn" type="checkbox"> 메일
+                  </label>
+                  <label class="lead-notify-check disabled" title="카카오 알림톡은 준비 중입니다">
+                    <input type="checkbox" disabled> 알림톡 (준비 중)
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <div class="form-row">
               <div class="form-group">
                 <label>직급</label>
@@ -582,7 +600,21 @@ const userForm = ref({
   role: '',
   address: '',
   addressDetail: '',
-  zipCode: ''
+  zipCode: '',
+  // 영업 리드 안내 수신 (V3.44.0) — 기본 켬
+  leadNotifySms: 'Y' as 'Y' | 'N',
+  leadNotifyEmail: 'Y' as 'Y' | 'N'
+})
+
+// 영업 알림 수신 칸 — 대리점 직원·리드파워 영업담당자 역할에만 보인다 (다른 역할엔 의미 없음)
+const showLeadNotify = computed(() => ['SALES_MANAGER', 'LEADPOWER_MANAGER', 'SYSTEM_ADMIN'].includes(userForm.value.role))
+const leadNotifySmsOn = computed({
+  get: () => userForm.value.leadNotifySms !== 'N',
+  set: (v: boolean) => { userForm.value.leadNotifySms = v ? 'Y' : 'N' }
+})
+const leadNotifyEmailOn = computed({
+  get: () => userForm.value.leadNotifyEmail !== 'N',
+  set: (v: boolean) => { userForm.value.leadNotifyEmail = v ? 'Y' : 'N' }
 })
 
 // 비밀번호 변경 폼
@@ -680,7 +712,9 @@ const openAddModal = () => {
     role: '',
     address: '',
     addressDetail: '',
-    zipCode: ''
+    zipCode: '',
+    leadNotifySms: 'Y',
+    leadNotifyEmail: 'Y'
   }
   validationErrors.value = {
     loginId: '',
@@ -708,7 +742,10 @@ const openEditModal = (user: any) => {
 
   userForm.value = {
     ...user,
-    companyId
+    companyId,
+    // 옛 데이터(칸 없음)는 켬으로
+    leadNotifySms: user.leadNotifySms === 'N' ? 'N' : 'Y',
+    leadNotifyEmail: user.leadNotifyEmail === 'N' ? 'N' : 'Y'
   }
   validationErrors.value = {
     loginId: '',
@@ -1264,5 +1301,31 @@ const openAddModalFromQuery = () => {
     width: 95%;
     margin: 1rem;
   }
+}
+
+/* 영업 알림 수신 (V3.44.0) — 체크박스 가로 배치, 터치 44px */
+.lead-notify-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+
+.lead-notify-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.lead-notify-check input {
+  width: 18px;
+  height: 18px;
+}
+
+.lead-notify-check.disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 </style>

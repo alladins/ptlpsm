@@ -13,6 +13,10 @@ import type {
   LeadKeywordGroup,
   LeadProgressLog,
   LeadProgressUpdateRequest,
+  NoticeRecipient,
+  SalesLeadNotice,
+  SalesLeadNoticeResult,
+  SalesLeadNoticeSetting,
   SalesCollectRun,
   SalesCollectStatus,
   ServerPage,
@@ -57,6 +61,30 @@ export const salesLeadService = {
   /** 아침 요약 미리보기 — date 생략 시 오늘(KST) */
   digest (date?: string): Promise<LeadDigestGroup[]> {
     return apiClient.get<LeadDigestGroup[]>(`${BASE}/digest`, { date })
+  },
+
+  // ── 담당자 문자·메일 발송 (V3.44.0) — 리드파워 관리자만 ──
+
+  getNoticeSetting (): Promise<SalesLeadNoticeSetting> {
+    return apiClient.get<SalesLeadNoticeSetting>(`${BASE}/notices/setting`)
+  },
+
+  updateNoticeSetting (data: SalesLeadNoticeSetting): Promise<SalesLeadNoticeSetting> {
+    return apiClient.put<SalesLeadNoticeSetting>(`${BASE}/notices/setting`, data)
+  },
+
+  /** 미배정 묶음 수신자 후보 (리드파워 내부 사용자) */
+  getNoticeCandidates (): Promise<NoticeRecipient[]> {
+    return apiClient.get<NoticeRecipient[]>(`${BASE}/notices/candidates`)
+  },
+
+  /** 그날 묶음 보내기 — force 면 이미 보낸 리드도 다시 */
+  sendNotices (date?: string, force = false): Promise<SalesLeadNoticeResult> {
+    return apiClient.post<SalesLeadNoticeResult>(`${BASE}/notices/send?date=${date || ''}&force=${force}`)
+  },
+
+  getNotices (date?: string): Promise<SalesLeadNotice[]> {
+    return apiClient.get<SalesLeadNotice[]>(`${BASE}/notices`, { date })
   },
 
   /** 분류 키워드 5묶음 (사용 안 함 포함) */

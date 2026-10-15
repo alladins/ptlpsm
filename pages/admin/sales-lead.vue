@@ -30,6 +30,9 @@
           <i class="fas fa-history" /> 수집 기록
           <i v-if="collectStatus?.running" class="fas fa-spinner fa-spin running-dot" />
         </button>
+        <button v-if="isLpAdmin" type="button" class="tab-button" :class="{ active: activeTab === 'notice' }" @click="activeTab = 'notice'">
+          <i class="fas fa-bell" /> 알림 설정
+        </button>
       </div>
 
       <!-- 탭은 v-if 로 바꿔 끼운다 — 수집 기록 탭을 떠나면 폴링 타이머도 같이 정리된다 -->
@@ -37,7 +40,11 @@
         <LeadListTab :show-agency-filter="isLpAdmin" :can-edit-progress="canEditProgress" />
       </div>
       <div v-else-if="activeTab === 'digest'" class="tab-content">
-        <LeadDigestTab />
+        <!-- 요약 보내기(문자·메일)는 리드파워 관리자만 -->
+        <LeadDigestTab :can-send="isLpAdmin" />
+      </div>
+      <div v-else-if="activeTab === 'notice' && isLpAdmin" class="tab-content">
+        <NoticeSettingTab />
       </div>
       <div v-else-if="activeTab === 'keywords'" class="tab-content">
         <!-- 키워드 변경·다시 분류는 리드파워 관리자만 (서버 SecurityConfig 도 같은 기준) -->
@@ -68,6 +75,7 @@ import LeadListTab from '~/components/admin/sales-lead/LeadListTab.vue'
 import LeadDigestTab from '~/components/admin/sales-lead/LeadDigestTab.vue'
 import LeadKeywordTab from '~/components/admin/sales-lead/LeadKeywordTab.vue'
 import CollectRunsTab from '~/components/admin/sales-lead/CollectRunsTab.vue'
+import NoticeSettingTab from '~/components/admin/sales-lead/NoticeSettingTab.vue'
 import { salesLeadService } from '~/services/sales-lead.service'
 import { usePermission } from '~/composables/usePermission'
 import { useAuthStore } from '~/stores/auth'
@@ -87,7 +95,7 @@ const isLpAdmin = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(
 // 영업 진행 상태 변경은 관리자 둘 + 영업(대리점 직원은 서버가 자기 대리점 리드만 허용) — SecurityConfig PUT .../progress 와 같은 기준
 const canEditProgress = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER', 'SALES_MANAGER'].includes(authStore.user?.role ?? ''))
 
-const activeTab = ref<'leads' | 'digest' | 'keywords' | 'runs'>('leads')
+const activeTab = ref<'leads' | 'digest' | 'keywords' | 'runs' | 'notice'>('leads')
 
 /** 수집 상태 — 인증키 안내 배너와 수집 기록 탭이 같이 쓴다 */
 const collectStatus = ref<SalesCollectStatus | null>(null)

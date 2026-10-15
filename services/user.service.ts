@@ -17,6 +17,9 @@ export interface User {
   userName: string
   email: string
   phone?: string
+  /** 영업 리드(공모·낙찰) 안내 문자/메일 수신 Y/N (V3.44.0) */
+  leadNotifySms?: 'Y' | 'N'
+  leadNotifyEmail?: 'Y' | 'N'
   department?: string
   position?: string
   employeeNumber?: string

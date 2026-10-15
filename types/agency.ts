@@ -290,6 +290,9 @@ export interface AgencyStaff {
   userName: string
   phone: string | null
   email: string | null
+  /** 영업 리드 문자/메일 수신 Y/N (V3.44.0) */
+  leadNotifySms?: 'Y' | 'N' | null
+  leadNotifyEmail?: 'Y' | 'N' | null
   position: string | null
   role: string
   enabled: boolean
