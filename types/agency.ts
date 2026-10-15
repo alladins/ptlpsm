@@ -214,7 +214,26 @@ export interface Agency {
   updatedAt: string | null
 }
 
+/** 대리점 등록 «회사정보에서 불러오기» 후보 (company 마스터) */
+export interface AgencyCompanyCandidate {
+  companyId: number
+  companyName: string
+  businessNumber: string | null
+  representative: string | null
+  address: string | null
+  detailAddress: string | null
+  zipCode: string | null
+  tel: string | null
+  email: string | null
+  companyType: string | null
+  /** true = 이 회사 행을 그대로 대리점으로 연결(협력사·기타), false = 정보만 복사해 새 대리점 회사 생성(제조사·건설사 등) */
+  reusable: boolean
+  alreadyAgency: boolean
+}
+
 export interface AgencyRequest {
+  /** 회사정보에서 불러온 회사 ID — 등록 때만. 있으면 그 회사를 대리점으로 연결(협력사·기타 유형일 때) */
+  companyId?: number | null
   companyName: string
   businessNumber: string | null
   representative: string | null

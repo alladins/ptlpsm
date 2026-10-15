@@ -7,6 +7,7 @@
 import { apiClient } from '~/services/api/client'
 import type {
   Agency,
+  AgencyCompanyCandidate,
   AgencyRequest,
   AgencyResolveResult,
   AgencySearchParams,
@@ -91,6 +92,11 @@ export const agencyService = {
   /** channel 은 기존 값과 같아야 한다 (등록 후 변경 불가) */
   updateAgency (agencyId: number, data: AgencyRequest): Promise<Agency> {
     return apiClient.put<Agency>(`${AGENCY_BASE}/${agencyId}`, data)
+  },
+
+  /** 대리점 등록 «회사정보에서 불러오기» 후보 — 회사명·사업자번호, 이미 대리점인 회사 제외 */
+  searchCompanyCandidates (keyword: string): Promise<AgencyCompanyCandidate[]> {
+    return apiClient.get<AgencyCompanyCandidate[]>(`${AGENCY_BASE}/company-candidates`, { keyword })
   },
 
   /** 권역·채널로 대리점 코드 제안 (예 AG-031S-01) */

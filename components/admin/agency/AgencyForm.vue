@@ -16,6 +16,15 @@
           <span>회사 정보</span>
         </div>
         <div class="info-grid grid-2">
+          <!-- 회사정보에서 불러오기 (등록 때만) — 같은 회사를 두 번 입력하지 않게 (10-15 사용자 요청) -->
+          <FormField
+            v-if="mode === 'create' && !readonly"
+            label="회사정보에서 불러오기"
+            full-width
+            hint="회사정보에 등록된 회사를 고르면 아래 칸이 채워집니다. 없는 회사는 회사정보에서 먼저 등록(유형: 협력사 또는 기타)하세요."
+          >
+            <AgencyCompanyPicker :picked="pickedCompany" @selected="onPickCompany" @cleared="pickedCompany = null" />
+          </FormField>
           <FormField label="회사명" required :error="errors.companyName">
             <input
               v-model="formData.companyName"
@@ -213,6 +222,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import FormField from '~/components/admin/forms/FormField.vue'
 import GuardedButton from '~/components/ui/GuardedButton.vue'
+import AgencyCompanyPicker from '~/components/admin/agency/AgencyCompanyPicker.vue'
 import { agencyService, salesRegionService } from '~/services/agency.service'
 import { formatBusinessNumberInput, formatPhoneNumberInput } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
@@ -221,6 +231,7 @@ import {
   AGENCY_STATUS_LABELS,
   codeLabel,
   type Agency,
+  type AgencyCompanyCandidate,
   type AgencyRequest,
   type SalesRegion
 } from '~/types/agency'
@@ -284,6 +295,22 @@ watch(() => props.initialData, (data) => {
     remarks: data.remarks || ''
   }
 }, { immediate: true })
+
+// ===== 회사정보에서 불러오기 (등록 때만) =====
+const pickedCompany = ref<AgencyCompanyCandidate | null>(null)
+
+/** 고른 회사로 회사 정보 칸을 채운다 — 채운 뒤에도 고쳐 쓸 수 있다 */
+const onPickCompany = (c: AgencyCompanyCandidate) => {
+  pickedCompany.value = c
+  formData.value.companyName = c.companyName || ''
+  formData.value.businessNumber = formatBusinessNumberInput(c.businessNumber || '')
+  formData.value.representative = c.representative || ''
+  formData.value.address = c.address || ''
+  formData.value.detailAddress = c.detailAddress || ''
+  formData.value.zipCode = c.zipCode || ''
+  formData.value.tel = formatPhoneNumberInput(c.tel || '')
+  formData.value.email = c.email || ''
+}
 
 const onBusinessNumberInput = (e: Event) => {
   formData.value.businessNumber = formatBusinessNumberInput((e.target as HTMLInputElement).value)
@@ -383,6 +410,8 @@ const handleSubmit = () => {
   if (!validate()) { return }
   const f = formData.value
   emit('submit', {
+    // 회사정보에서 불러온 회사면 서버가 그 회사에 연결한다 (등록 때만 의미 있음)
+    companyId: props.mode === 'create' ? (pickedCompany.value?.companyId ?? null) : null,
     companyName: f.companyName.trim(),
     businessNumber: blankToNull(f.businessNumber),
     representative: blankToNull(f.representative),
