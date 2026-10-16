@@ -131,12 +131,12 @@
         <h3 class="ns-title">
           <i class="fas fa-user-slash" /> 미배정 수신자
         </h3>
-        <!-- 인원 배지는 제목 칸 폭을 넘어 설명과 겹치므로 설명 줄 앞으로 (10-16) -->
-        <p class="text-muted small ns-hint">
+        <!-- 검색 칸 오른쪽 같은 줄에 인원 배지·설명 (10-16 사용자 배치) -->
+        <div class="ns-row">
+          <input v-model="candidateFilter" type="search" class="form-input ns-filter" placeholder="이름·아이디·회사로 찾기" enterkeyhint="search">
           <span class="ns-count">{{ selectedIds.size }}명 선택</span>
-          담당 대리점이 정해지지 않은 리드를 받을 리드파워 담당자. 수신 여부(문자/메일)는 사용자관리 설정을 따릅니다.
-        </p>
-        <input v-model="candidateFilter" type="search" class="form-input ns-filter" placeholder="이름·아이디·회사로 찾기" enterkeyhint="search">
+          <span class="text-muted small">담당 대리점이 정해지지 않은 리드를 받을 리드파워 담당자. 수신 여부(문자/메일)는 사용자관리 설정을 따릅니다.</span>
+        </div>
         <ul class="candidate-list">
           <li v-for="u in filteredCandidates" :key="u.userId">
             <label class="candidate">
@@ -463,9 +463,8 @@ onMounted(load)
 }
 
 .form-input.ns-filter {
-  width: 100%;
-  max-width: 360px;
-  margin-bottom: 0.5rem;
+  width: 280px;
+  max-width: 100%;
 }
 
 .candidate-list {
