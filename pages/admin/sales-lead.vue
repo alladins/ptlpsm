@@ -33,6 +33,9 @@
         <button v-if="isLpAdmin" type="button" class="tab-button" :class="{ active: activeTab === 'notice' }" @click="activeTab = 'notice'">
           <i class="fas fa-bell" /> 알림 설정
         </button>
+        <button v-if="isLpAdmin" type="button" class="tab-button" :class="{ active: activeTab === 'preview' }" @click="activeTab = 'preview'">
+          <i class="fas fa-eye" /> 미리보기·기록
+        </button>
       </div>
 
       <!-- 탭은 v-if 로 바꿔 끼운다 — 수집 기록 탭을 떠나면 폴링 타이머도 같이 정리된다 -->
@@ -45,6 +48,10 @@
       </div>
       <div v-else-if="activeTab === 'notice' && isLpAdmin" class="tab-content">
         <NoticeSettingTab />
+      </div>
+      <div v-else-if="activeTab === 'preview' && isLpAdmin" class="tab-content">
+        <!-- 발송 미리보기(보내지 않음)·발송 기록 — 알림 설정에서 분리 (10-16) -->
+        <NoticePreviewTab />
       </div>
       <div v-else-if="activeTab === 'keywords'" class="tab-content">
         <!-- 키워드 변경·다시 분류는 리드파워 관리자만 (서버 SecurityConfig 도 같은 기준) -->
@@ -76,6 +83,7 @@ import LeadDigestTab from '~/components/admin/sales-lead/LeadDigestTab.vue'
 import LeadKeywordTab from '~/components/admin/sales-lead/LeadKeywordTab.vue'
 import CollectRunsTab from '~/components/admin/sales-lead/CollectRunsTab.vue'
 import NoticeSettingTab from '~/components/admin/sales-lead/NoticeSettingTab.vue'
+import NoticePreviewTab from '~/components/admin/sales-lead/NoticePreviewTab.vue'
 import { salesLeadService } from '~/services/sales-lead.service'
 import { usePermission } from '~/composables/usePermission'
 import { useAuthStore } from '~/stores/auth'
@@ -95,7 +103,7 @@ const isLpAdmin = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(
 // 영업 진행 상태 변경은 관리자 둘 + 영업(대리점 직원은 서버가 자기 대리점 리드만 허용) — SecurityConfig PUT .../progress 와 같은 기준
 const canEditProgress = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER', 'SALES_MANAGER'].includes(authStore.user?.role ?? ''))
 
-const activeTab = ref<'leads' | 'digest' | 'keywords' | 'runs' | 'notice'>('leads')
+const activeTab = ref<'leads' | 'digest' | 'keywords' | 'runs' | 'notice' | 'preview'>('leads')
 
 // 문자·메일의 «리드 상세» 링크 (…/admin/sales-lead?leadId=123) — 목록 탭이 열리면서 상세를 바로 띄운다 (V3.45.0)
 const route = useRoute()

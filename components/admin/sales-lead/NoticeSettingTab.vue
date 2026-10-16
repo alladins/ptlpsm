@@ -2,7 +2,8 @@
   공모·낙찰 수집 — ⑤ 알림 설정 (담당자 문자·메일 발송, V3.44.0 · 2026-10-15)
   - 자동 발송 켜기/시각, 문자·메일 채널, 메일 발신 주소·이름, 링크 주소, 미배정 묶음 수신자(리드파워 내부)
   - 시각은 서버 재시작 없이 바로 반영된다 (스케줄러가 매분 설정을 본다)
-  - 아래에 날짜별 발송 기록 (수신자·채널·결과)
+  - 본문 내용(금액 하한·발주 담당 표시·안내 문구, V3.45.0). 미리보기·발송 기록은 옆 탭 NoticePreviewTab (10-16 분리)
+  - 섹션마다 한 줄 배치·입력 폭 고정 (10-16 사용자: 폼이 너무 넓게 퍼짐)
   - 리드파워 관리자만 (서버 /notices/** 도 같은 기준). 휴대폰·태블릿에서도 쓰도록 한 줄씩 쌓이는 폼
 -->
 <template>
@@ -27,7 +28,9 @@
 
     <form v-else-if="form" class="ns-form" @submit.prevent="save">
       <section class="ns-section">
-        <h3 class="ns-title"><i class="fas fa-clock" /> 자동 발송</h3>
+        <h3 class="ns-title">
+          <i class="fas fa-clock" /> 자동 발송
+        </h3>
         <div class="ns-row">
           <label class="ns-check">
             <input v-model="autoSend" type="checkbox"> 매일 자동으로 보내기
@@ -41,7 +44,9 @@
       </section>
 
       <section class="ns-section">
-        <h3 class="ns-title"><i class="fas fa-paper-plane" /> 채널</h3>
+        <h3 class="ns-title">
+          <i class="fas fa-paper-plane" /> 채널
+        </h3>
         <div class="ns-row">
           <label class="ns-check"><input v-model="smsEnabled" type="checkbox"> 문자(LMS)</label>
           <label class="ns-check"><input v-model="emailEnabled" type="checkbox"> 메일</label>
@@ -50,31 +55,32 @@
       </section>
 
       <section class="ns-section">
-        <h3 class="ns-title"><i class="fas fa-envelope" /> 메일 발신</h3>
+        <h3 class="ns-title">
+          <i class="fas fa-envelope" /> 메일 발신
+        </h3>
+        <!-- 한 줄 — 입력 폭 고정 (10-16 사용자: «너무 폭 넓게 표현») -->
         <div class="ns-row">
-          <label class="ns-field grow">
+          <label class="ns-field">
             <span>발신 주소</span>
-            <input v-model="form.mailFrom" type="email" class="form-input" required placeholder="support@leadpower21.com">
+            <input v-model="form.mailFrom" type="email" class="form-input ns-w-email" required placeholder="support@leadpower21.com">
           </label>
           <label class="ns-field">
             <span>발신자 이름</span>
-            <input v-model="form.mailFromName" type="text" class="form-input" placeholder="리드파워">
+            <input v-model="form.mailFromName" type="text" class="form-input ns-w-name" placeholder="리드파워">
           </label>
-        </div>
-        <div class="ns-row">
-          <label class="ns-field grow">
+          <label class="ns-field">
             <span>화면 링크 기본 주소 <small class="text-muted">(비우면 서버 기본)</small></span>
-            <input v-model="linkBaseUrl" type="url" class="form-input" placeholder="https://shipmg.lphydrofoam.com">
+            <input v-model="linkBaseUrl" type="url" class="form-input ns-w-url" placeholder="https://shipmg.lphydrofoam.com">
           </label>
         </div>
       </section>
 
       <!-- 본문 내용 (V3.45.0, 10-16 재설계) — 사용자 결정: 하한·발주 담당 표시·안내 문구는 템플릿이 아니라 여기서 -->
       <section class="ns-section">
-        <h3 class="ns-title"><i class="fas fa-file-alt" /> 본문 내용</h3>
-        <p class="text-muted small ns-hint">
-          문자는 <b>건수와 금액 최대 건</b>만, 메일에 건별 상세(접촉처 전화·주소, 설계 기간, 발주 담당, 업체 이력, 리드 상세·나라장터 링크)가 들어갑니다.
-        </p>
+        <h3 class="ns-title">
+          <i class="fas fa-file-alt" /> 본문 내용
+          <small class="text-muted ns-title-hint">문자는 건수·금액 최대 건만, 건별 상세는 메일 — 미리보기·기록 탭에서 확인</small>
+        </h3>
         <div class="ns-row">
           <label class="ns-field">
             <span>설계 금액 하한 (원) <small class="text-muted">0 = 제한 없음</small></span>
@@ -100,16 +106,13 @@
             >
             <small class="text-muted">{{ amountHint(minAmountConstruction) }}</small>
           </label>
-          <span class="text-muted small">하한 미만 건은 문자·메일에서 빼고 «소규모 N건 제외»로 표기합니다. 화면에는 그대로 보입니다.</span>
-        </div>
-        <div class="ns-row">
-          <label class="ns-check">
-            <input v-model="showOrderContact" type="checkbox"> 메일에 발주 담당(수요기관 부서·담당자·전화) 표시
+          <label class="ns-check" title="설계 리드의 나라장터 계약 정보에 있는 값 — 설계사무소와 연락이 안 될 때 확인 경로">
+            <input v-model="showOrderContact" type="checkbox"> 메일에 발주 담당(부서·담당자·전화) 표시
           </label>
-          <span class="text-muted small">설계 리드의 나라장터 계약 정보에 있는 값입니다. 설계사무소와 연락이 안 될 때 확인 경로가 됩니다.</span>
+          <span class="text-muted small">하한 미만 건은 문자·메일에서 빼고 «소규모 N건 제외»로 표기합니다.</span>
         </div>
         <div class="ns-row">
-          <label class="ns-field grow">
+          <label class="ns-field">
             <span>메일 머리 안내 문구 <small class="text-muted">(비우면 생략 · {{ (form.mailIntro || '').length }}/500)</small></span>
             <textarea
               v-model="mailIntro"
@@ -127,7 +130,9 @@
           <i class="fas fa-user-slash" /> 미배정 묶음 수신자
           <span class="ns-count">{{ selectedIds.size }}명</span>
         </h3>
-        <p class="text-muted small ns-hint">담당 대리점이 정해지지 않은 리드를 받을 리드파워 담당자입니다. 수신 여부(문자/메일)는 사용자관리 설정을 따릅니다.</p>
+        <p class="text-muted small ns-hint">
+          담당 대리점이 정해지지 않은 리드를 받을 리드파워 담당자입니다. 수신 여부(문자/메일)는 사용자관리 설정을 따릅니다.
+        </p>
         <input v-model="candidateFilter" type="search" class="form-input ns-filter" placeholder="이름·아이디·회사로 찾기" enterkeyhint="search">
         <ul class="candidate-list">
           <li v-for="u in filteredCandidates" :key="u.userId">
@@ -144,7 +149,9 @@
             </label>
           </li>
         </ul>
-        <p v-if="filteredCandidates.length === 0" class="text-muted small">조건에 맞는 리드파워 사용자가 없습니다.</p>
+        <p v-if="filteredCandidates.length === 0" class="text-muted small">
+          조건에 맞는 리드파워 사용자가 없습니다.
+        </p>
       </section>
 
       <div class="ns-actions">
@@ -154,95 +161,6 @@
         </button>
       </div>
     </form>
-
-    <!-- 미리보기 — 묶음 하나를 실제 조립 규칙으로 (보내지 않음) -->
-    <section class="ns-section ns-log">
-      <h3 class="ns-title"><i class="fas fa-eye" /> 미리보기 <small class="text-muted">(보내지 않습니다 · 저장한 설정 기준)</small></h3>
-      <div class="ns-row">
-        <label class="ns-field">
-          <span>기준일 (첫 수집일)</span>
-          <input v-model="previewDate" type="date" class="form-input ns-date" @change="loadPreviewGroups">
-        </label>
-        <label class="ns-field grow">
-          <span>받는 묶음 <small class="text-muted">(담당 대리점별 · 미배정)</small></span>
-          <select v-model="previewAgency" class="form-input ns-select" :disabled="previewGroups.length === 0">
-            <option v-if="previewGroups.length === 0" :value="-1" disabled>
-              {{ previewGroupsLoading ? '묶음을 불러오는 중…' : '이 날짜에 보낼 묶음이 없습니다 — 기준일을 바꿔 보세요' }}
-            </option>
-            <option v-for="g in previewGroups" :key="g.agencyId ?? 'none'" :value="g.agencyId ?? -1">
-              {{ g.agencyId === null ? '미배정 (리드파워 내부 수신자)' : `대리점 ${g.agencyName || g.agencyCode}` }} · 리드 {{ g.leads.length }}건
-            </option>
-          </select>
-        </label>
-        <button type="button" class="btn-action btn-secondary" :disabled="previewLoading || previewGroups.length === 0" @click="loadPreview">
-          <i :class="previewLoading ? 'fas fa-spinner fa-spin' : 'fas fa-eye'" /> 미리보기
-        </button>
-      </div>
-      <p class="text-muted small ns-hint">기준일에 처음 받은 설계·공사 리드를 담당 대리점별로 묶은 것(아침 요약 탭과 같음) 중 하나를 골라, 그 묶음이 받을 문자·메일을 그대로 보여 줍니다.</p>
-      <div v-if="preview" class="preview-wrap">
-        <p class="text-muted small">
-          {{ preview.agencyName }} · 본문 {{ preview.leadCount }}건
-          <template v-if="preview.excludedCount"> · 하한 미만 {{ preview.excludedCount }}건 제외</template>
-          <template v-if="preview.alreadySentCount"> · 이미 보낸 {{ preview.alreadySentCount }}건 포함</template>
-          · 받는 사람 {{ preview.recipients.length }}명
-        </p>
-        <p v-if="preview.note" class="ns-warn"><i class="fas fa-info-circle" /> {{ preview.note }}</p>
-        <template v-if="preview.smsText">
-          <h4 class="preview-h">문자 <small class="text-muted">{{ preview.smsBytes.toLocaleString() }} / 2,000 byte</small></h4>
-          <pre class="preview-sms">{{ preview.smsText }}</pre>
-        </template>
-        <template v-if="preview.mailHtml">
-          <h4 class="preview-h">메일 <small class="text-muted">{{ preview.mailSubject }}</small></h4>
-          <iframe class="preview-mail" :srcdoc="preview.mailHtml" sandbox="" title="메일 미리보기" />
-        </template>
-      </div>
-    </section>
-
-    <!-- 발송 기록 -->
-    <section class="ns-section ns-log">
-      <h3 class="ns-title"><i class="fas fa-history" /> 발송 기록</h3>
-      <div class="ns-row">
-        <input v-model="logDate" type="date" class="form-input ns-date" @change="loadLog">
-        <button type="button" class="btn-action btn-secondary" :disabled="logLoading" @click="loadLog">
-          <i :class="logLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'" /> 조회
-        </button>
-        <span v-if="!logLoading" class="text-muted small">
-          {{ notices.length }}건 · 성공 {{ countBy('SUCCESS') }} · 실패 {{ countBy('FAILED') }} · 생략 {{ countBy('SKIPPED') }}
-        </span>
-      </div>
-      <p v-if="!logLoading && notices.length === 0" class="text-muted small">{{ logDate }} 발송 기록이 없습니다.</p>
-      <div v-else class="table-scroll">
-        <table class="data-table log-table">
-          <thead>
-            <tr>
-              <th>시각</th>
-              <th>묶음</th>
-              <th>채널</th>
-              <th>받는 사람</th>
-              <th>건수</th>
-              <th>결과</th>
-              <th>사유</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="n in notices" :key="n.noticeId">
-              <td class="nowrap">{{ formatDateTime(n.createdAt) }}</td>
-              <td class="nowrap">{{ n.agencyId === null ? '미배정' : agencyLabel(n.agencyId) }}</td>
-              <td class="nowrap">{{ n.channel === 'SMS' ? '문자' : '메일' }}</td>
-              <td class="nowrap">{{ n.userName || n.userId }} <small class="text-muted">{{ n.recipient }}</small></td>
-              <td class="text-right">{{ n.leadCount }}</td>
-              <td class="nowrap">
-                <span class="status-badge" :class="n.status === 'SUCCESS' ? 'success' : n.status === 'FAILED' ? 'danger' : 'warning'">
-                  {{ n.status === 'SUCCESS' ? '성공' : n.status === 'FAILED' ? '실패' : '생략' }}
-                </span>
-                <small class="text-muted">{{ n.triggerType === 'SCHEDULE' ? '자동' : '수동' }}</small>
-              </td>
-              <td class="reason">{{ n.errorMessage || '' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
   </div>
 </template>
 
@@ -252,8 +170,7 @@ import GuideNotice from '~/components/ui/GuideNotice.vue'
 import { salesLeadService } from '~/services/sales-lead.service'
 import { formatDateTime } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
-import { todayKst } from '~/types/agency'
-import type { LeadDigestGroup, NoticeRecipient, SalesLeadNotice, SalesLeadNoticePreview, SalesLeadNoticeSetting } from '~/types/sales-lead'
+import type { NoticeRecipient, SalesLeadNoticeSetting } from '~/types/sales-lead'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -346,64 +263,7 @@ const save = async () => {
   }
 }
 
-// ── 발송 기록 ──
-const logDate = ref(todayKst())
-const logLoading = ref(false)
-const notices = ref<SalesLeadNotice[]>([])
-const countBy = (s: string) => notices.value.filter(n => n.status === s).length
-/** 묶음 이름 — 기록엔 대리점 ID만 있어 ID 로 보여준다 (대리점관리에서 확인) */
-const agencyLabel = (id: number) => `대리점 #${id}`
-
-const loadLog = async () => {
-  logLoading.value = true
-  try {
-    notices.value = await salesLeadService.getNotices(logDate.value || undefined) || []
-  } catch (e) {
-    const err = toApiError(e)
-    if (err.status !== 401 && err.status !== 403) { alert(err.message) }
-  } finally {
-    logLoading.value = false
-  }
-}
-
-// ── 미리보기 ──
-const previewDate = ref(todayKst())
-const previewGroups = ref<LeadDigestGroup[]>([])
-const previewGroupsLoading = ref(false)
-/** 고른 묶음 — 미배정은 -1 (select 값으로 null 을 쓰기 어려워서) */
-const previewAgency = ref<number>(-1)
-const previewLoading = ref(false)
-const preview = ref<SalesLeadNoticePreview | null>(null)
-
-const loadPreviewGroups = async () => {
-  previewGroupsLoading.value = true
-  preview.value = null
-  try {
-    previewGroups.value = await salesLeadService.digest(previewDate.value || undefined) || []
-    const first = previewGroups.value[0]
-    previewAgency.value = first ? (first.agencyId ?? -1) : -1
-  } catch (e) {
-    const err = toApiError(e)
-    if (err.status !== 401 && err.status !== 403) { alert(err.message) }
-  } finally {
-    previewGroupsLoading.value = false
-  }
-}
-
-const loadPreview = async () => {
-  previewLoading.value = true
-  try {
-    preview.value = await salesLeadService.getNoticePreview(
-      previewDate.value || undefined,
-      previewAgency.value === -1 ? null : previewAgency.value)
-  } catch (e) {
-    alert(toApiError(e).message)
-  } finally {
-    previewLoading.value = false
-  }
-}
-
-onMounted(() => { load(); loadLog(); loadPreviewGroups() })
+onMounted(load)
 </script>
 
 <style scoped>
@@ -479,12 +339,9 @@ onMounted(() => { load(); loadLog(); loadPreviewGroups() })
   color: #475569;
 }
 
-.ns-field.grow {
-  flex: 1 1 260px;
-}
-
-.ns-field .form-input {
-  width: 100%;
+.ns-title-hint {
+  font-weight: 400;
+  font-size: 0.75rem;
 }
 
 .form-input.ns-time {
@@ -499,6 +356,24 @@ onMounted(() => { load(); loadLog(); loadPreviewGroups() })
   width: 180px;
 }
 
+/* 한 줄 배치용 고정 폭 — 폼이 화면 폭대로 퍼지지 않게 (10-16) */
+.form-input.ns-w-email {
+  width: 280px;
+}
+
+.form-input.ns-w-name {
+  width: 140px;
+}
+
+.form-input.ns-w-url {
+  width: 300px;
+}
+
+.form-input.ns-intro {
+  width: 640px;
+  max-width: 100%;
+}
+
 .form-input.ns-select {
   min-width: 220px;
   max-width: 100%;
@@ -507,38 +382,6 @@ onMounted(() => { load(); loadLog(); loadPreviewGroups() })
 .form-input.ns-intro {
   resize: vertical;
   min-height: 60px;
-}
-
-.preview-wrap {
-  margin-top: 0.5rem;
-}
-
-.preview-h {
-  margin: 0.75rem 0 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.preview-sms {
-  margin: 0;
-  padding: 0.75rem;
-  max-width: 420px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 0.8125rem;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.preview-mail {
-  width: 100%;
-  height: 560px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #fff;
 }
 
 .ns-warn {
@@ -608,30 +451,4 @@ onMounted(() => { load(); loadLog(); loadPreviewGroups() })
   gap: 0.75rem;
 }
 
-.ns-log {
-  margin-top: 0.75rem;
-}
-
-.table-scroll {
-  overflow-x: auto;
-}
-
-.log-table {
-  font-size: 0.8125rem;
-  min-width: 720px;
-}
-
-.reason {
-  max-width: 320px;
-  color: #b91c1c;
-  font-size: 0.75rem;
-}
-
-.nowrap {
-  white-space: nowrap;
-}
-
-.small {
-  font-size: 0.75rem;
-}
 </style>
