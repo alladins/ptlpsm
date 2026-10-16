@@ -129,11 +129,12 @@
 
       <section class="ns-section">
         <h3 class="ns-title">
-          <i class="fas fa-user-slash" /> 미배정 묶음 수신자
-          <span class="ns-count">{{ selectedIds.size }}명</span>
+          <i class="fas fa-user-slash" /> 미배정 수신자
         </h3>
+        <!-- 인원 배지는 제목 칸 폭을 넘어 설명과 겹치므로 설명 줄 앞으로 (10-16) -->
         <p class="text-muted small ns-hint">
-          담당 대리점이 정해지지 않은 리드를 받을 리드파워 담당자입니다. 수신 여부(문자/메일)는 사용자관리 설정을 따릅니다.
+          <span class="ns-count">{{ selectedIds.size }}명 선택</span>
+          담당 대리점이 정해지지 않은 리드를 받을 리드파워 담당자. 수신 여부(문자/메일)는 사용자관리 설정을 따릅니다.
         </p>
         <input v-model="candidateFilter" type="search" class="form-input ns-filter" placeholder="이름·아이디·회사로 찾기" enterkeyhint="search">
         <ul class="candidate-list">
@@ -157,7 +158,7 @@
       </section>
 
       <div class="ns-actions">
-        <span v-if="form.updatedAt" class="text-muted small">마지막 저장 {{ formatDateTime(form.updatedAt) }} · {{ form.updatedBy || '-' }}</span>
+        <span v-if="form.updatedAt" class="text-muted small">마지막 저장 {{ formatDateTime(form.updatedAt) }} · 저장자 {{ form.updatedBy || '-' }}</span>
         <button type="submit" class="btn-primary" :disabled="saving">
           <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'" /> 저장
         </button>
@@ -352,6 +353,7 @@ onMounted(load)
 }
 
 .ns-count {
+  margin-right: 0.375rem;
   padding: 0 0.5rem;
   border-radius: 9999px;
   background: #eff6ff;
@@ -392,12 +394,26 @@ onMounted(load)
   white-space: nowrap;
 }
 
+/* 안내 문구 — 라벨 옆에서 오른쪽 끝까지 */
 .ns-field.ns-field-top {
+  display: flex;
+  width: 100%;
   align-items: flex-start;
 }
 
 .ns-field.ns-field-top > span {
-  padding-top: 0.4rem;
+  padding-top: 0.3rem;
+}
+
+.ns-field.ns-field-top > textarea {
+  flex: 1 1 auto;
+}
+
+/* 이 탭의 입력칸은 한 줄 배치라 높이를 낮춘다 (10-16 사용자: «칸 높이 줄여도») */
+.ns-form .form-input {
+  padding: 0.3rem 0.5rem;
+  min-height: 32px;
+  font-size: 0.875rem;
 }
 
 .form-input.ns-time {
@@ -425,19 +441,16 @@ onMounted(load)
   width: 300px;
 }
 
-.form-input.ns-intro {
-  width: 640px;
-  max-width: 100%;
-}
-
 .form-input.ns-select {
   min-width: 220px;
   max-width: 100%;
 }
 
 .form-input.ns-intro {
+  width: 100%;
   resize: vertical;
-  min-height: 60px;
+  min-height: 44px;
+  line-height: 1.4;
 }
 
 .ns-warn {
