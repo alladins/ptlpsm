@@ -35,11 +35,12 @@
           <label class="ns-check">
             <input v-model="autoSend" type="checkbox"> 매일 자동으로 보내기
           </label>
-          <label class="ns-field">
+          <span class="ns-sep" />
+          <label class="ns-field" title="저장하면 다음 발송부터 바로 적용됩니다. 06:00 수집이 끝난 뒤 시각으로 두세요.">
             <span>발송 시각 (KST)</span>
             <input v-model="form.sendTime" type="time" class="form-input ns-time" required>
           </label>
-          <span class="text-muted small">저장하면 다음 발송부터 바로 적용됩니다. 06:00 수집이 끝난 뒤 시각으로 두세요.</span>
+          <span class="text-muted small">06:00 수집 뒤 시각으로</span>
         </div>
       </section>
 
@@ -77,51 +78,52 @@
 
       <!-- 본문 내용 (V3.45.0, 10-16 재설계) — 사용자 결정: 하한·발주 담당 표시·안내 문구는 템플릿이 아니라 여기서 -->
       <section class="ns-section">
-        <h3 class="ns-title">
+        <h3 class="ns-title" title="문자는 건수·금액 최대 건만, 건별 상세는 메일 — 미리보기·기록 탭에서 확인">
           <i class="fas fa-file-alt" /> 본문 내용
-          <small class="text-muted ns-title-hint">문자는 건수·금액 최대 건만, 건별 상세는 메일 — 미리보기·기록 탭에서 확인</small>
         </h3>
-        <div class="ns-row">
-          <label class="ns-field">
-            <span>설계 금액 하한 (원) <small class="text-muted">0 = 제한 없음</small></span>
-            <input
-              v-model.number="minAmountDesign"
-              type="number"
-              min="0"
-              step="1000000"
-              inputmode="numeric"
-              class="form-input ns-amount"
-            >
-            <small class="text-muted">{{ amountHint(minAmountDesign) }}</small>
-          </label>
-          <label class="ns-field">
-            <span>공사 금액 하한 (원) <small class="text-muted">0 = 제한 없음</small></span>
-            <input
-              v-model.number="minAmountConstruction"
-              type="number"
-              min="0"
-              step="10000000"
-              inputmode="numeric"
-              class="form-input ns-amount"
-            >
-            <small class="text-muted">{{ amountHint(minAmountConstruction) }}</small>
-          </label>
-          <label class="ns-check" title="설계 리드의 나라장터 계약 정보에 있는 값 — 설계사무소와 연락이 안 될 때 확인 경로">
-            <input v-model="showOrderContact" type="checkbox"> 메일에 발주 담당(부서·담당자·전화) 표시
-          </label>
-          <span class="text-muted small">하한 미만 건은 문자·메일에서 빼고 «소규모 N건 제외»로 표기합니다.</span>
-        </div>
-        <div class="ns-row">
-          <label class="ns-field">
-            <span>메일 머리 안내 문구 <small class="text-muted">(비우면 생략 · {{ (form.mailIntro || '').length }}/500)</small></span>
-            <textarea
-              v-model="mailIntro"
-              class="form-input ns-intro"
-              rows="2"
-              maxlength="500"
-              placeholder="예) 설계 건은 설계사무소에 자재 스펙 반영을, 공사 건은 시공사 현장에 견적을 제안해 주세요."
-            />
-          </label>
+        <div class="ns-rows">
+          <div class="ns-row">
+            <label class="ns-field">
+              <span>설계 금액 하한 (원) <small class="text-muted">0 = 제한 없음</small></span>
+              <input
+                v-model.number="minAmountDesign"
+                type="number"
+                min="0"
+                step="1000000"
+                inputmode="numeric"
+                class="form-input ns-amount"
+              >
+              <small class="text-muted ns-amount-hint">{{ amountHint(minAmountDesign) }}</small>
+            </label>
+            <label class="ns-field">
+              <span>공사 금액 하한 (원) <small class="text-muted">0 = 제한 없음</small></span>
+              <input
+                v-model.number="minAmountConstruction"
+                type="number"
+                min="0"
+                step="10000000"
+                inputmode="numeric"
+                class="form-input ns-amount"
+              >
+              <small class="text-muted ns-amount-hint">{{ amountHint(minAmountConstruction) }}</small>
+            </label>
+            <span class="ns-sep" />
+            <label class="ns-check" title="설계 리드의 나라장터 계약 정보에 있는 값 — 설계사무소와 연락이 안 될 때 확인 경로">
+              <input v-model="showOrderContact" type="checkbox"> 메일에 발주 담당(부서·담당자·전화) 표시
+            </label>
+          </div>
+          <div class="ns-row">
+            <label class="ns-field ns-field-top">
+              <span>메일 머리 안내 문구 <small class="text-muted">({{ (form.mailIntro || '').length }}/500)</small></span>
+              <textarea
+                v-model="mailIntro"
+                class="form-input ns-intro"
+                rows="2"
+                maxlength="500"
+                placeholder="비우면 생략. 예) 설계 건은 설계사무소에 자재 스펙 반영을, 공사 건은 시공사 현장에 견적을 제안해 주세요."
+              />
+            </label>
+          </div>
         </div>
       </section>
 
@@ -281,24 +283,72 @@ onMounted(load)
 .ns-form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.375rem;
 }
 
+/* 섹션 = 제목(왼쪽 고정 폭) + 항목(오른쪽 한 줄) — 10-16 사용자: «제목 | 항목 한 줄로, 간격 줄이기».
+   제목 뒤 자식은 전부 2열로 흘러가므로 미배정 수신자처럼 여러 줄인 섹션도 같은 틀을 쓴다 */
 .ns-section {
-  padding: 0.875rem 1rem;
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  column-gap: 0.75rem;
+  row-gap: 0.25rem;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fff;
+}
+
+.ns-section > *:not(.ns-title) {
+  grid-column: 2;
 }
 
 .ns-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 0.625rem;
-  font-size: 0.9375rem;
+  gap: 0.375rem;
+  align-self: start;
+  margin: 0;
+  padding-top: 0.5rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #1e293b;
+  white-space: nowrap;
+}
+
+.ns-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.ns-sep {
+  width: 1px;
+  height: 20px;
+  background: #e2e8f0;
+}
+
+.ns-amount-hint {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .ns-section {
+    grid-template-columns: 1fr;
+  }
+
+  .ns-section > *:not(.ns-title) {
+    grid-column: 1;
+  }
+
+  .ns-title {
+    padding-top: 0;
+  }
+
+  .ns-sep {
+    display: none;
+  }
 }
 
 .ns-count {
@@ -313,16 +363,17 @@ onMounted(load)
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1rem;
-  margin-bottom: 0.5rem;
+  gap: 0.25rem 0.75rem;
+  min-height: 36px;
 }
 
 .ns-check {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  min-height: 44px;
+  min-height: 36px;
   font-size: 0.875rem;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -331,17 +382,22 @@ onMounted(load)
   height: 18px;
 }
 
+/* 라벨을 입력칸 옆에 — 세로로 쌓지 않는다 */
 .ns-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   font-size: 0.8125rem;
   color: #475569;
+  white-space: nowrap;
 }
 
-.ns-title-hint {
-  font-weight: 400;
-  font-size: 0.75rem;
+.ns-field.ns-field-top {
+  align-items: flex-start;
+}
+
+.ns-field.ns-field-top > span {
+  padding-top: 0.4rem;
 }
 
 .form-input.ns-time {
@@ -390,7 +446,7 @@ onMounted(load)
 }
 
 .ns-hint {
-  margin: 0 0 0.5rem;
+  margin: 0;
 }
 
 .form-input.ns-filter {
@@ -400,7 +456,7 @@ onMounted(load)
 }
 
 .candidate-list {
-  max-height: 320px;
+  max-height: 220px;
   overflow-y: auto;
   margin: 0;
   padding: 0;
