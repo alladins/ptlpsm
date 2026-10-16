@@ -469,7 +469,7 @@ onMounted(load)
 }
 
 .candidate-list {
-  max-height: 220px;
+  max-height: 240px;
   overflow-y: auto;
   margin: 0;
   padding: 0;
@@ -478,24 +478,28 @@ onMounted(load)
   border-radius: 6px;
 }
 
+/* 한 사람 = 한 줄: 체크 · 이름(아이디) · 역할·회사 · 문자 · 메일 (10-16 사용자: «한 줄 나열») */
 .candidate {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.125rem 0.625rem;
+  display: flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0.5rem 0.75rem;
+  gap: 0.75rem;
+  min-height: 34px;
+  padding: 0.25rem 0.75rem;
   border-bottom: 1px solid #f1f5f9;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .candidate input {
-  grid-row: span 3;
+  flex: 0 0 auto;
   width: 18px;
   height: 18px;
 }
 
 .cand-name {
+  flex: 0 0 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 0.875rem;
   font-weight: 600;
   color: #0f172a;
@@ -503,14 +507,34 @@ onMounted(load)
 
 .cand-meta,
 .cand-contact {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: #64748b;
+}
+
+.cand-meta {
+  flex: 0 0 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cand-contact {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
+  gap: 0.25rem 1.25rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .candidate {
+    flex-wrap: wrap;
+    gap: 0.125rem 0.75rem;
+    white-space: normal;
+  }
+
+  .cand-name,
+  .cand-meta {
+    flex-basis: auto;
+  }
 }
 
 .ns-actions {
