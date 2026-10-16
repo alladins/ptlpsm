@@ -290,7 +290,7 @@ onMounted(load)
    제목 뒤 자식은 전부 2열로 흘러가므로 미배정 수신자처럼 여러 줄인 섹션도 같은 틀을 쓴다 */
 .ns-section {
   display: grid;
-  grid-template-columns: 112px 1fr;
+  grid-template-columns: 168px 1fr;   /* 가장 긴 제목 «미배정 묶음 수신자 N명» 기준 */
   column-gap: 0.75rem;
   row-gap: 0.25rem;
   align-items: center;
