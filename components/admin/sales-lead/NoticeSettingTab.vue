@@ -159,17 +159,26 @@
     <section class="ns-section ns-log">
       <h3 class="ns-title"><i class="fas fa-eye" /> 미리보기 <small class="text-muted">(보내지 않습니다 · 저장한 설정 기준)</small></h3>
       <div class="ns-row">
-        <input v-model="previewDate" type="date" class="form-input ns-date" @change="loadPreviewGroups">
-        <select v-model="previewAgency" class="form-input ns-select">
-          <option v-for="g in previewGroups" :key="g.agencyId ?? 'none'" :value="g.agencyId ?? -1">
-            {{ g.agencyId === null ? '미배정' : (g.agencyName || g.agencyCode) }} · {{ g.leads.length }}건
-          </option>
-        </select>
+        <label class="ns-field">
+          <span>기준일 (첫 수집일)</span>
+          <input v-model="previewDate" type="date" class="form-input ns-date" @change="loadPreviewGroups">
+        </label>
+        <label class="ns-field grow">
+          <span>받는 묶음 <small class="text-muted">(담당 대리점별 · 미배정)</small></span>
+          <select v-model="previewAgency" class="form-input ns-select" :disabled="previewGroups.length === 0">
+            <option v-if="previewGroups.length === 0" :value="-1" disabled>
+              {{ previewGroupsLoading ? '묶음을 불러오는 중…' : '이 날짜에 보낼 묶음이 없습니다 — 기준일을 바꿔 보세요' }}
+            </option>
+            <option v-for="g in previewGroups" :key="g.agencyId ?? 'none'" :value="g.agencyId ?? -1">
+              {{ g.agencyId === null ? '미배정 (리드파워 내부 수신자)' : `대리점 ${g.agencyName || g.agencyCode}` }} · 리드 {{ g.leads.length }}건
+            </option>
+          </select>
+        </label>
         <button type="button" class="btn-action btn-secondary" :disabled="previewLoading || previewGroups.length === 0" @click="loadPreview">
           <i :class="previewLoading ? 'fas fa-spinner fa-spin' : 'fas fa-eye'" /> 미리보기
         </button>
-        <span v-if="!previewGroupsLoading && previewGroups.length === 0" class="text-muted small">{{ previewDate }} 에 보낼 묶음이 없습니다.</span>
       </div>
+      <p class="text-muted small ns-hint">기준일에 처음 받은 설계·공사 리드를 담당 대리점별로 묶은 것(아침 요약 탭과 같음) 중 하나를 골라, 그 묶음이 받을 문자·메일을 그대로 보여 줍니다.</p>
       <div v-if="preview" class="preview-wrap">
         <p class="text-muted small">
           {{ preview.agencyName }} · 본문 {{ preview.leadCount }}건
