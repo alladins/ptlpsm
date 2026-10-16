@@ -37,7 +37,7 @@
 
       <!-- 탭은 v-if 로 바꿔 끼운다 — 수집 기록 탭을 떠나면 폴링 타이머도 같이 정리된다 -->
       <div v-if="activeTab === 'leads'" class="tab-content">
-        <LeadListTab :show-agency-filter="isLpAdmin" :can-edit-progress="canEditProgress" />
+        <LeadListTab :show-agency-filter="isLpAdmin" :can-edit-progress="canEditProgress" :initial-lead-id="initialLeadId" />
       </div>
       <div v-else-if="activeTab === 'digest'" class="tab-content">
         <!-- 요약 보내기(문자·메일)는 리드파워 관리자만 -->
@@ -96,6 +96,13 @@ const isLpAdmin = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER'].includes(
 const canEditProgress = computed(() => ['SYSTEM_ADMIN', 'LEADPOWER_MANAGER', 'SALES_MANAGER'].includes(authStore.user?.role ?? ''))
 
 const activeTab = ref<'leads' | 'digest' | 'keywords' | 'runs' | 'notice'>('leads')
+
+// 문자·메일의 «리드 상세» 링크 (…/admin/sales-lead?leadId=123) — 목록 탭이 열리면서 상세를 바로 띄운다 (V3.45.0)
+const route = useRoute()
+const initialLeadId = computed(() => {
+  const v = Number(route.query.leadId)
+  return Number.isInteger(v) && v > 0 ? v : null
+})
 
 /** 수집 상태 — 인증키 안내 배너와 수집 기록 탭이 같이 쓴다 */
 const collectStatus = ref<SalesCollectStatus | null>(null)

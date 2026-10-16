@@ -15,6 +15,7 @@ import type {
   LeadProgressUpdateRequest,
   NoticeRecipient,
   SalesLeadNotice,
+  SalesLeadNoticePreview,
   SalesLeadNoticeResult,
   SalesLeadNoticeSetting,
   SalesCollectRun,
@@ -81,6 +82,14 @@ export const salesLeadService = {
   /** 그날 묶음 보내기 — force 면 이미 보낸 리드도 다시 */
   sendNotices (date?: string, force = false): Promise<SalesLeadNoticeResult> {
     return apiClient.post<SalesLeadNoticeResult>(`${BASE}/notices/send?date=${date || ''}&force=${force}`)
+  },
+
+  /** 발송 미리보기 — agencyId 비우면 미배정 묶음. 보내지 않는다 */
+  getNoticePreview (date?: string, agencyId?: number | null): Promise<SalesLeadNoticePreview> {
+    return apiClient.get<SalesLeadNoticePreview>(`${BASE}/notices/preview`, {
+      date,
+      agencyId: agencyId ?? undefined
+    })
   },
 
   getNotices (date?: string): Promise<SalesLeadNotice[]> {

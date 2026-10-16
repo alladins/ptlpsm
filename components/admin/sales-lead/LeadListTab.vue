@@ -285,9 +285,11 @@ interface Props {
   showAgencyFilter?: boolean
   /** 상세 모달에서 영업 진행 상태를 바꿀 수 있는지 (관리자 둘 + 영업) */
   canEditProgress?: boolean
+  /** 열자마자 상세를 띄울 리드 — 문자·메일의 «리드 상세» 링크(?leadId=) (V3.45.0) */
+  initialLeadId?: number | null
 }
 
-const props = withDefaults(defineProps<Props>(), { showAgencyFilter: true, canEditProgress: false })
+const props = withDefaults(defineProps<Props>(), { showAgencyFilter: true, canEditProgress: false, initialLeadId: null })
 
 // 기본 기간: 오늘 포함 최근 7일 (KST)
 const today = todayKst()
@@ -437,6 +439,13 @@ const loadAgencies = async () => {
 }
 
 onMounted(async () => {
+  // 메일 «리드 상세» 링크로 들어온 경우 — 목록과 상관없이 바로 상세를 띄우고, 주소에서 leadId 를 지워 탭을 오가도 다시 열리지 않게
+  if (props.initialLeadId) {
+    detailTarget.value = { leadId: props.initialLeadId } as SalesLead
+    const rest = { ...useRoute().query }
+    delete rest.leadId
+    useRouter().replace({ query: rest })
+  }
   // 트리를 먼저 받아야 대리점 직원의 «내 권역»으로 첫 목록을 거를 수 있다
   await loadTree()
   loadPage()

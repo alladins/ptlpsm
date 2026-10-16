@@ -69,6 +69,59 @@
         </div>
       </section>
 
+      <!-- 본문 내용 (V3.45.0, 10-16 재설계) — 사용자 결정: 하한·발주 담당 표시·안내 문구는 템플릿이 아니라 여기서 -->
+      <section class="ns-section">
+        <h3 class="ns-title"><i class="fas fa-file-alt" /> 본문 내용</h3>
+        <p class="text-muted small ns-hint">
+          문자는 <b>건수와 금액 최대 건</b>만, 메일에 건별 상세(접촉처 전화·주소, 설계 기간, 발주 담당, 업체 이력, 리드 상세·나라장터 링크)가 들어갑니다.
+        </p>
+        <div class="ns-row">
+          <label class="ns-field">
+            <span>설계 금액 하한 (원) <small class="text-muted">0 = 제한 없음</small></span>
+            <input
+              v-model.number="minAmountDesign"
+              type="number"
+              min="0"
+              step="1000000"
+              inputmode="numeric"
+              class="form-input ns-amount"
+            >
+            <small class="text-muted">{{ amountHint(minAmountDesign) }}</small>
+          </label>
+          <label class="ns-field">
+            <span>공사 금액 하한 (원) <small class="text-muted">0 = 제한 없음</small></span>
+            <input
+              v-model.number="minAmountConstruction"
+              type="number"
+              min="0"
+              step="10000000"
+              inputmode="numeric"
+              class="form-input ns-amount"
+            >
+            <small class="text-muted">{{ amountHint(minAmountConstruction) }}</small>
+          </label>
+          <span class="text-muted small">하한 미만 건은 문자·메일에서 빼고 «소규모 N건 제외»로 표기합니다. 화면에는 그대로 보입니다.</span>
+        </div>
+        <div class="ns-row">
+          <label class="ns-check">
+            <input v-model="showOrderContact" type="checkbox"> 메일에 발주 담당(수요기관 부서·담당자·전화) 표시
+          </label>
+          <span class="text-muted small">설계 리드의 나라장터 계약 정보에 있는 값입니다. 설계사무소와 연락이 안 될 때 확인 경로가 됩니다.</span>
+        </div>
+        <div class="ns-row">
+          <label class="ns-field grow">
+            <span>메일 머리 안내 문구 <small class="text-muted">(비우면 생략 · {{ (form.mailIntro || '').length }}/500)</small></span>
+            <textarea
+              v-model="mailIntro"
+              class="form-input ns-intro"
+              rows="2"
+              maxlength="500"
+              placeholder="예) 설계 건은 설계사무소에 자재 스펙 반영을, 공사 건은 시공사 현장에 견적을 제안해 주세요."
+            />
+          </label>
+        </div>
+      </section>
+
       <section class="ns-section">
         <h3 class="ns-title">
           <i class="fas fa-user-slash" /> 미배정 묶음 수신자
@@ -101,6 +154,40 @@
         </button>
       </div>
     </form>
+
+    <!-- 미리보기 — 묶음 하나를 실제 조립 규칙으로 (보내지 않음) -->
+    <section class="ns-section ns-log">
+      <h3 class="ns-title"><i class="fas fa-eye" /> 미리보기 <small class="text-muted">(보내지 않습니다 · 저장한 설정 기준)</small></h3>
+      <div class="ns-row">
+        <input v-model="previewDate" type="date" class="form-input ns-date" @change="loadPreviewGroups">
+        <select v-model="previewAgency" class="form-input ns-select">
+          <option v-for="g in previewGroups" :key="g.agencyId ?? 'none'" :value="g.agencyId ?? -1">
+            {{ g.agencyId === null ? '미배정' : (g.agencyName || g.agencyCode) }} · {{ g.leads.length }}건
+          </option>
+        </select>
+        <button type="button" class="btn-action btn-secondary" :disabled="previewLoading || previewGroups.length === 0" @click="loadPreview">
+          <i :class="previewLoading ? 'fas fa-spinner fa-spin' : 'fas fa-eye'" /> 미리보기
+        </button>
+        <span v-if="!previewGroupsLoading && previewGroups.length === 0" class="text-muted small">{{ previewDate }} 에 보낼 묶음이 없습니다.</span>
+      </div>
+      <div v-if="preview" class="preview-wrap">
+        <p class="text-muted small">
+          {{ preview.agencyName }} · 본문 {{ preview.leadCount }}건
+          <template v-if="preview.excludedCount"> · 하한 미만 {{ preview.excludedCount }}건 제외</template>
+          <template v-if="preview.alreadySentCount"> · 이미 보낸 {{ preview.alreadySentCount }}건 포함</template>
+          · 받는 사람 {{ preview.recipients.length }}명
+        </p>
+        <p v-if="preview.note" class="ns-warn"><i class="fas fa-info-circle" /> {{ preview.note }}</p>
+        <template v-if="preview.smsText">
+          <h4 class="preview-h">문자 <small class="text-muted">{{ preview.smsBytes.toLocaleString() }} / 2,000 byte</small></h4>
+          <pre class="preview-sms">{{ preview.smsText }}</pre>
+        </template>
+        <template v-if="preview.mailHtml">
+          <h4 class="preview-h">메일 <small class="text-muted">{{ preview.mailSubject }}</small></h4>
+          <iframe class="preview-mail" :srcdoc="preview.mailHtml" sandbox="" title="메일 미리보기" />
+        </template>
+      </div>
+    </section>
 
     <!-- 발송 기록 -->
     <section class="ns-section ns-log">
@@ -157,7 +244,7 @@ import { salesLeadService } from '~/services/sales-lead.service'
 import { formatDateTime } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
 import { todayKst } from '~/types/agency'
-import type { NoticeRecipient, SalesLeadNotice, SalesLeadNoticeSetting } from '~/types/sales-lead'
+import type { LeadDigestGroup, NoticeRecipient, SalesLeadNotice, SalesLeadNoticePreview, SalesLeadNoticeSetting } from '~/types/sales-lead'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -171,6 +258,28 @@ const autoSend = computed({ get: () => form.value?.autoSend === 'Y', set: (v: bo
 const smsEnabled = computed({ get: () => form.value?.smsEnabled === 'Y', set: (v: boolean) => { if (form.value) { form.value.smsEnabled = v ? 'Y' : 'N' } } })
 const emailEnabled = computed({ get: () => form.value?.emailEnabled === 'Y', set: (v: boolean) => { if (form.value) { form.value.emailEnabled = v ? 'Y' : 'N' } } })
 const linkBaseUrl = computed({ get: () => form.value?.linkBaseUrl || '', set: (v: string) => { if (form.value) { form.value.linkBaseUrl = v || null } } })
+
+// 본문 내용 (V3.45.0) — 숫자 칸은 비우면 0, 체크는 기본 켬
+const minAmountDesign = computed({
+  get: () => form.value?.minAmountDesign ?? 0,
+  set: (v: number | string) => { if (form.value) { form.value.minAmountDesign = typeof v === 'number' && v >= 0 ? Math.floor(v) : 0 } }
+})
+const minAmountConstruction = computed({
+  get: () => form.value?.minAmountConstruction ?? 0,
+  set: (v: number | string) => { if (form.value) { form.value.minAmountConstruction = typeof v === 'number' && v >= 0 ? Math.floor(v) : 0 } }
+})
+const showOrderContact = computed({
+  get: () => form.value?.showOrderContact !== 'N',
+  set: (v: boolean) => { if (form.value) { form.value.showOrderContact = v ? 'Y' : 'N' } }
+})
+const mailIntro = computed({ get: () => form.value?.mailIntro || '', set: (v: string) => { if (form.value) { form.value.mailIntro = v || null } } })
+
+/** 원 → «1.2억» / «500만» 안내 */
+const amountHint = (v: number | null | undefined) => {
+  if (!v || v <= 0) { return '제한 없음' }
+  if (v >= 100_000_000) { return `${(v / 100_000_000).toFixed(1).replace(/\.0$/, '')}억 미만 제외` }
+  return `${Math.round(v / 10_000).toLocaleString()}만 미만 제외`
+}
 
 const ROLE_LABELS: Record<string, string> = {
   SYSTEM_ADMIN: '시스템관리자',
@@ -248,7 +357,44 @@ const loadLog = async () => {
   }
 }
 
-onMounted(() => { load(); loadLog() })
+// ── 미리보기 ──
+const previewDate = ref(todayKst())
+const previewGroups = ref<LeadDigestGroup[]>([])
+const previewGroupsLoading = ref(false)
+/** 고른 묶음 — 미배정은 -1 (select 값으로 null 을 쓰기 어려워서) */
+const previewAgency = ref<number>(-1)
+const previewLoading = ref(false)
+const preview = ref<SalesLeadNoticePreview | null>(null)
+
+const loadPreviewGroups = async () => {
+  previewGroupsLoading.value = true
+  preview.value = null
+  try {
+    previewGroups.value = await salesLeadService.digest(previewDate.value || undefined) || []
+    const first = previewGroups.value[0]
+    previewAgency.value = first ? (first.agencyId ?? -1) : -1
+  } catch (e) {
+    const err = toApiError(e)
+    if (err.status !== 401 && err.status !== 403) { alert(err.message) }
+  } finally {
+    previewGroupsLoading.value = false
+  }
+}
+
+const loadPreview = async () => {
+  previewLoading.value = true
+  try {
+    preview.value = await salesLeadService.getNoticePreview(
+      previewDate.value || undefined,
+      previewAgency.value === -1 ? null : previewAgency.value)
+  } catch (e) {
+    alert(toApiError(e).message)
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+onMounted(() => { load(); loadLog(); loadPreviewGroups() })
 </script>
 
 <style scoped>
@@ -338,6 +484,52 @@ onMounted(() => { load(); loadLog() })
 
 .form-input.ns-date {
   width: 160px;
+}
+
+.form-input.ns-amount {
+  width: 180px;
+}
+
+.form-input.ns-select {
+  min-width: 220px;
+  max-width: 100%;
+}
+
+.form-input.ns-intro {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.preview-wrap {
+  margin-top: 0.5rem;
+}
+
+.preview-h {
+  margin: 0.75rem 0 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.preview-sms {
+  margin: 0;
+  padding: 0.75rem;
+  max-width: 420px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.preview-mail {
+  width: 100%;
+  height: 560px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
 }
 
 .ns-warn {

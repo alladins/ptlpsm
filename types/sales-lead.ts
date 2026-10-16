@@ -423,10 +423,36 @@ export interface SalesLeadNoticeSetting {
   /** 미배정 묶음 수신자 user_id CSV */
   unassignedUserIds: string
   linkBaseUrl: string | null
+  // ── 본문 내용 (V3.45.0, 10-16 재설계) ──
+  /** 설계 리드 금액 하한 — 미만은 문자·메일 제외 (0 = 제한 없음) */
+  minAmountDesign: number | null
+  /** 공사 리드 금액 하한 */
+  minAmountConstruction: number | null
+  /** 메일에 발주 담당(수요기관 부서·담당자·전화) 표시 */
+  showOrderContact: 'Y' | 'N' | null
+  /** 메일 머리 안내 문구 (비우면 생략) */
+  mailIntro: string | null
   updatedBy?: string | null
   updatedAt?: string | null
   /** 조회 시 서버가 채움 */
   unassignedUsers?: NoticeRecipient[]
+}
+
+/** 발송 미리보기 — 묶음 하나의 실제 조립 결과 (보내지 않음, V3.45.0) */
+export interface SalesLeadNoticePreview {
+  noticeDate: string
+  agencyId: number | null
+  agencyName: string
+  leadCount: number
+  excludedCount: number
+  alreadySentCount: number
+  smsText: string | null
+  /** EUC-KR 기준 바이트 (LMS 2,000 한도) */
+  smsBytes: number
+  mailSubject: string | null
+  mailHtml: string | null
+  recipients: NoticeRecipient[]
+  note: string | null
 }
 
 export interface SalesLeadNotice {
