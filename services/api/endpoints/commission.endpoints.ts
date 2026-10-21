@@ -15,6 +15,14 @@
 import { getApiBaseUrl } from '../config'
 
 export const COMMISSION_ENDPOINTS = {
+  // ============ 수익배분 (실원가 기준, 2026-10-21) ============
+
+  /** 정산기간의 실원가 수익배분 — GET /admin/commission/distribution?periodId= */
+  distribution: (periodId?: number) => {
+    const baseUrl = getApiBaseUrl()
+    return periodId ? `${baseUrl}/admin/commission/distribution?periodId=${periodId}` : `${baseUrl}/admin/commission/distribution`
+  },
+
   // ============ 커미션율 설정 (Rates) ============
 
   /**
@@ -211,10 +219,11 @@ export const COMMISSION_ENDPOINTS = {
     return `${baseUrl}/admin/commission/settlements/year/${year}/monthly-summary`
   },
 
-  /** 월별 커미션 집계 엑셀 내보내기 */
-  exportMonthlySummary: (year: number) => {
+  /** 월별 수익배분 엑셀 (실원가 기준, 2026-10-21) — periodId 를 주면 그 정산기간 */
+  exportMonthlySummary: (year: number, periodId?: number) => {
     const baseUrl = getApiBaseUrl()
-    return `${baseUrl}/admin/commission/settlements/year/${year}/monthly-summary/export`
+    const url = `${baseUrl}/admin/commission/settlements/year/${year}/monthly-summary/export`
+    return periodId ? `${url}?periodId=${periodId}` : url
   },
 
   /** 정산이력 일괄 재계산 */

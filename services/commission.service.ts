@@ -14,6 +14,7 @@ import { COMMISSION_ENDPOINTS } from './api/endpoints/commission.endpoints'
 import { getAuthHeaders } from './api'
 import { httpError } from '~/utils/apiError'
 import type {
+  CommissionDistribution,
   CommissionRateConfig,
   CommissionRateUpdateRequest,
   CommissionSettlement,
@@ -559,6 +560,17 @@ export async function getPeriodicSettlementDetail(
 /**
  * 정산기간 목록 조회
  */
+/**
+ * 수익배분 (기간 매출 기준, 2026-10-21) — 기간 안 출하 매출, 같은 출하분 원가, 에코암스 남는 몫
+ */
+export async function getCommissionDistribution(periodId?: number): Promise<CommissionDistribution> {
+  const response = await fetch(COMMISSION_ENDPOINTS.distribution(periodId), {
+    headers: getAuthHeaders()
+  })
+  if (!response.ok) throw httpError(response.status, '수익배분 조회')
+  return response.json()
+}
+
 export async function getCommissionPeriods() {
   const response = await fetch(COMMISSION_ENDPOINTS.periods(), {
     headers: getAuthHeaders()
@@ -863,8 +875,8 @@ export async function getMonthlySummary(year: number): Promise<any[]> {
 /**
  * 월별 커미션 집계 엑셀 다운로드
  */
-export async function exportMonthlySummaryExcel(year: number): Promise<void> {
-  const response = await fetch(COMMISSION_ENDPOINTS.exportMonthlySummary(year), {
+export async function exportMonthlySummaryExcel(year: number, periodId?: number): Promise<void> {
+  const response = await fetch(COMMISSION_ENDPOINTS.exportMonthlySummary(year, periodId), {
     headers: getAuthHeaders()
   })
   if (!response.ok) throw httpError(response.status, '엑셀 다운로드')

@@ -138,6 +138,56 @@ export interface AnnualDistributionSummary {
 
 // ============ 커미션율 설정 ============
 
+// ============================================================================
+// 수익배분 — 기간 안에 발생한 매출 기준 (2026-10-21 리드파워 결정)
+//   매출 = 기간 안 출하 금액(입금 무관, ÷ 1.1 로 배분), 제조사 원가·운송비 = 같은 출하분 원가,
+//   본사·영업·인증·유지보수 = 매출 × 고정 비율, 에코암스 = 남는 몫(마이너스 가능)
+// ============================================================================
+
+export type DistributionShareKey =
+  | 'MANUFACTURER' | 'HEADQUARTERS' | 'PARTNER' | 'CERTIFICATION' | 'MAINTENANCE' | 'AGENT'
+
+export interface DistributionShare {
+  key: DistributionShareKey
+  name: string
+  /** 설정 비율(%) — 제조사 원가(운송비 포함)·에코암스는 null (실적값) */
+  configuredRate: number | null
+  amount: number
+  /** 매출(부가세 제외) 대비 % */
+  ratio: number
+}
+
+export interface DistributionMonth {
+  /** yyyy-MM */
+  yearMonth: string
+  grossSales: number
+  netSales: number
+  manufacturerCost: number
+  headquarters: number
+  partner: number
+  certification: number
+  maintenance: number
+  agent: number
+}
+
+export interface CommissionDistribution {
+  periodId: number
+  periodName: string
+  startDate: string
+  endDate: string
+  /** 매출 = 기간 안 출하 금액 합계 (부가세 포함, 출하일 기준) */
+  grossSales: number
+  /** 매출 (부가세 제외) — 배분 기준 */
+  netSales: number
+  /** 기간 안 출하 건수 */
+  shipmentCount: number
+  tierName: string
+  tierMinAmount: number
+  tierMaxAmount: number | null
+  shares: DistributionShare[]
+  months: DistributionMonth[]
+}
+
 /**
  * 커미션 매출 구간
  */
@@ -271,6 +321,24 @@ export interface CommissionSettlement extends BaseEntity {
   contractTotalAmount: number
   /** 커미션 산정 기준 매출액 */
   salesAmount: number
+  /** 매출 (부가세 제외) — 실원가 배분 기준 (2026-10-21) */
+  netSalesAmount?: number
+  /** 제조사 원가 (실원가 배분) */
+  oemAmount?: number
+  ceoAmount?: number
+  /** 에코암스 = 남는 몫 (마이너스 가능) */
+  ecoarmsAmount?: number
+  salesRepAmount?: number
+  certificationAmount?: number
+  maintenanceAmount?: number
+  /** 원가·에코암스는 매출 대비 실적 %, 나머지는 설정 비율 */
+  appliedOemRate?: number
+  appliedEcoarmsRate?: number
+  appliedCeoRate?: number
+  appliedSalesRate?: number
+  appliedCertificationRate?: number
+  appliedMaintenanceRate?: number
+  appliedTier?: string
   /** 적용 커미션율 (%) */
   appliedRate: number
   /** 커미션 금액 */

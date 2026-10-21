@@ -4,22 +4,22 @@
       title="월별 수익배분"
       icon="chart"
       icon-color="green"
-      description="연도별 월별 매출 및 수익배분 현황을 확인합니다."
+      description="정산기간의 월별 매출(출하 기준, 입금 무관)과 그 원가로 나눈 수익배분입니다."
     />
 
     <!-- 필터 영역 -->
     <div class="search-section">
       <div class="filter-row">
         <div class="filter-group">
-          <label>연도</label>
-          <select v-model="selectedYear" class="form-select" @change="loadData">
-            <option v-for="year in availableYears" :key="year" :value="year">
-              {{ year }}년
+          <label>정산기간</label>
+          <select v-model="selectedPeriodId" class="form-select" @change="loadData">
+            <option v-for="p in periodOptions" :key="p.periodId" :value="p.periodId">
+              {{ p.periodName }}
             </option>
           </select>
         </div>
         <div class="filter-actions">
-          <button class="btn-excel" @click="handleExcelDownload">
+          <button class="btn-excel" :disabled="!dist" @click="handleExcelDownload">
             <i class="fas fa-file-excel" />
             엑셀
           </button>
@@ -41,13 +41,13 @@
             <div class="kpi-icon">
               <i class="fas fa-chart-line" />
             </div>
-            <span class="kpi-label">연간 총매출</span>
+            <span class="kpi-label">매출 (부가세 제외)</span>
           </div>
           <div class="kpi-value">
-            {{ formatCurrency(totalSales) }}
+            {{ formatCurrency(dist?.netSales || 0) }}
           </div>
           <div class="kpi-footer">
-            <span class="kpi-sub">{{ selectedYear }}년 합계</span>
+            <span class="kpi-sub">부가세 포함 {{ formatCurrency(dist?.grossSales || 0) }}</span>
           </div>
         </div>
         <div class="summary-card kpi-info">
@@ -55,27 +55,27 @@
             <div class="kpi-icon">
               <i class="fas fa-layer-group" />
             </div>
-            <span class="kpi-label">현재 적용 구간</span>
+            <span class="kpi-label">적용 구간</span>
           </div>
           <div class="kpi-value tier-value">
-            {{ currentTier }}
+            {{ dist?.tierName || '-' }}
           </div>
           <div class="kpi-footer">
-            <span class="kpi-sub">최종 월 기준</span>
+            <span class="kpi-sub">정산기간 매출 기준</span>
           </div>
         </div>
         <div class="summary-card kpi-success">
           <div class="kpi-header">
             <div class="kpi-icon">
-              <i class="fas fa-coins" />
+              <i class="fas fa-hand-holding-usd" />
             </div>
-            <span class="kpi-label">총 배분액</span>
+            <span class="kpi-label">에코암스 몫 (남는 몫)</span>
           </div>
-          <div class="kpi-value">
-            {{ formatCurrency(totalCommission) }}
+          <div class="kpi-value" :class="{ 'amount-negative': totals.agent < 0 }">
+            {{ formatCurrency(totals.agent) }}
           </div>
           <div class="kpi-footer">
-            <span class="kpi-sub">전체 배분 합계</span>
+            <span class="kpi-sub">매출 − 원가 − 고정 몫</span>
           </div>
         </div>
         <div class="summary-card kpi-warning">
@@ -83,13 +83,13 @@
             <div class="kpi-icon">
               <i class="fas fa-file-invoice" />
             </div>
-            <span class="kpi-label">정산 건수</span>
+            <span class="kpi-label">출하 건수</span>
           </div>
           <div class="kpi-value">
-            {{ totalCount }}건
+            {{ dist?.shipmentCount || 0 }}건
           </div>
           <div class="kpi-footer">
-            <span class="kpi-sub">{{ selectedYear }}년 합계</span>
+            <span class="kpi-sub">{{ dist?.periodName || '' }}</span>
           </div>
         </div>
       </div>
@@ -99,133 +99,100 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 60px;">
-                월
-              </th>
-              <th style="width: 80px;">
-                정산건수
+              <th style="width: 90px;">
+                연월
               </th>
               <th style="width: 120px;">
-                월매출
+                매출(부가세 제외)
               </th>
               <th style="width: 130px;">
-                누적매출
-              </th>
-              <th style="width: 90px;">
-                적용구간
-              </th>
-              <th style="width: 70px;">
-                OEM(%)
-              </th>
-              <th style="width: 70px;">
-                CEO(%)
-              </th>
-              <th style="width: 80px;">
-                에코암스(%)
-              </th>
-              <th style="width: 70px;">
-                영업(%)
-              </th>
-              <th style="width: 80px;">
-                인증관리(%)
-              </th>
-              <th style="width: 80px;">
-                유지보수(%)
+                누적 매출
               </th>
               <th style="width: 120px;">
-                총배분액
+                제조사 원가(운송비 포함)
+              </th>
+              <th style="width: 110px;">
+                대표 {{ rateOf('HEADQUARTERS') }}%
+              </th>
+              <th style="width: 110px;">
+                영업 {{ rateOf('PARTNER') }}%
+              </th>
+              <th style="width: 100px;">
+                인증 {{ rateOf('CERTIFICATION') }}%
+              </th>
+              <th style="width: 100px;">
+                유지보수 {{ rateOf('MAINTENANCE') }}%
+              </th>
+              <th style="width: 120px;">
+                에코암스(남는 몫)
               </th>
             </tr>
           </thead>
           <tbody>
             <!-- 데이터 없음 -->
-            <tr v-if="monthlyData.length === 0">
-              <td colspan="12" class="text-center" style="padding: 20px; color: #9ca3af;">
-                해당 연도의 정산 데이터가 없습니다.
+            <tr v-if="rows.length === 0">
+              <td colspan="9" class="text-center" style="padding: 20px; color: #9ca3af;">
+                이 정산기간에 출하가 없습니다.
               </td>
             </tr>
             <!-- 월별 데이터 -->
-            <tr
-              v-for="row in monthlyData"
-              :key="row.month"
-              :class="{ 'tier-change-row': isTierChangeMonth(row) }"
-            >
+            <tr v-for="row in rows" :key="row.yearMonth">
               <td class="text-center">
-                {{ row.month }}월
-              </td>
-              <td class="text-center">
-                {{ row.settlementCount }}건
+                {{ formatYearMonth(row.yearMonth) }}
               </td>
               <td class="text-right">
-                {{ formatCurrency(row.monthlySalesAmount) }}
+                {{ formatCurrency(row.netSales) }}
               </td>
               <td class="text-right font-semibold">
-                {{ formatCurrency(row.cumulativeSalesAmount) }}
+                {{ formatCurrency(row.cumulative) }}
               </td>
-              <td class="text-center">
-                <span class="tier-badge" :class="tierClass(row.appliedTier)">
-                  {{ tierLabel(row.appliedTier) }}
-                </span>
+              <td class="text-right">
+                {{ formatCurrency(row.manufacturerCost) }}
               </td>
-              <td class="text-center">
-                {{ row.appliedOemRate }}%
+              <td class="text-right">
+                {{ formatCurrency(row.headquarters) }}
               </td>
-              <td class="text-center">
-                {{ row.appliedCeoRate }}%
+              <td class="text-right">
+                {{ formatCurrency(row.partner) }}
               </td>
-              <td class="text-center">
-                {{ row.appliedEcoarmsRate }}%
+              <td class="text-right">
+                {{ formatCurrency(row.certification) }}
               </td>
-              <td class="text-center">
-                {{ row.appliedSalesRate }}%
+              <td class="text-right">
+                {{ formatCurrency(row.maintenance) }}
               </td>
-              <td class="text-center">
-                {{ row.appliedCertificationRate || 0 }}%
-              </td>
-              <td class="text-center">
-                {{ row.appliedMaintenanceRate || 0 }}%
-              </td>
-              <td class="text-right font-semibold">
-                {{ formatCurrency(row.totalCommissionAmount) }}
+              <td class="text-right font-semibold" :class="{ 'amount-negative': row.agent < 0 }">
+                {{ formatCurrency(row.agent) }}
               </td>
             </tr>
             <!-- 합계행 -->
-            <tr v-if="monthlyData.length > 0" class="summary-row">
+            <tr v-if="rows.length > 0" class="summary-row">
               <td class="text-center font-semibold">
                 합계
               </td>
-              <td class="text-center font-semibold">
-                {{ totalCount }}건
-              </td>
               <td class="text-right font-semibold">
-                {{ formatCurrency(totalSales) }}
-              </td>
-              <td class="text-center">
-                -
+                {{ formatCurrency(totals.netSales) }}
               </td>
               <td class="text-center">
                 -
               </td>
               <td class="text-right font-semibold">
-                {{ formatCurrency(totalOem) }}
+                {{ formatCurrency(totals.manufacturerCost) }}
               </td>
               <td class="text-right font-semibold">
-                {{ formatCurrency(totalCeo) }}
+                {{ formatCurrency(totals.headquarters) }}
               </td>
               <td class="text-right font-semibold">
-                {{ formatCurrency(totalEcoarms) }}
+                {{ formatCurrency(totals.partner) }}
               </td>
               <td class="text-right font-semibold">
-                {{ formatCurrency(totalSalesRep) }}
+                {{ formatCurrency(totals.certification) }}
               </td>
               <td class="text-right font-semibold">
-                {{ formatCurrency(totalCertification) }}
+                {{ formatCurrency(totals.maintenance) }}
               </td>
-              <td class="text-right font-semibold">
-                {{ formatCurrency(totalMaintenance) }}
-              </td>
-              <td class="text-right font-semibold">
-                {{ formatCurrency(totalCommission) }}
+              <td class="text-right font-semibold" :class="{ 'amount-negative': totals.agent < 0 }">
+                {{ formatCurrency(totals.agent) }}
               </td>
             </tr>
           </tbody>
@@ -237,7 +204,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getMonthlySummary, exportMonthlySummaryExcel } from '~/services/commission.service'
+import { getCommissionDistribution, getCommissionPeriods, exportMonthlySummaryExcel } from '~/services/commission.service'
+import type { CommissionDistribution, DistributionShareKey } from '~/types/commission'
 import { formatCurrency } from '~/utils/format'
 
 definePageMeta({
@@ -245,122 +213,86 @@ definePageMeta({
   pageTitle: '월별 수익배분'
 })
 
-// 월별 집계 인터페이스
-interface MonthlyCommissionSummary {
-  year: number
-  month: number
-  settlementCount: number
-  monthlySalesAmount: number
-  cumulativeSalesAmount: number
-  appliedTier: string
-  appliedOemRate: number
-  appliedCeoRate: number
-  appliedEcoarmsRate: number
-  appliedSalesRate: number
-  appliedCertificationRate: number
-  appliedMaintenanceRate: number
-  oemAmount: number
-  ceoAmount: number
-  ecoarmsAmount: number
-  salesRepAmount: number
-  certificationAmount: number
-  maintenanceAmount: number
-  totalCommissionAmount: number
+/**
+ * 월별 수익배분 — 실원가 기준 (2026-10-21). 수익 배분 대시보드와 같은 계산(서버 CommissionCostService)이다.
+ * 예전 화면은 «입금액 × 고정 비율(제조사 60% 포함)»·입력일 기준이었다.
+ */
+
+interface PeriodOption {
+  periodId: number
+  periodName: string
+  endYear: number
+}
+const periodOptions = ref<PeriodOption[]>([])
+const selectedPeriodId = ref<number | undefined>(undefined)
+
+const loading = ref(false)
+const dist = ref<CommissionDistribution | null>(null)
+
+const loadPeriods = async () => {
+  try {
+    const periods = await getCommissionPeriods()
+    periodOptions.value = periods.map((p: any) => ({ periodId: p.periodId, periodName: p.periodName, endYear: p.endYear }))
+    const active = periods.find((p: any) => p.isActive)
+    selectedPeriodId.value = active ? active.periodId : periodOptions.value[0]?.periodId
+  } catch (error) {
+    console.error('정산기간 목록 조회 실패:', error)
+  }
 }
 
-// 연도 선택
-const currentYear = new Date().getFullYear()
-const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - i)
-const selectedYear = ref(currentYear)
-
-// 상태
-const loading = ref(false)
-const monthlyData = ref<MonthlyCommissionSummary[]>([])
-
-// 데이터 로드
 const loadData = async () => {
   loading.value = true
   try {
-    monthlyData.value = await getMonthlySummary(selectedYear.value)
+    dist.value = await getCommissionDistribution(selectedPeriodId.value)
   } catch (error) {
-    console.error('월별 집계 조회 실패:', error)
-    monthlyData.value = []
+    console.error('월별 수익배분 조회 실패:', error)
+    dist.value = null
   } finally {
     loading.value = false
   }
 }
 
-// KPI 계산
-const totalSales = computed(() =>
-  monthlyData.value.reduce((sum, m) => sum + m.monthlySalesAmount, 0)
-)
-const totalCommission = computed(() =>
-  monthlyData.value.reduce((sum, m) => sum + m.totalCommissionAmount, 0)
-)
-const totalCount = computed(() =>
-  monthlyData.value.reduce((sum, m) => sum + m.settlementCount, 0)
-)
-const currentTier = computed(() => {
-  if (!monthlyData.value.length) { return '-' }
-  return tierLabel(monthlyData.value[monthlyData.value.length - 1].appliedTier) || '-'
+const rateOf = (key: DistributionShareKey) => dist.value?.shares.find(s => s.key === key)?.configuredRate ?? 0
+
+// 월별 행 + 누적 매출
+const rows = computed(() => {
+  let cumulative = 0
+  return (dist.value?.months || []).map((m) => {
+    cumulative += m.netSales
+    return { ...m, cumulative }
+  })
 })
 
-// 합계행 금액 계산
-const totalOem = computed(() =>
-  monthlyData.value.reduce((sum, m) => sum + m.oemAmount, 0)
-)
-const totalCeo = computed(() =>
-  monthlyData.value.reduce((sum, m) => sum + m.ceoAmount, 0)
-)
-const totalEcoarms = computed(() =>
-  monthlyData.value.reduce((sum, m) => sum + m.ecoarmsAmount, 0)
-)
-const totalSalesRep = computed(() =>
-  monthlyData.value.reduce((sum, m) => sum + m.salesRepAmount, 0)
-)
-const totalCertification = computed(() =>
-  monthlyData.value.reduce((sum, m) => sum + (m.certificationAmount || 0), 0)
-)
-const totalMaintenance = computed(() =>
-  monthlyData.value.reduce((sum, m) => sum + (m.maintenanceAmount || 0), 0)
-)
-
-// 구간 변경 월 감지
-const isTierChangeMonth = (row: MonthlyCommissionSummary) => {
-  const idx = monthlyData.value.indexOf(row)
-  if (idx <= 0) { return false }
-  return row.appliedTier !== monthlyData.value[idx - 1].appliedTier
-}
-
-// 구간 라벨
-const tierLabel = (tier: string) => {
-  const map: Record<string, string> = {
-    UNDER_5B: '50억 미만',
-    UNDER_10B: '100억 미만',
-    UNDER_15B: '150억 미만',
-    OVER_15B: '150억 이상'
+const totals = computed(() => {
+  const sum = (field: 'netSales' | 'manufacturerCost' | 'headquarters' | 'partner' | 'certification' | 'maintenance' | 'agent') =>
+    rows.value.reduce((acc, r) => acc + (Number(r[field]) || 0), 0)
+  return {
+    netSales: sum('netSales'),
+    manufacturerCost: sum('manufacturerCost'),
+    headquarters: sum('headquarters'),
+    partner: sum('partner'),
+    certification: sum('certification'),
+    maintenance: sum('maintenance'),
+    agent: sum('agent')
   }
-  return map[tier] || tier || '-'
-}
-
-// 구간 뱃지 클래스
-const tierClass = (tier: string) => ({
-  'tier-1': tier === 'UNDER_5B',
-  'tier-2': tier === 'UNDER_10B',
-  'tier-3': tier === 'UNDER_15B',
-  'tier-4': tier === 'OVER_15B'
 })
+
+const formatYearMonth = (ym: string) => `${ym.slice(0, 4)}년 ${Number(ym.slice(5, 7))}월`
 
 // 엑셀 다운로드
 const handleExcelDownload = async () => {
+  const period = periodOptions.value.find(p => p.periodId === selectedPeriodId.value)
   try {
-    await exportMonthlySummaryExcel(selectedYear.value)
+    await exportMonthlySummaryExcel(period?.endYear || new Date().getFullYear(), selectedPeriodId.value)
   } catch {
     alert('엑셀 다운로드에 실패했습니다.')
   }
 }
 
-onMounted(() => loadData())
+onMounted(async () => {
+  await loadPeriods()
+  await loadData()
+})
 </script>
 
 <style scoped>
@@ -499,5 +431,10 @@ onMounted(() => loadData())
 
 @media (max-width: 768px) {
   .summary-cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* 에코암스 마이너스 (남는 몫이 모자란 달) */
+.amount-negative {
+  color: #dc2626 !important;
 }
 </style>

@@ -3,7 +3,7 @@
     <!-- 페이지 헤더 - 컴팩트 -->
     <div class="page-header-compact">
       <h1>커미션율 설정</h1>
-      <span class="page-description">연간 매출 구간별 6주체 배분 비율을 설정합니다.</span>
+      <span class="page-description">본사·영업·인증관리·유지보수 비율을 설정합니다.</span>
       <div class="header-actions-right">
         <div class="year-selector">
           <label class="year-label">조회 연도</label>
@@ -28,7 +28,7 @@
         <i class="fas fa-info-circle" />
         <div class="info-content">
           <strong>커미션율 설정 안내</strong>
-          <p>연간 매출 금액에 따라 6주체(OEM, CEO, 에코암스, 영업, 인증관리, 유지보수) 배분 비율을 설정합니다. CEO, 영업, 인증관리, 유지보수, OEM 비율을 입력하면 에코암스 비율이 자동 계산됩니다. 합계는 반드시 100%여야 합니다.</p>
+          <p>매출 구간별로 본사(CEO)·영업·인증관리·유지보수 비율을 설정합니다(매출 × 비율, 네 비율의 합은 100% 이하). 제조사 몫은 그 기간 출하분의 실제 원가, 에코암스는 매출에서 원가와 이 네 몫을 뺀 남는 몫으로 자동 계산되어 입력하지 않습니다.</p>
         </div>
       </div>
 
@@ -62,7 +62,7 @@
                   CEO (%)
                 </th>
                 <th class="col-rate-auto">
-                  에코암스 (%) <span class="auto-badge">자동</span>
+                  에코암스 <span class="auto-badge">자동</span>
                 </th>
                 <th class="col-rate-input">
                   영업 (%)
@@ -73,8 +73,8 @@
                 <th class="col-rate-input">
                   유지보수 (%)
                 </th>
-                <th class="col-rate-input">
-                  OEM (%)
+                <th class="col-rate-auto">
+                  제조사 <span class="auto-badge">자동</span>
                 </th>
                 <th class="col-actions">
                   관리
@@ -158,21 +158,9 @@
                   </div>
                   <span v-else class="rate-value">{{ tier.ceoRate }}%</span>
                 </td>
-                <!-- 에코암스 비율 (자동계산) -->
+                <!-- 에코암스 = 남는 몫 (입력 안 함, 2026-10-21) -->
                 <td class="col-rate-auto">
-                  <div v-if="editingIndex === index" class="oem-rate-display">
-                    <span
-                      class="oem-rate-value"
-                      :class="{ 'rate-warning': computedEcoarmsRate < 0, 'rate-error': computedEcoarmsRate < 0 }"
-                    >
-                      {{ computedEcoarmsRate.toFixed(1) }}%
-                    </span>
-                    <span v-if="computedEcoarmsRate < 0" class="rate-total-warning">
-                      <i class="fas fa-exclamation-triangle" />
-                      비율 초과
-                    </span>
-                  </div>
-                  <span v-else class="oem-rate-readonly">{{ tier.ecoarmsRate }}%</span>
+                  <span class="oem-rate-readonly" title="매출 − 제조사 원가 − 운송비 − 본사·영업·인증·유지보수 몫">남는 몫</span>
                 </td>
                 <!-- 영업 비율 -->
                 <td class="col-rate-input">
@@ -219,20 +207,9 @@
                   </div>
                   <span v-else class="rate-value">{{ tier.maintenanceRate }}%</span>
                 </td>
-                <!-- OEM 비율 (수동입력) -->
-                <td class="col-rate-input">
-                  <div v-if="editingIndex === index" class="rate-input-group">
-                    <input
-                      v-model.number="editForm.oemRate"
-                      type="number"
-                      class="form-input text-right rate-field"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                    >
-                    <span class="rate-suffix">%</span>
-                  </div>
-                  <span v-else class="rate-value">{{ tier.oemRate }}%</span>
+                <!-- 제조사 = 그 기간 출하분 실제 원가 (입력 안 함, 2026-10-21) -->
+                <td class="col-rate-auto">
+                  <span class="oem-rate-readonly" title="출고 로트 원가 → 제조사 원가 마스터">실제 원가</span>
                 </td>
                 <!-- 관리 버튼 -->
                 <td class="col-actions">
@@ -240,8 +217,8 @@
                     <GuardedButton
                       class="btn-icon save"
                       title="저장"
-                      :blocked="rateTotal !== 100"
-                      :reason="`수령자별 요율의 합이 100% 여야 저장할 수 있습니다.\n현재 합계: ${rateTotal}%`"
+                      :blocked="rateTotal > 100"
+                      :reason="`본사·영업·인증관리·유지보수 비율 합계가 100%를 넘으면 저장할 수 없습니다.\n현재 합계: ${rateTotal}%`"
                       @click="saveTier(index)"
                     >
                       <i class="fas fa-check" />
@@ -331,17 +308,12 @@ const editForm = ref({
   isUnlimited: false
 })
 
-// 에코암스 자동 계산
-const computedEcoarmsRate = computed(() => {
-  return 100 - editForm.value.ceoRate - editForm.value.salesRate -
-    editForm.value.certificationRate - editForm.value.maintenanceRate - editForm.value.oemRate
-})
-
-// 합계 검증
+// 고정 비율 합계 (본사·영업·인증·유지보수) — 100% 이하 (2026-10-21)
+//   제조사 = 실제 원가, 에코암스 = 남는 몫이라 입력·합계 대상이 아니다.
+//   oemRate·ecoarmsRate 칸은 옛 값 그대로 보관만 한다(계산에 안 쓰임).
 const rateTotal = computed(() => {
-  return editForm.value.ceoRate + editForm.value.salesRate +
-    editForm.value.certificationRate + editForm.value.maintenanceRate +
-    editForm.value.oemRate + computedEcoarmsRate.value
+  return Number(editForm.value.ceoRate || 0) + Number(editForm.value.salesRate || 0) +
+    Number(editForm.value.certificationRate || 0) + Number(editForm.value.maintenanceRate || 0)
 })
 
 // 연도 목록
@@ -452,13 +424,9 @@ const startEdit = (index: number) => {
  * 구간 저장
  */
 const saveTier = (index: number) => {
-  // 합계 100% 검증
-  if (rateTotal.value !== 100) {
-    alert('CEO + 영업 + 인증관리 + 유지보수 + OEM + 에코암스 합계가 100%여야 합니다.')
-    return
-  }
-  if (computedEcoarmsRate.value < 0) {
-    alert('에코암스 비율이 음수입니다. 다른 비율을 조정해주세요.')
+  // 고정 비율 4칸 합계 100% 이하
+  if (rateTotal.value > 100) {
+    alert(`본사·영업·인증관리·유지보수 비율 합계가 100%를 넘습니다. (현재 ${rateTotal.value}%)`)
     return
   }
 
@@ -467,7 +435,7 @@ const saveTier = (index: number) => {
     minAmount: editForm.value.minAmount,
     maxAmount: editForm.value.isUnlimited ? null : editForm.value.maxAmount,
     ceoRate: editForm.value.ceoRate,
-    ecoarmsRate: computedEcoarmsRate.value,
+    ecoarmsRate: tiers.value[index].ecoarmsRate,
     salesRate: editForm.value.salesRate,
     certificationRate: editForm.value.certificationRate,
     maintenanceRate: editForm.value.maintenanceRate,

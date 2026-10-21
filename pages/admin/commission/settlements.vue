@@ -5,7 +5,7 @@
       title="커미션 정산 이력"
       icon="chart"
       icon-color="purple"
-      description="계약별 커미션 정산 현황을 조회하고 관리합니다."
+      description="입금 1건마다 대표·영업·인증·유지보수 몫(매출 × 비율)을 봅니다. 제조사 원가·에코암스는 수익배분 대시보드에서 기간 합계로 봅니다."
     >
       <template #actions>
         <button
@@ -116,8 +116,8 @@
             <i class="fas fa-coins" />
           </div>
           <div class="card-content">
-            <span class="card-label">총 커미션</span>
-            <span class="card-value">{{ formatCurrency(totalCommission) }}</span>
+            <span class="card-label">매출 합계 (부가세 제외 · 현재 쪽)</span>
+            <span class="card-value">{{ formatCurrency(totalNetSales) }}</span>
           </div>
         </div>
       </div>
@@ -148,19 +148,13 @@
                   현장명
                 </th>
                 <th class="col-sales">
-                  매출액
+                  입금액 / 매출
                 </th>
                 <th class="col-tier">
                   구간
                 </th>
-                <th class="col-dist oem">
-                  제조사(OEM)
-                </th>
                 <th class="col-dist ceo">
                   본사(대표)
-                </th>
-                <th class="col-dist eco">
-                  에코암스
                 </th>
                 <th class="col-dist sales">
                   영업담당자
@@ -181,7 +175,7 @@
             </thead>
             <tbody>
               <tr v-if="settlements.length === 0">
-                <td colspan="13" class="no-data">
+                <td colspan="11" class="no-data">
                   <div class="empty-guide">
                     <i class="fas fa-file-invoice-dollar" />
                     <p class="empty-title">
@@ -221,30 +215,19 @@
                   {{ settlement.projectName }}
                 </td>
                 <td class="col-sales text-right">
-                  {{ formatCurrency(settlement.salesAmount) }}
+                  <div class="dist-cell">
+                    <span class="dist-amount">{{ formatCurrency(settlement.salesAmount) }}</span>
+                    <span class="dist-rate" title="부가세 제외 매출 — 배분 기준">{{ formatCurrency(settlement.netSalesAmount || 0) }}</span>
+                  </div>
                 </td>
                 <td class="col-tier text-center">
                   <span class="tier-badge-sm">{{ settlement.appliedTier || '-' }}</span>
-                </td>
-                <!-- 제조사(OEM) 분배율/금액 -->
-                <td class="col-dist text-right oem">
-                  <div class="dist-cell">
-                    <span class="dist-rate">{{ settlement.appliedOemRate || 0 }}%</span>
-                    <span class="dist-amount">{{ formatCurrency(settlement.oemAmount || 0) }}</span>
-                  </div>
                 </td>
                 <!-- 본사(대표) 분배율/금액 -->
                 <td class="col-dist text-right ceo">
                   <div class="dist-cell">
                     <span class="dist-rate">{{ settlement.appliedCeoRate || 0 }}%</span>
                     <span class="dist-amount">{{ formatCurrency(settlement.ceoAmount || 0) }}</span>
-                  </div>
-                </td>
-                <!-- 에코암스 분배율/금액 -->
-                <td class="col-dist text-right eco">
-                  <div class="dist-cell">
-                    <span class="dist-rate">{{ settlement.appliedEcoarmsRate || 0 }}%</span>
-                    <span class="dist-amount">{{ formatCurrency(settlement.ecoarmsAmount || 0) }}</span>
                   </div>
                 </td>
                 <!-- 영업담당자 분배율/금액 -->
@@ -360,24 +343,20 @@
                   <span class="amount">{{ formatCurrency(selectedSettlement.contractTotalAmount) }}</span>
                 </div>
                 <div class="detail-item">
-                  <label>정산기준 매출</label>
+                  <label>입금액 (입금일 {{ selectedSettlement.settlementDate || '-' }})</label>
                   <span class="amount">{{ formatCurrency(selectedSettlement.salesAmount) }}</span>
+                </div>
+                <div class="detail-item">
+                  <label>매출 (부가세 제외)</label>
+                  <span class="amount">{{ formatCurrency(selectedSettlement.netSalesAmount || 0) }}</span>
                 </div>
                 <div class="detail-item">
                   <label>적용 구간</label>
                   <span>{{ selectedSettlement.appliedTier || '-' }}</span>
                 </div>
                 <div class="detail-item">
-                  <label>OEM ({{ selectedSettlement.appliedOemRate || 0 }}%)</label>
-                  <span class="amount">{{ formatCurrency(selectedSettlement.oemAmount || 0) }}</span>
-                </div>
-                <div class="detail-item">
-                  <label>CEO ({{ selectedSettlement.appliedCeoRate || 0 }}%)</label>
+                  <label>본사(대표) ({{ selectedSettlement.appliedCeoRate || 0 }}%)</label>
                   <span class="amount">{{ formatCurrency(selectedSettlement.ceoAmount || 0) }}</span>
-                </div>
-                <div class="detail-item">
-                  <label>에코암스 ({{ selectedSettlement.appliedEcoarmsRate || 0 }}%)</label>
-                  <span class="amount">{{ formatCurrency(selectedSettlement.ecoarmsAmount || 0) }}</span>
                 </div>
                 <div class="detail-item">
                   <label>영업 ({{ selectedSettlement.appliedSalesRate || 0 }}%)</label>
@@ -501,8 +480,8 @@ const pendingCount = computed(() =>
 const confirmedCount = computed(() =>
   settlements.value.filter(s => s.status === 'CONFIRMED' || s.status === 'PAID').length
 )
-const totalCommission = computed(() =>
-  settlements.value.reduce((sum, s) => sum + s.commissionAmount, 0)
+const totalNetSales = computed(() =>
+  settlements.value.reduce((sum, s) => sum + (s.netSalesAmount || 0), 0)
 )
 
 const isAllSelected = computed(() => {
@@ -1101,6 +1080,8 @@ onMounted(() => {
 .col-dist.ceo .dist-amount { color: #2563eb; }
 .col-dist.eco .dist-amount { color: #059669; }
 .col-dist.sales .dist-amount { color: #d97706; }
+.col-dist.shipping .dist-amount { color: #64748b; }
+.amount-negative { color: #dc2626 !important; }
 
 /* 페이지네이션 - 커스터마이징 */
 .pagination {

@@ -223,23 +223,23 @@
                 </div>
 
                 <!-- 정산 현황 안내 (수령자 선택 시 표시) -->
-                <div v-if="form.recipientType && annualSummary" class="settlement-info-box">
+                <div v-if="form.recipientType && distribution" class="settlement-info-box">
                   <div class="info-box-title">
                     <i class="fas fa-info-circle" />
-                    {{ getRecipientLabel(form.recipientType) }} 정산 현황 ({{ selectedYear }}년)
+                    {{ getRecipientLabel(form.recipientType) }} 정산 현황 ({{ distribution.periodName }} · 실제 원가 기준)
                   </div>
                   <div class="info-box-grid">
                     <div class="info-item">
-                      <span class="info-label">총 매출</span>
-                      <span class="info-value">{{ formatCurrency(annualSummary.totalSalesAmount || 0) }}</span>
+                      <span class="info-label">매출 (부가세 제외)</span>
+                      <span class="info-value">{{ formatCurrency(distribution.netSales || 0) }}</span>
                     </div>
                     <div class="info-item">
                       <span class="info-label">적용 구간</span>
-                      <span class="info-value tier">{{ annualSummary.appliedTier || '-' }}</span>
+                      <span class="info-value tier">{{ distribution.tierName || '-' }}</span>
                     </div>
                     <div class="info-item">
                       <span class="info-label">적용 비율</span>
-                      <span class="info-value">{{ recipientRate }}%</span>
+                      <span class="info-value">{{ recipientRateLabel }}</span>
                     </div>
                     <div class="info-item">
                       <span class="info-label">정산액</span>
@@ -350,9 +350,10 @@ import {
   updateCommissionPayment,
   deleteCommissionPayment,
   exportPaymentsExcel,
-  getAnnualCommissionSummary
+  getCommissionDistribution,
+  getCommissionPeriods
 } from '~/services/commission.service'
-import type { CommissionPayment, AnnualCommissionSummary } from '~/types/commission'
+import type { CommissionPayment, CommissionDistribution, DistributionShareKey } from '~/types/commission'
 import { usePermissionStore } from '~/stores/permission'
 
 definePageMeta({
@@ -374,8 +375,8 @@ const filterStatus = ref('')
 const loading = ref(false)
 const allPayments = ref<CommissionPayment[]>([])
 
-// ============ 연간 정산 요약 (모달 내 참고 정보) ============
-const annualSummary = ref<AnnualCommissionSummary | null>(null)
+// ============ 실원가 수익배분 (모달 내 참고 정보) — 선택 연도의 정산기간 ============
+const distribution = ref<CommissionDistribution | null>(null)
 
 // ============ 모달 상태 ============
 const showModal = ref(false)
@@ -413,33 +414,29 @@ const summaryTotalPaid = computed(() =>
 /** 요약: 지급 건수 */
 const summaryCount = computed(() => allPayments.value.length)
 
-/** 선택된 수령자 유형의 적용 비율 */
-const recipientRate = computed(() => {
-  if (!annualSummary.value || !form.recipientType) { return 0 }
-  const rateMap: Record<string, number> = {
-    OEM: annualSummary.value.appliedOemRate || 0,
-    CEO: annualSummary.value.appliedCeoRate || 0,
-    ECOARMS: annualSummary.value.appliedEcoarmsRate || 0,
-    SALES_REP: annualSummary.value.appliedSalesRate || 0,
-    CERTIFICATION: annualSummary.value.appliedCertificationRate || 0,
-    MAINTENANCE: annualSummary.value.appliedMaintenanceRate || 0
-  }
-  return rateMap[form.recipientType] || 0
+// 수령자 유형 → 수익배분 행 (2026-10-21). 제조사 = 제조사 원가(운송비 포함), 에코암스 = 남는 몫
+const RECIPIENT_SHARE_KEY: Record<string, DistributionShareKey> = {
+  OEM: 'MANUFACTURER',
+  CEO: 'HEADQUARTERS',
+  ECOARMS: 'AGENT',
+  SALES_REP: 'PARTNER',
+  CERTIFICATION: 'CERTIFICATION',
+  MAINTENANCE: 'MAINTENANCE'
+}
+const recipientShare = computed(() => {
+  if (!distribution.value || !form.recipientType) { return null }
+  return distribution.value.shares.find(s => s.key === RECIPIENT_SHARE_KEY[form.recipientType]) || null
 })
 
-/** 선택된 수령자 유형의 정산액 */
-const recipientSettlementAmount = computed(() => {
-  if (!annualSummary.value || !form.recipientType) { return 0 }
-  const amountMap: Record<string, number> = {
-    OEM: annualSummary.value.totalOemAmount || 0,
-    CEO: annualSummary.value.totalCeoAmount || 0,
-    ECOARMS: annualSummary.value.totalEcoarmsAmount || 0,
-    SALES_REP: annualSummary.value.totalSalesRepAmount || 0,
-    CERTIFICATION: annualSummary.value.totalCertificationAmount || 0,
-    MAINTENANCE: annualSummary.value.totalMaintenanceAmount || 0
-  }
-  return amountMap[form.recipientType] || 0
+/** 선택된 수령자 유형의 비율 — 고정 비율이면 설정값, 원가·에코암스는 매출 대비 실적 % */
+const recipientRateLabel = computed(() => {
+  const s = recipientShare.value
+  if (!s) { return '-' }
+  return s.configuredRate !== null ? `${s.configuredRate}%` : `실적 ${Number(s.ratio).toFixed(2)}%`
 })
+
+/** 선택된 수령자 유형의 정산액 (실원가 배분, 정산기간 합계) */
+const recipientSettlementAmount = computed(() => recipientShare.value?.amount || 0)
 
 /** 선택된 수령자 유형의 기지급 합계 */
 const recipientPaidAmount = computed(() => {
@@ -532,10 +529,15 @@ const loadData = async () => {
 // ============ 연간 요약 로드 ============
 const loadAnnualSummary = async () => {
   try {
-    annualSummary.value = await getAnnualCommissionSummary(selectedYear.value)
+    // 선택 연도가 끝나는 정산기간(없으면 걸치는 기간)의 실원가 배분
+    const periods = await getCommissionPeriods()
+    const year = selectedYear.value
+    const period = periods.find((p: any) => p.endYear === year) ||
+      periods.find((p: any) => p.startYear <= year && year <= p.endYear)
+    distribution.value = period ? await getCommissionDistribution(period.periodId) : null
   } catch (error) {
-    console.error('연간 요약 조회 실패:', error)
-    annualSummary.value = null
+    console.error('수익배분 조회 실패:', error)
+    distribution.value = null
   }
 }
 
