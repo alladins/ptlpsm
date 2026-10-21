@@ -50,6 +50,8 @@ interface Props {
   height?: number | string
   /** 크로스필터 콜백 (차트 요소 클릭) */
   onCrossFilter?: (sel: { name: string, value: unknown }) => void
+  /** 생성된 option 후처리 (막대 위 라벨 등 화면별 추가 표시). 현재 차트 타입을 함께 받는다 */
+  decorate?: (opt: any, type: EnterpriseChartType) => void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -58,7 +60,8 @@ const props = withDefaults(defineProps<Props>(), {
   legend: 'top',
   colors: undefined,
   height: 300,
-  onCrossFilter: undefined
+  onCrossFilter: undefined,
+  decorate: undefined
 })
 
 const currentType = ref<EnterpriseChartType>(props.initialType)
@@ -67,6 +70,7 @@ watch(() => props.initialType, (t) => { currentType.value = t })
 // 매트릭스 → ECharts option (범례/팔레트 후처리 포함)
 const chartOption = computed(() => {
   const opt: any = matrixToEChartsOption(props.data, { type: currentType.value })
+  props.decorate?.(opt, currentType.value)
   // 툴팁을 body 레벨로 렌더 — 작은 카드/overflow 영역에서 잘리지 않도록
   opt.tooltip = { ...(opt.tooltip ?? {}), appendToBody: true }
   // 카르테시안(축 있는) 차트: 축 라벨 잘림 방지(containLabel) + 상하좌우 여백 최소화

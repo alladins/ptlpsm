@@ -156,7 +156,14 @@ const totalCostRatio = computed(() => shareOf('MANUFACTURER')?.ratio || 0)<templ
             월별 매출 및 배분 (출하일 기준)
           </h3>
           <div class="chart-wrapper">
-            <TopChartPanel :data="monthlyMatrix" initial-type="stacked-bar" :toolbar="['stacked-bar', 'bar', 'line']" :colors="shareColors" height="100%" />
+            <TopChartPanel
+              :data="monthlyMatrix"
+              initial-type="stacked-bar"
+              :toolbar="['stacked-bar', 'bar', 'line']"
+              :colors="shareColors"
+              :decorate="decorateMonthly"
+              height="100%"
+            />
           </div>
         </div>
 
@@ -166,7 +173,14 @@ const totalCostRatio = computed(() => shareOf('MANUFACTURER')?.ratio || 0)<templ
             월별 에코암스 몫
           </h3>
           <div class="chart-wrapper bar">
-            <TopChartPanel :data="agentMatrix" initial-type="bar" :toolbar="['bar', 'line']" :colors="[shareColors[5]]" height="100%" />
+            <TopChartPanel
+              :data="agentMatrix"
+              initial-type="bar"
+              :toolbar="['bar', 'line']"
+              :colors="[shareColors[5]]"
+              :decorate="decorateAgent"
+              height="100%"
+            />
           </div>
         </div>
       </div>
@@ -186,6 +200,9 @@ const totalCostRatio = computed(() => shareOf('MANUFACTURER')?.ratio || 0)<templ
                 <th class="stakeholder-col manufacturer">
                   제조사 원가(운송비 포함)
                 </th>
+                <th class="stakeholder-col manufacturer" :title="`원가 ÷ 매출(부가세 제외). ${breakEvenRatio}% 를 넘으면 에코암스 몫이 마이너스`">
+                  원가율
+                </th>
                 <th class="stakeholder-col headquarters">
                   본사 {{ rateOf('HEADQUARTERS') }}%
                 </th>
@@ -201,11 +218,14 @@ const totalCostRatio = computed(() => shareOf('MANUFACTURER')?.ratio || 0)<templ
                 <th class="stakeholder-col agent">
                   에코암스
                 </th>
+                <th class="stakeholder-col agent" title="에코암스 몫 ÷ 매출(부가세 제외). 원가율이 오르면 그만큼 줄어든다">
+                  에코암스 비율
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="dist.months.length === 0">
-                <td colspan="8" class="text-center empty-cell">
+                <td colspan="10" class="text-center empty-cell">
                   이 기간에 출하가 없습니다.
                 </td>
               </tr>
@@ -218,6 +238,9 @@ const totalCostRatio = computed(() => shareOf('MANUFACTURER')?.ratio || 0)<templ
                 </td>
                 <td class="text-right manufacturer">
                   {{ formatCurrency(m.manufacturerCost) }}
+                </td>
+                <td class="text-right manufacturer" :class="{ 'amount-negative': costRatioOf(m) > breakEvenRatio }">
+                  {{ formatRatio(costRatioOf(m)) }}
                 </td>
                 <td class="text-right headquarters">
                   {{ formatCurrency(m.headquarters) }}
@@ -234,6 +257,9 @@ const totalCostRatio = computed(() => shareOf('MANUFACTURER')?.ratio || 0)<templ
                 <td class="text-right agent" :class="{ 'amount-negative': m.agent < 0 }">
                   {{ formatCurrency(m.agent) }}
                 </td>
+                <td class="text-right agent" :class="{ 'amount-negative': m.agent < 0 }">
+                  {{ formatRatio(agentRatioOf(m)) }}
+                </td>
               </tr>
             </tbody>
             <tfoot>
@@ -244,9 +270,17 @@ const totalCostRatio = computed(() => shareOf('MANUFACTURER')?.ratio || 0)<templ
                 <td class="text-right">
                   <strong>{{ formatCurrency(dist.netSales) }}</strong>
                 </td>
-                <td v-for="key in TABLE_SHARE_KEYS" :key="key" class="text-right" :class="[SHARE_CLASS[key], { 'amount-negative': amountOf(key) < 0 }]">
-                  <strong>{{ formatCurrency(amountOf(key)) }}</strong>
-                </td>
+                <template v-for="key in TABLE_SHARE_KEYS" :key="key">
+                  <td class="text-right" :class="[SHARE_CLASS[key], { 'amount-negative': amountOf(key) < 0 }]">
+                    <strong>{{ formatCurrency(amountOf(key)) }}</strong>
+                  </td>
+                  <td v-if="key === 'MANUFACTURER'" class="text-right manufacturer" :class="{ 'amount-negative': totalCostRatio > breakEvenRatio }">
+                    <strong>{{ formatRatio(totalCostRatio) }}</strong>
+                  </td>
+                  <td v-if="key === 'AGENT'" class="text-right agent" :class="{ 'amount-negative': amountOf('AGENT') < 0 }">
+                    <strong>{{ formatRatio(agentShare?.ratio || 0) }}</strong>
+                  </td>
+                </template>
               </tr>
             </tfoot>
           </table>
@@ -414,6 +448,77 @@ const monthlyMatrix = computed(() => {
     }))
   }
 })
+
+// 원가율 = 제조사 원가(운송비 포함) ÷ 매출(부가세 제외)
+type DistributionMonth = CommissionDistribution['months'][number]
+const costRatioOf = (m: DistributionMonth) => {
+  const net = Number(m.netSales) || 0
+  return net === 0 ? 0 : (Number(m.manufacturerCost) || 0) * 100 / net
+}
+// 에코암스 비율 = 에코암스 몫(남는 몫) ÷ 매출(부가세 제외) — 원가율이 오르내리는 만큼 월마다 달라진다
+const agentRatioOf = (m: DistributionMonth) => {
+  const net = Number(m.netSales) || 0
+  return net === 0 ? 0 : (Number(m.agent) || 0) * 100 / net
+}
+// 손익분기 원가율 = 100 − 고정 몫(본사·영업·인증·유지보수) 합. 넘으면 에코암스 몫이 마이너스
+const breakEvenRatio = computed(() => {
+  const fixed = (['HEADQUARTERS', 'PARTNER', 'CERTIFICATION', 'MAINTENANCE'] as DistributionShareKey[])
+    .reduce((sum, key) => sum + Number(rateOf(key)), 0)
+  return 100 - fixed
+})
+
+// 누적막대 꼭대기에 그달 원가율 표시 — 보이지 않는 선 시리즈를 막대 위(양수 합)에 두고 라벨만 그린다
+function decorateMonthly (opt: any, type: string) {
+  if (type !== 'stacked-bar' || !Array.isArray(opt.series)) { return }
+  // 휴대폰 폭에서는 막대 12개 위에 다 못 얹는다 — 아래 표의 원가율 칸으로 본다
+  if (window.innerWidth < 640) { return }
+  const months = dist.value?.months || []
+  const tops = months.map((_, i) => opt.series.reduce((sum: number, s: any) => sum + Math.max(0, Number(s.data?.[i]) || 0), 0))
+  opt.legend = { ...(opt.legend ?? {}), data: opt.series.map((s: any) => s.name) }
+  opt.series.push({
+    name: '원가율',
+    type: 'line',
+    data: months.map((m, i) => ({ value: tops[i], ratio: costRatioOf(m) })),
+    symbolSize: 0,
+    lineStyle: { opacity: 0 },
+    silent: true,
+    tooltip: { show: false },
+    z: 10,
+    // 좁은 화면에서 라벨끼리 겹치면 겹친 것만 숨긴다 (값은 아래 표에 있다)
+    labelLayout: { hideOverlap: true },
+    label: {
+      show: true,
+      position: 'top',
+      formatter: (p: any) => `{${p.data.ratio > breakEvenRatio.value ? 'over' : 'ok'}|원가 ${p.data.ratio.toFixed(1)}%}`,
+      rich: {
+        ok: { color: '#4b5563', fontSize: 11, fontWeight: 600 },
+        over: { color: '#dc2626', fontSize: 11, fontWeight: 700 }
+      }
+    }
+  })
+}
+
+// 에코암스 막대 끝에 그달 에코암스 비율 표시 — 플러스는 막대 위, 마이너스는 막대 아래
+function decorateAgent (opt: any, type: string) {
+  const s = Array.isArray(opt.series) ? opt.series[0] : null
+  if (type !== 'bar' || !s) { return }
+  const months = dist.value?.months || []
+  // 막대 끝 라벨이 축 글자와 겹치지 않게 위아래 여백
+  opt.yAxis = { ...(opt.yAxis ?? {}), boundaryGap: ['12%', '12%'] }
+  s.data = months.map(m => ({ value: m.agent, label: { position: m.agent < 0 ? 'bottom' : 'top' } }))
+  s.labelLayout = { hideOverlap: true }
+  s.label = {
+    show: true,
+    formatter: (p: any) => {
+      const ratio = agentRatioOf(months[p.dataIndex])
+      return `{${ratio < 0 ? 'neg' : 'pos'}|${ratio.toFixed(1)}%}`
+    },
+    rich: {
+      pos: { color: '#059669', fontSize: 10, fontWeight: 600 },
+      neg: { color: '#dc2626', fontSize: 10, fontWeight: 700 }
+    }
+  }
+}
 
 const agentMatrix = computed(() => {
   const months = dist.value?.months || []
@@ -804,6 +909,11 @@ onMounted(async () => {
 
 .detail-table th.stakeholder-col {
   font-size: 0.75rem;
+}
+
+/* 금액·비율 칸 제목은 숫자와 같은 오른쪽 끝에 맞춘다 (월 칸만 가운데) */
+.detail-table thead th:not(:first-child) {
+  text-align: right;
 }
 
 .detail-table th.manufacturer { color: #6366f1; }
