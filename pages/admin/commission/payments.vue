@@ -67,7 +67,7 @@
             <i class="fas fa-file-excel" />
             엑셀
           </button>
-          <button class="btn-add-payment" @click="openCreateModal">
+          <button v-if="!isReadOnlyRole" class="btn-add-payment" @click="openCreateModal">
             <i class="fas fa-plus" />
             지급 등록
           </button>
@@ -133,7 +133,9 @@
               {{ payment.remarks || '-' }}
             </td>
             <td class="text-center actions-cell">
+              <span v-if="isReadOnlyRole">-</span>
               <GuardedButton
+                v-if="!isReadOnlyRole"
                 class="btn-table-action edit"
                 :blocked="!canEdit(payment)"
                 :reason="`이미 ${getStatusLabel(payment.status)} 처리된 지급건이라 수정할 수 없습니다.\n금액을 바로잡으려면 이 건을 취소하고 다시 등록하세요.`"
@@ -143,6 +145,7 @@
                 <i class="fas fa-pen" />
               </GuardedButton>
               <GuardedButton
+                v-if="!isReadOnlyRole"
                 class="btn-table-action delete"
                 :blocked="!canDelete(payment)"
                 :reason="`이미 ${getStatusLabel(payment.status)} 처리된 지급건이라 삭제할 수 없습니다.\n정산에 반영된 기록은 감사를 위해 남겨 둡니다.`"
@@ -350,11 +353,15 @@ import {
   getAnnualCommissionSummary
 } from '~/services/commission.service'
 import type { CommissionPayment, AnnualCommissionSummary } from '~/types/commission'
+import { usePermissionStore } from '~/stores/permission'
 
 definePageMeta({
   layout: 'admin',
   pageTitle: '커미션 지급 관리'
 })
+
+// 조회 전용(VIEWER) — 지급 등록·수정·삭제 버튼을 숨긴다 (서버도 쓰기를 전면 차단)
+const isReadOnlyRole = computed(() => usePermissionStore().isReadOnly)
 
 // ============ 필터 상태 ============
 const currentYear = new Date().getFullYear()

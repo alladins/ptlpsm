@@ -3,6 +3,7 @@
     <div class="tab-header">
       <h4>선급금 정보</h4>
       <GuardedButton
+        v-if="!readOnly"
         class="btn-primary"
         :blocked="!canRequestAdvance || hasAdvancePayment"
         :reason="advanceButtonTooltip || '지금은 선급금을 신청할 수 없습니다.'"
@@ -67,7 +68,7 @@
       </div>
 
       <!-- 액션 버튼 (상태에 따라 표시) -->
-      <div v-if="advanceDetail?.status === 'REQUESTED' || advanceDetail?.status === 'APPROVED' || advanceDetail?.status === 'REJECTED'" class="collection-confirm-section">
+      <div v-if="!readOnly && (advanceDetail?.status === 'REQUESTED' || advanceDetail?.status === 'APPROVED' || advanceDetail?.status === 'REJECTED')" class="collection-confirm-section">
         <!-- 수금확인 버튼 (신청 또는 승인 상태일 때) -->
         <button
           v-if="advanceDetail?.status === 'REQUESTED' || advanceDetail?.status === 'APPROVED'"
@@ -137,10 +138,13 @@ interface Props {
   advancePaymentRate: number
   /** 선급금 버튼 툴팁 */
   advanceButtonTooltip?: string
+  /** 조회 전용 — 신청·입금확인·삭제 버튼을 숨긴다 (서버도 쓰기를 막음) */
+  readOnly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  advanceButtonTooltip: ''
+  advanceButtonTooltip: '',
+  readOnly: false
 })
 
 const emit = defineEmits<{

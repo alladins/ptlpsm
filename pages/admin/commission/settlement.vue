@@ -46,7 +46,7 @@
             {{ simulating ? '시뮬레이션 중...' : '시뮬레이션 실행' }}
           </button>
           <button
-            v-if="simulationResult && !simulationResult.isFinalized"
+            v-if="!isReadOnlyRole && simulationResult && !simulationResult.isFinalized"
             class="btn-finalize"
             :disabled="finalizing"
             @click="showFinalizeConfirm = true"
@@ -224,11 +224,15 @@ import {
   finalizeFinalSettlement
 } from '~/services/commission.service'
 import type { AnnualFinalSettlementResponse } from '~/types/commission'
+import { usePermissionStore } from '~/stores/permission'
 
 definePageMeta({
   layout: 'admin',
   pageTitle: '연말정산 관리'
 })
+
+// 조회 전용(VIEWER) — 시뮬레이션(조회)만 쓰고 확정 버튼은 숨긴다 (서버도 쓰기를 전면 차단)
+const isReadOnlyRole = computed(() => usePermissionStore().isReadOnly)
 
 // State
 const selectedYear = ref(new Date().getFullYear())

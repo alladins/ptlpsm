@@ -39,6 +39,17 @@
         </div>
       </div>
 
+      <!-- 조회 전용 안내 — 서버가 쓰기를 전면 차단하므로 등록·수정·삭제 열은 잠근다 -->
+      <GuideNotice v-if="isReadOnlyRoleSelected" summary="조회 전용은 외부인용 계정입니다. 보여줄 메뉴의 «조회»만 골라 켜세요. 등록·수정·삭제는 켤 수 없습니다.">
+        <ul>
+          <li>조회 전용 계정은 어떤 화면에서도 저장·수정·삭제가 되지 않습니다(서버에서 막음).</li>
+          <li>«조회»를 켜지 않은 메뉴는 주소를 직접 입력해도 열리지 않고, 그 데이터도 서버가 내주지 않습니다.</li>
+          <li>화면 한쪽이 비어 보이면, 그 화면이 다른 메뉴의 정보를 같이 쓰는 경우입니다(예: 출하관리 화면의 납품완료 정보). 필요한 메뉴의 «조회»도 함께 켜세요.</li>
+          <li>«전체 허용»과 줄 끝의 ✓ 버튼도 «조회»만 켭니다.</li>
+          <li>원가·커미션·자금처럼 외부에 보이면 안 되는 메뉴는 켜지 마세요. 켠 메뉴는 이 역할의 모든 계정에 똑같이 보입니다.</li>
+        </ul>
+      </GuideNotice>
+
       <!-- 로딩 상태 -->
       <div v-if="loading" class="loading-state">
         <i class="fas fa-spinner fa-spin" />
@@ -96,12 +107,14 @@
                 <td class="col-auth">
                   <label
                     class="checkbox-wrapper"
-                    :class="{ 'indeterminate': getCheckboxState(menu.menuId, 'writeAuth') === 'indeterminate' }"
+                    :class="{ 'indeterminate': getCheckboxState(menu.menuId, 'writeAuth') === 'indeterminate', 'locked': isReadOnlyRoleSelected }"
+                    :title="isReadOnlyRoleSelected ? READ_ONLY_LOCK_TITLE : undefined"
                   >
                     <input
                       type="checkbox"
                       :checked="getCheckboxState(menu.menuId, 'writeAuth') === 'checked'"
                       :indeterminate="getCheckboxState(menu.menuId, 'writeAuth') === 'indeterminate'"
+                      :disabled="isReadOnlyRoleSelected"
                       @change="togglePermissionWithHierarchy(menu.menuId, 'writeAuth')"
                     >
                     <span class="checkmark" />
@@ -110,12 +123,14 @@
                 <td class="col-auth">
                   <label
                     class="checkbox-wrapper"
-                    :class="{ 'indeterminate': getCheckboxState(menu.menuId, 'editAuth') === 'indeterminate' }"
+                    :class="{ 'indeterminate': getCheckboxState(menu.menuId, 'editAuth') === 'indeterminate', 'locked': isReadOnlyRoleSelected }"
+                    :title="isReadOnlyRoleSelected ? READ_ONLY_LOCK_TITLE : undefined"
                   >
                     <input
                       type="checkbox"
                       :checked="getCheckboxState(menu.menuId, 'editAuth') === 'checked'"
                       :indeterminate="getCheckboxState(menu.menuId, 'editAuth') === 'indeterminate'"
+                      :disabled="isReadOnlyRoleSelected"
                       @change="togglePermissionWithHierarchy(menu.menuId, 'editAuth')"
                     >
                     <span class="checkmark" />
@@ -124,12 +139,14 @@
                 <td class="col-auth">
                   <label
                     class="checkbox-wrapper"
-                    :class="{ 'indeterminate': getCheckboxState(menu.menuId, 'deleteAuth') === 'indeterminate' }"
+                    :class="{ 'indeterminate': getCheckboxState(menu.menuId, 'deleteAuth') === 'indeterminate', 'locked': isReadOnlyRoleSelected }"
+                    :title="isReadOnlyRoleSelected ? READ_ONLY_LOCK_TITLE : undefined"
                   >
                     <input
                       type="checkbox"
                       :checked="getCheckboxState(menu.menuId, 'deleteAuth') === 'checked'"
                       :indeterminate="getCheckboxState(menu.menuId, 'deleteAuth') === 'indeterminate'"
+                      :disabled="isReadOnlyRoleSelected"
                       @change="togglePermissionWithHierarchy(menu.menuId, 'deleteAuth')"
                     >
                     <span class="checkmark" />
@@ -163,6 +180,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import type { Menu, MenuAuth } from '~/types/menu'
 import { roleService, menuService } from '~/services/menu.service'
 import type { Role, RolePermission } from '~/services/menu.service'
+import GuideNotice from '~/components/ui/GuideNotice.vue'
 
 definePageMeta({
   layout: 'admin'
@@ -258,6 +276,11 @@ const flatMenuList = computed<FlatMenuItem[]>(() => {
   flatten(menus.value)
   return result
 })
+
+// 조회 전용(VIEWER) 선택 여부 — 서버(ViewerWriteBlockFilter)가 쓰기를 전면 차단하고 저장 시에도 N 으로 고정한다
+const READ_ONLY_ROLE_CODE = 'VIEWER'
+const READ_ONLY_LOCK_TITLE = '조회 전용은 등록·수정·삭제를 켤 수 없습니다'
+const isReadOnlyRoleSelected = computed(() => selectedRoleCode.value === READ_ONLY_ROLE_CODE)
 
 // 변경 사항 여부
 const hasChanges = computed(() => {
@@ -517,7 +540,9 @@ function setMenuAllPermissionsWithHierarchy (menuId: number, value: 'Y' | 'N') {
   const menu = flatMenuList.value.find(m => m.menuId === menuId)
   if (!menu) { return }
 
-  const authTypes: Array<keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>> = ['readAuth', 'writeAuth', 'editAuth', 'deleteAuth']
+  // 조회 전용은 «조회»만 켜고 끈다
+  const authTypes: Array<keyof Pick<RolePermission, 'readAuth' | 'writeAuth' | 'editAuth' | 'deleteAuth'>> =
+    isReadOnlyRoleSelected.value ? ['readAuth'] : ['readAuth', 'writeAuth', 'editAuth', 'deleteAuth']
 
   // 현재 메뉴 권한 설정
   const perm = permissions.value.get(menuId)
@@ -551,11 +576,13 @@ function setMenuAllPermissionsWithHierarchy (menuId: number, value: 'Y' | 'N') {
  * 전체 메뉴 권한 일괄 설정
  */
 function setAllPermissions (value: 'Y' | 'N') {
+  // 조회 전용은 «조회»만 바꾼다 (쓰기는 늘 N)
+  const writeValue = isReadOnlyRoleSelected.value ? 'N' : value
   for (const [, perm] of permissions.value) {
     perm.readAuth = value
-    perm.writeAuth = value
-    perm.editAuth = value
-    perm.deleteAuth = value
+    perm.writeAuth = writeValue
+    perm.editAuth = writeValue
+    perm.deleteAuth = writeValue
   }
 }
 
@@ -847,6 +874,17 @@ onMounted(async () => {
 .checkbox-wrapper input[type="checkbox"]:checked {
   background: #2563eb;
   border-color: #2563eb;
+}
+
+/* 조회 전용 역할의 등록·수정·삭제 열 — 켤 수 없음 */
+.checkbox-wrapper.locked {
+  cursor: not-allowed;
+}
+
+.checkbox-wrapper.locked input[type="checkbox"] {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
 }
 
 .checkbox-wrapper input[type="checkbox"]:checked::after {

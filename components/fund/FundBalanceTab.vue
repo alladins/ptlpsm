@@ -2,7 +2,7 @@
   <div class="tab-content">
     <div class="tab-header">
       <h4>잔금 정보</h4>
-      <div class="tab-actions">
+      <div v-if="!readOnly" class="tab-actions">
         <!-- 납품완료 처리하기 버튼 (PENDING_SIGNATURE 상태 & 납품완료 전) — 완료계 서류 발행 → 귀속 미지정이면 막힘 -->
         <GuardedButton
           v-if="!isDeliveryCompleted && canCompleteFinalDelivery"
@@ -81,7 +81,7 @@
         <span class="amount text-success">{{ formatCurrency(balancePaidAmount) }}</span>
       </div>
       <!-- 잔금 입금확인 버튼 (납품완료 && 잔금 요청 있음 && status가 PAID가 아닐 때) -->
-      <div v-if="isDeliveryCompleted && hasBalanceRequest && balanceRequestStatus !== 'PAID'" class="collection-confirm-section">
+      <div v-if="!readOnly && isDeliveryCompleted && hasBalanceRequest && balanceRequestStatus !== 'PAID'" class="collection-confirm-section">
         <button
           class="btn-collection-confirm-lg"
           @click="emit('openBalanceConfirmModal')"
@@ -138,6 +138,8 @@ interface Props {
   balanceAdvanceDeduction?: number | null
   /** 실수금액 (잔금 - 선급금차감) */
   balanceNetAmount?: number | null
+  /** 조회 전용 — 납품완료 처리·잔금등록·입금확인 버튼을 숨긴다 (서버도 쓰기를 막음) */
+  readOnly?: boolean
 }
 
 const props = defineProps<Props>()

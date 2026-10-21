@@ -3,6 +3,7 @@
     <div class="tab-header">
       <h4>기성금 이력</h4>
       <GuardedButton
+        v-if="!readOnly"
         class="btn-primary"
         :blocked="!canRequestProgress"
         :reason="progressButtonTooltip || '지금은 기성을 청구할 수 없습니다.'"
@@ -24,6 +25,7 @@
           :placeholder="recipientPlaceholder"
         >
         <button
+          v-if="!readOnly"
           class="btn-recipient-save"
           :disabled="savingRecipient || !orderId"
           @click="saveRecipientName"
@@ -164,6 +166,7 @@
                   사진대지
                 </GuardedButton>
                 <GuardedButton
+                  v-if="!readOnly"
                   class="btn-pdf-sm btn-scan-upload"
                   :blocked="!payment.baselineId"
                   :reason="BASELINE_MISSING_REASON"
@@ -175,6 +178,7 @@
                   스캔업로드
                 </GuardedButton>
                 <GuardedButton
+                  v-if="!readOnly"
                   class="btn-pdf-sm"
                   :blocked="!payment.baselineId"
                   :reason="BASELINE_MISSING_REASON"
@@ -210,7 +214,7 @@
             <td>
               <div class="collection-actions">
                 <button
-                  v-if="payment.status === 'APPROVED'"
+                  v-if="!readOnly && payment.status === 'APPROVED'"
                   class="btn-collection-confirm"
                   title="수금 확인"
                   @click="emit('openCollectionConfirm', payment)"
@@ -226,7 +230,7 @@
 
                 <!-- 차수 취소 (수금 확인 전 + 마지막 차수만) -->
                 <button
-                  v-if="isCancellable(payment)"
+                  v-if="!readOnly && isCancellable(payment)"
                   class="btn-baseline-cancel"
                   title="이 기성 차수를 취소합니다. 물량 추가 후 같은 차수로 다시 청구할 수 있습니다."
                   @click="openCancelModal(payment)"
@@ -325,12 +329,15 @@ interface Props {
   clientName?: string
   /** 발주 ID — 공문 수신자명 저장용 */
   orderId?: number
+  /** 조회 전용 — 청구·수신자 저장·스캔업로드·재생성·수금확인·차수취소 버튼을 숨긴다 (서버도 쓰기를 막음) */
+  readOnly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   progressButtonTooltip: '',
   clientName: '',
-  orderId: undefined
+  orderId: undefined,
+  readOnly: false
 })
 
 /**

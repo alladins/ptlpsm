@@ -9,6 +9,7 @@
     >
       <template #actions>
         <button
+          v-if="!isReadOnlyRole"
           class="btn-confirm-batch"
           :disabled="selectedIds.length === 0"
           @click="confirmSelectedSettlements"
@@ -275,7 +276,7 @@
                 <td class="col-actions">
                   <div class="action-buttons">
                     <button
-                      v-if="settlement.status === 'PENDING' || settlement.status === 'CALCULATED'"
+                      v-if="!isReadOnlyRole && (settlement.status === 'PENDING' || settlement.status === 'CALCULATED')"
                       class="btn-icon confirm"
                       title="확정"
                       @click="confirmSettlement(settlement.settlementId)"
@@ -405,6 +406,7 @@
                   <label>비고</label>
                   <textarea
                     v-model="remarksText"
+                    :readonly="isReadOnlyRole"
                     class="remarks-textarea"
                     placeholder="비고 사항을 입력해주세요"
                     rows="3"
@@ -417,6 +419,7 @@
                 닫기
               </button>
               <button
+                v-if="!isReadOnlyRole"
                 class="ccm-btn-confirm ccm-purple"
                 :disabled="remarksSubmitting"
                 @click="submitRemarksAndClose"
@@ -426,7 +429,7 @@
                 비고 저장
               </button>
               <button
-                v-if="selectedSettlement && (selectedSettlement.status === 'PENDING' || selectedSettlement.status === 'CALCULATED')"
+                v-if="!isReadOnlyRole && selectedSettlement && (selectedSettlement.status === 'PENDING' || selectedSettlement.status === 'CALCULATED')"
                 class="ccm-btn-confirm"
                 @click="confirmSettlement(selectedSettlement.settlementId); closeDetailModal()"
               >
@@ -450,6 +453,7 @@ import { formatCurrency, formatDate } from '~/utils/format'
 import { updateSettlementRemarks, exportSettlementsExcel } from '~/services/commission.service'
 import type { CommissionSettlement, CommissionSettlementStatus } from '~/types/commission'
 import { COMMISSION_SETTLEMENT_STATUS_LABELS } from '~/types/commission'
+import { usePermissionStore } from '~/stores/permission'
 
 definePageMeta({
   layout: 'admin',
@@ -458,6 +462,8 @@ definePageMeta({
 
 const router = useRouter()
 const commissionStore = useCommissionStore()
+// 조회 전용(VIEWER) — 확정·비고 저장 버튼을 숨긴다 (서버도 쓰기를 전면 차단)
+const isReadOnlyRole = computed(() => usePermissionStore().isReadOnly)
 
 // 페이지 고유 상태
 const selectedStatus = ref<CommissionSettlementStatus | ''>('')

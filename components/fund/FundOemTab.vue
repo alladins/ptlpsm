@@ -4,6 +4,7 @@
       <h4>OEM 지급 현황</h4>
       <div class="tab-actions">
         <GuardedButton
+          v-if="!readOnly"
           class="btn-recalc"
           :blocked="!needsRecalculation"
           :disabled="isRecalculating"
@@ -14,6 +15,7 @@
           {{ isRecalculating ? '재계산 중...' : '원가 재계산' }}
         </GuardedButton>
         <GuardedButton
+          v-if="!readOnly"
           class="btn-warning"
           :blocked="!canAdjustBgrade"
           :reason="bgradeButtonTitle"
@@ -23,6 +25,7 @@
           B급 조정
         </GuardedButton>
         <GuardedButton
+          v-if="!readOnly"
           class="btn-loss"
           :blocked="!canAdjustBgrade"
           :reason="bgradeButtonTitle"
@@ -59,6 +62,7 @@
         </div>
       </div>
       <button
+        v-if="!readOnly"
         class="recalc-banner-btn"
         :disabled="isRecalculating"
         @click="emit('recalculateOemCost')"
@@ -206,6 +210,8 @@ interface Props {
   recalcPreview?: OemCostRecalcPreview | null
   /** 재계산 중 로딩 상태 */
   isRecalculating?: boolean
+  /** 조회 전용 — 원가 재계산·B급 조정·손실 등록 버튼을 숨긴다 (서버도 쓰기를 막음) */
+  readOnly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -213,7 +219,8 @@ const props = withDefaults(defineProps<Props>(), {
   oemExpectedTotal: 0,
   oemTotalScheduled: 0,
   recalcPreview: null,
-  isRecalculating: false
+  isRecalculating: false,
+  readOnly: false
 })
 
 const emit = defineEmits<{

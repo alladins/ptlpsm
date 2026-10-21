@@ -7,8 +7,8 @@
         description="PTPLPSM 출하관리 시스템"
       />
 
-      <!-- 빠른 액션 (가로 한 줄) -->
-      <div class="quick-actions-bar">
+      <!-- 빠른 액션 (가로 한 줄) — 등록 바로가기라 조회 전용(외부인용)에게는 숨김 -->
+      <div v-if="authStore.role !== 'VIEWER'" class="quick-actions-bar">
         <button class="action-btn-inline" @click="goToSales">
           <i class="fas fa-plus" />
           <span>영업 등록</span>

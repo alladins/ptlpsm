@@ -253,6 +253,7 @@
           :expected-advance-amount="expectedAdvanceAmount"
           :advance-payment-rate="fundDetail?.advancePaymentRate || 70"
           :advance-button-tooltip="getAdvanceButtonTooltip()"
+          :read-only="isReadOnlyRole"
           @open-modal="openAdvancePaymentModal"
           @open-collection-confirm="(payment) => openCollectionConfirmModal('advance', payment)"
           @delete-advance="handleDeleteAdvance"
@@ -270,6 +271,7 @@
           :progress-button-tooltip="getProgressButtonTooltip()"
           :client-name="fundDetail?.client || fundDetail?.builderCompanyName || ''"
           :order-id="fundDetail?.orderId"
+          :read-only="isReadOnlyRole"
           @open-modal="openProgressPaymentModal"
           @open-collection-confirm="(payment) => openCollectionConfirmModal('progress', payment)"
           @view-confirmation-pdf="viewConfirmationPdf"
@@ -300,6 +302,7 @@
           :balance-paid-amount="fundDetail?.balancePaidAmount"
           :balance-advance-deduction="balanceRequest?.advanceDeductionAmount"
           :balance-net-amount="balanceRequest?.netPaymentAmount"
+          :read-only="isReadOnlyRole"
           @open-final-delivery-modal="openFinalDeliveryModal"
           @open-balance-register-modal="openBalanceRegisterModal"
           @open-balance-confirm-modal="handleOpenBalanceConfirmModal"
@@ -317,6 +320,7 @@
           :is-recalculating="isRecalculating"
           :can-adjust-bgrade="canAdjustBgrade"
           :bgrade-button-title="bgradeButtonTitle"
+          :read-only="isReadOnlyRole"
           @open-bgrade-modal="openBgradeModal"
           @open-loss-modal="showLossModal = true"
           @recalculate-oem-cost="handleRecalculateOemCost"
@@ -434,6 +438,7 @@ import { useFundCalculations } from '~/utils/fund-calculations'
 import { useFundModals } from '~/composables/useFundModals'
 import { contractAllocDeliveryDoneLink } from '~/composables/useContractAllocStatus'
 import { useDeliveryButtons } from '~/composables/useDeliveryButtons'
+import { usePermissionStore } from '~/stores/permission'
 
 definePageMeta({
   layout: 'admin',
@@ -443,6 +448,8 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const fundStore = useFundStore()
+// 조회 전용(VIEWER) — 탭의 청구·입금확인·재계산 등 쓰기 버튼을 숨긴다 (서버도 쓰기를 전면 차단)
+const isReadOnlyRole = computed(() => usePermissionStore().isReadOnly)
 
 // 상태 포맷팅 함수들 (composable에서 가져옴)
 // 상태 포맷팅 함수 (자금 상태만 사용, 나머지는 탭 컴포넌트에서 처리)
