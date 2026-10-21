@@ -166,23 +166,6 @@ const totalCostRatio = computed(() => shareOf('MANUFACTURER')?.ratio || 0)<templ
             />
           </div>
         </div>
-
-        <div class="chart-card">
-          <h3 class="chart-title">
-            <i class="fas fa-balance-scale" />
-            월별 에코암스 몫
-          </h3>
-          <div class="chart-wrapper bar">
-            <TopChartPanel
-              :data="agentMatrix"
-              initial-type="bar"
-              :toolbar="['bar', 'line']"
-              :colors="[shareColors[5]]"
-              :decorate="decorateAgent"
-              height="100%"
-            />
-          </div>
-        </div>
       </div>
 
       <!-- 월별 상세 테이블 -->
@@ -498,36 +481,6 @@ function decorateMonthly (opt: any, type: string) {
   })
 }
 
-// 에코암스 막대 끝에 그달 에코암스 비율 표시 — 플러스는 막대 위, 마이너스는 막대 아래
-function decorateAgent (opt: any, type: string) {
-  const s = Array.isArray(opt.series) ? opt.series[0] : null
-  if (type !== 'bar' || !s) { return }
-  const months = dist.value?.months || []
-  // 막대 끝 라벨이 축 글자와 겹치지 않게 위아래 여백
-  opt.yAxis = { ...(opt.yAxis ?? {}), boundaryGap: ['12%', '12%'] }
-  s.data = months.map(m => ({ value: m.agent, label: { position: m.agent < 0 ? 'bottom' : 'top' } }))
-  s.labelLayout = { hideOverlap: true }
-  s.label = {
-    show: true,
-    formatter: (p: any) => {
-      const ratio = agentRatioOf(months[p.dataIndex])
-      return `{${ratio < 0 ? 'neg' : 'pos'}|${ratio.toFixed(1)}%}`
-    },
-    rich: {
-      pos: { color: '#059669', fontSize: 10, fontWeight: 600 },
-      neg: { color: '#dc2626', fontSize: 10, fontWeight: 700 }
-    }
-  }
-}
-
-const agentMatrix = computed(() => {
-  const months = dist.value?.months || []
-  return {
-    categories: months.map(m => formatYearMonth(m.yearMonth)),
-    series: [{ name: '에코암스 몫', values: months.map(m => m.agent), color: shareColors[5] }]
-  }
-})
-
 onMounted(async () => {
   await loadPeriods()
   await loadDistribution()
@@ -822,7 +775,7 @@ onMounted(async () => {
 /* 차트 그리드 */
 .charts-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -858,10 +811,6 @@ onMounted(async () => {
   flex: 1;
   min-height: 260px;
   position: relative;
-}
-
-.chart-wrapper.bar {
-  min-height: 260px;
 }
 
 /* 상세 테이블 */
