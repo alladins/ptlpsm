@@ -92,9 +92,9 @@
             <span>받는 사람 문자 <strong>{{ group.smsRecipientCount || 0 }}</strong> · 메일 <strong>{{ group.emailRecipientCount || 0 }}</strong></span>
             <span>설계 <strong>{{ group.designCount }}</strong> · 공사 <strong>{{ group.constructionCount }}</strong></span>
             <span v-if="(group.pendingCount || 0) > 0" class="pending-count">미발송 <strong>{{ group.pendingCount }}</strong>건</span>
-            <!-- 방치 = 미확인으로 7일 넘은 리드 (10월 2일 이후 받은 것부터) -->
+            <!-- 확인 지연 = 미확인으로 7일 넘은 리드 (10월 2일 이후 받은 것부터) -->
             <span v-if="(group.staleCount || 0) > 0" class="stale-count">
-              <i class="fas fa-hourglass-end" /> 방치 <strong>{{ formatNumber(group.staleCount || 0) }}</strong>건
+              <i class="fas fa-hourglass-end" /> 확인 지연 <strong>{{ formatNumber(group.staleCount || 0) }}</strong>건
             </span>
           </div>
         </div>

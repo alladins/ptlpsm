@@ -60,7 +60,7 @@
         <div class="search-item">
           <label class="stale-check">
             <input v-model="searchForm.staleOnly" type="checkbox" @change="onStaleOnlyChange">
-            방치만
+            확인 지연만
           </label>
         </div>
         <!-- 대리점 목록은 리드파워 전용 API 라 관리자에게만 (대리점 소속은 서버가 자기 대리점 것만 준다) -->
@@ -417,7 +417,7 @@ const search = () => {
 }
 
 /**
- * «방치만» — 방치는 받은 지 7일 이상이라 기본 기간(최근 7일)에는 걸리지 않을 수 있다.
+ * «확인 지연만» — 확인 지연은 받은 지 7일 이상이라 기본 기간(최근 7일)에는 걸리지 않을 수 있다.
  * 켜면 낙찰·계약일 기간을 비워 전체 기간에서 찾고, 끄면 켜기 전 기간으로 되돌린다
  */
 let periodBeforeStale: { fromDate: string, toDate: string } | null = null
@@ -556,7 +556,7 @@ div.raw-date-note {
   max-width: 200px;
 }
 
-/* «방치만» 체크 — 터치 대상 44px */
+/* «확인 지연만» 체크 — 터치 대상 44px */
 .search-item label.stale-check {
   display: inline-flex;
   align-items: center;

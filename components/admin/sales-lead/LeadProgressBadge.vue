@@ -1,7 +1,7 @@
 <!--
   영업 진행 상태 배지
   - 미확인 회색 / 진행 단계(검토·접촉·설계 반영·견적) 파랑 계열 / 수주 초록 / 보류 노랑 / 포기 연한 빨강
-  - stale(방치)이면 «방치» 작은 표시를 붙인다
+  - stale(확인 지연)이면 «확인 지연» 작은 표시를 붙인다 (옛 이름 «방치» — 2026-10-22 사용자 요청으로 바꿈)
 -->
 <template>
   <span class="progress-badge-wrap">
@@ -9,7 +9,7 @@
       {{ leadProgressLabel(status) }}
     </span>
     <span v-if="stale" class="stale-mark" title="미확인으로 7일 넘게 지났습니다">
-      <i class="fas fa-hourglass-end" /> 방치
+      <i class="fas fa-hourglass-end" /> 확인 지연
     </span>
   </span>
 </template>
