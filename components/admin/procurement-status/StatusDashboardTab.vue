@@ -667,7 +667,8 @@ function onMapSelect (code: string | null, name: string) {
 const mapHeight = ref(640)
 const fitMap = () => {
   const w = window.innerWidth
-  mapHeight.value = w <= 600 ? 380 : w <= 900 ? 480 : w <= 1400 ? 560 : 640
+  // 휴대폰은 폭이 좁아 지도가 세로로 길게 그려진다 — 높이를 넉넉히 줘야 폭을 꽉 채운다 (10-22)
+  mapHeight.value = w <= 600 ? 520 : w <= 900 ? 480 : w <= 1400 ? 560 : 640
 }
 
 onMounted(() => {
@@ -1008,6 +1009,11 @@ onBeforeUnmount(() => window.removeEventListener('resize', fitMap))
 @media (max-width: 600px) {
   .kpi-row {
     grid-template-columns: 1fr;
+  }
+
+  /* 지도 칸 여백을 줄여 지도 폭을 넓힌다 */
+  .panel {
+    padding: 0.625rem 0.5rem;
   }
 
   .filter-item {

@@ -113,7 +113,7 @@ onMounted(loadMeta)
 
 @media (max-width: 600px) {
   .tab-content {
-    padding: 0.75rem;
+    padding: 0.5rem;
   }
 }
 </style>

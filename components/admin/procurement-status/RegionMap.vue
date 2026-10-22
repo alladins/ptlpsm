@@ -92,6 +92,21 @@ async function ensureGeo (area: string | null) {
 
 const nameOf = (code: string) => (props.area ? (sigunguNames.get(code) || code) : sidoName(code))
 
+/**
+ * 전국 지도에서 이름이 겹치는 작은 시도 — 이름을 바깥쪽으로 조금 비킨다 (px, [가로, 세로]) (10-22)
+ * 인천·서울·경기가 한 덩어리로 겹치고, 충남·세종·대전도 겹쳤다. 인천은 바다 쪽(서쪽)으로 뺀다
+ */
+const SIDO_LABEL_OFFSET: Record<string, [number, number]> = {
+  28: [-16, 8], // 인천
+  11: [8, -6], // 서울
+  36: [4, -8], // 세종
+  30: [8, 6] // 대전
+}
+
+/** 이 폭보다 좁으면(휴대폰) 이름을 작게, 색 막대는 지도 아래 가로로 — 세로 막대가 지도를 가렸다 (10-14 지적) */
+const NARROW_WIDTH = 480
+let narrow = false
+
 async function render () {
   if (!chart) { return }
   const seq = ++renderSeq
@@ -107,6 +122,13 @@ async function render () {
   if (seq !== renderSeq || !chart) { return }
   const entries = Object.entries(props.values)
   const max = Math.max(1, ...entries.map(([, v]) => v || 0))
+  if (!area) {
+    // 이름을 비킬 시도는 금액이 없어도 칸을 넣어 둔다 (data 에 있어야 칸별 이름 위치가 먹는다)
+    for (const code of Object.keys(SIDO_LABEL_OFFSET)) {
+      if (!(code in props.values)) { entries.push([code, 0]) }
+    }
+  }
+  narrow = (el.value?.clientWidth || 0) < NARROW_WIDTH
   chart.setOption({
     tooltip: {
       trigger: 'item',
@@ -117,9 +139,10 @@ async function render () {
     visualMap: {
       min: 0,
       max,
-      left: 8,
-      bottom: 8,
-      itemHeight: 120,
+      // 휴대폰: 지도 아래 가운데 가로 막대 / 넓은 화면: 왼쪽 아래 세로 막대
+      ...(narrow
+        ? { orient: 'horizontal', left: 'center', bottom: 0, itemWidth: 10, itemHeight: 140 }
+        : { orient: 'vertical', left: 8, bottom: 8, itemHeight: 120 }),
       text: [formatEok(max, area ? 1 : 0), '0'],
       calculable: false,
       // 지도에 마우스를 올리면 색 막대에 원 단위 숫자(42980700)가 뜨고 칸이 회색으로 바뀌어 끈다 — 금액은 툴팁으로
@@ -134,12 +157,23 @@ async function render () {
       nameProperty: area ? 'sgg' : 'sido_cd',
       roam: false,
       selectedMode: false,
-      layoutCenter: ['50%', '50%'],
-      layoutSize: '100%',
+      // 휴대폰: 정사각형에 맞추던 배치(layoutSize)를 버리고 칸 전체에 꽉 차게, 아래는 색 막대 자리.
+      //   전국은 울릉도·백령도까지 넣으면 본토가 작아져 본토 범위로 맞춘다 (10-22 «모바일 지도 너무 작다»)
+      ...(narrow
+        ? {
+            top: 4,
+            bottom: 44,
+            left: 0,
+            right: 0,
+            ...(area ? {} : { boundingCoords: [[125.95, 38.65], [129.6, 33.1]] })
+          }
+        : { layoutCenter: ['50%', '50%'], layoutSize: '100%' }),
+      // 그래도 겹치는 이름은 숨긴다 — 이름은 칸을 누르거나 올리면 툴팁으로 보인다
+      labelLayout: { hideOverlap: true },
       label: {
         show: true,
-        // 지도를 키우면서 이름도 키움 (10-15) — 시군구는 칸이 작아 한 단계 작게
-        fontSize: area ? 11 : 13,
+        // 지도를 키우면서 이름도 키움 (10-15) — 시군구는 칸이 작아 한 단계 작게, 휴대폰은 더 작게
+        fontSize: narrow ? (area ? 9 : 10) : (area ? 11 : 13),
         color: '#1e293b',
         // 진한 칸에서도 이름이 읽히게 흰 테두리
         textBorderColor: '#ffffff',
@@ -154,7 +188,8 @@ async function render () {
       data: entries.map(([name, value]) => ({
         name,
         value: value || 0,
-        itemStyle: name === props.selected ? { borderColor: '#f59e0b', borderWidth: 2.5 } : undefined
+        itemStyle: name === props.selected ? { borderColor: '#f59e0b', borderWidth: 2.5 } : undefined,
+        label: !area && SIDO_LABEL_OFFSET[name] ? { offset: SIDO_LABEL_OFFSET[name] } : undefined
       }))
     }]
   }, true)
@@ -168,7 +203,11 @@ onMounted(() => {
     emit('select', code === props.selected ? null : code, code ? nameOf(code) : '')
   })
   render()
-  observer = new ResizeObserver(() => chart?.resize())
+  observer = new ResizeObserver(() => {
+    chart?.resize()
+    // 휴대폰 ↔ 넓은 화면을 넘나들면 이름 크기·색 막대 위치를 다시 잡는다
+    if (((el.value?.clientWidth || 0) < NARROW_WIDTH) !== narrow) { render() }
+  })
   observer.observe(el.value)
 })
 
