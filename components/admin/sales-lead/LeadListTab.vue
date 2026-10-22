@@ -151,7 +151,9 @@
                       <span class="joint-badge">{{ jointLabel(item) }}</span>
                     </template> · {{ item.amount === null || item.amount === undefined ? '-' : formatNumber(item.amount) + '원' }}<template v-if="jointLabel(item)">
                       <span class="text-muted">(총액)</span>
-                    </template> · {{ item.eventDate || '-' }}
+                    </template> · {{ item.eventDate || '-' }}<span
+                      v-if="item.eventDateRaw" class="raw-date-note" :title="EVENT_DATE_RAW_HINT"
+                    >(나라장터 원본 {{ item.eventDateRaw }})</span>
                   </div>
                   <div v-if="item.designOfficeId" class="m-card-meta">
                     설계사무소 {{ item.designOfficeName || `#${item.designOfficeId}` }}
@@ -210,6 +212,9 @@
                   </td>
                   <td class="nowrap">
                     {{ item.eventDate || '-' }}
+                    <div v-if="item.eventDateRaw" class="raw-date-note small" :title="EVENT_DATE_RAW_HINT">
+                      나라장터 원본 {{ item.eventDateRaw }}
+                    </div>
                     <div v-if="item.contractCount" class="text-muted small">
                       계약 {{ item.contractDate || '-' }}<template v-if="item.contractCount > 1">
                         외 {{ item.contractCount - 1 }}건
@@ -288,6 +293,7 @@ import {
   addDays,
   formatBizno,
   jointLabel,
+  EVENT_DATE_RAW_HINT,
   type SalesLead,
   type SalesLeadRegionTree
 } from '~/types/sales-lead'
@@ -468,6 +474,14 @@ onMounted(async () => {
 
 <style scoped>
 /* 공동도급 N개사 — 금액이 업체 몫이 아니라 총액임을 같이 알린다 */
+.raw-date-note {
+  margin-left: 0.25rem;
+  color: #b45309;
+  cursor: help;
+}
+div.raw-date-note {
+  margin-left: 0;
+}
 .joint-badge {
   display: inline-block;
   margin-left: 0.25rem;

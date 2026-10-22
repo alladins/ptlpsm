@@ -229,6 +229,8 @@ export interface SalesLead {
   winnerTel: string | null
   amount: number | null
   eventDate: string | null
+  /** 나라장터 원본 계약일 — 연도 오타(등록일보다 1년 넘게 뒤)라 eventDate 를 등록일로 바꾼 건만 */
+  eventDateRaw?: string | null
   sourceRgstDt: string | null
   siteRegionNm: string | null
   clsfcNm: string | null
@@ -313,6 +315,10 @@ export function jointLabel (lead: SalesLead): string {
   const n = lead.jointCount || 1
   return n > 1 ? `공동도급 ${n}개사` : ''
 }
+
+/** 나라장터 원본 계약일이 입력 오류라 등록일로 바꿔 보여 줄 때의 설명 (마우스를 올리면 보이는 안내) */
+export const EVENT_DATE_RAW_HINT =
+  '나라장터에 입력된 계약일이 등록일보다 1년 넘게 뒤라 입력 오류로 보고 등록일로 표시합니다. 원본 값은 그대로 보존됩니다.'
 
 /** 분류 키워드 묶음 (공통코드 LEAD_KW_* 하나) */
 export interface LeadKeywordGroup {

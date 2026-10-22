@@ -240,7 +240,12 @@
                   <span v-if="jointLabel(lead)" class="text-muted small">({{ jointLabel(lead) }} 총액 — 업체별 몫 아님)</span>
                 </dd>
                 <dt>{{ lead.source === 'G2B_CONTRACT' ? '계약일' : '낙찰일' }}</dt>
-                <dd>{{ lead.eventDate || '-' }}</dd>
+                <dd>
+                  {{ lead.eventDate || '-' }}
+                  <span v-if="lead.eventDateRaw" class="raw-date-note small">
+                    (나라장터 원본 계약일 {{ lead.eventDateRaw }} — 등록일보다 1년 넘게 뒤라 입력 오류로 보고 등록일로 표시)
+                  </span>
+                </dd>
                 <dt>원천 등록일시</dt>
                 <dd>{{ formatDateTime(lead.sourceRgstDt) }}</dd>
                 <dt>첫 수집일</dt>
@@ -286,6 +291,9 @@
                     </td>
                     <td class="nowrap">
                       {{ l.eventDate || '-' }}
+                      <div v-if="l.eventDateRaw" class="raw-date-note small" :title="EVENT_DATE_RAW_HINT">
+                        나라장터 원본 {{ l.eventDateRaw }}
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -433,6 +441,7 @@ import {
   LEAD_SOURCE_LABELS,
   formatBizno,
   jointLabel,
+  EVENT_DATE_RAW_HINT,
   leadProgressOptions,
   leadStage,
   type LeadProgressLog,
@@ -677,6 +686,10 @@ onMounted(load)
 
 <style scoped>
 /* 공동도급 자리 — 주계약업체 / 공동도급 참여 */
+.raw-date-note {
+  color: #b45309;
+  cursor: help;
+}
 .joint-badge {
   display: inline-block;
   margin-left: 0.25rem;
