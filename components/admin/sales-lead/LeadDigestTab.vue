@@ -133,7 +133,11 @@
                 {{ lead.dminsttNm || '-' }}
               </div>
               <div class="m-card-meta">
-                {{ lead.winnerNm || '-' }} · {{ lead.amount === null || lead.amount === undefined ? '-' : formatNumber(lead.amount) + '원' }}
+                {{ lead.winnerNm || '-' }}<template v-if="jointLabel(lead)">
+                  <span class="joint-badge">{{ jointLabel(lead) }}</span>
+                </template> · {{ lead.amount === null || lead.amount === undefined ? '-' : formatNumber(lead.amount) + '원' }}<template v-if="jointLabel(lead)">
+                  <span class="text-muted">(총액)</span>
+                </template>
               </div>
             </div>
           </li>
@@ -169,9 +173,15 @@
               </td>
               <td class="text-left">
                 {{ lead.winnerNm || '-' }}
+                <div v-if="jointLabel(lead)">
+                  <span class="joint-badge">{{ jointLabel(lead) }}</span>
+                </div>
               </td>
               <td class="text-right nowrap">
                 {{ lead.amount === null || lead.amount === undefined ? '-' : formatNumber(lead.amount) }}
+                <div v-if="jointLabel(lead)" class="text-muted small">
+                  공동도급 총액
+                </div>
               </td>
               <td class="nowrap">
                 <span v-if="lead.notifiedAt" class="sent-icon" :title="formatDateTime(lead.notifiedAt)"><i class="fas fa-paper-plane" /> {{ formatTime(lead.notifiedAt) }}</span>
@@ -195,6 +205,7 @@ import { formatNumber, formatDateTime, parseUtcDate } from '~/utils/format'
 import { toApiError } from '~/utils/api-error'
 import { todayKst } from '~/types/agency'
 import type { LeadDigestGroup, SalesLeadNoticeResult } from '~/types/sales-lead'
+import { jointLabel } from '~/types/sales-lead'
 
 // canSend: [요약 보내기] — 리드파워 관리자만 (서버 /notices/** 도 같은 기준)
 withDefaults(defineProps<{ canSend?: boolean }>(), { canSend: false })
@@ -255,6 +266,19 @@ onMounted(load)
 </script>
 
 <style scoped>
+/* 공동도급 N개사 — 금액이 업체 몫이 아니라 총액임을 같이 알린다 */
+.joint-badge {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0 0.375rem;
+  border-radius: 0.25rem;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .digest-guide {
   margin-bottom: 0.75rem;
 }

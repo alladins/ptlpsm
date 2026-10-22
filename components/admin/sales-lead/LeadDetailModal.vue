@@ -235,7 +235,10 @@
                   </span>
                 </dd>
                 <dt>금액</dt>
-                <dd>{{ formatAmount(lead.amount) }}</dd>
+                <dd>
+                  {{ formatAmount(lead.amount) }}
+                  <span v-if="jointLabel(lead)" class="text-muted small">({{ jointLabel(lead) }} 총액 — 업체별 몫 아님)</span>
+                </dd>
                 <dt>{{ lead.source === 'G2B_CONTRACT' ? '계약일' : '낙찰일' }}</dt>
                 <dd>{{ lead.eventDate || '-' }}</dd>
                 <dt>원천 등록일시</dt>
@@ -249,7 +252,12 @@
 
             <!-- 같은 사업의 낙찰·계약 (공고번호로 이어짐) — 누르면 그 행 상세로 바뀐다 -->
             <section v-if="lead.linkedLeads && lead.linkedLeads.length > 0" class="detail-section">
-              <h4>같은 사업의 {{ lead.source === 'G2B_AWARD' ? '계약' : '낙찰·계약' }} <span class="text-muted small">(공고번호로 이어짐)</span></h4>
+              <h4>
+                같은 사업의 {{ lead.source === 'G2B_AWARD' ? '계약' : '낙찰·계약' }}<template v-if="jointLabel(lead)">
+                  · 공동도급 참여 업체
+                </template>
+                <span class="text-muted small">(공고번호·계약번호로 이어짐)</span>
+              </h4>
               <table class="data-table linked-table">
                 <thead>
                   <tr>
@@ -270,7 +278,8 @@
                     </td>
                     <td class="text-left">
                       {{ l.winnerNm || '-' }}
-                      <span v-if="l.winnerBizno && l.winnerBizno !== lead.winnerBizno" class="text-muted small">(다른 업체 — 공동도급 등)</span>
+                      <span v-if="jointRole(l)" class="joint-badge">{{ jointRole(l) }}</span>
+                      <span v-else-if="l.winnerBizno && l.winnerBizno !== lead.winnerBizno" class="text-muted small">(다른 업체)</span>
                     </td>
                     <td class="text-right nowrap">
                       {{ l.amount === null || l.amount === undefined ? '-' : formatNumber(l.amount) }}
@@ -423,6 +432,7 @@ import {
   LEAD_PROGRESS_LABELS,
   LEAD_SOURCE_LABELS,
   formatBizno,
+  jointLabel,
   leadProgressOptions,
   leadStage,
   type LeadProgressLog,
@@ -455,6 +465,17 @@ const errorMessage = ref('')
 
 const formatAmount = (amount?: number | null) =>
   amount === null || amount === undefined ? '-' : `${formatNumber(amount)}원`
+
+/**
+ * 같은 사업 표의 계약 행이 공동도급에서 어떤 자리인지 — 참여 업체 행은 대표 행을 가리키고(jointLeadId),
+ * 대표(주계약업체) 행은 누군가 자기를 가리킨다. 공동도급이 아니면 빈 문자열
+ */
+const jointRole = (l: SalesLead): string => {
+  if (l.source !== 'G2B_CONTRACT' || !lead.value) { return '' }
+  if (l.jointLeadId) { return '공동도급 참여' }
+  const others = [lead.value, ...(lead.value.linkedLeads || [])]
+  return others.some(o => o.jointLeadId === l.leadId) ? '주계약업체' : ''
+}
 
 /** 원천 응답 한 건 (필드명 그대로) — 파싱 실패면 빈 객체 */
 const raw = computed<Record<string, string>>(() => {
@@ -655,6 +676,19 @@ onMounted(load)
 </script>
 
 <style scoped>
+/* 공동도급 자리 — 주계약업체 / 공동도급 참여 */
+.joint-badge {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0 0.375rem;
+  border-radius: 0.25rem;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .lead-modal {
   max-width: 820px;
 }

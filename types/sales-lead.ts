@@ -262,6 +262,10 @@ export interface SalesLead {
   ntceNo?: string | null
   /** 계약 행 → 같은 사업의 낙찰 리드 ID (있으면 목록에서는 낙찰 행에 합쳐 보인다) */
   awardLeadId?: number | null
+  /** 공동도급 참여 업체 행 → 대표(주계약업체) 행 ID (있으면 목록에서는 대표 행에 합쳐 보인다) */
+  jointLeadId?: number | null
+  /** 공동도급 업체 수 — 1 이면 단독. 금액은 업체 몫이 아니라 계약 총액 */
+  jointCount?: number | null
   /** 사업 종류 — 낙찰이 기타여도 이어진 계약이 설계·공사면 그 종류 (목록·요약) */
   projectKind?: LeadKind | null
   /** 낙찰 행: 이어진 계약 수·계약일·계약금액 */
@@ -302,6 +306,12 @@ export function leadStage (lead: SalesLead): LeadStage {
     return (lead.contractCount || 0) > 0 ? 'AWARD_CONTRACT' : 'AWARD'
   }
   return lead.awardLeadId ? 'AWARD_CONTRACT' : 'CONTRACT'
+}
+
+/** 공동도급이면 «공동도급 4개사», 단독이면 빈 문자열 */
+export function jointLabel (lead: SalesLead): string {
+  const n = lead.jointCount || 1
+  return n > 1 ? `공동도급 ${n}개사` : ''
 }
 
 /** 분류 키워드 묶음 (공통코드 LEAD_KW_* 하나) */

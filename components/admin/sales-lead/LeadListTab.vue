@@ -147,7 +147,11 @@
                     {{ item.dminsttNm || '-' }}
                   </div>
                   <div class="m-card-meta">
-                    {{ item.winnerNm || '-' }} · {{ item.amount === null || item.amount === undefined ? '-' : formatNumber(item.amount) + '원' }} · {{ item.eventDate || '-' }}
+                    {{ item.winnerNm || '-' }}<template v-if="jointLabel(item)">
+                      <span class="joint-badge">{{ jointLabel(item) }}</span>
+                    </template> · {{ item.amount === null || item.amount === undefined ? '-' : formatNumber(item.amount) + '원' }}<template v-if="jointLabel(item)">
+                      <span class="text-muted">(총액)</span>
+                    </template> · {{ item.eventDate || '-' }}
                   </div>
                   <div v-if="item.designOfficeId" class="m-card-meta">
                     설계사무소 {{ item.designOfficeName || `#${item.designOfficeId}` }}
@@ -191,9 +195,15 @@
                     <div class="text-muted small nowrap">
                       {{ formatBizno(item.winnerBizno) }}
                     </div>
+                    <div v-if="jointLabel(item)">
+                      <span class="joint-badge">{{ jointLabel(item) }}</span>
+                    </div>
                   </td>
                   <td class="text-right nowrap">
                     {{ item.amount === null || item.amount === undefined ? '-' : formatNumber(item.amount) }}
+                    <div v-if="jointLabel(item)" class="text-muted small">
+                      공동도급 총액
+                    </div>
                     <div v-if="item.contractCount" class="text-muted small">
                       계약 {{ item.contractAmount === null || item.contractAmount === undefined ? '-' : formatNumber(item.contractAmount) }}
                     </div>
@@ -277,6 +287,7 @@ import {
   LEAD_STAGE_FILTER_OPTIONS,
   addDays,
   formatBizno,
+  jointLabel,
   type SalesLead,
   type SalesLeadRegionTree
 } from '~/types/sales-lead'
@@ -456,6 +467,19 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 공동도급 N개사 — 금액이 업체 몫이 아니라 총액임을 같이 알린다 */
+.joint-badge {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0 0.375rem;
+  border-radius: 0.25rem;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* 좌 권역 트리 + 우 목록 (설계사무소관리와 같은 배치) */
 .lead-layout {
   display: grid;
