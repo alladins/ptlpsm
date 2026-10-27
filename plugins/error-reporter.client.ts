@@ -32,7 +32,29 @@ export default defineNuxtPlugin((nuxtApp) => {
     return false
   }
 
+  /**
+   * 배포 직후 화면 조각(_nuxt/*.js) 로딩 실패 판별.
+   * 배포 때 옛 _nuxt 조각을 지우므로, 배포 전에 열어 둔 화면이 다음 화면 조각을 받으려 하면 404 가 난다.
+   * 코드 결함이 아니라 «새 버전이 올라갔다»는 신호라 수집하지 않고 새로고침으로 새 버전을 받게 한다.
+   * (운영 #43·#46·#47 "Failed to fetch dynamically imported module")
+   *   · Chrome/Edge: "Failed to fetch dynamically imported module"
+   *   · Safari: "Importing a module script failed"
+   *   · Firefox: "error loading dynamically imported module"
+   */
+  const isChunkLoadError = (message: string): boolean => {
+    const msg = message || ''
+    return msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Importing a module script failed') ||
+      msg.includes('error loading dynamically imported module')
+  }
+
   const send = (errorName: string, message: string, stack?: string) => {
+    if (isChunkLoadError(message)) {
+      // ttl 안에 다시 실패하면 새로고침하지 않는다(무한 새로고침 방지 — Nuxt 내장)
+      reloadNuxtApp({ persistState: false, ttl: 10_000 })
+      return
+    }
+
     // 로그인 안 된 상태에선 수집 생략(엔드포인트가 인증 요구 + 익명 스팸 방지)
     if (!localStorage.getItem('auth_access_token')) { return }
 

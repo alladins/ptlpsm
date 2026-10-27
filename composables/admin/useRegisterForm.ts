@@ -117,8 +117,9 @@ export function useRegisterForm<TFormData extends Record<string, any>, TCreateRe
       } else {
         alert('등록에 실패했습니다.')
       }
-
-      throw error
+      // 다시 던지지 않는다 — 사용자에게는 이미 안내했고, 호출처(@submit 핸들러)가 받지 않아
+      // 처리되지 않은 Promise 거부로 오류게시판에 쌓였다(운영 #41 «출하할 품목이 없습니다»).
+      // 서버 오류는 백엔드가 따로 수집한다. useEditForm 과 같은 동작.
     } finally {
       submitting.value = false
     }

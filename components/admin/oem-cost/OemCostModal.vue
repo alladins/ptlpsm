@@ -682,16 +682,18 @@ const handleSubmit = async () => {
     }
 
     // 성공 애니메이션
+    // 1.5초 사이에 창을 닫으면 부모가 skuInfo·editData 를 null 로 비운다 → 값은 타이머 전에 잡아 둔다
+    // (운영 오류게시판 #23 "Cannot read properties of null (reading 'skuId')")
     isSuccess.value = true
+    const saved = savedData.value!
+    const context = {
+      skuId: props.skuInfo?.skuId || saved.skuId,
+      oemCompanyId: saved.oemCompanyId,
+      oldCost: isEditMode.value ? (props.editData?.costPrice || 0) : 0,
+      newCost: saved.costPrice
+    }
     setTimeout(() => {
-      const oldCost = isEditMode.value ? (props.editData?.costPrice || 0) : 0
-      const context = {
-        skuId: props.skuInfo!.skuId,
-        oemCompanyId: savedData.value!.oemCompanyId,
-        oldCost,
-        newCost: savedData.value!.costPrice
-      }
-      emit('saved', savedData.value!, context)
+      emit('saved', saved, context)
       handleClose()
     }, 1500)
   } catch (error) {
