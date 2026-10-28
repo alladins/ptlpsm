@@ -8,6 +8,7 @@
 
 import { BASELINE_ENDPOINTS, BASELINE_MOBILE_ENDPOINTS } from './api/endpoints/baseline.endpoints'
 import { getAuthHeaders } from './api'
+import { apiClient } from './api/client'
 import { httpErrorMessage } from '~/utils/apiError'
 import type {
   Baseline,
@@ -61,6 +62,20 @@ function buildDocsQuery (recipientName?: string, docs?: BaselineDocType[]): stri
   }
   const query = params.toString()
   return query ? `?${query}` : ''
+}
+
+/** 기성 차수 원가 재계산 결과 */
+export interface BaselineCostRecalcResult {
+  baselineId: number
+  orderId: number
+  deliveryRequestNo: string | null
+  baselineSeq: number
+  oldTotalCost: number
+  newTotalCost: number
+  diff: number
+  shippingCost: number
+  skipped: boolean
+  skipReason: string | null
 }
 
 export const baselineService = {
@@ -417,6 +432,15 @@ export const baselineService = {
       const errorData = await response.json().catch(() => null)
       throw new Error(errorData?.message || httpErrorMessage(response.status, '기성 차수 취소'))
     }
+  },
+
+  /**
+   * 기성 차수 저장 원가 재계산 (시스템관리자) — 청구 금액·수량은 바뀌지 않는다
+   * @param apply false 면 계산만, true 면 저장
+   */
+  async recalculateCosts(baselineId: number, apply: boolean): Promise<BaselineCostRecalcResult[]> {
+    return apiClient.post<BaselineCostRecalcResult[]>(
+      `/admin/baselines/recalculate-costs?baselineId=${baselineId}&apply=${apply}`, {}, { timeout: 120000 })
   },
 
   /**

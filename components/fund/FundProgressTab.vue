@@ -228,6 +228,17 @@
                 </span>
                 <span v-else class="collection-pending">-</span>
 
+                <!-- 저장 원가 재계산 (시스템관리자) — 원가 소급 뒤 마진 표시를 맞출 때 -->
+                <button
+                  v-if="!readOnly && isSystemAdmin && payment.baselineId"
+                  class="btn-baseline-recalc"
+                  title="이 차수에 저장된 원가를 지금의 출고·출하 원가로 다시 계산합니다. 청구 금액은 바뀌지 않습니다."
+                  @click="openCostRecalc(payment)"
+                >
+                  <i class="fas fa-calculator" />
+                  원가
+                </button>
+
                 <!-- 차수 취소 (수금 확인 전 + 마지막 차수만) -->
                 <button
                   v-if="!readOnly && isCancellable(payment)"
@@ -253,6 +264,62 @@
       style="display: none"
       @change="onScanFileSelected"
     >
+
+    <!-- 기성 차수 원가 재계산 모달 (시스템관리자) -->
+    <div v-if="recalcTarget" class="cancel-modal-overlay" @click.self="closeCostRecalc">
+      <div class="cancel-modal">
+        <div class="cancel-modal-header recalc-header">
+          <h5>
+            <i class="fas fa-calculator" />
+            {{ recalcTarget.paymentSeq }}차 기성 원가 재계산
+          </h5>
+        </div>
+        <div class="cancel-modal-body">
+          <p class="recalc-notice">
+            이 차수에 저장된 원가(마진 표시용)를 지금의 출고·출하 원가로 다시 계산합니다.
+            <strong>청구 금액·수량·서류는 바뀌지 않습니다.</strong>
+          </p>
+          <div v-if="recalcLoading && !recalcResult" class="recalc-loading">
+            <i class="fas fa-spinner fa-spin" /> 계산 중...
+          </div>
+          <div v-else-if="recalcError" class="recalc-error">
+            {{ recalcError }}
+          </div>
+          <template v-else-if="recalcResult">
+            <p v-if="recalcResult.skipped" class="recalc-error">
+              {{ recalcResult.skipReason }}
+            </p>
+            <template v-else>
+              <p class="cancel-summary">
+                저장 원가 <strong>{{ formatCurrency(recalcResult.oldTotalCost) }}</strong>
+                → <strong>{{ formatCurrency(recalcResult.newTotalCost) }}</strong>
+                (<span :class="diffClass(recalcResult.diff)">{{ signedCurrency(recalcResult.diff) }}</span>)
+              </p>
+              <p v-if="recalcSaved" class="recalc-saved">
+                <i class="fas fa-check-circle" /> 저장했습니다.
+              </p>
+              <p v-else-if="recalcResult.diff === 0" class="recalc-notice">
+                이미 최신 원가와 같습니다. 저장할 것이 없습니다.
+              </p>
+            </template>
+          </template>
+        </div>
+        <div class="cancel-modal-footer">
+          <button class="btn-cancel-close" :disabled="recalcLoading" @click="closeCostRecalc">
+            닫기
+          </button>
+          <button
+            v-if="recalcResult && !recalcResult.skipped && recalcResult.diff !== 0 && !recalcSaved"
+            class="btn-recalc-save"
+            :disabled="recalcLoading"
+            @click="saveCostRecalc"
+          >
+            <i :class="recalcLoading ? 'fas fa-spinner fa-spin' : 'fas fa-save'" />
+            저장
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- 기성 차수 취소 확인 모달 -->
     <div v-if="cancelTarget" class="cancel-modal-overlay" @click.self="closeCancelModal">
@@ -313,7 +380,8 @@ import { computed, ref } from 'vue'
 import type { ProgressPaymentRequest } from '~/types/fund'
 import { formatCurrency } from '~/utils/format'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
-import { baselineService, BASELINE_DOC_TYPES, BASELINE_DOC_LABELS, type BaselineDocType } from '~/services/baseline.service'
+import { baselineService, BASELINE_DOC_TYPES, BASELINE_DOC_LABELS, type BaselineDocType, type BaselineCostRecalcResult } from '~/services/baseline.service'
+import { usePermission } from '~/composables/usePermission'
 import { orderService } from '~/services/order.service'
 
 interface Props {
@@ -434,6 +502,59 @@ const emit = defineEmits<{
   /** 기성 차수 취소 완료 → 목록 갱신 */
   baselineCancelled: []
 }>()
+
+// ============ 기성 차수 원가 재계산 (시스템관리자) ============
+
+const { currentRole } = usePermission()
+const isSystemAdmin = computed(() => currentRole.value === 'SYSTEM_ADMIN')
+
+const recalcTarget = ref<ProgressPaymentRequest | null>(null)
+const recalcResult = ref<BaselineCostRecalcResult | null>(null)
+const recalcLoading = ref(false)
+const recalcError = ref('')
+const recalcSaved = ref(false)
+
+const signedCurrency = (v: number) => (v > 0 ? '+' : '') + formatCurrency(v)
+const diffClass = (v: number) => (v < 0 ? 'recalc-down' : v > 0 ? 'recalc-up' : '')
+
+/** 열면 먼저 계산만 해서 보여 준다 */
+const openCostRecalc = async (payment: ProgressPaymentRequest) => {
+  if (!payment.baselineId) { return }
+  recalcTarget.value = payment
+  recalcResult.value = null
+  recalcError.value = ''
+  recalcSaved.value = false
+  recalcLoading.value = true
+  try {
+    const list = await baselineService.recalculateCosts(payment.baselineId, false)
+    recalcResult.value = list[0] || null
+    if (!recalcResult.value) { recalcError.value = '차수를 찾지 못했습니다.' }
+  } catch (e) {
+    recalcError.value = e instanceof Error ? e.message : '계산에 실패했습니다.'
+  } finally {
+    recalcLoading.value = false
+  }
+}
+
+const saveCostRecalc = async () => {
+  if (!recalcTarget.value?.baselineId) { return }
+  recalcLoading.value = true
+  recalcError.value = ''
+  try {
+    const list = await baselineService.recalculateCosts(recalcTarget.value.baselineId, true)
+    recalcResult.value = list[0] || recalcResult.value
+    recalcSaved.value = true
+  } catch (e) {
+    recalcError.value = e instanceof Error ? e.message : '저장에 실패했습니다.'
+  } finally {
+    recalcLoading.value = false
+  }
+}
+
+const closeCostRecalc = () => {
+  if (recalcLoading.value) { return }
+  recalcTarget.value = null
+}
 
 // ============ 기성 차수 취소 ============
 
@@ -874,6 +995,77 @@ const {
 }
 
 /* 기성 차수 취소 버튼 (수금 확인 전 + 마지막 차수만 노출) */
+.btn-baseline-recalc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  background: white;
+  color: #2563eb;
+  border: 1px solid #93c5fd;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-baseline-recalc:hover {
+  background: #eff6ff;
+}
+
+.recalc-header h5 {
+  color: #1e40af;
+}
+
+.recalc-notice {
+  color: #475569;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.recalc-loading {
+  padding: 1rem 0;
+  color: #64748b;
+}
+
+.recalc-error {
+  color: #b91c1c;
+}
+
+.recalc-saved {
+  color: #166534;
+  font-weight: 600;
+}
+
+.recalc-down {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.recalc-up {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.btn-recalc-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-recalc-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn-baseline-cancel {
   display: inline-flex;
   align-items: center;

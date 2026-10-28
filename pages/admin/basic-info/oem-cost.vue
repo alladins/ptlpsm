@@ -9,6 +9,10 @@
           <i class="fas fa-arrow-left" />
           전체 목록 보기
         </button>
+        <button class="btn-retro" title="원가표와 다른 단가로 등록된 기존 발주·출하를 원가표대로 맞춥니다" @click="openRetroModal()">
+          <i class="fas fa-history" />
+          원가 소급
+        </button>
         <button class="btn-excel" :disabled="exporting" @click="handleExportExcel">
           <i v-if="exporting" class="fas fa-spinner fa-spin" />
           <i v-else class="fas fa-file-excel" />
@@ -486,19 +490,35 @@
       :cost-source-type="pastPeriodContext.costSourceType"
       :anchor-cost="pastPeriodContext.anchorCost"
       @close="showPastPeriodModal = false"
-      @saved="loadData(); loadStatistics()"
+      @saved="handlePastPeriodSaved"
     />
 
-    <!-- 재계산 모달 -->
-    <OemCostRecalcModal
-      :is-open="showRecalcModal"
-      :sku-id="recalcContext.skuId"
-      :oem-company-id="recalcContext.oemCompanyId"
-      :sku-name="recalcContext.skuName"
-      :oem-company-name="recalcContext.oemCompanyName"
-      :cost-change="recalcContext.costChange"
-      @close="showRecalcModal = false"
-      @recalculated="loadData(); loadStatistics()"
+    <!--
+      원가 저장 직후 안내 — 새 원가 적용 시작일 이후에 이미 옛 단가로 등록된 발주가 있을 때만 뜬다.
+      (2026-10-28 이전의 «영향받는 주문 재계산» 창은 출하 원가를 안 바꿔 눌러도 숫자가 그대로라 오해를 만들어 제거)
+    -->
+    <OemCostRetroNotice
+      :is-open="showRetroNotice"
+      :sku-name="retroNotice.skuName"
+      :oem-company-name="retroNotice.oemCompanyName"
+      :from="retroNotice.from"
+      :count="retroNotice.count"
+      :amount-diff="retroNotice.amountDiff"
+      @close="showRetroNotice = false"
+      @retro="openRetroFromNotice"
+    />
+
+    <!-- 원가 소급 -->
+    <OemCostRetroModal
+      :is-open="showRetroModal"
+      :oem-companies="oemCompanies"
+      :initial-oem-company-id="retroInitial.oemCompanyId"
+      :initial-sku-id="retroInitial.skuId"
+      :initial-sku-name="retroInitial.skuName"
+      :initial-from="retroInitial.from"
+      :read-only="isReadOnlyRole"
+      @close="showRetroModal = false"
+      @applied="loadData(); loadStatistics()"
     />
   </div>
 </template>
@@ -510,9 +530,12 @@ import PageHeader from '~/components/ui/PageHeader.vue'
 import Pagination from '~/components/ui/Pagination.vue'
 import OemCostModal from '~/components/admin/oem-cost/OemCostModal.vue'
 import OemCostHistoryModal from '~/components/admin/oem-cost/OemCostHistoryModal.vue'
-import OemCostRecalcModal from '~/components/admin/oem-cost/OemCostRecalcModal.vue'
+import OemCostRetroModal from '~/components/admin/oem-cost/OemCostRetroModal.vue'
+import OemCostRetroNotice from '~/components/admin/oem-cost/OemCostRetroNotice.vue'
 import OemCostAddPeriodModal from '~/components/admin/oem-cost/OemCostAddPeriodModal.vue'
 import { oemCostService } from '~/services/oem-cost.service'
+import { costRetroService } from '~/services/cost-retro.service'
+import { usePermission } from '~/composables/usePermission'
 import { companyService } from '~/services/company.service'
 import {
   OEM_COST_STATUS,
@@ -612,15 +635,77 @@ const historyTarget = reactive({
   unitPrice: 0
 })
 
-// 재계산 모달 상태
-const showRecalcModal = ref(false)
-const recalcContext = reactive({
-  skuId: '',
+// 원가 소급 (2026-10-28)
+const { isReadOnlyRole } = usePermission()
+const showRetroModal = ref(false)
+const retroInitial = reactive({
+  oemCompanyId: null as number | null,
+  skuId: null as string | null,
+  skuName: null as string | null,
+  from: null as string | null
+})
+const showRetroNotice = ref(false)
+const retroNotice = reactive({
   oemCompanyId: 0,
+  skuId: '',
   skuName: '',
   oemCompanyName: '',
-  costChange: { oldCost: 0, newCost: 0 }
+  from: '',
+  count: 0,
+  amountDiff: 0
 })
+
+/** 원가 소급 창 열기 — 조건 없이 열면 제조사·기간을 직접 고른다 */
+const openRetroModal = (initial?: { oemCompanyId: number, skuId: string, skuName: string, from: string }) => {
+  retroInitial.oemCompanyId = initial?.oemCompanyId ?? null
+  retroInitial.skuId = initial?.skuId ?? null
+  retroInitial.skuName = initial?.skuName ?? null
+  retroInitial.from = initial?.from ?? null
+  showRetroModal.value = true
+}
+
+const openRetroFromNotice = () => {
+  showRetroNotice.value = false
+  openRetroModal({
+    oemCompanyId: retroNotice.oemCompanyId,
+    skuId: retroNotice.skuId,
+    skuName: retroNotice.skuName,
+    from: retroNotice.from
+  })
+}
+
+/**
+ * 원가 저장 직후 — 새 원가 적용 시작일 이후에 원가표와 다른 단가로 남은 발주가 있으면 안내한다.
+ * 조회 실패는 저장 자체와 무관하므로 조용히 넘어간다.
+ */
+const checkRetroCandidates = async (ctx: { skuId: string, oemCompanyId: number, effectiveDate?: string | null, skuName?: string }) => {
+  if (!ctx.skuId || !ctx.oemCompanyId || !ctx.effectiveDate || isReadOnlyRole.value) { return }
+  try {
+    const list = await costRetroService.getCandidates({
+      oemCompanyId: ctx.oemCompanyId,
+      from: ctx.effectiveDate,
+      skuId: ctx.skuId
+    })
+    const selectable = list.filter(c => c.selectable)
+    if (selectable.length === 0) { return }
+    retroNotice.oemCompanyId = ctx.oemCompanyId
+    retroNotice.skuId = ctx.skuId
+    retroNotice.skuName = ctx.skuName || selectable[0].skuName || ctx.skuId
+    retroNotice.oemCompanyName = oemCompanies.value.find(c => c.id === ctx.oemCompanyId)?.companyName || ''
+    retroNotice.from = ctx.effectiveDate
+    retroNotice.count = selectable.length
+    retroNotice.amountDiff = selectable.reduce((sum, c) => sum + (c.amountDiff || 0), 0)
+    showRetroNotice.value = true
+  } catch (e) {
+    console.warn('[원가 소급] 저장 후 대상 조회 실패 — 안내 생략', e)
+  }
+}
+
+const handlePastPeriodSaved = (ctx: { skuId: string, oemCompanyId: number, effectiveDate: string }) => {
+  loadData()
+  loadStatistics()
+  checkRetroCandidates({ ...ctx, skuName: pastPeriodContext.value.skuInfo?.skuName })
+}
 
 // 펼침/접힘
 const toggleExpand = (skuId: string) => {
@@ -961,15 +1046,14 @@ const handleCostSaved = (data: OemCost, context?: { skuId: string, oemCompanyId:
     historyModalRef.value?.reload()
   }
 
-  // 원가 변경 시 재계산 모달 표시
+  // 원가가 바뀌었으면 — 이미 옛 단가로 등록된 발주가 있는지 보고 소급 안내
   if (context && context.oldCost !== context.newCost) {
-    const oemName = oemCompanies.value.find(c => c.id === context.oemCompanyId)?.companyName || 'OEM'
-    recalcContext.skuId = context.skuId
-    recalcContext.oemCompanyId = context.oemCompanyId
-    recalcContext.skuName = data.skuName || data.skuId || context.skuId
-    recalcContext.oemCompanyName = oemName
-    recalcContext.costChange = { oldCost: context.oldCost, newCost: context.newCost }
-    showRecalcModal.value = true
+    checkRetroCandidates({
+      skuId: context.skuId,
+      oemCompanyId: context.oemCompanyId,
+      effectiveDate: data.effectiveDate,
+      skuName: data.skuName || data.skuId || context.skuId
+    })
   }
 }
 
@@ -1722,6 +1806,26 @@ onMounted(() => {
 .btn-excel:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* 원가 소급 (2026-10-28) */
+.btn-retro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #fff;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  color: #2563eb;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-retro:hover {
+  background: #eff6ff;
 }
 
 /* 반응형 */

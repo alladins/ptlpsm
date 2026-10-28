@@ -15,9 +15,7 @@ import type {
   OemCostStatistics,
   OemCostPageResponse,
   OemCostTreePageResponse,
-  SkuWithoutOemCost,
-  AffectedOrder,
-  RecalcResult
+  SkuWithoutOemCost
 } from '~/types/oem-cost'
 
 class OemCostService {
@@ -338,44 +336,6 @@ class OemCostService {
 
     if (!response.ok) {
       throw httpError(response.status, '미설정 SKU 조회')
-    }
-
-    return response.json()
-  }
-  /**
-   * 영향받는 주문 목록 조회 (원가 변경 시 재계산 대상)
-   */
-  async getAffectedOrders(skuId: string, oemCompanyId: number, startDate?: string, endDate?: string): Promise<AffectedOrder[]> {
-    const params = new URLSearchParams({ skuId, oemCompanyId: oemCompanyId.toString() })
-    if (startDate) params.append('startDate', startDate)
-    if (endDate) params.append('endDate', endDate)
-
-    const url = `${OEM_COST_ENDPOINTS.affectedOrders()}?${params.toString()}`
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: getAuthHeaders()
-    })
-
-    if (!response.ok) {
-      throw httpError(response.status, '영향 주문 조회')
-    }
-
-    return response.json()
-  }
-
-  /**
-   * 선택 재계산 실행
-   */
-  async recalculateSelected(deliveryDoneIds: number[]): Promise<RecalcResult[]> {
-    const url = OEM_COST_ENDPOINTS.recalculate()
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(deliveryDoneIds)
-    })
-
-    if (!response.ok) {
-      throw httpError(response.status, '재계산')
     }
 
     return response.json()

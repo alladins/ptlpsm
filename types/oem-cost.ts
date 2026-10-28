@@ -220,30 +220,6 @@ export const getMarginRateClass = (marginRate: number | null): string => {
 }
 
 /**
- * 영향받는 주문 정보 (원가 변경 시 재계산 대상)
- */
-export interface AffectedOrder {
-  deliveryDoneId: number
-  deliveryRequestNo: string | null
-  projectName: string | null
-  client: string | null
-  fundId: number | null
-  currentOemExpectedTotal: number
-  shipmentDate: string | null
-}
-
-/**
- * 선택 재계산 결과
- */
-export interface RecalcResult {
-  deliveryDoneId: number
-  oldAmount: number
-  newAmount: number
-  success: boolean
-  error?: string
-}
-
-/**
  * OEM 원가 상태 계산
  * ★ 날짜 문자열(YYYY-MM-DD)을 직접 비교하여 UTC/로컬 시간대 파싱 오류 방지
  * effectiveDate / expiryDate는 DB에서 YYYY-MM-DD 형식으로 오므로 문자열 비교가 안전
@@ -265,4 +241,114 @@ export const calculateOemCostStatus = (item: OemCost): OemCostStatus => {
   }
 
   return 'ACTIVE'
+}
+
+// =============== 원가 소급 (2026-10-28) ===============
+
+/**
+ * 원가 소급 후보 — 발주일 기준 원가표와 다른 단가로 등록된 발주 품목
+ */
+export interface CostRetroCandidate {
+  poiId: number
+  poId: number
+  poNo: string
+  orderDate: string
+  poStatus: string
+  skuId: string
+  skuName: string | null
+  quantity: number
+  shipmentQuantity: number | null
+  currentPrice: number
+  /** 발주일 기준 원가표 단가 (원가표 구간이 없으면 null) */
+  targetPrice: number | null
+  amountDiff: number | null
+  /** 원장 기준월 (발주일 월) */
+  ledgerYearMonth: string
+  paymentStatus: string | null
+  selectable: boolean
+  blockReason: string | null
+  warning: string | null
+}
+
+export interface CostRetroRequest {
+  oemCompanyId: number
+  periodFrom?: string | null
+  periodTo?: string | null
+  poiIds: number[]
+  previewToken?: string
+  regeneratePdf?: boolean
+  remarks?: string
+}
+
+export interface CostRetroResult {
+  applied: boolean
+  runId: number | null
+  previewToken: string | null
+  poItems: {
+    poiId: number
+    poId: number
+    poNo: string
+    orderDate: string
+    skuName: string | null
+    quantity: number
+    oldPrice: number
+    newPrice: number
+    amountDiff: number
+  }[]
+  ledgers: { yearMonth: string, before: number, after: number, diff: number, paymentStatus: string | null }[]
+  shipments: {
+    shipmentId: number
+    shipmentNo: string
+    shipmentDate: string
+    skuId: string
+    skuName: string | null
+    quantity: number
+    oldCost: number
+    newCost: number
+    /** 다른 발주 물량과 섞여 평균 원가가 들어갔는지 */
+    mixed: boolean
+  }[]
+  lotIssueCount: number
+  consumptionCount: number
+  funds: {
+    fundId: number
+    deliveryDoneId: number
+    deliveryRequestNo: string | null
+    projectName: string | null
+    before: number
+    after: number
+    diff: number
+  }[]
+  baselines: {
+    baselineId: number
+    baselineSeq: number
+    deliveryRequestNo: string | null
+    before: number
+    after: number
+    diff: number
+  }[]
+  warnings: string[]
+  regeneratedPdfs: string[]
+}
+
+export const COST_RETRO_RUN_STATUS_LABELS: Record<string, string> = {
+  APPLIED: '적용됨',
+  REVERTED: '되돌림',
+  PARTIAL_REVERTED: '일부 되돌림'
+}
+
+export interface CostRetroRun {
+  runId: number
+  oemCompanyId: number
+  oemCompanyName: string | null
+  periodFrom: string | null
+  periodTo: string | null
+  itemCount: number
+  ledgerDiff: number
+  status: string
+  remarks: string | null
+  createdBy: string | null
+  createdAt: string
+  revertedBy: string | null
+  revertedAt: string | null
 }

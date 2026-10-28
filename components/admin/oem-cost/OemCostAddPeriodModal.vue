@@ -176,7 +176,8 @@ const props = withDefaults(defineProps<Props>(), {
   costSourceType: 'OEM'
 })
 
-const emit = defineEmits<{ close: []; saved: [] }>()
+// saved — 원가 저장 직후 «기존 발주 소급» 안내에 쓸 조건을 함께 넘긴다
+const emit = defineEmits<{ close: []; saved: [context: { skuId: string, oemCompanyId: number, effectiveDate: string }] }>()
 
 type Mode = 'FUTURE' | 'PAST'
 const mode = ref<Mode>('FUTURE')
@@ -288,7 +289,11 @@ const handleSubmit = async () => {
         changeReason: form.value.remarks || '단가 변경(새 구간 추가)'
       } as any)
     }
-    emit('saved')
+    emit('saved', {
+      skuId: props.skuInfo?.skuId || '',
+      oemCompanyId: props.oemCompanyId ?? 0,
+      effectiveDate: form.value.effectiveDate
+    })
     emit('close')
   } catch (e: any) {
     errorMessage.value = e?.message || '구간 추가에 실패했습니다.'
