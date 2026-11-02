@@ -454,7 +454,10 @@ const items = ref<OrderItemCreateRequest[]>([])
 // 회사 목록 조회
 onMounted(async () => {
   try {
-    companies.value = await companyService.getCompanies()
+    // ★ 건설사 칸이므로 건설사·리드파워만 (2026-11-02).
+    //   전체 회사를 부르면 설계사무소 2만 4천여 곳까지 <select> 로 그려 화면이 30초가량 멈추고
+    //   [PDF 업로드] 를 눌러도 파일 창이 늦게 떴다. 기존 발주의 건설사는 BUILDER·LEADPOWER 뿐(11-02 확인).
+    companies.value = await companyService.getBuilderCompanies()
   } catch (error) {
     console.error('회사 목록 조회 실패:', error)
   }

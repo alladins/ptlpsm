@@ -144,7 +144,7 @@
                     선택하세요
                   </option>
                   <option
-                    v-for="company in companies"
+                    v-for="company in builderOptions"
                     :key="company.id"
                     :value="company.id"
                   >
@@ -747,11 +747,21 @@ const loadData = async () => {
 // 회사 목록 조회
 const loadCompanies = async () => {
   try {
-    companies.value = await companyService.getCompanies()
+    // ★ 건설사·리드파워만 (2026-11-02) — 전체(설계사무소 2만 4천여 곳)를 <select> 로 그리면 화면이 멈춘다
+    companies.value = await companyService.getBuilderCompanies()
   } catch (error) {
     console.error('회사 목록 조회 실패:', error)
   }
 }
+
+// 건설사 선택지 — 이미 연결된 건설사가 위 목록(건설사·리드파워)에 없으면 그 회사도 넣어 선택값이 사라지지 않게
+const builderOptions = computed(() => {
+  const id = formData.value.builderCompanyId
+  if (id == null || companies.value.some(c => c.id === id)) {
+    return companies.value
+  }
+  return [{ id, companyName: formData.value.builderCompany || `(회사 #${id})` } as CompanyInfoResponse, ...companies.value]
+})
 
 // 건설사 선택 핸들러
 const handleBuilderChange = () => {

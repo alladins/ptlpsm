@@ -98,6 +98,19 @@ class CompanyService {
     }
 
     /**
+     * 발주의 «건설사» 선택용 회사 목록 — 건설사(BUILDER) + 리드파워(LEADPOWER), 이름순 (2026-11-02)
+     * 전체 회사(getCompanies())에는 설계사무소 2만 4천여 곳이 섞여 있어 <select> 로 그리면 화면이 멈춘다.
+     */
+    async getBuilderCompanies(): Promise<CompanyInfoResponse[]> {
+        const [builders, leadpower] = await Promise.all([
+            this.getCompanies('BUILDER'),
+            this.getCompanies('LEADPOWER')
+        ])
+        return [...leadpower, ...builders].sort((a, b) =>
+            (a.companyName || '').localeCompare(b.companyName || '', 'ko'))
+    }
+
+    /**
      * 회사 목록 조회
      * GET /api/basic/company
      * @param companyType 회사 유형 필터 (MANUFACTURER: 제조사, BUILDER: 건설사 등)
