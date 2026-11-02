@@ -30,15 +30,16 @@
       <div v-else-if="uploadStatus.success" class="status-success">
         <i class="fas fa-check-circle" />
         <span>{{ uploadStatus.message }}</span>
-        <button class="status-close" @click="uploadStatus = null">
-          <i class="fas fa-times" />
+        <!-- 닫기 버튼 — 문구 끝에 붙어 «변경계약X» 처럼 읽히던 것 → 오른쪽 끝에 글자와 함께 -->
+        <button class="status-close" aria-label="안내 닫기" @click="uploadStatus = null">
+          <i class="fas fa-times" /> 닫기
         </button>
       </div>
       <div v-else-if="uploadStatus.error" class="status-error">
         <i class="fas fa-exclamation-circle" />
         <span>{{ uploadStatus.message }}</span>
-        <button class="status-close" @click="uploadStatus = null">
-          <i class="fas fa-times" />
+        <button class="status-close" aria-label="안내 닫기" @click="uploadStatus = null">
+          <i class="fas fa-times" /> 닫기
         </button>
       </div>
     </div>
@@ -935,7 +936,7 @@ const handleContractTypeConfirm = async (type: ContractType) => {
 
     uploadStatus.value = {
       success: true,
-      message: `PDF 데이터 추출 완료. 계약 유형: ${type === 'AMENDMENT' ? '변경계약' : '추가계약'}`
+      message: `PDF 데이터 추출 완료 · 계약 유형: ${type === 'AMENDMENT' ? '변경계약' : '추가계약'}`
     }
 
     // 중복 체크 수행
@@ -1020,6 +1021,62 @@ const cancel = () => {
 }
 
 /* 납품목록 테이블: 공통 스타일은 admin-edit-register.css 참조 */
+
+/* PDF 업로드 결과 안내 줄 (2026-11-02) — 스타일이 없어 아이콘·문구·닫기(X)가 붙어 «변경계약X»처럼 보이던 것 */
+.upload-status {
+  margin: 8px 0 16px;
+}
+
+.status-loading,
+.status-success,
+.status-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.status-loading {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.status-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.status-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.status-close {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.status-close:hover {
+  opacity: 1;
+}
 
 /* 중복 경고 배너 */
 .duplicate-warning {
