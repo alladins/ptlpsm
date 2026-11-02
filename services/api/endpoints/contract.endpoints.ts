@@ -51,5 +51,16 @@ export const CONTRACT_ENDPOINTS = {
   reimport: (orderId: number) => {
     const baseUrl = getApiBaseUrl()
     return `${baseUrl}/admin/contract/${orderId}/reimport`
+  },
+
+  /**
+   * 등록 전 미리보기 — 풀릴 대체 지정(귀속) 목록 (2026-11-02)
+   * @returns GET /admin/contract/alloc-release-preview?deliveryRequestNo=…&skuIds=…
+   */
+  allocReleasePreview: (deliveryRequestNo: string, skuIds: string[]) => {
+    const baseUrl = getApiBaseUrl()
+    const params = new URLSearchParams({ deliveryRequestNo })
+    skuIds.forEach(id => params.append('skuIds', id))
+    return `${baseUrl}/admin/contract/alloc-release-preview?${params.toString()}`
   }
 } as const

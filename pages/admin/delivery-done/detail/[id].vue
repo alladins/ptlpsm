@@ -362,9 +362,26 @@
       <!-- 수량 변경 이력 (변경계약/추가계약 반영) -->
       <FormSection
         v-if="quantityHistory.length > 0"
+        id="quantity-history"
         title="수량 변경 이력"
         style="margin-top: -20px"
       >
+        <!-- 대체 지정 해제 안내 — 해제 이력이 있으면 펼쳐서 보여 준다 (변경계약 등록 직후 이동해 오면 이 위치로 스크롤) -->
+        <GuideNotice
+          v-if="hasAllocReleaseHistory"
+          :key="`alloc-release-guide-${hasAllocReleaseHistory}`"
+          class="history-guide"
+          icon="fa-info-circle"
+          tone="info"
+          :default-open="true"
+          summary="변경계약으로 새로 계약 품목이 된 품목은, 그 품목으로 먼저 나간 출하의 «대체 지정»이 풀려 실제 나간 품목 그대로 납품으로 잡혔습니다."
+        >
+          <ul class="history-guide-list">
+            <li>«사유»가 <b>대체 지정 해제(납품 집계)</b>인 줄이 그 내용입니다. 예) 110T 704㎡ 를 100T 770㎡ 로 대신 집계하던 것을 풀어, 110T 704㎡ 납품으로 반영.</li>
+            <li>«변경 전 → 변경 후»는 그 계약 품목으로 집계되던 납품 수량입니다(위 예에서 100T 770 → 0).</li>
+            <li>출하 기록·금액은 바뀌지 않습니다. 납품완료·기성청구·납품확인서의 품목별 납품 수량만 바뀝니다.</li>
+          </ul>
+        </GuideNotice>
         <div class="table-wrapper">
           <table class="items-table">
             <thead>
@@ -820,6 +837,10 @@ const baseInfoSummary = computed(() => {
 
 // 수량 변경 이력 (변경계약/추가계약 반영)
 const quantityHistory = ref<DeliveryDoneItemHistory[]>([])
+// 변경계약 등록으로 대체 지정이 자동 해제된 이력이 있는지 (안내 토글 표시·펼침 기준)
+const hasAllocReleaseHistory = computed(() =>
+  quantityHistory.value.some(h => (h.changeReason || '').startsWith('대체 지정 해제'))
+)
 const reconciliation = ref<AmountReconciliation | null>(null)
 
 // 금액 정합 비교 — 구분·관계 배지 라벨/클래스
@@ -1101,6 +1122,12 @@ async function fetchDetail (silent = false) {
     } catch (historyError) {
       console.error('수량 변경 이력 조회 실패:', historyError)
       quantityHistory.value = []
+    }
+    // 변경계약 등록 직후 이동해 왔으면(?focus=quantity-history) 수량 변경 이력으로 스크롤
+    if (route.query.focus === 'quantity-history' && quantityHistory.value.length > 0) {
+      setTimeout(() => {
+        document.getElementById('quantity-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 300)
     }
     // 원계약↔실출하 금액 정합 비교 로드 (실패해도 본문은 표시)
     try {
@@ -1958,9 +1985,29 @@ onUnmounted(() => {
   margin-left: 0.25rem;
 }
 
+/* 수량 변경 이력 — 대체 지정 해제 안내 (그리드 전체 폭) */
+.history-guide {
+  grid-column: 1 / -1;
+  margin-bottom: 0.75rem;
+}
+
+.history-guide-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  line-height: 1.7;
+}
+
 .recon-note {
+  /* FormSection 이 2칸 그리드라 반 폭에서 줄바꿈되던 것 → 한 줄 전체 폭 */
+  grid-column: 1 / -1;
   margin-top: 0.5rem;
   font-size: 0.8rem;
   color: #6b7280;
+}
+
+/* 뒷문장(span)만 글자가 커 보이던 것 → 앞문장과 같은 크기·색 */
+.recon-note span {
+  font-size: inherit;
+  color: inherit;
 }
 </style>

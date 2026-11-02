@@ -126,6 +126,22 @@ function getCurrentUserId(): string {
 /**
  * 계약 관리 서비스
  */
+/** 등록 시 해제될 대체 지정(귀속) 1행 */
+export interface AllocReleasePreviewItem {
+  shipmentId: number
+  shipmentNo: string
+  shipmentDate: string
+  shipSkuId: string
+  shipSkuName: string | null
+  shipmentQuantity: number
+  contractSkuId: string
+  contractSkuName: string | null
+  allocQuantity: number
+  allocType: 'SUBSTITUTE' | 'LAMINATE' | 'BGRADE' | string
+  /** 그 계열의 납품완료 ID — 등록 후 상세(수량 변경 이력)로 이동용 */
+  deliveryDoneId: number | null
+}
+
 export const contractService = {
   /**
    * 계약 정보 등록
@@ -276,5 +292,21 @@ export const contractService = {
       console.error('❌ 중복 체크 실패:', error)
       throw error
     }
+  },
+
+  /**
+   * 등록 전 미리보기 — 이번 PDF 로 등록하면 풀리는 대체 지정(귀속) 목록 (2026-11-02)
+   * 실제로 나간 품목이 계약 품목이 되어, 다른 계약 품목으로 «대신» 집계하던 지정이 해제되는 출하.
+   * 아무것도 바꾸지 않는다.
+   */
+  async previewAllocRelease(deliveryRequestNo: string, skuIds: string[]): Promise<AllocReleasePreviewItem[]> {
+    const response = await fetch(CONTRACT_ENDPOINTS.allocReleasePreview(deliveryRequestNo, skuIds), {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    return await response.json()
   }
 }

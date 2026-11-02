@@ -329,6 +329,15 @@
       @confirm="handleDuplicateConfirm"
       @close="handleDuplicateClose"
     />
+
+    <!-- 등록 전 확인: 풀리는 대체 지정 목록 -->
+    <AllocReleaseConfirmModal
+      :is-open="showAllocReleaseModal"
+      :items="allocReleaseItems"
+      :mode="allocReleaseMode"
+      @confirm="handleAllocReleaseConfirm"
+      @close="handleAllocReleaseClose"
+    />
   </div>
 </template>
 
@@ -336,7 +345,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from '#imports'
 import { apiEnvironment } from '~/services/api'
-import { contractService, type DuplicateCheckResponse } from '~/services/contract.service'
+import { contractService, type DuplicateCheckResponse, type AllocReleasePreviewItem } from '~/services/contract.service'
+import AllocReleaseConfirmModal from '~/components/admin/order/AllocReleaseConfirmModal.vue'
 import { companyService } from '~/services/company.service'
 import FormSection from '~/components/admin/forms/FormSection.vue'
 import FormField from '~/components/admin/forms/FormField.vue'
@@ -733,6 +743,76 @@ const buildContractData = () => {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// 등록 전 확인: 풀리는 대체 지정(귀속) 목록 (2026-11-02)
+//   변경·추가계약(또는 재업로드)으로 실제 나간 품목이 계약 품목이 되면, 그 출하를 다른 계약 품목으로
+//   «대신» 집계하던 지정을 서버가 등록과 함께 해제한다. 해당 출하가 있으면 등록 전에 목록을 보여 주고 확인받는다.
+//   미리보기 조회가 실패해도 등록은 막지 않는다(서버가 같은 규칙으로 처리하고 이력에 남긴다).
+// ─────────────────────────────────────────────────────────────
+const showAllocReleaseModal = ref(false)
+const allocReleaseItems = ref<AllocReleasePreviewItem[]>([])
+const allocReleaseMode = ref<'register' | 'reimport'>('register')
+let pendingAfterAllocConfirm: (() => Promise<void>) | null = null
+
+const fetchAllocReleasePreview = async (): Promise<AllocReleasePreviewItem[]> => {
+  const no = contractForm.value.deliveryRequestNo
+  if (!no) { return [] }
+  // 물품식별번호 = SKU ID (서버 등록 1단계와 동일 규칙)
+  const skuIds = items.value
+    .map(it => (it.itemIdentificationNumber || '').trim())
+    .filter(Boolean)
+  try {
+    return await contractService.previewAllocRelease(no, skuIds)
+  } catch (error) {
+    console.warn('대체 지정 미리보기 조회 실패 — 확인 없이 진행(서버가 처리):', error)
+    return []
+  }
+}
+
+/** 해당 출하가 있으면 확인 창을 띄우고 확인 후 action 실행, 없으면 바로 실행 */
+const runWithAllocReleaseCheck = async (mode: 'register' | 'reimport', action: () => Promise<void>) => {
+  confirmedReleaseCount.value = 0
+  releaseDeliveryDoneId.value = null
+  submitting.value = true
+  const list = await fetchAllocReleasePreview()
+  submitting.value = false
+  if (list.length === 0) {
+    await action()
+    return
+  }
+  allocReleaseItems.value = list
+  allocReleaseMode.value = mode
+  pendingAfterAllocConfirm = action
+  showAllocReleaseModal.value = true
+}
+
+// 확인 창에서 확인한 해제 건수와 이동할 납품완료 상세 — 등록 뒤 그 상세의 «수량 변경 이력»으로 보낸다
+const confirmedReleaseCount = ref(0)
+const releaseDeliveryDoneId = ref<number | null>(null)
+
+/** 등록·업데이트 완료 후 이동: 대체 지정 해제가 함께 반영됐으면 납품완료 상세(수량 변경 이력 안내 펼침), 아니면 목록 */
+const goAfterDone = () => {
+  if (confirmedReleaseCount.value > 0 && releaseDeliveryDoneId.value) {
+    router.push(`/admin/delivery-done/detail/${releaseDeliveryDoneId.value}?focus=quantity-history`)
+  } else {
+    router.push('/admin/order/list')
+  }
+}
+
+const handleAllocReleaseConfirm = async () => {
+  confirmedReleaseCount.value = allocReleaseItems.value.length
+  releaseDeliveryDoneId.value = allocReleaseItems.value.find(it => it.deliveryDoneId)?.deliveryDoneId ?? null
+  showAllocReleaseModal.value = false
+  const action = pendingAfterAllocConfirm
+  pendingAfterAllocConfirm = null
+  if (action) { await action() }
+}
+
+const handleAllocReleaseClose = () => {
+  showAllocReleaseModal.value = false
+  pendingAfterAllocConfirm = null
+}
+
 // 재업로드 모달 확인 핸들러
 const handleDuplicateConfirm = async () => {
   if (!duplicateCheckInfo.value?.existingOrderId) {
@@ -758,15 +838,25 @@ const handleDuplicateConfirm = async () => {
       }
     }
 
+    const existingOrderId = duplicateCheckInfo.value.existingOrderId
+    submitting.value = false
+    await runWithAllocReleaseCheck('reimport', () => doReimport(existingOrderId))
+  } catch (error) {
+    console.error('납품요구 재업로드 준비 실패:', error)
+    submitting.value = false
+  }
+}
+
+// 재업로드 실행 (확인 창 통과 후)
+const doReimport = async (existingOrderId: number) => {
+  submitting.value = true
+  try {
     const contractData = buildContractData()
-    const result = await contractService.reimportContract(
-      duplicateCheckInfo.value.existingOrderId,
-      contractData
-    )
+    const result = await contractService.reimportContract(existingOrderId, contractData)
 
     if (result.success) {
       alert('기존 납품요구가 업데이트되었습니다.')
-      router.push('/admin/order/list')
+      goAfterDone()
     } else {
       throw new Error(result.message || '업데이트에 실패했습니다.')
     }
@@ -880,6 +970,11 @@ const register = async () => {
     }
   }
 
+  await runWithAllocReleaseCheck('register', doRegister)
+}
+
+// 등록 실행 (확인 창 통과 후)
+const doRegister = async () => {
   submitting.value = true
   try {
     const contractData = buildContractData()
@@ -888,7 +983,7 @@ const register = async () => {
 
     if (result.success) {
       alert('계약이 성공적으로 등록되었습니다.')
-      router.push('/admin/order/list')
+      goAfterDone()
     } else {
       throw new Error(result.message || '계약 등록에 실패했습니다.')
     }
