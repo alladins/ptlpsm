@@ -93,7 +93,7 @@
             </div>
 
             <p class="doc-lead">
-              아래와 같이 {{ yearMonthLabel }} 발주분 대금의 지급을 요청합니다.
+              아래와 같이 {{ yearMonthLabel }} 납품 확정분(현장 사진·인수자 서명 완료) 제조 비용을 청구합니다. 실제 청구는 홈택스 세금계산서로 합니다.
             </p>
 
             <!-- 청구 내역 -->
@@ -103,7 +103,7 @@
             <table class="doc-table">
               <tbody>
                 <tr>
-                  <th>발주 합계 ({{ ledger?.items?.length || 0 }}건)</th>
+                  <th>납품 합계 ({{ ledger?.items?.length || 0 }}건)</th>
                   <td class="num">
                     {{ formatCurrency(ledger?.totalAmount ?? 0) }}
                   </td>
@@ -147,16 +147,16 @@
               </tbody>
             </table>
 
-            <!-- 발주 명세 -->
+            <!-- 납품 명세 (2026-11-02 납품 확정 기준) -->
             <h2 class="doc-h2">
-              2. 발주 명세
+              2. 납품 명세
             </h2>
             <table class="doc-table doc-items">
               <thead>
                 <tr>
                   <th>No</th>
-                  <th>발주서번호</th>
-                  <th>발주일</th>
+                  <th>출하번호</th>
+                  <th>납품일</th>
                   <th>규격</th>
                   <th class="num">
                     수량
@@ -170,10 +170,10 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(it, i) in ledger?.items || []" :key="`${it.poId}-${it.skuId}-${i}`">
+                <tr v-for="(it, i) in ledger?.items || []" :key="`${it.shipmentNo}-${it.skuId}-${i}`">
                   <td>{{ i + 1 }}</td>
-                  <td>{{ it.poNo }}</td>
-                  <td>{{ it.orderDate }}</td>
+                  <td>{{ it.shipmentNo }}</td>
+                  <td>{{ it.deliveryDate }}</td>
                   <td class="spec">
                     {{ it.spec }}
                   </td>

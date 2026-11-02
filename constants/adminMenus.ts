@@ -196,6 +196,19 @@ export const ADMIN_MENUS: MenuWithAuth[] = [
         children: []
       },
       {
+        // 2026-11-02 — 예전 발주일 기준 원장(조회 전용). DB 메뉴 id 는 환경마다 다를 수 있어 비상용 사본에서는 임시 값
+        menuId: 1130,
+        menuCode: 'OEM_PO_RECORD',
+        menuName: '월별 발주기록',
+        menuUrl: '/admin/oem/po-record',
+        menuIcon: 'fas fa-file-alt',
+        menuLevel: 2,
+        sortOrder: 4,
+        visible: 'Y',
+        useYn: 'Y',
+        children: []
+      },
+      {
         menuId: 114,
         menuCode: 'OEM_DASHBOARD',
         menuName: 'OEM 대시보드',

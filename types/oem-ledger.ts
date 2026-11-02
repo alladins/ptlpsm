@@ -22,7 +22,22 @@ export interface OemLedgerItem {
   shipmentNo: string | null
   shipmentDate: string | null
   oemCompanyName?: string  // 전체 조회 시 제조사명
+
+  // ── 납품 기준(월별 매출원장, 2026-11-02) ──
+  transportId?: number | null
+  /** 운송장 번호 */
+  trackingNumber?: string | null
+  deliveryRequestNo?: string | null
+  /** 납품일 = 현장 도착일 (원장 귀속 월의 기준) */
+  deliveryDate?: string | null
+  /** 납품 확정 일시 (사진·서명 완료, UTC) */
+  confirmedAt?: string | null
+  /** 그 달 청구 뒤 늦게 확정된 건 — 청구 금액에 들어 있지 않음 */
+  lateConfirmed?: boolean | null
 }
+
+/** 원장 기준 — DELIVERY: 월별 매출원장(납품 확정) / PO: 월별 발주기록(발주일) */
+export type OemLedgerBasis = 'DELIVERY' | 'PO'
 
 /** 원장 응답 */
 export interface OemMonthlyLedgerResponse {
@@ -89,6 +104,15 @@ export interface OemMonthlyLedgerResponse {
   bankAccountNo?: string | null
   bankAccountHolder?: string | null
   requestedByName?: string | null
+
+  // ── 납품 기준(2026-11-02) ──
+  basis?: OemLedgerBasis
+  /** 미확정(납품 대기) 참고 목록 — 운송장은 나갔지만 사진·서명 전. 합계 제외 */
+  pendingItems?: OemLedgerItem[]
+  pendingTotal?: number
+  /** 그 달 청구 뒤 늦게 확정된 행 수·금액 */
+  lateConfirmedCount?: number | null
+  lateConfirmedAmount?: number | null
 }
 
 /** 지급요청서 발신 정보 — 제조사 회사 정보 + 지난 청구의 입금 계좌 */
@@ -160,7 +184,9 @@ export const OEM_LEDGER_COST_SOURCE = {
   SHIPMENT: 'SHIPMENT',
   PURCHASE_ORDER: 'PURCHASE_ORDER',
   MASTER: 'MASTER',
-  NONE: 'NONE'
+  NONE: 'NONE',
+  /** 납품 기준 — 운송장 등록 때 선입선출로 빠진 재고 로트의 원가(원래 발주 단가) */
+  LOT: 'LOT'
 } as const
 
 export type OemLedgerCostSource = typeof OEM_LEDGER_COST_SOURCE[keyof typeof OEM_LEDGER_COST_SOURCE]
@@ -169,7 +195,8 @@ export const OEM_LEDGER_COST_SOURCE_LABELS: Record<OemLedgerCostSource, string> 
   [OEM_LEDGER_COST_SOURCE.SHIPMENT]: '출하스냅샷',
   [OEM_LEDGER_COST_SOURCE.PURCHASE_ORDER]: '발주스냅샷',
   [OEM_LEDGER_COST_SOURCE.MASTER]: '마스터',
-  [OEM_LEDGER_COST_SOURCE.NONE]: '미등록'
+  [OEM_LEDGER_COST_SOURCE.NONE]: '미등록',
+  [OEM_LEDGER_COST_SOURCE.LOT]: '출고 로트'
 }
 
 /**
@@ -186,7 +213,9 @@ export const OEM_LEDGER_COST_SOURCE_HINTS: Record<OemLedgerCostSource, string> =
   [OEM_LEDGER_COST_SOURCE.MASTER]:
     '제조사 원가표의 현재 값입니다. 그 시점 기록이 없어 지금 단가를 쓴 것이라 실제와 다를 수 있습니다.',
   [OEM_LEDGER_COST_SOURCE.NONE]:
-    '원가가 등록되어 있지 않아 0원으로 계산됐습니다. 제조사 원가를 등록해야 합니다.'
+    '원가가 등록되어 있지 않아 0원으로 계산됐습니다. 제조사 원가를 등록해야 합니다.',
+  [OEM_LEDGER_COST_SOURCE.LOT]:
+    '운송장을 등록할 때 재고에서 먼저 들어온 순서대로 빠진 물건의 원가(그 물건을 만든 발주서 단가)입니다.'
 }
 
 /** 지급 상태 */

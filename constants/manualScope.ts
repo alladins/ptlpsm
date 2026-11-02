@@ -50,7 +50,7 @@ export const MANUAL_SCOPE: ManualScopeRule[] = [
   { prefix: '6.', menuUrls: ['/admin/funds'] },
   { prefix: '7.', menuUrls: ['/admin/funds'] },
   // 8.6 은 월별 매출원장이라 OEM 담당자도 본다
-  { prefix: '8.6', menuUrls: ['/admin/oem/monthly-ledger'] },
+  { prefix: '8.6', menuUrls: ['/admin/oem/monthly-ledger', '/admin/oem/po-record'] },
   { prefix: '8.7', menuUrls: ['/admin/oem/dashboard'] },
   { prefix: '8.', menuUrls: ['/admin/funds'] },
 
@@ -74,7 +74,7 @@ export const MANUAL_CHAPTER_SCOPE: Record<string, string[]> = {
   '5': ['/admin/delivery-done/list'],
   '6': ['/admin/funds'],
   '7': ['/admin/funds'],
-  '8': ['/admin/funds', '/admin/oem/monthly-ledger', '/admin/oem/dashboard'],
+  '8': ['/admin/funds', '/admin/oem/monthly-ledger', '/admin/oem/po-record', '/admin/oem/dashboard'],
   '9': [
     '/admin/purchase-order/list',
     '/admin/basic-info/oem-cost',

@@ -2,8 +2,8 @@
   <div class="monthly-ledger-page">
     <!-- 페이지 헤더 -->
     <PageHeader
-      title="OEM 월별 매출원장"
-      description="OEM 제조사의 월별 발주 기준 매출(원가) 원장을 조회하고 지급을 관리합니다."
+      :title="pageTitle"
+      :description="pageDescription"
       icon="order"
       icon-color="blue"
     >
@@ -27,7 +27,31 @@
       ★ 알림만으로는 부족해서 둔 자리다. 알림은 한 번 읽으면 사라지지만
         이 배너는 확인·반려 전까지 남는다. 제조사 계정에는 아예 뜨지 않는다.
     -->
-    <div v-if="!isOemManager && pendingRequests.length > 0" class="pending-banner">
+    <!-- 원장 기준 안내 (2026-11-02) -->
+    <GuideNotice
+      v-if="isDelivery"
+      class="basis-guide"
+      tone="info"
+      icon="fa-info-circle"
+      summary="운송장으로 납품이 확정된(현장 사진 첨부 + 인수자 서명 완료) 건만 원장에 올라갑니다. 실제 청구는 홈택스에서 세금계산서를 발행해서 합니다."
+    >
+      <ul class="basis-guide-list">
+        <li>운송장을 등록·발송한 것만으로는 확정이 아닙니다. 아래 «미확정(납품 대기)»에 참고로만 보이고 합계에는 들어가지 않습니다.</li>
+        <li>어느 달 원장에 들어가는지는 <b>납품일(현장 도착일)</b>로 정합니다. 서명이 다음 달에 들어와도 납품한 달에 들어갑니다.</li>
+        <li>금액은 운송장으로 실제 나간 물건의 원가(그 물건을 만든 발주서 단가)입니다. 가공비는 그 발주서 물건이 처음 납품 확정된 달에 들어갑니다.</li>
+        <li>이 원장으로 [청구 요청]을 하면 그 시점 목록이 저장됩니다. 그 뒤 같은 달에 늦게 확정된 건은 «청구 후 추가 확정»으로 표시됩니다.</li>
+        <li>예전 발주일 기준 원장은 «월별 발주기록» 메뉴에서 볼 수 있습니다.</li>
+      </ul>
+    </GuideNotice>
+    <GuideNotice
+      v-else
+      class="basis-guide"
+      tone="warn"
+      icon="fa-info-circle"
+      summary="발주일 기준의 예전 원장 기록입니다. 조회·엑셀만 할 수 있습니다. 제조 비용 청구는 «월별 매출원장»(납품 확정 기준)에서 합니다."
+    />
+
+    <div v-if="isDelivery && !isOemManager && pendingRequests.length > 0" class="pending-banner">
       <div class="pending-banner-header">
         <i class="fas fa-exclamation-triangle" />
         <span>확인 대기 {{ pendingRequests.length }}건</span>
@@ -93,7 +117,7 @@
       </div>
 
       <!-- 지급 상태 카드 (전체 조회 시 숨김) -->
-      <div v-if="ledgerData && selectedOemCompanyId !== 0" class="payment-status-card" :class="paymentStatusClass">
+      <div v-if="isDelivery && ledgerData && selectedOemCompanyId !== 0" class="payment-status-card" :class="paymentStatusClass">
         <div class="status-info">
           <span class="status-label">지급상태:</span>
           <span class="status-badge" :class="paymentStatusClass">
@@ -205,6 +229,16 @@
         </div>
       </div>
 
+      <!-- 청구 후 추가 확정 (2026-11-02) — 그 달 청구 뒤에 납품이 확정된 운송장 -->
+      <div v-if="isDelivery && lateCount > 0" class="late-notice">
+        <i class="fas fa-triangle-exclamation" />
+        <span>
+          이 달 청구 요청 뒤에 납품이 확정된 운송장 <b>{{ lateCount }}건</b>
+          (금액 {{ formatCurrency(ledgerData?.lateConfirmedAmount) }})이 있습니다.
+          청구한 금액에는 들어 있지 않습니다 — 표에서 «청구 후 추가» 표시를 확인하고 리드파워 담당자와 추가 청구를 협의하세요.
+        </span>
+      </div>
+
       <!--
         지급요청 이력 (차수별) — 2026-09-22
         반려되면 상태가 «미요청» 으로 돌아가 처음 올린 서류를 다시 볼 수 없었다.
@@ -277,6 +311,9 @@
         <p v-if="!selectedOemCompanyId && selectedOemCompanyId !== 0">
           OEM 제조사를 선택한 후 조회하세요.
         </p>
+        <p v-else-if="isDelivery">
+          해당 월(납품일 기준)에 납품이 확정된 운송장이 없습니다.
+        </p>
         <p v-else>
           해당 월에 발주 데이터가 없습니다.
         </p>
@@ -315,9 +352,10 @@
                 <th v-if="selectedOemCompanyId === 0">
                   제조사
                 </th>
-                <th>발주서번호</th>
-                <th>발주일자</th>
-                <th>출하일자</th>
+                <!-- 납품 기준(2026-11-02): 같은 칸에 출하번호 · 납품일 · 운송장번호 -->
+                <th>{{ isDelivery ? '출하번호' : '발주서번호' }}</th>
+                <th>{{ isDelivery ? '납품일' : '발주일자' }}</th>
+                <th>{{ isDelivery ? '운송장번호' : '출하일자' }}</th>
                 <th>수요기관</th>
                 <th>사업명</th>
                 <th>규격</th>
@@ -333,7 +371,7 @@
                 <th class="text-center">
                   원가출처
                 </th>
-                <th>비고</th>
+                <th>{{ isDelivery ? '원 발주서' : '비고' }}</th>
               </tr>
             </thead>
             <tbody>
@@ -344,11 +382,22 @@
                 <td v-if="selectedOemCompanyId === 0">
                   {{ item.oemCompanyName }}
                 </td>
-                <td>{{ item.poNo }}</td>
-                <td>{{ formatShortDate(item.orderDate) }}</td>
-                <td :title="item.shipmentNo || ''">
-                  {{ formatShortDate(item.shipmentDate) }}
-                </td>
+                <template v-if="isDelivery">
+                  <td :title="item.deliveryRequestNo || ''">
+                    {{ item.shipmentNo || '-' }}
+                  </td>
+                  <td :title="item.confirmedAt ? `확정 ${formatConfirmed(item.confirmedAt)}` : ''">
+                    {{ formatShortDate(item.deliveryDate) }}
+                  </td>
+                  <td>{{ item.trackingNumber || '-' }}</td>
+                </template>
+                <template v-else>
+                  <td>{{ item.poNo }}</td>
+                  <td>{{ formatShortDate(item.orderDate) }}</td>
+                  <td :title="item.shipmentNo || ''">
+                    {{ formatShortDate(item.shipmentDate) }}
+                  </td>
+                </template>
                 <td>{{ item.demandAgency }}</td>
                 <td class="cell-project">
                   {{ item.projectName }}
@@ -380,7 +429,13 @@
                   </span>
                 </td>
                 <td class="cell-remarks">
-                  {{ item.remarks || '-' }}
+                  <template v-if="isDelivery">
+                    {{ item.poNo || '-' }}
+                    <span v-if="item.lateConfirmed" class="late-badge" title="이 달 청구 요청 뒤에 납품이 확정된 건 — 청구 금액에 들어 있지 않습니다">청구 후 추가</span>
+                  </template>
+                  <template v-else>
+                    {{ item.remarks || '-' }}
+                  </template>
                 </td>
               </tr>
             </tbody>
@@ -494,6 +549,60 @@
           </table>
         </div>
       </div>
+
+      <!--
+        미확정(납품 대기) 참고 — 2026-11-02
+        운송장은 등록돼 재고는 나갔지만 아직 현장 사진·서명이 끝나지 않은 건. 합계에 들어가지 않는다.
+      -->
+      <div v-if="isDelivery && pendingItems.length > 0" class="pending-delivery-box">
+        <button type="button" class="pending-delivery-toggle" @click="showPending = !showPending">
+          <i :class="showPending ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" />
+          미확정(납품 대기) {{ pendingItems.length }}건 · 참고 금액 {{ formatCurrency(ledgerData?.pendingTotal) }}
+          <span class="deduct-hint">— 사진·서명이 끝나면 납품일 달 원장에 올라갑니다 (합계 제외)</span>
+        </button>
+        <div v-if="showPending" class="table-container">
+          <table class="data-table pending-delivery-table">
+            <thead>
+              <tr>
+                <th v-if="selectedOemCompanyId === 0">
+                  제조사
+                </th>
+                <th>출하번호</th>
+                <th>출하일</th>
+                <th>운송장번호</th>
+                <th>수요기관</th>
+                <th>규격</th>
+                <th class="text-right">
+                  수량
+                </th>
+                <th class="text-right">
+                  금액
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(p, i) in pendingItems" :key="`p-${i}`">
+                <td v-if="selectedOemCompanyId === 0">
+                  {{ p.oemCompanyName }}
+                </td>
+                <td>{{ p.shipmentNo || '-' }}</td>
+                <td>{{ formatShortDate(p.shipmentDate) }}</td>
+                <td>{{ p.trackingNumber || '-' }}</td>
+                <td>{{ p.demandAgency }}</td>
+                <td class="cell-spec">
+                  {{ p.spec }}
+                </td>
+                <td class="text-right">
+                  {{ formatQuantity(p.quantity) }}
+                </td>
+                <td class="text-right">
+                  {{ formatCurrency(p.amount) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- 지급요청서 (작성·보기) -->
@@ -601,7 +710,8 @@ import { oemLedgerService } from '~/services/oem-ledger.service'
 import { companyService } from '~/services/company.service'
 import type { OemMonthlyLedgerResponse } from '~/types/oem-ledger'
 import { OEM_LEDGER_PAYMENT_STATUS_LABELS, OEM_LEDGER_COST_SOURCE_LABELS, OEM_LEDGER_COST_SOURCE_HINTS } from '~/types/oem-ledger'
-import type { OemLedgerCostSource, OemLedgerItem, OemLedgerPendingItem, OemPaymentRequestHistory } from '~/types/oem-ledger'
+import type { OemLedgerBasis, OemLedgerCostSource, OemLedgerItem, OemLedgerPendingItem, OemPaymentRequestHistory } from '~/types/oem-ledger'
+import GuideNotice from '~/components/ui/GuideNotice.vue'
 import type { CompanyInfoResponse } from '~/types/company'
 import { formatCurrency, formatQuantity, getLocalDateString, formatDateTime } from '~/utils/format'
 import { usePermission } from '~/composables/usePermission'
@@ -612,6 +722,18 @@ definePageMeta({
   layout: 'admin',
   pageTitle: '월별 매출원장'
 })
+
+/**
+ * 원장 기준 (2026-11-02)
+ *  - DELIVERY(기본): 월별 매출원장 — 납품확인 완료(사진+서명) 운송장 기준, 귀속 월 = 납품일. 청구 요청 가능
+ *  - PO: 월별 발주기록 — 예전 발주일 기준 계산, 조회·엑셀 전용 (pages/admin/oem/po-record.vue 가 이 화면을 basis="PO" 로 띄운다)
+ */
+const props = withDefaults(defineProps<{ basis?: OemLedgerBasis }>(), { basis: 'DELIVERY' })
+const isDelivery = computed(() => props.basis !== 'PO')
+const pageTitle = computed(() => (isDelivery.value ? 'OEM 월별 매출원장' : 'OEM 월별 발주기록'))
+const pageDescription = computed(() => (isDelivery.value
+  ? '납품이 확정된(현장 사진·인수자 서명 완료) 운송장 기준의 월별 매출입니다. 이 원장으로 제조 비용 청구를 요청합니다.'
+  : '예전 월별 매출원장(발주일 기준) 기록입니다. 조회·엑셀만 할 수 있고, 청구는 «월별 매출원장»에서 합니다.'))
 
 const { isOemManager, isFullAccess } = usePermission()
 
@@ -763,7 +885,8 @@ function costSourceClass (costSource: OemLedgerCostSource | null): string {
     SHIPMENT: 'source-shipment',
     PURCHASE_ORDER: 'source-po',
     MASTER: 'source-master',
-    NONE: 'source-none'
+    NONE: 'source-none',
+    LOT: 'source-lot'
   }
   return classMap[costSource || 'NONE'] || 'source-none'
 }
@@ -792,8 +915,8 @@ async function handleExportExcel () {
   try {
     // 전체(0) 선택 시 oemCompanyId를 null로 전달
     const oemId = selectedOemCompanyId.value === 0 ? null : selectedOemCompanyId.value
-    const blob = await oemLedgerService.exportExcel(oemId, yearMonth.value)
-    downloadBlob(blob, `OEM월별매출원장_${yearMonth.value}.xlsx`)
+    const blob = await oemLedgerService.exportExcel(oemId, yearMonth.value, props.basis)
+    downloadBlob(blob, `${isDelivery.value ? 'OEM월별매출원장' : 'OEM월별발주기록'}_${yearMonth.value}.xlsx`)
   } catch (error) {
     console.error('엑셀 다운로드 실패:', error)
     alert('엑셀 다운로드에 실패했습니다.')
@@ -825,7 +948,8 @@ async function loadLedger () {
     const oemId = selectedOemCompanyId.value === 0 ? null : selectedOemCompanyId.value
     ledgerData.value = await oemLedgerService.getMonthlyLedger(
       oemId,
-      yearMonth.value
+      yearMonth.value,
+      props.basis
     )
     // 지급 완료 모달 기본값 설정
     //
@@ -840,7 +964,7 @@ async function loadLedger () {
     }
     // 지급요청 이력 (차수별, 반려 포함) — 개별 제조사 조회일 때만. 실패해도 원장은 보여준다
     paymentHistory.value = []
-    if (oemId) {
+    if (oemId && isDelivery.value) {
       oemLedgerService.getPaymentHistory(oemId, yearMonth.value)
         .then((rows) => { paymentHistory.value = rows })
         .catch(e => console.error('지급요청 이력 조회 실패:', e))
@@ -956,7 +1080,8 @@ async function handleReject () {
 
 /** 확인 대기 목록 로드 — 제조사 계정은 403 이므로 부르지 않는다 */
 async function loadPendingRequests () {
-  if (isOemManager.value) { return }
+  // 발주기록(조회 전용)에는 청구 배너가 없다
+  if (isOemManager.value || !isDelivery.value) { return }
 
   try {
     pendingRequests.value = await oemLedgerService.getPendingPaymentRequests()
@@ -1000,6 +1125,19 @@ async function handleComplete () {
 
 // OEM 담당자 여부에 따른 제조사 선택 잠금
 const isOemLocked = computed(() => isOemManager.value)
+
+// ── 납품 기준 보조 표시 (2026-11-02) ────────────────────────────────────────
+/** 미확정(납품 대기) 참고 목록 펼침 */
+const showPending = ref(false)
+const pendingItems = computed(() => (isDelivery.value ? (ledgerData.value?.pendingItems || []) : []))
+/** 그 달 청구 뒤 늦게 확정된 건 */
+const lateCount = computed(() => Number(ledgerData.value?.lateConfirmedCount || 0))
+
+/** 확정 일시(UTC) → KST «MM-DD HH:mm» */
+function formatConfirmed (v: string | null | undefined): string {
+  if (!v) { return '' }
+  return formatDateTime(v)
+}
 
 // 초기 데이터 로드
 onMounted(async () => {
@@ -1541,5 +1679,76 @@ onMounted(async () => {
 .source-none {
   background: #fce8e6;
   color: #c5221f;
+}
+
+/* ── 납품 기준 원장 (2026-11-02) ───────────────────────────── */
+.source-lot {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.basis-guide {
+  margin-bottom: 12px;
+}
+
+.basis-guide-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  line-height: 1.7;
+}
+
+.late-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 10px 14px;
+  border: 1px solid #f5c26b;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #8a5300;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.late-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #fff1d6;
+  color: #a35c00;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pending-delivery-box {
+  margin-top: 14px;
+  border: 1px dashed #c9d2de;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.pending-delivery-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pending-delivery-table td,
+.pending-delivery-table th {
+  font-size: 12px;
+  color: #6b7280;
 }
 </style>

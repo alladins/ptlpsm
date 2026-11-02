@@ -5,6 +5,7 @@
 import { getAuthHeaders, apiEnvironment } from './api'
 import { httpError } from '~/utils/apiError'
 import type {
+  OemLedgerBasis,
   OemMonthlyLedgerResponse,
   OemLedgerPaymentRequest,
   OemLedgerPendingItem,
@@ -21,8 +22,8 @@ class OemLedgerService {
   /**
    * 월별 매출원장 조회
    */
-  async getMonthlyLedger(oemCompanyId: number | null, yearMonth: string): Promise<OemMonthlyLedgerResponse> {
-    const params = new URLSearchParams({ yearMonth })
+  async getMonthlyLedger(oemCompanyId: number | null, yearMonth: string, basis: OemLedgerBasis = 'DELIVERY'): Promise<OemMonthlyLedgerResponse> {
+    const params = new URLSearchParams({ yearMonth, basis })
     if (oemCompanyId) {
       params.set('oemCompanyId', oemCompanyId.toString())
     }
@@ -36,8 +37,8 @@ class OemLedgerService {
   /**
    * 월별 매출원장 엑셀 다운로드 (원장 + 원가이력 2시트)
    */
-  async exportExcel(oemCompanyId: number | null, yearMonth: string): Promise<Blob> {
-    const params = new URLSearchParams({ yearMonth })
+  async exportExcel(oemCompanyId: number | null, yearMonth: string, basis: OemLedgerBasis = 'DELIVERY'): Promise<Blob> {
+    const params = new URLSearchParams({ yearMonth, basis })
     if (oemCompanyId) {
       params.set('oemCompanyId', oemCompanyId.toString())
     }
