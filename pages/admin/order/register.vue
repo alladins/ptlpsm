@@ -775,8 +775,6 @@ const fetchAllocReleasePreview = async (): Promise<AllocReleasePreviewItem[]> =>
 
 /** 해당 출하가 있으면 확인 창을 띄우고 확인 후 action 실행, 없으면 바로 실행 */
 const runWithAllocReleaseCheck = async (mode: 'register' | 'reimport', action: () => Promise<void>) => {
-  confirmedReleaseCount.value = 0
-  releaseDeliveryDoneId.value = null
   submitting.value = true
   const list = await fetchAllocReleasePreview()
   submitting.value = false
@@ -790,22 +788,15 @@ const runWithAllocReleaseCheck = async (mode: 'register' | 'reimport', action: (
   showAllocReleaseModal.value = true
 }
 
-// 확인 창에서 확인한 해제 건수와 이동할 납품완료 상세 — 등록 뒤 그 상세의 «수량 변경 이력»으로 보낸다
-const confirmedReleaseCount = ref(0)
-const releaseDeliveryDoneId = ref<number | null>(null)
-
-/** 등록·업데이트 완료 후 이동: 대체 지정 해제가 함께 반영됐으면 납품완료 상세(수량 변경 이력 안내 펼침), 아니면 목록 */
+/**
+ * 등록·업데이트 완료 후 이동 — 늘 납품요구 목록 (2026-11-02 사용자 결정: 자동 이동 안 함).
+ * 대체 지정 해제 내역은 납품요구 수정 화면 «납품 목록» 위 안내의 [수량 변경 이력 보기] 버튼으로 본다.
+ */
 const goAfterDone = () => {
-  if (confirmedReleaseCount.value > 0 && releaseDeliveryDoneId.value) {
-    router.push(`/admin/delivery-done/detail/${releaseDeliveryDoneId.value}?focus=quantity-history`)
-  } else {
-    router.push('/admin/order/list')
-  }
+  router.push('/admin/order/list')
 }
 
 const handleAllocReleaseConfirm = async () => {
-  confirmedReleaseCount.value = allocReleaseItems.value.length
-  releaseDeliveryDoneId.value = allocReleaseItems.value.find(it => it.deliveryDoneId)?.deliveryDoneId ?? null
   showAllocReleaseModal.value = false
   const action = pendingAfterAllocConfirm
   pendingAfterAllocConfirm = null

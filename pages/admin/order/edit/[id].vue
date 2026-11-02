@@ -238,6 +238,27 @@
           />
         </div>
 
+        <!-- 대체 지정 해제 안내 (2026-11-02) — 변경계약 등록으로 «대체 지정»이 정리된 계약이면 확인 위치를 알려 준다 -->
+        <GuideNotice
+          v-if="allocReleaseDeliveryDoneId"
+          class="alloc-release-guide"
+          tone="info"
+          icon="fa-info-circle"
+          :default-open="true"
+          summary="이 계약은 변경계약 등록으로 «대체 지정»이 정리되었습니다. 먼저 다른 품목으로 대신 집계하던 출하가 실제 나간 품목 그대로 납품으로 잡혔습니다."
+        >
+          <p class="alloc-release-path">
+            자세한 내용은 <b>[납품관리 → 납품완료 → 해당 건 상세 → 수량 변경 이력]</b>에서 확인할 수 있습니다.
+            사유가 <b>«대체 지정 해제(납품 집계)»</b>인 줄이 정리된 내용입니다.
+          </p>
+          <NuxtLink
+            :to="`/admin/delivery-done/detail/${allocReleaseDeliveryDoneId}?focus=quantity-history`"
+            class="alloc-release-link"
+          >
+            <i class="fas fa-arrow-right" /> 수량 변경 이력 보기
+          </NuxtLink>
+        </GuideNotice>
+
         <!-- 납품 목록 -->
         <FormSection title="납품 목록" style="margin-top: 1.5rem">
           <div class="table-wrapper">
@@ -582,6 +603,7 @@ import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { usePermission } from '~/composables/usePermission'
 import { useFundStatusFormatters } from '~/composables/useFundStatusFormatters'
 import GuideNotice from '~/components/ui/GuideNotice.vue'
+import { getDeliveryDoneByOrderId, getQuantityHistory } from '~/services/delivery-done.service'
 import SalesManagerPicker from '~/components/admin/order/SalesManagerPicker.vue'
 import SalesManagerSettledWarningModal from '~/components/admin/order/SalesManagerSettledWarningModal.vue'
 
@@ -702,6 +724,24 @@ const extractSpecThickness = (specification: string): number => {
   return 9999
 }
 
+// 대체 지정 해제 안내용 — 그 계약의 납품완료 ID (해제 이력이 있을 때만 값이 있다)
+const allocReleaseDeliveryDoneId = ref<number | null>(null)
+
+const loadAllocReleaseHint = async (baseOrderId: number) => {
+  allocReleaseDeliveryDoneId.value = null
+  try {
+    const dd = await getDeliveryDoneByOrderId(baseOrderId)
+    if (!dd?.deliveryDoneId) { return }
+    const history = await getQuantityHistory(dd.deliveryDoneId)
+    if (history.some(h => (h.changeReason || '').startsWith('대체 지정 해제'))) {
+      allocReleaseDeliveryDoneId.value = dd.deliveryDoneId
+    }
+  } catch (error) {
+    // 안내용이라 실패해도 화면은 그대로
+    console.warn('대체 지정 해제 이력 확인 실패:', error)
+  }
+}
+
 // 데이터 로드
 const loadData = async () => {
   try {
@@ -737,6 +777,9 @@ const loadData = async () => {
       formData.value.siteManagerId = data.siteManagerId
       formData.value.builderCompany = data.builderCompanyName || ''
     }
+
+    // 대체 지정 해제 이력 확인 (비차단) — 변경계약(-01)은 납품완료가 기준계약(-00)에 있으므로 부모 번호로 찾는다
+    loadAllocReleaseHint((data as any).parentOrderId ?? orderId.value)
   } catch (error) {
     console.error('납품요구 정보 조회 실패:', error)
   } finally {
@@ -1137,6 +1180,35 @@ onMounted(async () => {
 .order-edit {
   padding: 0;
   margin-bottom: 0;
+}
+
+/* 대체 지정 해제 안내 (납품 목록 위) */
+.alloc-release-guide {
+  margin-top: 1.5rem;
+}
+
+.alloc-release-path {
+  margin: 0 0 0.5rem;
+  line-height: 1.7;
+}
+
+.alloc-release-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid #93c5fd;
+  border-radius: 6px;
+  background: #fff;
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.alloc-release-link:hover {
+  background: #eff6ff;
 }
 
 /* 납품 목록 테이블 셀 간격 축소 */
