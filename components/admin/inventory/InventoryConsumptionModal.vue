@@ -112,7 +112,7 @@
           <!--
             원가 — 사용자가 고르지 않는다. 먼저 들어온 재고부터 빠지고(FIFO), 빠진 물량마다 그 발주원가를 따른다.
             ★ 대전제 1번 — 창고는 원가를 바꾸지 않는다. 창고이동으로 온 물량도 원래 발주의 원가다.
-            ★ 대전제 5번 — 소진은 월별 매출원장 지급 금액을 바꾸지 않는다. «청구된다» 는 말을 쓰지 말 것.
+            ★ 2026-11-02 — 월별 매출원장이 납품 확정(창고에서 나간 물건) 기준이 되어 소진 원가도 지급 금액에 더한다.
           -->
           <div class="form-group">
             <label class="form-label">원가 (먼저 들어온 재고부터)</label>
@@ -131,7 +131,7 @@
               <p class="form-hint">
                 평균 원가 <b>{{ preview.unitCost.toLocaleString() }}원/㎡</b>, 금액 <b>{{ preview.totalAmount.toLocaleString() }}원</b>.
                 확정할 때 그 시점 재고로 다시 계산해 기록합니다.
-                재고만 차감되며 월별 매출원장의 <b>지급 금액에는 영향이 없습니다</b>.
+                확정하면 재고가 차감되고, 이 원가가 그 재고를 만든 제조사의 <b>월별 매출원장 지급 금액에 더해집니다</b>.
               </p>
             </template>
           </div>
@@ -141,7 +141,7 @@
             <label class="form-label required">소진일</label>
             <input v-model="form.consumptionDate" type="date" class="form-input">
             <p class="form-hint">
-              월별 매출원장에는 이 달({{ ledgerYm }})에 «참고» 로만 표시됩니다.
+              확정하면 이 달({{ ledgerYm }}) 월별 매출원장에 «재고 소진» 으로 더해집니다.
             </p>
           </div>
 

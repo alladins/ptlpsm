@@ -194,7 +194,7 @@ const defaultYm = computed(() => {
 const typeHint = computed(() => {
   switch (form.value.shippingCostType) {
     case 'PAID_TO_OEM':
-      return '소량 주문 등으로 운반비를 OEM 에 지불하는 경우입니다. 그 달 OEM 원장에 가산되어 지급액이 늘어납니다.'
+      return '소량 주문 등으로 운반비를 OEM 에 지불하는 경우입니다. 납품이 확정된 달의 OEM 월별 매출원장에 가산되어 지급액이 늘어납니다.'
     case 'LP_BEARS':
       return '창고이동 후 리드파워가 직접 운송하는 경우입니다. 마진 원가에만 반영되고 제조사 지급액에는 실리지 않습니다.'
     default:

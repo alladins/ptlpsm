@@ -373,7 +373,7 @@ const confirmHint = (r: InventoryConsumption) => {
   if ((r.currentStock ?? 0) < r.quantity) {
     return `${r.warehouseName || '출고 창고'} 의 재고가 부족해 확정할 수 없습니다.\n\n현재고 ${(r.currentStock ?? 0).toLocaleString()}㎡ / 필요 ${r.quantity.toLocaleString()}㎡ (${(r.quantity - (r.currentStock ?? 0)).toLocaleString()}㎡ 부족)\n\n소진 수량을 줄이거나, 발주서를 입고 처리해 재고를 채우세요.`
   }
-  return '재고를 차감합니다. 월별 매출원장의 지급 금액에는 영향이 없습니다.'
+  return '재고를 차감하고, 빠진 재고의 원가를 그 재고를 만든 제조사의 월별 매출원장(소진일이 속한 달)에 더합니다.'
 }
 
 const load = async () => {
@@ -522,9 +522,8 @@ const onSaved = () => { load() }
 
 const handleConfirm = async (r: InventoryConsumption) => {
   // ⚠ formatCurrency 가 '원' 까지 붙인다. 뒤에 '원' 을 또 쓰면 "0원원" 이 된다.
-  // ★ 2026-09-21 대전제 5번 — 소진은 월별 매출원장의 지급 금액을 바꾸지 않는다.
-  //   예전 문구 «○○ 원장에 ○원이 청구됩니다» 는 정책 확정 전의 것이라 틀렸다.
-  //   (고객이 확인창을 보고 «청구된다는 게 맞냐» 고 물어 발견)
+  // ★ 2026-11-02 변경 — 월별 매출원장이 납품 확정(창고에서 나간 물건) 기준이 되면서 소진도 지급 금액에 더한다.
+  //   (2026-09-21~11-01 발주 기준 시절에는 «지급 금액은 바뀌지 않습니다» 였다 — 발주 때 이미 금액이 잡혔기 때문)
   // ★ 원가는 FIFO — 먼저 들어온 재고의 발주원가. 확정 시점 재고로 다시 계산하므로 «약» 으로 적는다
   const costLine = (r.lots?.length ?? 0) > 1
     ? `먼저 들어온 재고부터 ${r.lots!.length}개 발주에 걸쳐 빠지며, 원가 약 ${formatCurrency(r.amount)}어치(평균 ${formatCurrency(r.unitCost)}/㎡)로 기록됩니다.`
@@ -533,7 +532,7 @@ const handleConfirm = async (r: InventoryConsumption) => {
     `${r.consumptionNo} 을 확정합니다.\n\n` +
     `재고 ${r.quantity}㎡ 가 차감됩니다.\n` +
     `${costLine}\n\n` +
-    '월별 매출원장의 지급 금액은 바뀌지 않습니다. (원장에는 «참고» 로만 표시)'
+    '이 금액은 그 재고를 만든 제조사의 월별 매출원장(소진일이 속한 달)에 더해집니다.'
   )) { return }
   try {
     await inventoryConsumptionService.confirm(r.consumptionId)

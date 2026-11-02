@@ -38,9 +38,14 @@
       <ul class="basis-guide-list">
         <li>운송장을 등록·발송한 것만으로는 확정이 아닙니다. 아래 «미확정(납품 대기)»에 참고로만 보이고 합계에는 들어가지 않습니다.</li>
         <li>어느 달 원장에 들어가는지는 <b>납품일(현장 도착일)</b>로 정합니다. 서명이 다음 달에 들어와도 납품한 달에 들어갑니다.</li>
-        <li>금액은 운송장으로 실제 나간 물건의 원가(그 물건을 만든 발주서 단가)입니다. 가공비는 그 발주서 물건이 처음 납품 확정된 달에 들어갑니다.</li>
-        <li>이 원장으로 [청구 요청]을 하면 그 시점 목록이 저장됩니다. 그 뒤 같은 달에 늦게 확정된 건은 «청구 후 추가 확정»으로 표시됩니다.</li>
-        <li>예전 발주일 기준 원장은 «월별 발주기록» 메뉴에서 볼 수 있습니다.</li>
+        <li>금액은 운송장으로 실제 나간 물건의 원가(그 물건을 만든 발주서 단가)입니다.</li>
+        <li>
+          <b>공급가액 = 납품 확정 합계 + 재고 소진 + 운송비 + 가공비 − 손실 차감</b>, 여기에 부가세 10%를 더한 것이 합계입니다.
+          표 아래 «부대 항목 내역»에서 한 건씩 근거를 볼 수 있습니다.
+        </li>
+        <li>재고 소진(품질관리 발송·리드파워 계약 등)은 현장 납품은 아니지만 창고에서 나간 물건이라 소진이 확정된 달에 더합니다. 가공비는 그 발주서 물건이 처음 납품 확정된 달, 운송비는 그 출하의 납품일 달, 손실 차감은 정산한 달에 들어갑니다.</li>
+        <li>이 원장으로 [청구 요청]을 하면 그 시점 목록이 저장됩니다. 그 뒤 같은 달에 늦게 생긴 항목은 «청구 후 추가»로 표시됩니다.</li>
+        <li>발주한 내역만 보려면 «월별 발주기록» 메뉴를 보세요.</li>
       </ul>
     </GuideNotice>
     <GuideNotice
@@ -48,7 +53,7 @@
       class="basis-guide"
       tone="warn"
       icon="fa-info-circle"
-      summary="발주일 기준의 예전 원장 기록입니다. 조회·엑셀만 할 수 있습니다. 제조 비용 청구는 «월별 매출원장»(납품 확정 기준)에서 합니다."
+      summary="그 달에 발주한 품목(발주 수량 × 발주 단가)만 보여 주는 기록입니다. 운송비·가공비·손실 차감·재고 소진·부가세와 청구는 «월별 매출원장»에서 봅니다."
     />
 
     <div v-if="isDelivery && !isOemManager && pendingRequests.length > 0" class="pending-banner">
@@ -152,7 +157,7 @@
           </button>
           <!-- OEM 담당자: 지급 요청 -->
           <button
-            v-if="isOemManager && ledgerData.paymentStatus === 'NONE' && ledgerData.items.length > 0"
+            v-if="isOemManager && ledgerData.paymentStatus === 'NONE' && Number(ledgerData.payableAmount || 0) > 0"
             class="btn-action btn-primary"
             @click="handlePaymentRequest"
           >
@@ -229,13 +234,13 @@
         </div>
       </div>
 
-      <!-- 청구 후 추가 확정 (2026-11-02) — 그 달 청구 뒤에 납품이 확정된 운송장 -->
+      <!-- 청구 후 추가 (2026-11-02) — 그 달 청구 뒤에 확정된 납품·재고 소진·운송비·가공비 -->
       <div v-if="isDelivery && lateCount > 0" class="late-notice">
         <i class="fas fa-triangle-exclamation" />
         <span>
-          이 달 청구 요청 뒤에 납품이 확정된 운송장 <b>{{ lateCount }}건</b>
+          이 달 청구 요청 뒤에 생긴 항목 <b>{{ lateCount }}건</b>
           (금액 {{ formatCurrency(ledgerData?.lateConfirmedAmount) }})이 있습니다.
-          청구한 금액에는 들어 있지 않습니다 — 표에서 «청구 후 추가» 표시를 확인하고 리드파워 담당자와 추가 청구를 협의하세요.
+          청구한 금액에는 들어 있지 않습니다 — 표와 «부대 항목 내역»의 «청구 후 추가» 표시를 확인하고 리드파워 담당자와 추가 청구를 협의하세요.
         </span>
       </div>
 
@@ -306,13 +311,13 @@
       </div>
 
       <!-- 데이터 없음 -->
-      <div v-else-if="!ledgerData || ledgerData.items.length === 0" class="no-data-message">
+      <div v-else-if="!ledgerData || (ledgerData.items.length === 0 && !hasAnyCharge)" class="no-data-message">
         <i class="fas fa-book" />
         <p v-if="!selectedOemCompanyId && selectedOemCompanyId !== 0">
           OEM 제조사를 선택한 후 조회하세요.
         </p>
         <p v-else-if="isDelivery">
-          해당 월(납품일 기준)에 납품이 확정된 운송장이 없습니다.
+          해당 월에 납품이 확정된 운송장이나 재고 소진·운송비·가공비·손실 차감이 없습니다.
         </p>
         <p v-else>
           해당 월에 발주 데이터가 없습니다.
@@ -323,7 +328,7 @@
       <div v-else class="table-section">
         <div class="table-header">
           <div class="table-info">
-            <span>총 {{ ledgerData.items.length }}건</span>
+            <span>{{ isDelivery ? '납품 확정' : '발주 품목' }} {{ ledgerData.items.length }}건</span>
           </div>
         </div>
 
@@ -355,7 +360,7 @@
                 <!-- 납품 기준(2026-11-02): 같은 칸에 출하번호 · 납품일 · 운송장번호 -->
                 <th>{{ isDelivery ? '출하번호' : '발주서번호' }}</th>
                 <th>{{ isDelivery ? '납품일' : '발주일자' }}</th>
-                <th>{{ isDelivery ? '운송장번호' : '출하일자' }}</th>
+                <th>{{ isDelivery ? '운송장번호' : '연결 출하' }}</th>
                 <th>수요기관</th>
                 <th>사업명</th>
                 <th>규격</th>
@@ -363,10 +368,10 @@
                   수량
                 </th>
                 <th class="text-right">
-                  원가
+                  {{ isDelivery ? '원가' : '발주 단가' }}
                 </th>
                 <th class="text-right">
-                  금액<span class="th-sub">(원가×수량)</span>
+                  금액<span class="th-sub">{{ isDelivery ? '(원가×수량)' : '(단가×수량)' }}</span>
                 </th>
                 <th class="text-center">
                   원가출처
@@ -394,8 +399,9 @@
                 <template v-else>
                   <td>{{ item.poNo }}</td>
                   <td>{{ formatShortDate(item.orderDate) }}</td>
-                  <td :title="item.shipmentNo || ''">
-                    {{ formatShortDate(item.shipmentDate) }}
+                  <!-- 발주기록: 이 발주 품목이 연결된 출하번호(참고) -->
+                  <td class="cell-linked" :title="item.shipmentNo || ''">
+                    {{ item.shipmentNo || '-' }}
                   </td>
                 </template>
                 <td>{{ item.demandAgency }}</td>
@@ -440,10 +446,10 @@
               </tr>
             </tbody>
             <tfoot>
-              <!-- 발주 품목 합계 (공급가액) -->
+              <!-- 품목 합계 — 매출원장: 납품 확정 합계 / 발주기록: 발주 합계(여기서 끝) -->
               <tr class="total-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 8 : 7" class="text-right">
-                  <strong>합계</strong>
+                  <strong>{{ isDelivery ? '납품 확정 합계' : '발주 합계' }}</strong>
                 </td>
                 <td class="text-right">
                   <strong>{{ formatQuantity(ledgerData.totalQuantity) }}</strong>
@@ -457,24 +463,23 @@
               </tr>
 
               <!--
-                비출하 재고 소진 (품질관리 발송 / 리드파워 계약)
-                ★ 지급액에 더하지 않는다 (2026-09-21 정책). 물건값은 발주에서 이미 계상됐고
-                  소진은 재고만 빼는 것이다. 여기 금액은 «이번 달 이 제조사 물량이 이만큼
-                  소진됐다» 는 참고 표기다. 그래서 «+» 를 쓰지 않고 회색으로 둔다.
+                재고 소진 (품질관리 발송 / 리드파워 계약 / 기타) — 매출원장만, 지급 합계에 더한다 (2026-11-02)
+                ★ 납품 확정 기준에서는 창고에서 나간 물건만 돈이 된다. 소진도 나간 물건이다.
+                  (발주 기준 시절 «참고 줄» 이었던 건 발주 때 이미 돈이 잡혔기 때문 — 지금은 해당 없음)
               -->
-              <tr v-if="hasConsumption" class="note-row">
+              <tr v-if="isDelivery && hasConsumption" class="add-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
-                  (참고) 비출하 재고 소진
-                  <span class="deduct-hint">{{ consumptionLabel }} · 지급액에는 포함되지 않습니다</span>
+                  재고 소진
+                  <span class="deduct-hint">{{ consumptionLabel }}</span>
                 </td>
                 <td />
-                <td class="text-right">{{ formatCurrency(ledgerData.consumptionTotal) }}</td>
+                <td class="text-right">+ {{ formatCurrency(ledgerData.consumptionTotal) }}</td>
                 <td />
                 <td />
               </tr>
 
               <!-- 운송비 (OEM 에 지불하는 건만) -->
-              <tr v-if="hasShippingCharge" class="add-row">
+              <tr v-if="isDelivery && hasShippingCharge" class="add-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
                   운송비
                   <span class="deduct-hint">{{ shippingChargeLabel }}</span>
@@ -486,7 +491,7 @@
               </tr>
 
               <!-- 가공비 -->
-              <tr v-if="hasProcessingCharge" class="add-row">
+              <tr v-if="isDelivery && hasProcessingCharge" class="add-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
                   가공비
                   <span class="deduct-hint">{{ processingChargeLabel }}</span>
@@ -498,7 +503,7 @@
               </tr>
 
               <!-- 손실 차감 (제조사 부담분이 있을 때만) -->
-              <tr v-if="hasLossDeduction" class="deduct-row">
+              <tr v-if="isDelivery && hasLossDeduction" class="deduct-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
                   손실 차감 (제조사 부담)
                   <span class="deduct-hint">{{ lossDeductionLabel }}</span>
@@ -510,7 +515,7 @@
               </tr>
 
               <!-- 공급가액 (가산·차감 반영 후) -->
-              <tr v-if="hasAdjustment" class="supply-row">
+              <tr v-if="isDelivery && hasAdjustment" class="supply-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
                   <strong>공급가액</strong>
                 </td>
@@ -522,8 +527,8 @@
                 <td />
               </tr>
 
-              <!-- 부가세 -->
-              <tr class="vat-row">
+              <!-- 부가세 — 매출원장만 (발주기록은 발주 합계에서 끝난다) -->
+              <tr v-if="isDelivery" class="vat-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
                   부가세 <span class="deduct-hint">(공급가액의 10%)</span>
                 </td>
@@ -534,7 +539,7 @@
               </tr>
 
               <!-- 합계 (VAT 포함) -->
-              <tr class="grand-total-row">
+              <tr v-if="isDelivery" class="grand-total-row">
                 <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
                   <strong>합계 (부가세 포함)</strong>
                 </td>
@@ -546,6 +551,54 @@
                 <td />
               </tr>
             </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!--
+        부대 항목 내역 (매출원장만, 2026-11-02) — 재고 소진·운송비·가공비·손실 차감을 한 건씩.
+        합계 아래 줄은 건수만 보여 줘서 «무엇이 더해지고 빠졌는지» 를 맞춰 볼 수 없었다.
+      -->
+      <div v-if="!loading && isDelivery && chargeRows.length > 0" class="charge-detail-box">
+        <div class="charge-detail-title">
+          <i class="fas fa-list-ul" /> 부대 항목 내역 ({{ chargeRows.length }}건)
+          <span class="deduct-hint">— 위 표 아래 «재고 소진·운송비·가공비·손실 차감» 줄의 근거입니다</span>
+        </div>
+        <div class="table-container">
+          <table class="data-table charge-detail-table">
+            <thead>
+              <tr>
+                <th>구분</th>
+                <th v-if="selectedOemCompanyId === 0">
+                  제조사
+                </th>
+                <th>문서번호</th>
+                <th>기준일</th>
+                <th>내용</th>
+                <th class="text-right">
+                  금액
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(c, i) in chargeRows" :key="`c-${i}`">
+                <td>
+                  <span class="charge-type" :class="`ct-${c.kind}`">{{ c.label }}</span>
+                </td>
+                <td v-if="selectedOemCompanyId === 0">
+                  {{ c.producer || '-' }}
+                </td>
+                <td>{{ c.sourceNo || '-' }}</td>
+                <td>{{ c.refDate || '-' }}</td>
+                <td class="cell-remarks">
+                  {{ c.desc || '-' }}
+                  <span v-if="c.late" class="late-badge" title="이 달 청구 요청 뒤에 생긴 항목 — 청구 금액에 들어 있지 않습니다">청구 후 추가</span>
+                </td>
+                <td class="text-right" :class="{ 'amount-minus': c.minus }">
+                  {{ c.minus ? '−' : '+' }} {{ formatCurrency(c.amount) }}
+                </td>
+              </tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -726,14 +779,14 @@ definePageMeta({
 /**
  * 원장 기준 (2026-11-02)
  *  - DELIVERY(기본): 월별 매출원장 — 납품확인 완료(사진+서명) 운송장 기준, 귀속 월 = 납품일. 청구 요청 가능
- *  - PO: 월별 발주기록 — 예전 발주일 기준 계산, 조회·엑셀 전용 (pages/admin/oem/po-record.vue 가 이 화면을 basis="PO" 로 띄운다)
+ *  - PO: 월별 발주기록 — 그 달 발주서 품목(발주 수량 × 발주 단가)만, 부대 항목·부가세·청구 없음 (pages/admin/oem/po-record.vue 가 이 화면을 basis="PO" 로 띄운다)
  */
 const props = withDefaults(defineProps<{ basis?: OemLedgerBasis }>(), { basis: 'DELIVERY' })
 const isDelivery = computed(() => props.basis !== 'PO')
 const pageTitle = computed(() => (isDelivery.value ? 'OEM 월별 매출원장' : 'OEM 월별 발주기록'))
 const pageDescription = computed(() => (isDelivery.value
   ? '납품이 확정된(현장 사진·인수자 서명 완료) 운송장 기준의 월별 매출입니다. 이 원장으로 제조 비용 청구를 요청합니다.'
-  : '예전 월별 매출원장(발주일 기준) 기록입니다. 조회·엑셀만 할 수 있고, 청구는 «월별 매출원장»에서 합니다.'))
+  : '그 달에 발주한 품목(발주 수량 × 발주 단가)만 모은 조회·엑셀 전용 기록입니다. 청구는 «월별 매출원장»에서 합니다.'))
 
 const { isOemManager, isFullAccess } = usePermission()
 
@@ -807,9 +860,44 @@ const hasAdjustment = computed(() =>
 )
 
 const consumptionLabel = computed(() => {
-  const list = ledgerData.value?.consumptions
+  const list = ledgerData.value?.consumptionCharges
   if (!list || list.length === 0) { return '' }
-  return `(${list.length}건 — 품질관리 발송 / 리드파워 계약)`
+  return `(${list.length}건 — 품질관리 발송 · 리드파워 계약 등)`
+})
+
+/** 품목이 없어도 부대 항목만 있는 달이 있다 (예: 재고 소진만 있는 달) — 그때도 원장을 보여 준다 */
+const hasAnyCharge = computed(() => isDelivery.value && (hasAdjustment.value))
+
+/** 부대 항목 내역 — 재고 소진 → 운송비 → 가공비 → 손실 차감 순 */
+interface ChargeRow {
+  kind: 'consumption' | 'shipping' | 'processing' | 'loss'
+  label: string
+  producer?: string | null
+  sourceNo?: string | null
+  refDate?: string | null
+  desc?: string | null
+  amount: number
+  minus: boolean
+  late: boolean
+}
+const chargeRows = computed<ChargeRow[]>(() => {
+  const d = ledgerData.value
+  if (!d || !isDelivery.value) { return [] }
+  const rows: ChargeRow[] = []
+  const join = (...parts: (string | null | undefined)[]) => parts.filter(p => p && String(p).trim()).join(' · ')
+  for (const c of d.consumptionCharges || []) {
+    rows.push({ kind: 'consumption', label: '재고 소진', producer: c.producerName, sourceNo: c.sourceNo, refDate: c.refDate, desc: c.remarks, amount: Number(c.amount || 0), minus: false, late: !!c.lateConfirmed })
+  }
+  for (const c of d.shippingCharges || []) {
+    rows.push({ kind: 'shipping', label: '운송비', producer: c.producerName, sourceNo: c.sourceNo, refDate: c.refDate, desc: join(c.carrierName, c.deliveryRequestNo, c.client), amount: Number(c.amount || 0), minus: false, late: !!c.lateConfirmed })
+  }
+  for (const c of d.processingCharges || []) {
+    rows.push({ kind: 'processing', label: '가공비', producer: c.producerName, sourceNo: c.sourceNo, refDate: c.refDate, desc: join('발주서에 적힌 가공비 (기준일 = 그 발주 물건이 처음 납품 확정된 날)', c.remarks), amount: Number(c.amount || 0), minus: false, late: !!c.lateConfirmed })
+  }
+  for (const l of d.lossDeductions || []) {
+    rows.push({ kind: 'loss', label: '손실 차감', producer: l.oemCompanyName, sourceNo: l.lossNo, refDate: l.occurredDate, desc: join(l.lossTypeName, l.shipmentNo, l.skuName), amount: Number(l.oemDeductionAmount || 0), minus: true, late: false })
+  }
+  return rows
 })
 const shippingChargeLabel = computed(() => {
   const list = ledgerData.value?.shippingCharges
@@ -1750,5 +1838,55 @@ onMounted(async () => {
 .pending-delivery-table th {
   font-size: 12px;
   color: #6b7280;
+}
+
+/* 부대 항목 내역 (2026-11-02) */
+.charge-detail-box {
+  margin-top: 14px;
+  border: 1px solid #dbe3ec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.charge-detail-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #eef2f6;
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.charge-detail-table td,
+.charge-detail-table th {
+  font-size: 12.5px;
+}
+
+.charge-type {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ct-consumption { background: #eef6ff; color: #1d5fa8; }
+.ct-shipping { background: #eefaf3; color: #1f7a4a; }
+.ct-processing { background: #f4f0ff; color: #5b3fb0; }
+.ct-loss { background: #fff0f0; color: #b42318; }
+
+.amount-minus {
+  color: #b42318;
+}
+
+.cell-linked {
+  font-size: 12px;
+  color: #4b5563;
+  white-space: normal;
+  word-break: break-all;
 }
 </style>

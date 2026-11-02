@@ -90,7 +90,7 @@
                   >
                 </div>
                 <span class="form-hint">
-                  제조사에 지급하는 가공 비용입니다. 발주일이 속한 달의 OEM 원장에 가산됩니다.
+                  제조사에 지급하는 가공 비용입니다. 이 발주 물건이 처음 납품 확정된 달의 OEM 월별 매출원장에 가산됩니다.
                 </span>
                 <p v-if="pickedDraft" class="warn-line">
                   <i class="fas fa-exclamation-circle" />

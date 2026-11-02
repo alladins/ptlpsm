@@ -108,6 +108,12 @@
                     {{ formatCurrency(ledger?.totalAmount ?? 0) }}
                   </td>
                 </tr>
+                <tr v-if="(ledger?.consumptionTotal ?? 0) > 0">
+                  <th>재고 소진 ({{ ledger?.consumptionCharges?.length || 0 }}건)</th>
+                  <td class="num">
+                    + {{ formatCurrency(ledger?.consumptionTotal ?? 0) }}
+                  </td>
+                </tr>
                 <tr v-if="(ledger?.shippingChargeTotal ?? 0) > 0">
                   <th>운송비 ({{ ledger?.shippingCharges?.length || 0 }}건)</th>
                   <td class="num">

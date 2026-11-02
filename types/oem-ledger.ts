@@ -50,11 +50,11 @@ export interface OemMonthlyLedgerResponse {
   totalAmount: number
 
   /**
-   * 비출하 재고 소진 목록 (품질관리 발송 / 리드파워 계약)
-   * 발주서 없이 재고에서 빠진 물량. 그 물량을 만든 OEM 이 청구하므로 원장에 가산된다.
+   * 재고 소진 목록 (품질관리 발송 / 리드파워 계약 / 기타) — 매출원장 전용, 지급 합계에 더한다 (2026-11-02)
+   * 소진 1건 × 생산자 1줄. 금액·생산자는 그 소진으로 빠진 출고 로트 기준.
    */
-  consumptions?: LedgerConsumptionItem[]
-  /** 비출하 소진 합계 (가산) */
+  consumptionCharges?: LedgerChargeItem[]
+  /** 재고 소진 합계 (가산) */
   consumptionTotal?: number
 
   /**
@@ -74,7 +74,7 @@ export interface OemMonthlyLedgerResponse {
   lossDeductions?: LossDeductionSummary[]
   /** 손실 차감액 합계 */
   lossDeductionTotal?: number
-  /** 지급 예정 공급가액 = totalAmount + 소진 + 운송비 + 가공비 − lossDeductionTotal */
+  /** 매출원장: 공급가액 = totalAmount + 재고 소진 + 운송비 + 가공비 − lossDeductionTotal / 발주기록: totalAmount 그대로 */
   payableAmount?: number
   /** 부가세 (공급가액의 10%, 원 단위 반올림 — 발주서 PDF 와 동일 기준) */
   vatAmount?: number
@@ -177,6 +177,8 @@ export interface LossDeductionSummary {
   oemDeductionAmount: number
   settlementStatusName: string
   occurredDate: string
+  shipmentNo?: string | null
+  oemCompanyName?: string | null
 }
 
 /** 원가 출처 (백엔드 OemLedgerMapper 의 costSource 와 1:1) */
@@ -276,13 +278,13 @@ export interface OemLedgerPendingItem {
 }
 
 /**
- * 원장 부대비용 항목 (운송비 / 가공비)
+ * 매출원장 부대 항목 (재고 소진 / 운송비 / 가공비)
  *
- * 발주 품목처럼 "수량 × 원가"가 아니라 금액만 가산되는 항목이다.
+ * 납품 품목처럼 "수량 × 원가" 줄이 아니라 금액으로 더해지는 항목이다. 월별 발주기록에는 없다.
  */
 export interface LedgerChargeItem {
-  /** SHIPPING:운송비 / PROCESSING:가공비 */
-  chargeType: 'SHIPPING' | 'PROCESSING'
+  /** CONSUMPTION:재고 소진 / SHIPPING:운송비 / PROCESSING:가공비 */
+  chargeType: 'CONSUMPTION' | 'SHIPPING' | 'PROCESSING'
   /** 출처 문서번호 (출하번호 또는 발주서번호) */
   sourceNo: string | null
   sourceId: number | null
@@ -294,10 +296,14 @@ export interface LedgerChargeItem {
   deliveryRequestNo?: string | null
   client?: string | null
   remarks?: string | null
+  /** 생산 제조사명 (전체 조회 때) */
+  producerName?: string | null
+  /** 그 달 청구 요청 뒤에 생긴 항목 */
+  lateConfirmed?: boolean | null
 }
 
 /**
- * 원장의 비출하 재고 소진 항목
+ * (옛) 원장의 비출하 재고 소진 항목 — 2026-11-02 부터 원장은 LedgerChargeItem(CONSUMPTION)을 쓴다
  *
  * 수량·원가가 있어 부대비용과 구분된다.
  * 상세 타입은 ~/types/inventory-consumption 의 InventoryConsumption 과 같다.

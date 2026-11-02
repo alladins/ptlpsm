@@ -715,7 +715,7 @@ import FormSection from '~/components/admin/forms/FormSection.vue'
 const shippingCostTypeHint = computed(() => {
   switch (formData.shippingCostType) {
     case 'PAID_TO_OEM':
-      return '소량 주문 등으로 운반비를 OEM 에 지불하는 경우입니다. 출하일이 속한 달의 OEM 원장에 가산됩니다.'
+      return '소량 주문 등으로 운반비를 OEM 에 지불하는 경우입니다. 납품이 확정된(사진·서명) 납품일이 속한 달의 OEM 월별 매출원장에 가산됩니다.'
     case 'LP_BEARS':
       return '창고이동 후 리드파워가 직접 운송하는 경우입니다. 마진 원가에만 반영되고 원장에는 실리지 않습니다.'
     default:
