@@ -127,15 +127,14 @@
           </button>
         </template>
 
-        <!-- PDF 다운로드 (발행 후 PDF가 있는 경우) -->
+        <!-- PDF 미리보기·다운로드 (발행 후 PDF가 있는 경우) -->
         <button
           v-if="poDetail && poDetail.pdfPath && poDetail.status !== 'DRAFT'"
           class="btn-action"
-          :disabled="pdfDownloading"
-          @click="handleDownloadPdf"
+          @click="showPdfPreview = true"
         >
-          <i :class="pdfDownloading ? 'fas fa-spinner fa-spin' : 'fas fa-file-pdf'" />
-          {{ pdfDownloading ? '다운로드 중...' : '발주서 PDF' }}
+          <i class="fas fa-file-pdf" />
+          발주서 PDF
         </button>
 
         <!-- 공통: 목록 버튼 -->
@@ -758,6 +757,15 @@
       v-model="showSkuSelector"
       @sku-selected="handleSkuSelected"
     />
+
+    <!-- 발주서 PDF 미리보기 (창 안에서 다운로드) -->
+    <PdfPreviewModal
+      :show="showPdfPreview"
+      :pdf-url="PURCHASE_ORDER_ENDPOINTS.pdf(poId)"
+      :file-name="`발주서_${poDetail?.poNo || poId}.pdf`"
+      title="발주서 PDF"
+      @close="showPdfPreview = false"
+    />
   </div>
 </template>
 
@@ -773,6 +781,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { usePermissionStore } from '~/stores/permission'
 import { useRouter, useRoute } from '#imports'
 import { purchaseOrderService } from '~/services/purchase-order.service'
+import { PURCHASE_ORDER_ENDPOINTS } from '~/services/api/endpoints/purchase-order.endpoints'
+import PdfPreviewModal from '~/components/admin/delivery/PdfPreviewModal.vue'
 import { companyService } from '~/services/company.service'
 import { oemCostService } from '~/services/oem-cost.service'
 import { blockDecimalKey, stripDecimalOnPaste, truncateToInt } from '~/utils/numberInput'
@@ -824,8 +834,8 @@ const errors = ref<Record<string, string>>({})
 // SKU 선택 팝업
 const showSkuSelector = ref(false)
 
-// PDF 다운로드
-const pdfDownloading = ref(false)
+// PDF 미리보기 창
+const showPdfPreview = ref(false)
 
 // 반려 모달
 const showRejectModal = ref(false)
@@ -1327,19 +1337,6 @@ const getProductionRateClass = (produced: number | null, quantity: number | null
   if (rate >= 100) { return 'rate-complete' }
   if (rate > 0) { return 'rate-progress' }
   return 'rate-zero'
-}
-
-// PDF 다운로드
-const handleDownloadPdf = async () => {
-  pdfDownloading.value = true
-  try {
-    await purchaseOrderService.downloadPdf(poId.value, poDetail.value?.poNo)
-  } catch (error: any) {
-    console.error('PDF 다운로드 실패:', error)
-    alert(error.message || '발주서 PDF 다운로드에 실패했습니다.')
-  } finally {
-    pdfDownloading.value = false
-  }
 }
 
 // 목록으로 이동

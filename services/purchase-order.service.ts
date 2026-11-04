@@ -483,43 +483,6 @@ class PurchaseOrderService {
   }
 
   /**
-   * 발주서 PDF 다운로드 — «발주서_PO202609-001.pdf» 이름으로 저장한다
-   *
-   * ★ 예전에는 새 탭에 blob 주소로 열고 10초 뒤 해제했다. 그 탭에서 «저장» 을 누르면
-   *   파일 이름이 무작위 문자열(확장자 없음)이 되거나, 10초가 지나면 아예 저장이 안 됐다(2026-09-22 확인).
-   * @param poId - 발주서 ID
-   * @param poNo - 발주서 번호 (파일 이름용)
-   */
-  async downloadPdf(poId: number, poNo?: string): Promise<void> {
-    try {
-      const url = PURCHASE_ORDER_ENDPOINTS.pdf(poId)
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(errorText || httpErrorMessage(response.status, 'PDF 다운로드'))
-      }
-
-      const blob = new Blob([await response.blob()], { type: 'application/pdf' })
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = `발주서_${poNo || poId}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      // 즉시 해제하면 크롬이 파일명·확장자를 잃는다
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
-    } catch (error) {
-      console.error('[purchase-order.service] downloadPdf 에러:', error)
-      throw error
-    }
-  }
-
-  /**
    * 생산완료 체크
    * @param poId - 발주서 ID
    * @param request - 생산완료 요청 데이터
