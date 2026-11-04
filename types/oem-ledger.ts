@@ -50,6 +50,14 @@ export interface OemMonthlyLedgerResponse {
   totalAmount: number
 
   /**
+   * 창고 이동 목록 (제조사 창고 → 리드파워 본사) — 매출원장 전용, 옮긴 달에 더한다 (2026-11-04)
+   * 이렇게 잡은 물건은 본사에서 나갈 때 다시 잡지 않는다.
+   */
+  transferCharges?: LedgerChargeItem[]
+  /** 창고 이동 합계 (되돌린 달은 음수일 수 있음) */
+  transferTotal?: number
+
+  /**
    * 재고 소진 목록 (품질관리 발송 / 리드파워 계약 / 기타) — 매출원장 전용, 지급 합계에 더한다 (2026-11-02)
    * 소진 1건 × 생산자 1줄. 금액·생산자는 그 소진으로 빠진 출고 로트 기준.
    */
@@ -283,8 +291,8 @@ export interface OemLedgerPendingItem {
  * 납품 품목처럼 "수량 × 원가" 줄이 아니라 금액으로 더해지는 항목이다. 월별 발주기록에는 없다.
  */
 export interface LedgerChargeItem {
-  /** CONSUMPTION:재고 소진 / SHIPPING:운송비 / PROCESSING:가공비 */
-  chargeType: 'CONSUMPTION' | 'SHIPPING' | 'PROCESSING'
+  /** TRANSFER:창고 이동 / CONSUMPTION:재고 소진 / SHIPPING:운송비 / PROCESSING:가공비 */
+  chargeType: 'TRANSFER' | 'CONSUMPTION' | 'SHIPPING' | 'PROCESSING'
   /** 출처 문서번호 (출하번호 또는 발주서번호) */
   sourceNo: string | null
   sourceId: number | null

@@ -93,7 +93,7 @@
             </div>
 
             <p class="doc-lead">
-              아래와 같이 {{ yearMonthLabel }} 납품 확정분(현장 사진·인수자 서명 완료) 제조 비용을 청구합니다. 실제 청구는 홈택스 세금계산서로 합니다.
+              아래와 같이 {{ yearMonthLabel }} 납품 확정분(현장 사진·인수자 서명 완료)과 본사 이동분 제조 비용을 청구합니다. 실제 청구는 홈택스 세금계산서로 합니다.
             </p>
 
             <!-- 청구 내역 -->
@@ -106,6 +106,12 @@
                   <th>납품 합계 ({{ ledger?.items?.length || 0 }}건)</th>
                   <td class="num">
                     {{ formatCurrency(ledger?.totalAmount ?? 0) }}
+                  </td>
+                </tr>
+                <tr v-if="Number(ledger?.transferTotal ?? 0) !== 0">
+                  <th>창고 이동 ({{ ledger?.transferCharges?.length || 0 }}건)</th>
+                  <td class="num">
+                    {{ Number(ledger?.transferTotal) < 0 ? '−' : '+' }} {{ formatCurrency(Math.abs(Number(ledger?.transferTotal))) }}
                   </td>
                 </tr>
                 <tr v-if="(ledger?.consumptionTotal ?? 0) > 0">

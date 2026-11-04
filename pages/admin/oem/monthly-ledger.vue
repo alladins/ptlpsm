@@ -33,16 +33,17 @@
       class="basis-guide"
       tone="info"
       icon="fa-info-circle"
-      summary="운송장으로 납품이 확정된(현장 사진 첨부 + 인수자 서명 완료) 건만 원장에 올라갑니다. 실제 청구는 홈택스에서 세금계산서를 발행해서 합니다."
+      summary="운송장으로 납품이 확정된(현장 사진 첨부 + 인수자 서명 완료) 건과 리드파워 본사로 옮긴 물건이 원장에 올라갑니다. 실제 청구는 홈택스에서 세금계산서를 발행해서 합니다."
     >
       <ul class="basis-guide-list">
         <li>운송장을 등록·발송한 것만으로는 확정이 아닙니다. 아래 «미확정(납품 대기)»에 참고로만 보이고 합계에는 들어가지 않습니다.</li>
         <li>어느 달 원장에 들어가는지는 <b>납품일(현장 도착일)</b>로 정합니다. 서명이 다음 달에 들어와도 납품한 달에 들어갑니다.</li>
         <li>금액은 운송장으로 실제 나간 물건의 원가(그 물건을 만든 발주서 단가)입니다.</li>
         <li>
-          <b>공급가액 = 납품 확정 합계 + 재고 소진 + 운송비 + 가공비 − 손실 차감</b>, 여기에 부가세 10%를 더한 것이 합계입니다.
+          <b>공급가액 = 납품 확정 합계 + 창고 이동 + 재고 소진 + 운송비 + 가공비 − 손실 차감</b>, 여기에 부가세 10%를 더한 것이 합계입니다.
           표 아래 «부대 항목 내역»에서 한 건씩 근거를 볼 수 있습니다.
         </li>
+        <li>제조사 창고에서 리드파워 본사로 옮긴 물건은 납품 전이라도 제조사에서 나간 것이므로 <b>옮긴 날의 달</b>에 «창고 이동»으로 더합니다. 이 물건이 나중에 본사에서 납품되거나 소진될 때는 다시 더하지 않습니다.</li>
         <li>재고 소진(품질관리 발송·리드파워 계약 등)은 현장 납품은 아니지만 창고에서 나간 물건이라 소진이 확정된 달에 더합니다. 가공비는 그 발주서 물건이 처음 납품 확정된 달, 운송비는 그 출하의 납품일 달, 손실 차감은 정산한 달에 들어갑니다.</li>
         <li>이 원장으로 [청구 요청]을 하면 그 시점 목록이 저장됩니다. 그 뒤 같은 달에 늦게 생긴 항목은 «청구 후 추가»로 표시됩니다.</li>
         <li>발주한 내역만 보려면 «월별 발주기록» 메뉴를 보세요.</li>
@@ -317,7 +318,7 @@
           OEM 제조사를 선택한 후 조회하세요.
         </p>
         <p v-else-if="isDelivery">
-          해당 월에 납품이 확정된 운송장이나 재고 소진·운송비·가공비·손실 차감이 없습니다.
+          해당 월에 납품이 확정된 운송장이나 창고 이동·재고 소진·운송비·가공비·손실 차감이 없습니다.
         </p>
         <p v-else>
           해당 월에 발주 데이터가 없습니다.
@@ -462,6 +463,18 @@
                 <td />
               </tr>
 
+              <!-- 창고 이동 (제조사 창고 → 리드파워 본사) — 옮긴 달에 더한다 (2026-11-04) -->
+              <tr v-if="isDelivery && hasTransfer" class="add-row">
+                <td :colspan="selectedOemCompanyId === 0 ? 9 : 8" class="text-right">
+                  창고 이동
+                  <span class="deduct-hint">({{ ledgerData.transferCharges?.length || 0 }}건 — 제조사 창고 → 리드파워 본사)</span>
+                </td>
+                <td />
+                <td class="text-right">{{ Number(ledgerData.transferTotal) < 0 ? '−' : '+' }} {{ formatCurrency(Math.abs(Number(ledgerData.transferTotal))) }}</td>
+                <td />
+                <td />
+              </tr>
+
               <!--
                 재고 소진 (품질관리 발송 / 리드파워 계약 / 기타) — 매출원장만, 지급 합계에 더한다 (2026-11-02)
                 ★ 납품 확정 기준에서는 창고에서 나간 물건만 돈이 된다. 소진도 나간 물건이다.
@@ -562,7 +575,7 @@
       <div v-if="!loading && isDelivery && chargeRows.length > 0" class="charge-detail-box">
         <div class="charge-detail-title">
           <i class="fas fa-list-ul" /> 부대 항목 내역 ({{ chargeRows.length }}건)
-          <span class="deduct-hint">— 위 표 아래 «재고 소진·운송비·가공비·손실 차감» 줄의 근거입니다</span>
+          <span class="deduct-hint">— 위 표 아래 «창고 이동·재고 소진·운송비·가공비·손실 차감» 줄의 근거입니다</span>
         </div>
         <div class="table-container">
           <table class="data-table charge-detail-table">
@@ -850,13 +863,15 @@ const hasLossDeduction = computed(() => {
 /** 손실 차감 건수 요약 라벨 */
 // ── 원장 가산 항목 ───────────────────────────────────────────────────────────
 // 발주 품목 외에 원장에 더해지는 것들. 손실은 차감이고 이쪽은 가산이라 부호가 반대다.
+// 창고 이동은 본사 → 제조사 창고로 되돌린 달이면 음수일 수 있어 0 이 아닌지만 본다
+const hasTransfer = computed(() => Number(ledgerData.value?.transferTotal || 0) !== 0)
 const hasConsumption = computed(() => Number(ledgerData.value?.consumptionTotal || 0) > 0)
 const hasShippingCharge = computed(() => Number(ledgerData.value?.shippingChargeTotal || 0) > 0)
 const hasProcessingCharge = computed(() => Number(ledgerData.value?.processingChargeTotal || 0) > 0)
 
 // 가산이든 차감이든 하나라도 있으면 "공급가액" 행을 보여줘야 한다
 const hasAdjustment = computed(() =>
-  hasLossDeduction.value || hasConsumption.value || hasShippingCharge.value || hasProcessingCharge.value
+  hasLossDeduction.value || hasTransfer.value || hasConsumption.value || hasShippingCharge.value || hasProcessingCharge.value
 )
 
 const consumptionLabel = computed(() => {
@@ -868,9 +883,9 @@ const consumptionLabel = computed(() => {
 /** 품목이 없어도 부대 항목만 있는 달이 있다 (예: 재고 소진만 있는 달) — 그때도 원장을 보여 준다 */
 const hasAnyCharge = computed(() => isDelivery.value && (hasAdjustment.value))
 
-/** 부대 항목 내역 — 재고 소진 → 운송비 → 가공비 → 손실 차감 순 */
+/** 부대 항목 내역 — 창고 이동 → 재고 소진 → 운송비 → 가공비 → 손실 차감 순 */
 interface ChargeRow {
-  kind: 'consumption' | 'shipping' | 'processing' | 'loss'
+  kind: 'transfer' | 'consumption' | 'shipping' | 'processing' | 'loss'
   label: string
   producer?: string | null
   sourceNo?: string | null
@@ -885,6 +900,10 @@ const chargeRows = computed<ChargeRow[]>(() => {
   if (!d || !isDelivery.value) { return [] }
   const rows: ChargeRow[] = []
   const join = (...parts: (string | null | undefined)[]) => parts.filter(p => p && String(p).trim()).join(' · ')
+  for (const c of d.transferCharges || []) {
+    const amount = Number(c.amount || 0)
+    rows.push({ kind: 'transfer', label: '창고 이동', producer: c.producerName, sourceNo: c.sourceNo, refDate: c.refDate, desc: c.remarks, amount: Math.abs(amount), minus: amount < 0, late: !!c.lateConfirmed })
+  }
   for (const c of d.consumptionCharges || []) {
     rows.push({ kind: 'consumption', label: '재고 소진', producer: c.producerName, sourceNo: c.sourceNo, refDate: c.refDate, desc: c.remarks, amount: Number(c.amount || 0), minus: false, late: !!c.lateConfirmed })
   }
@@ -1874,6 +1893,7 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+.ct-transfer { background: #f3f0ff; color: #5b3fb5; }
 .ct-consumption { background: #eef6ff; color: #1d5fa8; }
 .ct-shipping { background: #eefaf3; color: #1f7a4a; }
 .ct-processing { background: #f4f0ff; color: #5b3fb0; }
