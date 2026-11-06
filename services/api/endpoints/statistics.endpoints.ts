@@ -61,6 +61,15 @@ export const STATISTICS_ENDPOINTS = {
   },
 
   /**
+   * 제조사별 SKU 발주수량
+   * @returns GET /admin/statistics/oem/sku-orders?year={year}
+   */
+  oemSkuOrders: (year: number) => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/statistics/oem/sku-orders?year=${year}`
+  },
+
+  /**
    * 기성통계 조회
    * @returns GET /admin/statistics/baseline
    * @example

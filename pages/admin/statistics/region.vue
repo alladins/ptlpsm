@@ -12,6 +12,15 @@
       <div class="search-section">
         <div class="search-form">
           <div class="form-group">
+            <label>정산기간</label>
+            <StatsPeriodSelect
+              :periods="periods"
+              :start-date="searchParams.startDate"
+              :end-date="searchParams.endDate"
+              @select="applyPeriod"
+            />
+          </div>
+          <div class="form-group">
             <label>조회 기간</label>
             <SearchDateRange
               v-model:start-date="searchParams.startDate"
@@ -156,6 +165,8 @@
 
 <script setup lang="ts">
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
+import StatsPeriodSelect from '~/components/admin/statistics/StatsPeriodSelect.vue'
+import { loadStatsPeriods, pickCurrentStatsPeriod, statsPeriodEnd, type StatsPeriod } from '~/composables/useStatsPeriods'
 import { getLocalDateString } from '~/utils/format'
 import { getShipmentStatistics } from '~/services/statistics.service'
 import type { RegionBreakdownItem, ShipmentStatisticsRequest } from '~/types/statistics'
@@ -267,8 +278,24 @@ function getSuccessRateClass (rate: number): string {
   return 'low'
 }
 
-// 초기 로드
-onMounted(() => {
+// 정산기간 — 고르면 그 기간으로 바로 조회
+const periods = ref<StatsPeriod[]>([])
+
+function setPeriod (period: StatsPeriod) {
+  searchParams.value.startDate = period.startDate
+  searchParams.value.endDate = statsPeriodEnd(period)
+}
+
+function applyPeriod (period: StatsPeriod) {
+  setPeriod(period)
+  loadStatistics()
+}
+
+// 초기 로드 — 기본은 오늘이 속한 정산기간 (대시보드와 같은 기간), 목록을 못 읽으면 최근 1년
+onMounted(async () => {
+  periods.value = await loadStatsPeriods()
+  const current = pickCurrentStatsPeriod(periods.value)
+  if (current) { setPeriod(current) }
   loadStatistics()
 })
 </script>

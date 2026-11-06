@@ -12,6 +12,16 @@
       <div class="search-section">
         <div class="search-row">
           <div class="search-item">
+            <label>정산기간</label>
+            <StatsPeriodSelect
+              :periods="periods"
+              :start-date="searchParams.startDate"
+              :end-date="searchParams.endDate"
+              @select="applyPeriod"
+            />
+          </div>
+
+          <div class="search-item">
             <label>조회기간</label>
             <div class="date-range">
               <SearchDateRange v-model:start-date="searchParams.startDate" v-model:end-date="searchParams.endDate" />
@@ -87,7 +97,7 @@
               <i class="fas fa-file-alt" />
             </div>
             <div class="stat-content">
-              <h3>총 납품요구</h3>
+              <h3>총 납품요구 (납품요구일 기준)</h3>
               <p class="stat-number">
                 {{ formatNumber(statistics.summary.totalOrderCount) }}건 / {{ formatCompactCurrency(statistics.summary.totalOrderAmount) }}
               </p>
@@ -99,7 +109,7 @@
               <i class="fas fa-truck-loading" />
             </div>
             <div class="stat-content">
-              <h3>총 출하</h3>
+              <h3>총 출하 (출하일 기준)</h3>
               <p class="stat-number">
                 {{ formatNumber(statistics.summary.totalShipmentCount) }}건 / {{ formatCompactCurrency(statistics.summary.totalShipmentAmount) }}
               </p>
@@ -195,167 +205,26 @@
               </div>
             </div>
           </div>
-
-          <!-- 지역별 출하 현황 -->
-          <div class="chart-card">
-            <h2>
-              <i class="fas fa-map-marker-alt" />
-              지역별 출하 현황
-            </h2>
-            <div v-if="statistics.regionBreakdown.length > 0" class="region-chart">
-              <TopChartPanel :data="shipRegionMatrix" initial-type="bar" :toolbar="['bar', 'pie', 'doughnut', 'treemap']" />
-            </div>
-            <div v-else class="chart-placeholder">
-              <i class="fas fa-map-marker-alt" />
-              <p>데이터가 없습니다</p>
-            </div>
-          </div>
         </div>
 
-        <!-- 최근 출하 현황 + SKU별 발주수량 현황 (2컬럼) -->
-        <div class="tables-row">
-          <!-- 최근 출하 현황 (좌측) -->
-          <div class="table-section">
-            <h2>
-              <i class="fas fa-truck" />
-              최근 출하 현황
-            </h2>
-            <div class="table-container">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>납품요구번호</th>
-                    <th>수요기관</th>
-                    <th>지역</th>
-                    <th>출하일자</th>
-                    <th>출하금액</th>
-                    <th>차량번호</th>
-                    <th>상태</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="statistics.recentShipments.length === 0">
-                    <td colspan="7" class="empty-cell">
-                      데이터가 없습니다
-                    </td>
-                  </tr>
-                  <tr v-for="shipment in statistics.recentShipments" :key="shipment.shipmentId">
-                    <td>{{ shipment.deliveryRequestNo }}</td>
-                    <td>{{ shipment.client }}</td>
-                    <td>{{ shipment.region || '-' }}</td>
-                    <td>{{ shipment.shipmentDate || '-' }}</td>
-                    <td class="text-right">
-                      {{ formatCurrency(shipment.amount) }}
-                    </td>
-                    <td>{{ shipment.vehicleNo || '-' }}</td>
-                    <td>
-                      <span :class="['status-badge', getStatusClass(shipment.status)]">
-                        {{ getStatusLabel(shipment.status) }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- SKU별 발주수량 현황 (우측) -->
-          <div class="table-section">
-            <h2>
-              <i class="fas fa-boxes" />
-              SKU별 발주수량 현황
-            </h2>
-            <div class="table-container">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>품목명</th>
-                    <th>SKU ID</th>
-                    <th>SKU 품명</th>
-                    <th>단위</th>
-                    <th>발주수량</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="statistics.skuOrderStats.length === 0">
-                    <td colspan="5" class="empty-cell">
-                      데이터가 없습니다
-                    </td>
-                  </tr>
-                  <tr v-for="sku in statistics.skuOrderStats" :key="sku.skuId">
-                    <td>{{ sku.itemName }}</td>
-                    <td>{{ sku.skuId }}</td>
-                    <td>{{ sku.skuName }}</td>
-                    <td>{{ sku.unit }}</td>
-                    <td class="text-right">
-                      {{ formatNumber(sku.totalOrderedQuantity) }} {{ sku.unit }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- 최근 납품요구 현황 -->
-        <div class="table-section">
-          <h2>
-            <i class="fas fa-list" />
-            최근 납품요구 현황
-          </h2>
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>납품요구번호</th>
-                  <th>수요기관</th>
-                  <th>지역</th>
-                  <th>출하일자</th>
-                  <th>출하금액</th>
-                  <th>상태</th>
-                  <th>납품완료율</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="statistics.recentOrders.length === 0">
-                  <td colspan="7" class="empty-cell">
-                    데이터가 없습니다
-                  </td>
-                </tr>
-                <tr v-for="order in statistics.recentOrders" :key="order.orderId">
-                  <td>{{ order.deliveryRequestNo }}</td>
-                  <td>{{ order.client }}</td>
-                  <td>{{ order.region || '-' }}</td>
-                  <td>{{ order.shipmentDate || '-' }}</td>
-                  <td class="text-right">
-                    {{ formatCurrency(order.amount) }}
-                  </td>
-                  <td>
-                    <span :class="['status-badge', getStatusClass(order.status)]">
-                      {{ getStatusLabel(order.status) }}
-                    </span>
-                  </td>
-                  <td>
-                    <div class="completion-rate">
-                      <div class="rate-bar">
-                        <div class="rate-fill" :style="{ width: order.completionRate + '%' }" />
-                      </div>
-                      <span class="rate-text">{{ order.completionRate.toFixed(0) }}%</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <!-- 지역별 현황 (납품요구 / 출하 탭 — 지도·막대·목록 공용) -->
+        <RegionStatusPanel
+          v-model:tab="regionTab"
+          :start-date="searchParams.startDate"
+          :end-date="searchParams.endDate"
+          :status="searchParams.status"
+        />
       </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { ref, reactive, computed, onMounted } from 'vue'
+import SearchDateRange from '~/components/ui/SearchDateRange.vue'
+import RegionStatusPanel from '~/components/admin/statistics/RegionStatusPanel.vue'
+import StatsPeriodSelect from '~/components/admin/statistics/StatsPeriodSelect.vue'
+import { formatTrendLabels, loadStatsPeriods, pickCurrentStatsPeriod, statsPeriodEnd, type StatsPeriod } from '~/composables/useStatsPeriods'
 import { getShipmentStatistics } from '~/services/statistics.service'
 import type {
   ShipmentStatisticsRequest,
@@ -363,17 +232,18 @@ import type {
   PeriodUnit,
   ShipmentStatus
 } from '~/types/statistics'
-import { SHIPMENT_STATUS_LABELS } from '~/types/statistics'
-import { formatCurrency, formatNumber, getLocalDateString } from '~/utils/format'
+import { formatNumber, getLocalDateString } from '~/utils/format'
 
 definePageMeta({
   layout: 'admin',
   pageTitle: '출하현황통계'
 })
 
-// 상태
-const loading = ref(false)
+// 상태 — 처음부터 로딩으로 둔다. false 로 시작하면 지역별 현황이 첫 조회 직전에 한 번 더 호출된다
+const loading = ref(true)
 const error = ref<string | null>(null)
+/** 지역별 현황에서 보던 탭 — 조회해도 유지 */
+const regionTab = ref<'orders' | 'shipments'>('orders')
 
 // 검색 조건
 const searchParams = reactive<ShipmentStatisticsRequest>({
@@ -406,7 +276,7 @@ const statistics = ref<ShipmentStatisticsResponse>({
   skuOrderStats: []
 })
 
-// 기본 날짜 (6개월 전 ~ 오늘)
+// 정산기간 목록을 못 읽었을 때의 기본 날짜 (6개월 전 ~ 오늘)
 function getDefaultStartDate (): string {
   const now = new Date()
   now.setMonth(now.getMonth() - 6)
@@ -495,30 +365,11 @@ function formatCompactCurrency (value: number): string {
   return value.toLocaleString('ko-KR') + '원'
 }
 
-function formatPeriodLabel (period: string): string {
-  // 월별: 2024-01 -> 1월
-  if (period.match(/^\d{4}-\d{2}$/)) {
-    const month = parseInt(period.split('-')[1])
-    return `${month}월`
-  }
-  // 주별: 2024-W01 -> W1
-  if (period.match(/^\d{4}-W\d{2}$/)) {
-    const week = parseInt(period.split('-W')[1])
-    return `${week}주`
-  }
-  // 일별: 2024-01-01 -> 1/1
-  if (period.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    const parts = period.split('-')
-    return `${parseInt(parts[1])}/${parseInt(parts[2])}`
-  }
-  return period
-}
-
 // topgrid 차트 매트릭스 (기간별 납품요구/출하 추이 — 그룹 막대)
 const trendMatrix = computed(() => {
   const pt = statistics.value.periodTrend
   return {
-    categories: pt.map(t => formatPeriodLabel(t.period)),
+    categories: formatTrendLabels(pt.map(t => t.period)),
     series: [
       { name: '납품요구', values: pt.map(t => t.orderAmount), color: '#a5b4fc' },
       { name: '출하', values: pt.map(t => t.shipmentAmount), color: '#3b82f6' }
@@ -546,15 +397,6 @@ const statusMatrix = computed(() => ({
 // 도넛 조각 색 — 템플릿 우측 범례 색과 일치
 const statusChartColors = computed(() => statusChartItems.value.map(d => d.color))
 
-// topgrid 차트 매트릭스 (지역별 출하 막대)
-const shipRegionMatrix = computed(() => {
-  const rb = statistics.value.regionBreakdown
-  return {
-    categories: rb.map(r => r.region),
-    series: [{ name: '출하금액', values: rb.map(r => r.shipmentAmount), color: '#3b82f6' }]
-  }
-})
-
 // 상태 관련
 const getTotalStatusCount = computed(() => {
   const { pending, inProgress, pendingSignature, completed, cancelled } = statistics.value.summary.statusCount
@@ -568,23 +410,24 @@ function getStatusPercent (status: 'pending' | 'inProgress' | 'pendingSignature'
   return ((count / total) * 100).toFixed(1)
 }
 
-function getStatusClass (status: string): string {
-  const classMap: Record<string, string> = {
-    PENDING: 'pending',
-    IN_PROGRESS: 'in-progress',
-    PENDING_SIGNATURE: 'pending-signature',
-    COMPLETED: 'completed',
-    CANCELLED: 'cancelled'
-  }
-  return classMap[status] || ''
+// 정산기간 — 고르면 그 기간으로 바로 조회
+const periods = ref<StatsPeriod[]>([])
+
+function setPeriod (period: StatsPeriod) {
+  searchParams.startDate = period.startDate
+  searchParams.endDate = statsPeriodEnd(period)
 }
 
-function getStatusLabel (status: string): string {
-  return SHIPMENT_STATUS_LABELS[status as ShipmentStatus] || status
+function applyPeriod (period: StatsPeriod) {
+  setPeriod(period)
+  loadStatistics()
 }
 
-// 초기 로드
-onMounted(() => {
+// 초기 로드 — 기본은 오늘이 속한 정산기간 (대시보드와 같은 기간), 목록을 못 읽으면 최근 6개월
+onMounted(async () => {
+  periods.value = await loadStatsPeriods()
+  const current = pickCurrentStatsPeriod(periods.value)
+  if (current) { setPeriod(current) }
   loadStatistics()
 })
 </script>
@@ -795,7 +638,7 @@ onMounted(() => {
 /* 차트 섹션 */
 .chart-section {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 3fr 2fr;
   gap: 1rem;
 }
 
@@ -1041,57 +884,6 @@ onMounted(() => {
   font-size: 0.75rem;
 }
 
-/* 지역별 현황 */
-.region-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.region-item {
-  display: grid;
-  grid-template-columns: 80px 1fr 70px;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.region-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.region-name {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.region-count {
-  font-size: 0.6875rem;
-  color: #9ca3af;
-}
-
-.region-bar-container {
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.region-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #10b981, #059669);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.region-amount {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #1f2937;
-  text-align: right;
-}
-
 /* 테이블 섹션 */
 .table-section {
   background: white;
@@ -1150,82 +942,8 @@ onMounted(() => {
   padding: 2rem !important;
 }
 
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.625rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.status-badge.pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-badge.in-progress {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-badge.pending-signature {
-  background: #fae8ff;
-  color: #86198f;
-}
-
-.status-badge.completed {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-badge.cancelled {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-/* 납품완료율 바 */
-.completion-rate {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.rate-bar {
-  flex: 1;
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 3px;
-  overflow: hidden;
-  min-width: 60px;
-}
-
-.rate-fill {
-  height: 100%;
-  background: #10b981;
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.rate-text {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #374151;
-  min-width: 36px;
-}
-
-/* 2컬럼 테이블 행 */
-.tables-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
 /* 반응형 */
 @media (max-width: 1024px) {
-  .tables-row {
-    grid-template-columns: 1fr;
-  }
-
   .chart-section {
     grid-template-columns: 1fr;
   }

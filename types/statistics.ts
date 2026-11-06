@@ -183,6 +183,37 @@ export interface ShipmentStatisticsResponse {
   skuOrderStats: SkuOrderStatsItem[]
 }
 
+/** 지역별 현황 한 줄 — 납품요구 탭은 납품요구 1건, 출하 탭은 출하 1건 */
+export interface RegionStatusRow {
+  id: number
+  deliveryRequestNo: string
+  /** 출하번호 (출하 탭) */
+  shipmentNo?: string
+  client: string
+  /** 납품요구 탭: 납품요구일, 출하 탭: 출하일 */
+  refDate: string
+  /** 계약금액 = 품대계 (납품요구 탭) */
+  contractAmount?: number
+  /** 출하금액 (납품요구 탭은 변경계약 계열 전체) */
+  shipmentAmount: number
+  status: string
+  /** 납품완료율 % (납품요구 탭) */
+  completionRate?: number
+  /** 차량번호 (출하 탭) */
+  vehicleNo?: string
+  /** 지도 지역 코드 (시도코드, 경기는 41N·41S). 판정 못 하면 null */
+  areaCode: string | null
+  sigunguCd: string | null
+  sigunguName: string | null
+  /** 지역 판정 근거 */
+  regionBasis: 'SITE' | 'CLIENT' | null
+}
+
+export interface RegionStatusResponse {
+  orders: RegionStatusRow[]
+  shipments: RegionStatusRow[]
+}
+
 // ============================================
 // 상수 정의
 // ============================================
@@ -254,6 +285,15 @@ export interface OemAnnualSummary {
   totalPaidAmount: number         // 총 지급액
   totalUnpaidAmount: number       // 총 미지급액
   paymentRate: number             // 지급률 (%)
+}
+
+/** 제조사별 SKU 발주수량 — 제조사·SKU 한 칸 (납품 수량 아님) */
+export interface OemSkuOrderStat {
+  oemId: number
+  oemName: string
+  skuId: string
+  skuName: string
+  quantity: number
 }
 
 /** OEM 차트 데이터 (대시보드용) */

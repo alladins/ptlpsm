@@ -292,6 +292,8 @@ export interface FundStatistics {
   totalCollected: number
   /** 총 미수금 합계 */
   totalOutstanding: number
+  /** 기간 안에 납품요구된 계약의 누적 수금액 (미수금·수금률 기준) */
+  contractCollected?: number
   /** 총 OEM 지급액 */
   totalOemPaid: number
   /** 진행중 건수 */
@@ -327,7 +329,8 @@ export interface FundDetailItem {
   collected: number
   uncollected: number
   collectionRate: number
-  oemPaid: number
+  /** 제조사 원가 (물품 원가 + 운송비) */
+  cost: number
   profit: number
 }
 

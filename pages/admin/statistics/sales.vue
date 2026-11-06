@@ -1,13 +1,17 @@
 <template>
   <div class="statistics-sales">
     <PageHeader
-      title="영업통계"
+      title="영업통계 (목업 데이터)"
       icon="chart"
       icon-color="blue"
-      description="영업 현황을 통계로 확인합니다."
+      description="화면 구성 예시입니다. 실제 데이터가 아닙니다."
     />
 
     <div class="content-section">
+      <div class="mockup-banner" role="note">
+        <i class="fas fa-exclamation-triangle" />
+        <span><strong>목업 데이터입니다.</strong> 이 화면의 숫자와 목록은 모두 예시 값이며 실제 영업 실적이 아닙니다.</span>
+      </div>
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon">
@@ -180,6 +184,19 @@ const recentSales = ref([
 </script>
 
 <style scoped>
+.mockup-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 14px;
+}
+
 /* ============================================
    리팩토링: 공통 스타일은 admin-common.css 사용
    - 래퍼 스타일 (.statistics-sales)

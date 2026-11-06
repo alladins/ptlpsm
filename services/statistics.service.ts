@@ -13,7 +13,9 @@ import type {
   OemStatisticsResponse,
   OemChartData,
   BaselineStatisticsRequest,
-  BaselineStatisticsResponse
+  BaselineStatisticsResponse,
+  RegionStatusResponse,
+  OemSkuOrderStat
 } from '~/types/statistics'
 
 /**
@@ -91,6 +93,42 @@ export async function getShipmentStatistics(
     console.error('❌ 출하현황 통계 조회 실패:', error)
     throw error
   }
+}
+
+/**
+ * 출하현황 통계 — 지역별 현황 (지도·막대·목록이 같은 행을 쓴다)
+ */
+export async function getShipmentRegionStatus (params: {
+  startDate: string
+  endDate: string
+  status?: string
+}): Promise<RegionStatusResponse> {
+  const queryParams = new URLSearchParams({ startDate: params.startDate, endDate: params.endDate })
+  if (params.status) {
+    queryParams.append('status', params.status)
+  }
+  const response = await fetch(`${STATISTICS_ENDPOINTS.shipment()}/region-status?${queryParams.toString()}`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+  if (!response.ok) {
+    throw new Error('지역별 현황을 불러오지 못했습니다')
+  }
+  const result = await response.json()
+  return result.data ?? result
+}
+
+/** 제조사별 SKU 발주수량 조회 — 월별 발주기록과 같은 기준 */
+export async function getOemSkuOrderStats (year: number): Promise<OemSkuOrderStat[]> {
+  const response = await fetch(STATISTICS_ENDPOINTS.oemSkuOrders(year), {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+  if (!response.ok) {
+    throw new Error('제조사별 SKU 발주수량을 불러오지 못했습니다')
+  }
+  const result = await response.json()
+  return result.data ?? result
 }
 
 /**

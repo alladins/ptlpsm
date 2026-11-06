@@ -4,7 +4,7 @@
       title="OEM 제조사별 통계"
       icon="chart"
       icon-color="blue"
-      description="OEM 제조사별 월별 제조원가, 지급액, 미지급액(잔금)을 확인합니다."
+      description="제조원가는 월별 매출원장 공급가액(납품 + 창고 이동 + 재고 소진 + 운송비 + 가공비 − 손실, 부가세 별도)입니다. 지급액·미지급액도 원장 기준입니다."
     />
 
     <div class="content-section">
@@ -167,6 +167,59 @@
           </div>
         </div>
 
+        <!-- 제조사별 SKU 발주수량 -->
+        <div class="table-section">
+          <h2><i class="fas fa-boxes" /> 제조사별 SKU 발주수량</h2>
+          <p class="table-note">
+            월별 발주기록과 같은 기준으로, 납품 수량이 아니라 {{ selectedYear }}년에 제조사에 발주한 수량입니다.
+          </p>
+          <p v-if="skuOrderError" class="table-error">
+            {{ skuOrderError }}
+          </p>
+          <div v-else class="table-container">
+            <table class="data-table sku-order-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th v-for="oem in skuOrderMatrix.oems" :key="oem.oemId" class="text-right">
+                    {{ oem.oemName }}
+                  </th>
+                  <th class="text-right">
+                    합계
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="skuOrderMatrix.rows.length === 0">
+                  <td colspan="2" class="no-data">
+                    데이터가 없습니다
+                  </td>
+                </tr>
+                <tr v-for="row in skuOrderMatrix.rows" :key="row.skuId">
+                  <td>{{ row.skuName }}</td>
+                  <td v-for="oem in skuOrderMatrix.oems" :key="oem.oemId" class="text-right">
+                    {{ formatQuantity(row.quantities[oem.oemId]) }}
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ formatQuantity(row.total) }}</strong>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot v-if="skuOrderMatrix.rows.length > 0">
+                <tr class="total-row">
+                  <td><strong>합계</strong></td>
+                  <td v-for="oem in skuOrderMatrix.oems" :key="oem.oemId" class="text-right">
+                    <strong>{{ formatQuantity(oem.total) }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ formatQuantity(skuOrderMatrix.total) }}</strong>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
         <!-- 월별 상세 테이블 -->
         <div class="table-section">
           <h2><i class="fas fa-calendar-alt" /> OEM 제조사별 월별 상세</h2>
@@ -228,9 +281,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { getOemStatistics } from '~/services/statistics.service'
-import type { OemStatisticsResponse } from '~/types/statistics'
+import { ref, computed, onMounted } from 'vue'
+import { getOemStatistics, getOemSkuOrderStats } from '~/services/statistics.service'
+import type { OemStatisticsResponse, OemSkuOrderStat } from '~/types/statistics'
 import { isExcludedOem } from '~/utils/oem-filter'
 
 definePageMeta({
@@ -258,11 +311,57 @@ const statistics = ref<OemStatisticsResponse>({
   oemSummary: []
 })
 
+// 제조사별 SKU 발주수량 — 못 읽어도 위쪽 금액 통계는 그대로 보여 준다
+const skuOrders = ref<OemSkuOrderStat[]>([])
+const skuOrderError = ref('')
+
+async function loadSkuOrders (year: number) {
+  skuOrderError.value = ''
+  try {
+    skuOrders.value = await getOemSkuOrderStats(year)
+  } catch (error) {
+    console.error('제조사별 SKU 발주수량 조회 실패:', error)
+    skuOrders.value = []
+    skuOrderError.value = '제조사별 SKU 발주수량을 불러오지 못했습니다.'
+  }
+}
+
+// 행 = SKU(서버의 두께순 유지), 열 = 제조사(발주수량 큰 순). 자사·에코암스는 위쪽 표들과 같이 뺀다
+const skuOrderMatrix = computed(() => {
+  const oems = new Map<number, { oemId: number, oemName: string, total: number }>()
+  const rows = new Map<string, { skuId: string, skuName: string, quantities: Record<number, number>, total: number }>()
+  let total = 0
+  for (const item of skuOrders.value) {
+    if (isExcludedOem(item.oemName)) { continue }
+    const quantity = Number(item.quantity || 0)
+    const oem = oems.get(item.oemId) ?? { oemId: item.oemId, oemName: item.oemName, total: 0 }
+    oem.total += quantity
+    oems.set(item.oemId, oem)
+    const row = rows.get(item.skuId) ?? { skuId: item.skuId, skuName: item.skuName, quantities: {}, total: 0 }
+    row.quantities[item.oemId] = quantity
+    row.total += quantity
+    rows.set(item.skuId, row)
+    total += quantity
+  }
+  return {
+    oems: [...oems.values()].sort((a, b) => b.total - a.total),
+    rows: [...rows.values()],
+    total
+  }
+})
+
+function formatQuantity (value?: number): string {
+  return value ? value.toLocaleString('ko-KR') : '-'
+}
+
 // 데이터 로드
 async function loadData () {
   loading.value = true
   try {
-    const data = await getOemStatistics(selectedYear.value)
+    const [data] = await Promise.all([
+      getOemStatistics(selectedYear.value),
+      loadSkuOrders(selectedYear.value)
+    ])
     // 빼는 행: ① 제조원가·지급액이 모두 0원 ② 자사(리드파워)·에코암스 — 이름으로도 (utils/oem-filter, 2026-10-14 사용자)
     const oemSummary = (data.oemSummary || []).filter(item =>
       !isExcludedOem(item.oemName) && (item.totalManufacturingCost > 0 || item.totalPaidAmount > 0))
@@ -474,8 +573,36 @@ onMounted(() => {
   color: #3b82f6;
 }
 
+.table-note {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.table-error {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
 .table-container {
   overflow-x: auto;
+}
+
+/* 제조사 이름이 숫자 바로 위에 오도록 맞춘다 */
+.sku-order-table th:first-child,
+.sku-order-table td:first-child {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sku-order-table th:not(:first-child),
+.sku-order-table td:not(:first-child) {
+  text-align: right;
+  white-space: nowrap;
 }
 
 .data-table {

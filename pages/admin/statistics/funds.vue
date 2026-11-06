@@ -90,7 +90,7 @@
             </div>
             <div class="card-content">
               <div class="card-label">
-                총 계약금액
+                총 계약금액 (납품요구일 기준)
               </div>
               <div class="card-value">
                 {{ formatCurrency(statistics.totalContractAmount) }}
@@ -103,13 +103,10 @@
             </div>
             <div class="card-content">
               <div class="card-label">
-                수금 누계
+                기간 수금 (입금일 기준)
               </div>
               <div class="card-value">
                 {{ formatCurrency(statistics.totalCollected) }}
-              </div>
-              <div class="card-sub">
-                {{ getCollectionRate() }}%
               </div>
             </div>
           </div>
@@ -119,10 +116,13 @@
             </div>
             <div class="card-content">
               <div class="card-label">
-                미수금
+                미수금 (위 계약 기준)
               </div>
               <div class="card-value">
                 {{ formatCurrency(statistics.totalOutstanding) }}
+              </div>
+              <div class="card-sub">
+                계약 수금률 {{ getCollectionRate() }}%
               </div>
             </div>
           </div>
@@ -132,7 +132,7 @@
             </div>
             <div class="card-content">
               <div class="card-label">
-                OEM 지급액
+                OEM 지급액 (지급일 기준)
               </div>
               <div class="card-value">
                 {{ formatCurrency(statistics.totalOemPaid) }}
@@ -145,7 +145,7 @@
             </div>
             <div class="card-content">
               <div class="card-label">
-                OEM 미지급
+                OEM 미지급 (매출원장 기준)
               </div>
               <div class="card-value">
                 {{ formatCurrency(statistics.totalOemOutstanding) }}
@@ -158,7 +158,7 @@
             </div>
             <div class="card-content">
               <div class="card-label">
-                현재 수익
+                기간 수익 (출하 공급가 − 원가)
               </div>
               <div class="card-value">
                 {{ formatCurrency(statistics.currentProfit) }}
@@ -249,7 +249,7 @@
                   수금률
                 </th>
                 <th v-if="!hideCost" class="col-amount">
-                  OEM 지급
+                  원가 (운송비 포함)
                 </th>
                 <th v-if="!hideCost" class="col-amount">
                   수익
@@ -287,7 +287,7 @@
                   <span class="progress-text">{{ fund.collectionRate?.toFixed(1) || 0 }}%</span>
                 </td>
                 <td v-if="!hideCost" class="col-amount text-right">
-                  {{ formatCurrency(fund.oemPaid) }}
+                  {{ formatCurrency(fund.cost) }}
                 </td>
                 <td v-if="!hideCost" class="col-amount text-right" :class="(fund.profit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
                   {{ formatCurrency(fund.profit ?? 0) }}
@@ -303,7 +303,7 @@
                   <strong>{{ formatCurrency(statistics.totalContractAmount) }}</strong>
                 </td>
                 <td class="col-amount text-right text-success">
-                  <strong>{{ formatCurrency(statistics.totalCollected) }}</strong>
+                  <strong>{{ formatCurrency(statistics.contractCollected) }}</strong>
                 </td>
                 <td class="col-amount text-right text-danger">
                   <strong>{{ formatCurrency(statistics.totalOutstanding) }}</strong>
@@ -312,10 +312,10 @@
                   <strong>{{ getCollectionRate() }}%</strong>
                 </td>
                 <td v-if="!hideCost" class="col-amount text-right">
-                  <strong>{{ formatCurrency(statistics.totalOemPaid) }}</strong>
+                  <strong>{{ formatCurrency(detailCostTotal) }}</strong>
                 </td>
-                <td v-if="!hideCost" class="col-amount text-right" :class="(statistics.currentProfit ?? 0) >= 0 ? 'text-success' : 'text-danger'">
-                  <strong>{{ formatCurrency(statistics.currentProfit ?? 0) }}</strong>
+                <td v-if="!hideCost" class="col-amount text-right" :class="detailProfitTotal >= 0 ? 'text-success' : 'text-danger'">
+                  <strong>{{ formatCurrency(detailProfitTotal) }}</strong>
                 </td>
               </tr>
             </tfoot>
@@ -343,7 +343,8 @@ const router = useRouter()
 
 // 영업 역할(리드파워 영업·대리점 직원 공통)은 원가(OEM 지급·미지급)와 수익을 보지 않는다 — 서버도 값을 비워 보낸다 (2026-09-27)
 const authStore = useAuthStore()
-const hideCost = computed(() => authStore.user?.role === 'SALES_MANAGER')
+// 서버가 원가·수익을 비워 보낸 역할(제조사·조회 전용 등)도 같은 칸을 숨긴다
+const hideCost = computed(() => authStore.user?.role === 'SALES_MANAGER' || statistics.value.currentProfit == null)
 
 // 현재 분기 계산 헬퍼
 function getCurrentQuarter (): number {
@@ -388,6 +389,10 @@ const availableYears = computed(() => {
   const currentYear = new Date().getFullYear()
   return Array.from({ length: 5 }, (_, i) => currentYear - i)
 })
+
+// 계약별 표 합계 — 표의 세로 합 (카드의 기간 수익은 출하일 기준이라 값이 다를 수 있다)
+const detailCostTotal = computed(() => (statistics.value.fundDetails || []).reduce((s, f) => s + Number(f.cost || 0), 0))
+const detailProfitTotal = computed(() => (statistics.value.fundDetails || []).reduce((s, f) => s + Number(f.profit || 0), 0))
 
 // topgrid 차트 매트릭스 (월별 수금/수익 그룹 막대)
 const monthlyMatrix = computed(() => {
@@ -441,7 +446,8 @@ const loadStatistics = async () => {
 
 const getCollectionRate = (): string => {
   if (!statistics.value.totalContractAmount || statistics.value.totalContractAmount <= 0) { return '0.0' }
-  const rate = (statistics.value.totalCollected / statistics.value.totalContractAmount) * 100
+  // 같은 계약 묶음끼리 나눈다 (기간 수금은 입금일 기준이라 분모와 대상이 다르다)
+  const rate = ((statistics.value.contractCollected || 0) / statistics.value.totalContractAmount) * 100
   return rate.toFixed(1)
 }
 

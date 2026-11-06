@@ -350,6 +350,7 @@ import { useRouter } from '#imports'
 import SearchDateRange from '~/components/ui/SearchDateRange.vue'
 import { getOemMonthlyChart, getShipmentStatistics } from '~/services/statistics.service'
 import { getCommissionPeriods } from '~/services/commission.service'
+import { formatTrendLabels, pickCurrentStatsPeriod, toStatsPeriod } from '~/composables/useStatsPeriods'
 import { orderService } from '~/services/order.service'
 import { useAuthStore } from '~/stores/auth'
 import type { ShipmentStatisticsResponse, OemChartData } from '~/types/statistics'
@@ -471,23 +472,12 @@ function getDateRange (): { start: string, end: string } {
 async function loadPeriods () {
   try {
     const periods = await getCommissionPeriods()
-    periodOptions.value = periods.map((p: any) => {
-      const startMonth = String(p.startMonth).padStart(2, '0')
-      const endMonth = String(p.endMonth).padStart(2, '0')
-      const endDay = new Date(p.endYear, p.endMonth, 0).getDate()
-      return {
-        periodId: p.periodId,
-        periodName: p.periodName,
-        startDate: `${p.startYear}-${startMonth}-01`,
-        endDate: `${p.endYear}-${endMonth}-${String(endDay).padStart(2, '0')}`
-      }
-    })
-    // 활성 기간을 기본 선택
-    const active = periods.find((p: any) => p.isActive)
-    if (active) {
-      selectedPeriodId.value = active.periodId
-    } else if (periodOptions.value.length > 0) {
-      selectedPeriodId.value = periodOptions.value[0].periodId
+    const statsPeriods = periods.map(toStatsPeriod)
+    periodOptions.value = statsPeriods
+    // 오늘이 속한 기간을 기본 선택 — 출하·지역별 통계와 같은 기준
+    const current = pickCurrentStatsPeriod(statsPeriods)
+    if (current) {
+      selectedPeriodId.value = current.periodId
     }
   } catch (error) {
     console.error('정산기간 목록 조회 실패:', error)
@@ -616,22 +606,6 @@ function formatCompactCurrency (value: number): string {
   return value.toLocaleString('ko-KR') + '원'
 }
 
-function formatPeriodLabel (period: string): string {
-  if (period.match(/^\d{4}-\d{2}$/)) {
-    const month = parseInt(period.split('-')[1])
-    return `${month}월`
-  }
-  if (period.match(/^\d{4}-W\d{2}$/)) {
-    const week = parseInt(period.split('-W')[1])
-    return `${week}주`
-  }
-  if (period.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    const parts = period.split('-')
-    return `${parseInt(parts[1])}/${parseInt(parts[2])}`
-  }
-  return period
-}
-
 // topgrid 차트 매트릭스 (OEM 제조사별 월별 제조원가 — 제조사 시리즈 × 월)
 const oemMatrix = computed(() => {
   // 자사(리드파워)·에코암스는 이름으로도 뺀다 (원가 0원 조건과 별개 — utils/oem-filter)
@@ -651,7 +625,7 @@ const oemMatrix = computed(() => {
 
 // topgrid 차트 매트릭스 (기간별 출하 추이)
 const trendMatrix = computed(() => ({
-  categories: statistics.value.periodTrend.map(t => formatPeriodLabel(t.period)),
+  categories: formatTrendLabels(statistics.value.periodTrend.map(t => t.period)),
   series: [{
     name: '출하금액',
     values: statistics.value.periodTrend.map(t => t.shipmentAmount),
