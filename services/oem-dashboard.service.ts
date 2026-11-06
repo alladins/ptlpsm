@@ -7,13 +7,26 @@
 
 import { getAuthHeaders } from './api'
 import { OEM_DASHBOARD_ENDPOINTS } from './api/endpoints/oem-dashboard.endpoints'
-import type { OemDashboardSummary, OemMonthlyPayment, OemProductionStatus } from '~/types/oem-dashboard'
+import type { OemDashboardSummary, OemMonthlyPayment, OemOrderStatus, OemProductionStatus } from '~/types/oem-dashboard'
 import { httpError } from '~/utils/apiError'
 
 /**
  * OEM 대시보드 서비스 클래스
  */
 class OemDashboardService {
+  /** 제조사 계정 발주 현황 — 로그인한 제조사 것만 */
+  async getOemOrderStatus(): Promise<OemOrderStatus> {
+    const response = await fetch(OEM_DASHBOARD_ENDPOINTS.orderStatus(), {
+      method: 'GET',
+      headers: { ...getAuthHeaders(), Accept: 'application/json' }
+    })
+    if (!response.ok) {
+      throw new Error('발주 현황을 불러오지 못했습니다')
+    }
+    const result = await response.json()
+    return result.data ?? result
+  }
+
   /**
    * OEM 대시보드 요약 조회 (전체 OEM)
    * @returns OEM 제조사별 요약 목록

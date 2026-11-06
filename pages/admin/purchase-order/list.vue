@@ -242,7 +242,7 @@ const getTodayDate = () => {
 const searchForm = ref({
   startDate: getSearchStartDate(),
   endDate: getSearchEndDate(),
-  status: '' as PurchaseOrderStatus | '',
+  status: (typeof route.query.status === 'string' ? route.query.status : '') as PurchaseOrderStatus | '', // 대시보드 상태 카드에서 넘어올 때
   oemCompanyId: null as number | null,
   keyword: ''
 })

@@ -14,6 +14,15 @@ import { getApiBaseUrl } from '../config'
 
 export const OEM_DASHBOARD_ENDPOINTS = {
   /**
+   * 제조사 계정 발주 현황 (회사는 서버가 로그인 계정으로 정한다)
+   * @returns GET /admin/oem-dashboard/order-status
+   */
+  orderStatus: () => {
+    const baseUrl = getApiBaseUrl()
+    return `${baseUrl}/admin/oem-dashboard/order-status`
+  },
+
+  /**
    * OEM 대시보드 요약 조회 (전체 OEM)
    * @returns GET /admin/oem-dashboard
    */

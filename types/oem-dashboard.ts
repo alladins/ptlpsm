@@ -82,3 +82,25 @@ export interface OemMonthlyPayment {
   /** 지급 건수 */
   paymentCount: number
 }
+
+/** 제조사 계정 대시보드 — 자기 회사 발주 현황 */
+export interface OemOrderStatus {
+  oemCompanyName: string | null
+  totalCount: number
+  totalQuantity: number
+  todayCount: number
+  todayQuantity: number
+  monthCount: number
+  monthQuantity: number
+  issuedCount: number
+  inProgressCount: number
+  producedCount: number
+  recentOrders: {
+    poId: number
+    poNo: string
+    orderDate: string
+    expectedCompletionDate: string | null
+    status: string
+    totalQuantity: number | null
+  }[]
+}
