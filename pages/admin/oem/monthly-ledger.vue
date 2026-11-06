@@ -581,14 +581,14 @@
           <table class="data-table charge-detail-table">
             <thead>
               <tr>
-                <th>구분</th>
-                <th v-if="selectedOemCompanyId === 0">
+                <th class="charge-col-type">구분</th>
+                <th v-if="selectedOemCompanyId === 0" class="charge-col-producer">
                   제조사
                 </th>
-                <th>문서번호</th>
-                <th>기준일</th>
+                <th class="charge-col-doc">문서번호</th>
+                <th class="charge-col-date">기준일</th>
                 <th>내용</th>
-                <th class="text-right">
+                <th class="text-right charge-col-amount">
                   금액
                 </th>
               </tr>
@@ -1882,6 +1882,24 @@ onMounted(async () => {
 .charge-detail-table td,
 .charge-detail-table th {
   font-size: 12.5px;
+}
+
+/* 내용 칸에 남는 폭을 모두 준다 — 나머지 칸은 글자 길이에 맞춰 고정 */
+.charge-detail-table {
+  table-layout: fixed;
+  min-width: 720px;
+}
+
+.charge-col-type { width: 96px; }
+.charge-col-producer { width: 130px; }
+.charge-col-doc { width: 140px; }
+.charge-col-date { width: 112px; }
+.charge-col-amount { width: 130px; }
+
+/* 공통 .cell-remarks(폭 140px·말줄임)를 풀어 내용이 잘리지 않게 한다 */
+.charge-detail-table .cell-remarks {
+  max-width: none;
+  white-space: normal;
 }
 
 .charge-type {
