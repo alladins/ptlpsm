@@ -23,7 +23,7 @@
 
     <div class="content-section">
       <!-- 요약 카드 -->
-      <div class="stats-cards">
+      <div v-if="summaryLoaded" class="stats-cards">
         <div class="stat-card">
           <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
             <i class="fas fa-file-contract" />
@@ -351,6 +351,8 @@ const searchForm = ref({
 const pageSize = ref(10)
 
 // 요약 데이터 (통계 API에서 로드)
+// 회사 전체 합계를 못 받는 역할에게는 0원 카드 대신 카드를 감춘다 (2026-11-06)
+const summaryLoaded = ref(false)
 const summaryData = ref<Partial<FundStatistics>>({
   totalFundCount: 0,
   totalContractAmount: 0,
@@ -556,6 +558,7 @@ const loadStatistics = async () => {
     const stats = await fundService.getStatistics({ periodType: 'YEAR', year: currentYear })
 
     if (stats) {
+      summaryLoaded.value = true
       summaryData.value = {
         totalFundCount: stats.totalFundCount || 0,
         totalContractAmount: stats.totalContractAmount || 0,

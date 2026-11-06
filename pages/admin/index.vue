@@ -1,6 +1,8 @@
 <template>
   <client-only>
     <OemHomeDashboard v-if="isOemRole" />
+    <!-- 현장소장·감리원·배송기사의 메인은 비워 둔다 (2026-11-06 사용자 결정) -->
+    <div v-else-if="isScopedRole" />
     <div v-else class="admin-dashboard">
       <!-- 페이지 헤더 - PageHeader 컴포넌트 사용 -->
       <PageHeader
@@ -396,6 +398,8 @@ const authStore = useAuthStore()
 const isSalesRole = computed(() => authStore.user?.role === 'SALES_MANAGER')
 // 제조사는 회사 전체 수치 대신 자기 회사 발주 현황만 본다 — 아래 조회도 부르지 않는다 (2026-11-06 사용자 결정)
 const isOemRole = computed(() => authStore.user?.role === 'OEM_MANAGER')
+// 현장소장·감리원·배송기사는 회사 전체 수치를 보지 않는다
+const isScopedRole = computed(() => ['SITE_MANAGER', 'SITE_INSPECTOR', 'DELIVERY_DRIVER'].includes(authStore.user?.role || ''))
 
 // OEM 차트 데이터
 const oemChartData = ref<OemChartData[]>([])
@@ -676,7 +680,7 @@ const goToTransport = () => router.push('/admin/transport/list')
 
 // Lifecycle
 onMounted(async () => {
-  if (isOemRole.value) { return }
+  if (isOemRole.value || isScopedRole.value) { return }
   await loadPeriods()
   loadDashboardData()
   loadOemChartData()
