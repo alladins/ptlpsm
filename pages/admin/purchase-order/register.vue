@@ -75,7 +75,7 @@
             <!-- 가공비 -->
             <FormField
               label="가공비"
-              label-note="OEM 에 지불하는 가공 비용 · 이 발주 물건이 처음 납품 확정된 달의 월별 매출원장에 가산"
+              label-note="OEM 에 지불하는 가공 비용 · 이 발주 물건이 처음 제조사를 떠난 달(납품 확정·창고 이동·재고 소진 중 가장 이른 달)의 월별 매출원장에 가산"
             >
               <div class="fee-box">
                 <span class="fee-currency">₩</span>

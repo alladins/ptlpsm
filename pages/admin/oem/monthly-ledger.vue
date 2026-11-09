@@ -44,7 +44,7 @@
           표 아래 «부대 항목 내역»에서 한 건씩 근거를 볼 수 있습니다.
         </li>
         <li>제조사 창고에서 리드파워 본사로 옮긴 물건은 납품 전이라도 제조사에서 나간 것이므로 <b>옮긴 날의 달</b>에 «창고 이동»으로 더합니다. 이 물건이 나중에 본사에서 납품되거나 소진될 때는 다시 더하지 않습니다.</li>
-        <li>재고 소진(품질관리 발송·리드파워 계약 등)은 현장 납품은 아니지만 창고에서 나간 물건이라 소진이 확정된 달에 더합니다. 가공비는 그 발주서 물건이 처음 납품 확정된 달, 운송비는 그 출하의 납품일 달, 손실 차감은 정산한 달에 들어갑니다.</li>
+        <li>재고 소진(품질관리 발송·리드파워 계약 등)은 현장 납품은 아니지만 창고에서 나간 물건이라 소진이 확정된 달에 더합니다. 가공비는 그 발주서 물건이 처음 제조사를 떠난 달(납품 확정·창고 이동·재고 소진 중 가장 이른 달), 운송비는 그 출하의 납품일 달, 손실 차감은 정산한 달에 들어갑니다.</li>
         <li>이 원장으로 [청구 요청]을 하면 그 시점 목록이 저장됩니다. 그 뒤 같은 달에 늦게 생긴 항목은 «청구 후 추가»로 표시됩니다.</li>
         <li>발주한 내역만 보려면 «월별 발주기록» 메뉴를 보세요.</li>
       </ul>
@@ -911,7 +911,7 @@ const chargeRows = computed<ChargeRow[]>(() => {
     rows.push({ kind: 'shipping', label: '운송비', producer: c.producerName, sourceNo: c.sourceNo, refDate: c.refDate, desc: join(c.carrierName, c.deliveryRequestNo, c.client), amount: Number(c.amount || 0), minus: false, late: !!c.lateConfirmed })
   }
   for (const c of d.processingCharges || []) {
-    rows.push({ kind: 'processing', label: '가공비', producer: c.producerName, sourceNo: c.sourceNo, refDate: c.refDate, desc: join('발주서에 적힌 가공비 (기준일 = 그 발주 물건이 처음 납품 확정된 날)', c.remarks), amount: Number(c.amount || 0), minus: false, late: !!c.lateConfirmed })
+    rows.push({ kind: 'processing', label: '가공비', producer: c.producerName, sourceNo: c.sourceNo, refDate: c.refDate, desc: join('발주서에 적힌 가공비 (기준일 = 그 발주 물건이 처음 제조사를 떠난 날: 납품 확정·창고 이동·재고 소진 중 가장 이른 날)', c.remarks), amount: Number(c.amount || 0), minus: false, late: !!c.lateConfirmed })
   }
   for (const l of d.lossDeductions || []) {
     rows.push({ kind: 'loss', label: '손실 차감', producer: l.oemCompanyName, sourceNo: l.lossNo, refDate: l.occurredDate, desc: join(l.lossTypeName, l.shipmentNo, l.skuName), amount: Number(l.oemDeductionAmount || 0), minus: true, late: false })
